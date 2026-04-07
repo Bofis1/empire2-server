@@ -29,6 +29,8 @@ function broadcastGameList(){
   broadcast({ type:'game_list_update' });
 }
 
+// Called when connection drops unexpectedly (browser closed, network loss)
+// Does NOT end the game — host may reconnect
 function removePlayer(ws){
   const player = players.get(ws);
   if(!player) return;
@@ -36,12 +38,9 @@ function removePlayer(ws){
     const g = games.get(player.gameId);
     if(g){
       g.players = g.players.filter(n => n !== player.name);
-      // Only end the game if the HOST's connection dropped
-      if(g.host === player.name){
-        games.delete(player.gameId);
-        broadcast({ type:'lobby_chat', name:'SERVER',
-          msg:g.name+' ended (host disconnected).', system:true });
-      }
+      // Don't delete the game on disconnect — host may be returning to lobby
+      // Games are only deleted via explicit leave_game with isHost:true
+      // or via the 6-hour cleanup
       broadcastGameList();
     }
     player.gameId = null;
@@ -92,6 +91,7 @@ wss.on('connection', ws => {
         break;
 
       case 'create_game':
+        // Remove any old game this player hosts
         if(player.gameId){
           const old=games.get(player.gameId);
           if(old && old.host===player.name) games.delete(player.gameId);
@@ -136,7 +136,7 @@ wss.on('connection', ws => {
           const lg=games.get(player.gameId);
           if(lg){
             lg.players=lg.players.filter(n=>n!==player.name);
-            // Only end game if the HOST explicitly left
+            // Only end the game if host explicitly chose to end it
             if(data.isHost === true && lg.host === player.name){
               games.delete(player.gameId);
               broadcast({type:'lobby_chat',name:'SERVER',msg:lg.name+' ended.',system:true});
