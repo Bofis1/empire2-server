@@ -17,6 +17,14 @@ function broadcast(data, exclude=null){
   });
 }
 
+function getPlayerNames(){
+  return [...players.values()].filter(p=>p.name).map(p=>p.name);
+}
+
+function broadcastPlayerList(){
+  broadcast({ type:'player_list', players:getPlayerNames() });
+}
+
 function sendGameList(ws){
   const list = [...games.values()].map(g => ({
     id:g.id, name:g.name, host:g.host, hostPeer:g.hostPeer,
@@ -32,13 +40,10 @@ function broadcastGameList(){
 function removePlayer(ws){
   const player = players.get(ws);
   if(!player) return;
-  console.log(`[DISCONNECT] ${player.name} disconnected, gameId=${player.gameId}`);
   if(player.gameId){
     const g = games.get(player.gameId);
     if(g){
       g.players = g.players.filter(n => n !== player.name);
-      // NEVER delete game on disconnect — only leave_game with isHost:true does that
-      console.log(`[DISCONNECT] Game "${g.name}" still alive, players: ${g.players.join(',')}`);
       broadcastGameList();
     }
     player.gameId = null;
@@ -49,6 +54,7 @@ function removePlayer(ws){
   }
   players.delete(ws);
   broadcast({ type:'player_count', count:players.size });
+  broadcastPlayerList();
 }
 
 setInterval(()=>{
@@ -69,7 +75,6 @@ wss.on('connection', ws => {
     let data;
     try { data = JSON.parse(raw); } catch { return; }
     const player = players.get(ws);
-    console.log(`[MSG] ${player.name}: ${data.type}`, data.isHost !== undefined ? `isHost=${data.isHost}` : '');
 
     switch(data.type){
       case 'login':
@@ -77,8 +82,10 @@ wss.on('connection', ws => {
         ws.send(JSON.stringify({ type:'logged_in', name:player.name }));
         sendGameList(ws);
         ws.send(JSON.stringify({ type:'player_count', count:players.size }));
+        ws.send(JSON.stringify({ type:'player_list', players:getPlayerNames() }));
         broadcast({ type:'lobby_chat', name:'SERVER', msg:player.name+' entered the lobby.', system:true }, ws);
         broadcast({ type:'player_count', count:players.size });
+        broadcastPlayerList();
         break;
 
       case 'lobby_chat':
@@ -86,6 +93,10 @@ wss.on('connection', ws => {
         const msg = (data.msg||'').slice(0,200).replace(/[<>]/g,'');
         if(!msg) break;
         broadcast({ type:'lobby_chat', name:player.name, msg });
+        break;
+
+      case 'request_player_list':
+        ws.send(JSON.stringify({ type:'player_list', players:getPlayerNames() }));
         break;
 
       case 'create_game':
@@ -103,7 +114,6 @@ wss.on('connection', ws => {
         };
         games.set(gId, game);
         player.gameId = gId;
-        console.log(`[CREATE] "${game.name}" by ${player.name}`);
         ws.send(JSON.stringify({ type:'game_created', game }));
         broadcastGameList();
         break;
@@ -130,17 +140,13 @@ wss.on('connection', ws => {
         break;
 
       case 'leave_game':
-        console.log(`[LEAVE] ${player.name} isHost=${data.isHost} gameId=${player.gameId}`);
         if(player.gameId){
           const lg=games.get(player.gameId);
           if(lg){
             lg.players=lg.players.filter(n=>n!==player.name);
-            if(data.isHost === true && lg.host === player.name){
-              console.log(`[LEAVE] Deleting game "${lg.name}" - host left`);
+            if(data.isHost===true && lg.host===player.name){
               games.delete(player.gameId);
               broadcast({type:'lobby_chat',name:'SERVER',msg:lg.name+' ended.',system:true});
-            } else {
-              console.log(`[LEAVE] Client left game "${lg.name}" - game stays`);
             }
             broadcastGameList();
           }
