@@ -36,13 +36,15 @@ function removePlayer(ws){
     const g = games.get(player.gameId);
     if(g){
       g.players = g.players.filter(n => n !== player.name);
-      if(g.host === player.name || g.players.length === 0){
+      // Only delete game if HOST disconnected — clients leaving keeps game alive
+      if(g.host === player.name){
         games.delete(player.gameId);
         broadcast({ type:'lobby_chat', name:'SERVER',
-          msg:(g.name||'A game')+' ended.', system:true });
+          msg:g.name+' ended (host left).', system:true });
       }
       broadcastGameList();
     }
+    player.gameId = null;
   }
   if(player.name){
     broadcast({ type:'lobby_chat', name:'SERVER',
@@ -52,7 +54,7 @@ function removePlayer(ws){
   broadcast({ type:'player_count', count:players.size });
 }
 
-// ── Heartbeat — ping every 20s, kill dead connections ──
+// Heartbeat — ping every 20s, kill dead connections
 setInterval(()=>{
   wss.clients.forEach(ws=>{
     if(ws.isAlive === false){ removePlayer(ws); return ws.terminate(); }
@@ -90,7 +92,12 @@ wss.on('connection', ws => {
         break;
 
       case 'create_game':
-        if(player.gameId){ const old=games.get(player.gameId); if(old&&old.host===player.name) games.delete(player.gameId); }
+        // Remove any old game this player hosts
+        if(player.gameId){
+          const old=games.get(player.gameId);
+          if(old && old.host===player.name) games.delete(player.gameId);
+          player.gameId=null;
+        }
         const gId = nextGameId++;
         const game = {
           id:gId, name:(data.name||player.name+"'s Game").slice(0,40),
@@ -105,7 +112,13 @@ wss.on('connection', ws => {
         break;
 
       case 'update_game':
-        if(player.gameId){ const ug=games.get(player.gameId); if(ug&&ug.host===player.name){ if(data.zone) ug.zone=data.zone.slice(0,40); broadcastGameList(); } }
+        if(player.gameId){
+          const ug=games.get(player.gameId);
+          if(ug && ug.host===player.name){
+            if(data.zone) ug.zone=data.zone.slice(0,40);
+            broadcastGameList();
+          }
+        }
         break;
 
       case 'join_game':
@@ -120,9 +133,19 @@ wss.on('connection', ws => {
         break;
 
       case 'leave_game':
+        // Client leaving game — remove from player list but keep game alive
+        // unless they are the host
         if(player.gameId){
           const lg=games.get(player.gameId);
-          if(lg){ lg.players=lg.players.filter(n=>n!==player.name); if(lg.host===player.name||lg.players.length===0){ games.delete(player.gameId); broadcast({type:'lobby_chat',name:'SERVER',msg:lg.name+' ended.',system:true}); } broadcastGameList(); }
+          if(lg){
+            lg.players=lg.players.filter(n=>n!==player.name);
+            if(lg.host===player.name){
+              // Host explicitly left — end the game
+              games.delete(player.gameId);
+              broadcast({type:'lobby_chat',name:'SERVER',msg:lg.name+' ended.',system:true});
+            }
+            broadcastGameList();
+          }
           player.gameId=null;
         }
         break;
@@ -138,7 +161,11 @@ wss.on('connection', ws => {
 });
 
 // Clean up games older than 6 hours
-setInterval(()=>{ const now=Date.now(); games.forEach((g,id)=>{ if(now-g.createdAt>6*60*60*1000){ games.delete(id); } }); broadcastGameList(); }, 60*60*1000);
+setInterval(()=>{
+  const now=Date.now();
+  games.forEach((g,id)=>{ if(now-g.createdAt>6*60*60*1000) games.delete(id); });
+  broadcastGameList();
+}, 60*60*1000);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, ()=>console.log('Empire 2 Lobby running on port '+PORT));
