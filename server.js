@@ -25,6 +25,10 @@ function sendGameList(ws){
   ws.send(JSON.stringify({ type:'game_list', games:list }));
 }
 
+function broadcastGameList(){
+  broadcast({ type:'game_list_update' });
+}
+
 wss.on('connection', ws => {
   players.set(ws, { name:'', gameId:null });
 
@@ -66,7 +70,19 @@ wss.on('connection', ws => {
         games.set(gId, game);
         player.gameId = gId;
         ws.send(JSON.stringify({ type:'game_created', game }));
-        broadcast({ type:'game_list_update' });
+        broadcastGameList();
+        break;
+
+      case 'update_game':
+        // Host updates zone name in the listing
+        if(player.gameId){
+          const ug = games.get(player.gameId);
+          if(ug){
+            if(data.zone) ug.zone = data.zone.slice(0,40);
+            if(data.players) ug.players = data.players;
+            broadcastGameList();
+          }
+        }
         break;
 
       case 'join_game':
@@ -77,7 +93,7 @@ wss.on('connection', ws => {
         jGame.players.push(player.name);
         player.gameId = data.id;
         ws.send(JSON.stringify({ type:'join_success', hostPeer:jGame.hostPeer, game:jGame }));
-        broadcast({ type:'game_list_update' });
+        broadcastGameList();
         break;
 
       case 'leave_game':
@@ -85,8 +101,12 @@ wss.on('connection', ws => {
           const lg = games.get(player.gameId);
           if(lg){
             lg.players = lg.players.filter(n => n !== player.name);
-            if(lg.host === player.name) games.delete(player.gameId);
-            broadcast({ type:'game_list_update' });
+            if(lg.host === player.name || lg.players.length === 0){
+              games.delete(player.gameId);
+              broadcast({ type:'lobby_chat', name:'SERVER',
+                msg:lg.name+' ended.', system:true });
+            }
+            broadcastGameList();
           }
           player.gameId = null;
         }
@@ -105,8 +125,10 @@ wss.on('connection', ws => {
         const g = games.get(player.gameId);
         if(g){
           g.players = g.players.filter(n => n !== player.name);
-          if(g.host === player.name) games.delete(player.gameId);
-          broadcast({ type:'game_list_update' });
+          if(g.host === player.name || g.players.length === 0){
+            games.delete(player.gameId);
+          }
+          broadcastGameList();
         }
       }
       if(player.name){
