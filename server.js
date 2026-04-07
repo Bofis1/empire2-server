@@ -36,11 +36,11 @@ function removePlayer(ws){
     const g = games.get(player.gameId);
     if(g){
       g.players = g.players.filter(n => n !== player.name);
-      // Only delete game if HOST disconnected — clients leaving keeps game alive
+      // Only end the game if the HOST's connection dropped
       if(g.host === player.name){
         games.delete(player.gameId);
         broadcast({ type:'lobby_chat', name:'SERVER',
-          msg:g.name+' ended (host left).', system:true });
+          msg:g.name+' ended (host disconnected).', system:true });
       }
       broadcastGameList();
     }
@@ -92,7 +92,6 @@ wss.on('connection', ws => {
         break;
 
       case 'create_game':
-        // Remove any old game this player hosts
         if(player.gameId){
           const old=games.get(player.gameId);
           if(old && old.host===player.name) games.delete(player.gameId);
@@ -133,14 +132,12 @@ wss.on('connection', ws => {
         break;
 
       case 'leave_game':
-        // Client leaving game — remove from player list but keep game alive
-        // unless they are the host
         if(player.gameId){
           const lg=games.get(player.gameId);
           if(lg){
             lg.players=lg.players.filter(n=>n!==player.name);
-            if(lg.host===player.name){
-              // Host explicitly left — end the game
+            // Only end game if the HOST explicitly left
+            if(data.isHost === true && lg.host === player.name){
               games.delete(player.gameId);
               broadcast({type:'lobby_chat',name:'SERVER',msg:lg.name+' ended.',system:true});
             }
