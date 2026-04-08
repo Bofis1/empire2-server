@@ -483,6 +483,15 @@ function removePlayer(ws){
     const g = games.get(player.gameId);
     if(g){
       g.players = g.players.filter(n => n !== player.name);
+      // If the host disconnected, delete the game entirely
+      if(g.host === player.name){
+        games.delete(player.gameId);
+        broadcast({ type:'lobby_chat', name:'SERVER',
+          msg:g.name+' ended (host disconnected).', system:true });
+      } else if(g.players.length === 0){
+        // Last player left — clean it up
+        games.delete(player.gameId);
+      }
       broadcastGameList();
     }
     player.gameId = null;
@@ -693,6 +702,19 @@ wss.on('connection', ws => {
   ws.on('close',  () => removePlayer(ws));
   ws.on('error',  () => removePlayer(ws));
 });
+
+// Clean up empty or abandoned games every 2 minutes
+setInterval(()=>{
+  const now = Date.now();
+  games.forEach((g, id) => {
+    // Delete if: no players left, or older than 6 hours, or inactive for 30 min with 0 players
+    const empty = g.players.length === 0;
+    const old   = now - g.createdAt > 6*60*60*1000;
+    const stale = empty && (now - g.createdAt > 30*60*1000);
+    if(old || stale) games.delete(id);
+  });
+  broadcastGameList();
+}, 2*60*1000);
 
 // Clean up old games every hour
 setInterval(()=>{
