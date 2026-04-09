@@ -109,6 +109,7 @@ const TILE = 1.6; // matches client TILE constant
 
 const ZONE_SPAWNS = {
   outpost: [],
+  sanctuary: [], // Safe hub — no enemies
   patrol: [
     {tx:10,tz:8,type:'xu_scout'},
     {tx:28,tz:6,type:'xu_scout'},
@@ -1585,7 +1586,20 @@ const RESPAWN_TICKS  = 300; // 30 seconds at 10Hz
 function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
-    if (zonePlayers.length === 0) return; // no players — skip AI, save CPU
+    if (zonePlayers.length === 0) {
+      // No players — still tick respawns but skip AI movement
+      zone.enemies.forEach(e => {
+        if (!e.active) {
+          e.respawnTimer++;
+          if (e.respawnTimer >= RESPAWN_TICKS) {
+            e.active = true; e.hp = e.maxHp;
+            e.x = e.spawnX; e.z = e.spawnZ;
+            e.respawnTimer = 0; e.aggroed = false;
+          }
+        }
+      });
+      return;
+    }
 
     zone.lastActivity = Date.now();
     const changed = []; // enemies whose state changed this tick
