@@ -1674,6 +1674,8 @@ function sendZoneSnapshot(ws, game, zoneName) {
     types.push(e.type);
     acts.push(e.active ? 1 : 0);
   });
+  const activeCount = acts.filter(a=>a===1).length;
+  console.log(`[sendZoneSnapshot] zone=${zoneName} total=${ids.length} active=${activeCount}`);
   send(ws, { type:'sv_zone_snapshot', zone:zoneName, ids, xs, zs, hps, maxhps, types, acts });
 }
 
@@ -1869,14 +1871,35 @@ wss.on('connection', ws => {
         break;
 
       case 'sv_enter_zone': {
-        // Player entered a new zone — send them the full enemy snapshot
         player.zone = data.zone;
-        if (!player.gameId) break;
+        if(!player.name && data.name) player.name = data.name.slice(0,20).replace(/[<>]/g,'');
+
+        // Recover gameId if lost after WS reconnect
+        if (!player.gameId && player.name) {
+          games.forEach((g, gid) => {
+            if (g.players.includes(player.name)) {
+              player.gameId = gid;
+              console.log(`[sv_enter_zone] Recovered gameId=${gid} for player ${player.name}`);
+            }
+          });
+        }
+
+        console.log(`[sv_enter_zone] player=${player.name} zone=${data.zone} gameId=${player.gameId} games=${games.size}`);
+
+        if (!player.gameId) {
+          console.log(`[sv_enter_zone] DROPPED — no gameId for ${player.name}`);
+          break;
+        }
         const g = games.get(player.gameId);
-        if (!g) break;
+        if (!g) {
+          console.log(`[sv_enter_zone] DROPPED — game not found for ${player.name} gameId=${player.gameId}`);
+          break;
+        }
+        const zoneEnemyCount = g.zones[data.zone] ? g.zones[data.zone].enemies.length : 0;
+        const activeCount = g.zones[data.zone] ? g.zones[data.zone].enemies.filter(e=>e.active).length : 0;
+        console.log(`[sv_enter_zone] Sending snapshot: zone=${data.zone} total=${zoneEnemyCount} active=${activeCount}`);
         g.started = true;
         sendZoneSnapshot(ws, g, data.zone);
-        // Announce to other players in zone
         broadcastToZone(g.id, data.zone, {
           type:'sv_player_entered', name:player.name, zone:data.zone
         }, ws);
