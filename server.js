@@ -1,6 +1,8 @@
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const http = require('http');
+const fs   = require('fs');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -9,6 +11,50 @@ const wss = new WebSocketServer({ server });
 const players = new Map(); // ws -> player obj
 const games   = new Map(); // gameId -> game obj
 let nextGameId = 1;
+
+// ══════════════════════════════════════════════════════════
+// CLOUD SAVE SYSTEM
+// Saves stored in saves.json on disk — persists across restarts
+// Structure: { "username_raceid_class": { ...saveData, ts } }
+// ══════════════════════════════════════════════════════════
+const SAVES_FILE = path.join(__dirname, 'saves.json');
+let cloudSaves = {};
+
+// Load saves from disk on startup
+try {
+  if (fs.existsSync(SAVES_FILE)) {
+    cloudSaves = JSON.parse(fs.readFileSync(SAVES_FILE, 'utf8'));
+    console.log(`[saves] Loaded ${Object.keys(cloudSaves).length} cloud saves from disk.`);
+  }
+} catch(e) {
+  console.warn('[saves] Could not load saves.json:', e.message);
+  cloudSaves = {};
+}
+
+// Write saves to disk (debounced — max once per 10s)
+let _saveDirtyTimer = null;
+function flushSaves() {
+  if (_saveDirtyTimer) return;
+  _saveDirtyTimer = setTimeout(() => {
+    _saveDirtyTimer = null;
+    try {
+      fs.writeFileSync(SAVES_FILE, JSON.stringify(cloudSaves), 'utf8');
+    } catch(e) {
+      console.warn('[saves] Failed to write saves.json:', e.message);
+    }
+  }, 10000);
+}
+
+function getSaveKey(name, raceId, cls) {
+  return (name + '_' + raceId + '_' + cls).toLowerCase();
+}
+
+function getAllSavesForUser(name) {
+  const prefix = name.toLowerCase() + '_';
+  return Object.entries(cloudSaves)
+    .filter(([k]) => k.startsWith(prefix))
+    .map(([k, v]) => ({ key: k, data: v }));
+}
 
 // ══════════════════════════════════════════════════════════
 // ENEMY STATS — mirrors spawnZoneEnemies in the client
@@ -1784,6 +1830,46 @@ wss.on('connection', ws => {
       case 'request_player_list':
         send(ws, { type:'player_list', players:getPlayerNames() });
         break;
+
+      // ── CLOUD SAVES ────────────────────────────────────
+      case 'sv_cloud_save': {
+        // Client is uploading a save — store it
+        if (!data.name || !data.raceId || !data.cls || !data.saveData) break;
+        const name = data.name.slice(0,20).replace(/[^a-zA-Z0-9_\- ]/g,'');
+        if (!name) break;
+        const key = getSaveKey(name, data.raceId, data.cls);
+        const incoming = data.saveData;
+        const existing = cloudSaves[key];
+        // Only overwrite if incoming is newer
+        if (!existing || (incoming.ts && incoming.ts > (existing.ts||0))) {
+          cloudSaves[key] = incoming;
+          flushSaves();
+          send(ws, { type:'sv_cloud_save_ok', key, ts: incoming.ts });
+          console.log(`[saves] Saved: ${key} (ts=${incoming.ts})`);
+        } else {
+          send(ws, { type:'sv_cloud_save_ok', key, ts: existing.ts, skipped:true });
+        }
+        break;
+      }
+
+      case 'sv_cloud_load': {
+        // Client requesting all saves for a username
+        if (!data.name) break;
+        const name = data.name.slice(0,20).replace(/[^a-zA-Z0-9_\- ]/g,'');
+        if (!name) break;
+        const saves = getAllSavesForUser(name);
+        send(ws, { type:'sv_cloud_load_result', saves, name });
+        console.log(`[saves] Load request for '${name}': ${saves.length} save(s) found`);
+        break;
+      }
+
+      case 'sv_cloud_load_one': {
+        // Client requesting a single specific save key
+        if (!data.key) break;
+        const save = cloudSaves[data.key] || null;
+        send(ws, { type:'sv_cloud_load_one_result', key: data.key, save });
+        break;
+      }
 
       case 'create_game': {
         if(player.gameId){
