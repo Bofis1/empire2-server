@@ -1906,12 +1906,13 @@ wss.on('connection', ws => {
 
         if (e.hp <= 0) {
           e.hp = 0; e.active = false; e.aggroed = false; e.respawnTimer = 0;
-          // Broadcast kill to everyone in zone
+          // Broadcast kill to everyone in zone — include killer so only they get loot
           broadcastToZone(g.id, player.zone, {
             type:'sv_enemy_killed',
             id:e.id, etype:e.type, zone:player.zone,
             reward:e.reward, expR:e.expR,
-            ex:+e.x.toFixed(2), ez:+e.z.toFixed(2)
+            ex:+e.x.toFixed(2), ez:+e.z.toFixed(2),
+            killer: player.name
           });
         } else {
           // Broadcast HP update to everyone in zone
