@@ -1586,37 +1586,27 @@ const RESPAWN_TICKS  = 300; // 30 seconds at 10Hz
 function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
-    if (zonePlayers.length === 0) {
-      // No players — still tick respawns but skip AI movement
-      zone.enemies.forEach(e => {
-        if (!e.active) {
-          e.respawnTimer++;
-          if (e.respawnTimer >= RESPAWN_TICKS) {
-            e.active = true; e.hp = e.maxHp;
-            e.x = e.spawnX; e.z = e.spawnZ;
-            e.respawnTimer = 0; e.aggroed = false;
-          }
-        }
-      });
-      return;
-    }
+    const hasPlayers = zonePlayers.length > 0;
+    if (hasPlayers) zone.lastActivity = Date.now();
 
-    zone.lastActivity = Date.now();
-    const changed = []; // enemies whose state changed this tick
+    const changed = [];
 
     zone.enemies.forEach(e => {
-      // Respawn dead enemies
+      // Always tick respawns
       if (!e.active) {
         e.respawnTimer++;
         if (e.respawnTimer >= RESPAWN_TICKS) {
-          e.active = true;
-          e.hp = e.maxHp;
-          e.x = e.spawnX;
-          e.z = e.spawnZ;
-          e.respawnTimer = 0;
-          e.aggroed = false;
+          e.active = true; e.hp = e.maxHp;
+          e.x = e.spawnX; e.z = e.spawnZ;
+          e.respawnTimer = 0; e.aggroed = false;
           changed.push(e);
         }
+        return;
+      }
+
+      // Skip movement AI when no players in zone (save CPU) but reset aggro
+      if (!hasPlayers) {
+        if (e.aggroed) { e.aggroed = false; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
         return;
       }
 
@@ -1647,17 +1637,17 @@ function tickGame(game) {
       if (e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {
         e.attackTimer = 0;
         const dmg = Math.floor(e.atk * (0.85 + Math.random() * 0.3));
-        // Send damage to the nearest player's ws
+        // Send damage directly to the nearest player only
         players.forEach((p, ws) => {
           if (p === nearestPlayer) {
-            send(ws, { type:'sv_enemy_attack', eid:e.id, dmg, ex:e.x, ez:e.z });
+            send(ws, { type:'sv_enemy_attack', eid:e.id, dmg, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), zone:zoneName });
           }
         });
       }
     });
 
     // Broadcast state for changed enemies (positions + HP)
-    if (changed.length > 0) {
+    if (changed.length > 0 && hasPlayers) {
       const ids=[], xs=[], zs=[], hps=[], acts=[];
       changed.forEach(e => {
         ids.push(e.id);
@@ -1885,7 +1875,6 @@ wss.on('connection', ws => {
       }
 
       case 'sv_hit_enemy': {
-        // Client hit an enemy — server validates and applies damage
         if (!player.gameId || !player.zone) break;
         const g = games.get(player.gameId);
         if (!g) break;
@@ -1894,23 +1883,21 @@ wss.on('connection', ws => {
         const e = zone.enemies.find(en => en.id === data.id && en.active);
         if (!e) break;
 
-        // Validate player is close enough (anti-cheat: max 12 units)
+        // Anti-cheat distance check — 24 units for ranged/magic, 10 for melee
         if (player.x !== undefined) {
           const dx = player.x - e.x, dz = player.z - e.z;
-          if (dx*dx + dz*dz > 144) break; // > 12 units away, reject
+          const maxRange = (data.ranged || data.magic) ? 24*24 : 10*10;
+          if (dx*dx + dz*dz > maxRange) break;
         }
 
-        // Apply damage with dmgReduction
-        const rawDmg = Math.max(1, Math.floor((data.dmg||1) * (1 - e.dmgReduction)));
+        // Cap incoming damage to reasonable max (anti-hack)
+        const cappedDmg = Math.min(data.dmg||1, 999999);
+        const rawDmg = Math.max(1, Math.floor(cappedDmg * (1 - (e.dmgReduction||0))));
         e.hp -= rawDmg;
 
         if (e.hp <= 0) {
-          // Enemy killed
-          e.hp = 0;
-          e.active = false;
-          e.aggroed = false;
-          e.respawnTimer = 0;
-          // Broadcast kill to all players in zone — they get XP/gold only if in zone (enforced client-side)
+          e.hp = 0; e.active = false; e.aggroed = false; e.respawnTimer = 0;
+          // Broadcast kill to everyone in zone
           broadcastToZone(g.id, player.zone, {
             type:'sv_enemy_killed',
             id:e.id, etype:e.type, zone:player.zone,
@@ -1918,7 +1905,7 @@ wss.on('connection', ws => {
             ex:+e.x.toFixed(2), ez:+e.z.toFixed(2)
           });
         } else {
-          // Broadcast updated HP to zone
+          // Broadcast HP update to everyone in zone
           broadcastToZone(g.id, player.zone, {
             type:'sv_enemy_hit',
             id:e.id, hp:e.hp, maxHp:e.maxHp,
