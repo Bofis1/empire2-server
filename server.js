@@ -1682,7 +1682,8 @@ function sendZoneSnapshot(ws, game, zoneName) {
 // ══════════════════════════════════════════════════════════
 setInterval(() => {
   games.forEach(game => {
-    if (game.started) tickGame(game);
+    // Tick as soon as a game exists — zones are pre-populated, enemies need ticking from start
+    if (game.players.length > 0) tickGame(game);
   });
 }, 100);
 
@@ -1796,8 +1797,16 @@ wss.on('connection', ws => {
           maxPlayers:Math.min(data.max||4,4), players:[player.name],
           createdAt:Date.now(),
           started: false,
-          zones: {}, // zone name -> { enemies[], lastActivity }
+          zones: {}, // pre-populated below
         };
+        // Pre-initialize ALL zones immediately so enemies exist before anyone enters
+        // This is the MMO-style approach: server owns all zones always
+        Object.keys(ZONE_SPAWNS).forEach(zoneName => {
+          game.zones[zoneName] = {
+            enemies: createZoneEnemies(zoneName),
+            lastActivity: Date.now(),
+          };
+        });
         games.set(gId, game);
         player.gameId = gId;
         send(ws, { type:'game_created', game });
