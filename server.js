@@ -153,6 +153,28 @@ const ZONE_SCALE = {
 // ══════════════════════════════════════════════════════════
 const TILE = 1.6; // matches client TILE constant
 
+// ══════════════════════════════════════════════════════════
+// ZONE BOSS HP — server-authoritative boss HP per zone
+// ══════════════════════════════════════════════════════════
+const ZONE_BOSS_HP = {
+  patrol:           { hp:18000,    name:'SERPENT TITAN MK-VII' },
+  cemetery:         { hp:45000,    name:'THE LICH KING' },
+  void:             { hp:54000,    name:'VOID WRAITH PRIME' },
+  citadel:          { hp:54000,    name:'GENERAL VORRAKH' },
+  caves_of_despair: { hp:36000,    name:'FOREMAN DRAX' },
+  ashlands:         { hp:72000,    name:'INFERNO COLOSSUS' },
+  sunken_sands:     { hp:120000,   name:'KHEPRI THE SAND COLOSSUS' },
+  fungal:           { hp:84000,    name:'MYCELIUM QUEEN' },
+  frostveil:        { hp:96000,    name:'FROSTVEIL COLOSSUS' },
+  ancient:          { hp:120000,   name:'THE ELDER ARCHITECT' },
+  dragonlair:       { hp:270000,   name:'VAELTHARAX THE UNDYING' },
+  riftvale:         { hp:225000,   name:'THE RIFT SOVEREIGN' },
+  wyvernwastes:     { hp:450000,   name:'THE STONEWYRM COLOSSUS' },
+  xumen:            { hp:500000,   name:'XU SUPREME OVERLORD' },
+  necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
+  xumen_fortress:   { hp:1200000,  name:'THE APEX PYRAMID' },
+};
+
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
@@ -1893,6 +1915,13 @@ wss.on('connection', ws => {
           game.zones[zoneName] = {
             enemies: createZoneEnemies(zoneName),
             lastActivity: Date.now(),
+            boss: ZONE_BOSS_HP[zoneName] ? {
+              hp: ZONE_BOSS_HP[zoneName].hp,
+              maxHp: ZONE_BOSS_HP[zoneName].hp,
+              phase: 1,
+              spawned: false,
+              name: ZONE_BOSS_HP[zoneName].name,
+            } : null,
           };
         });
         games.set(gId, game);
@@ -1989,6 +2018,24 @@ wss.on('connection', ws => {
         broadcastToZone(g.id, data.zone, {
           type:'sv_player_entered', name:player.name, zone:data.zone
         }, ws);
+        // Global announce to all players in the game
+        broadcastToGame(g.id, {
+          type:'sv_zone_entered_announce',
+          name: player.name,
+          zone: data.zone,
+        }, ws);
+        // Send current boss state to the entering player
+        const _entBoss = g.zones[data.zone] && g.zones[data.zone].boss;
+        if (_entBoss && _entBoss.spawned && _entBoss.hp > 0) {
+          send(ws, {
+            type:'sv_boss_state',
+            zone: data.zone,
+            hp: _entBoss.hp,
+            maxHp: _entBoss.maxHp,
+            phase: _entBoss.phase,
+            bossName: _entBoss.name,
+          });
+        }
         break;
       }
 
@@ -2035,11 +2082,115 @@ wss.on('connection', ws => {
       }
 
       case 'sv_hit_boss': {
-        // Relay boss hits to all players in zone (boss HP managed client-side for now)
         if (!player.gameId || !player.zone) break;
-        broadcastToZone(player.gameId, player.zone, {
-          type:'sv_boss_hit', dmg:data.dmg, zone:player.zone,
-          name:player.name
+        const g = games.get(player.gameId);
+        if (!g) break;
+        const zone = g.zones[player.zone];
+        if (!zone || !zone.boss) break;
+        const b = zone.boss;
+        if (!b.spawned || b.hp <= 0) break;
+
+        // Cap damage (anti-cheat)
+        const bdmg = Math.min(data.dmg || 1, 9999999);
+        b.hp = Math.max(0, b.hp - bdmg);
+
+        // Broadcast HP update to all players in zone
+        broadcastToZone(g.id, player.zone, {
+          type: 'sv_boss_hp',
+          zone: player.zone,
+          hp: b.hp,
+          maxHp: b.maxHp,
+          phase: b.phase,
+          dmg: bdmg,
+          hitter: player.name,
+        });
+
+        // Phase transitions — broadcast to zone
+        const pct = b.hp / b.maxHp;
+        const oldPhase = b.phase;
+        if (b.phase === 1 && pct <= 0.75) b.phase = 2;
+        else if (b.phase === 2 && pct <= 0.50) b.phase = 3;
+        else if (b.phase === 3 && pct <= 0.25) b.phase = 4;
+        else if (b.phase === 4 && pct <= 0.10) b.phase = 5;
+        if (b.phase !== oldPhase) {
+          broadcastToZone(g.id, player.zone, {
+            type: 'sv_boss_phase',
+            zone: player.zone,
+            phase: b.phase,
+            bossName: b.name,
+          });
+        }
+
+        // Boss killed
+        if (b.hp <= 0) {
+          b.spawned = false;
+          b.hp = 0;
+          // Broadcast kill to entire zone
+          broadcastToZone(g.id, player.zone, {
+            type: 'sv_boss_killed',
+            zone: player.zone,
+            bossName: b.name,
+            killer: player.name,
+            bx: data.bx || 0,
+            bz: data.bz || 0,
+          });
+          // Global announce to ENTIRE game — everyone sees the kill
+          broadcastToGame(g.id, {
+            type: 'sv_world_announce',
+            msg: `⚔ ${player.name} SLEW ${b.name} in ${player.zone.replace(/_/g,' ').toUpperCase()}!`,
+            zone: player.zone,
+            killer: player.name,
+            bossName: b.name,
+          });
+          // Reset boss after 3 minutes
+          setTimeout(() => {
+            if (g && g.zones[player.zone] && g.zones[player.zone].boss) {
+              const rb = g.zones[player.zone].boss;
+              rb.hp = rb.maxHp;
+              rb.phase = 1;
+              rb.spawned = false; // will re-spawn when triggered client-side
+              broadcastToZone(g.id, player.zone, {
+                type: 'sv_boss_respawn', zone: player.zone, bossName: rb.name,
+              });
+            }
+          }, 3 * 60 * 1000);
+        }
+        break;
+      }
+
+      case 'sv_boss_spawned': {
+        // Client tells server boss spawned in their zone
+        if (!player.gameId || !player.zone) break;
+        const g = games.get(player.gameId);
+        if (!g) break;
+        const zone = g.zones[player.zone];
+        if (!zone || !zone.boss) break;
+        if (!zone.boss.spawned) {
+          zone.boss.spawned = true;
+          zone.boss.hp = zone.boss.maxHp;
+          zone.boss.phase = 1;
+          // Announce to zone
+          broadcastToZone(g.id, player.zone, {
+            type: 'sv_boss_spawned',
+            zone: player.zone,
+            bossName: zone.boss.name,
+            hp: zone.boss.hp,
+            maxHp: zone.boss.maxHp,
+          });
+        }
+        break;
+      }
+
+      case 'sv_zone_announce': {
+        // Player entered a zone — broadcast to game for world chat
+        if (!player.gameId || !player.zone) break;
+        const g = games.get(player.gameId);
+        if (!g) break;
+        // Broadcast to all OTHER players in the game
+        broadcastToGame(g.id, {
+          type: 'sv_player_entered',
+          name: player.name,
+          zone: player.zone,
         }, ws);
         break;
       }
