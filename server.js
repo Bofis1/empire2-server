@@ -132,7 +132,6 @@ const ENEMY_STATS = {
   xf_fortress_drone: {hp:39000, atk:660, spd:0.110, aggroRange:15, reward:3600, expR:1200, dmgReduction:0.36},
   xf_siege_walker:   {hp:120000,atk:900, spd:0.014, aggroRange:11, reward:5400, expR:1600, dmgReduction:0.50},
   xf_warlord:        {hp:51000, atk:720, spd:0.062, aggroRange:16, reward:4800, expR:1500, dmgReduction:0.40},
-  lava_golem:        {hp:2200,  atk:78,  spd:0.018, aggroRange:8,  reward:320,  expR:100,  dmgReduction:0},
   void_spike_horror:  {hp:3600,  atk:180, spd:0.040, aggroRange:12, reward:420, expR:140,  dmgReduction:0.15},
   // sanctuary
   sanctuary_guardian:  {hp:2400,  atk:95,  spd:0.025, aggroRange:8,  reward:280, expR:90,   dmgReduction:0},
@@ -1762,15 +1761,16 @@ function tickGame(game) {
 
     // Broadcast state for changed enemies (positions + HP)
     if (changed.length > 0 && hasPlayers) {
-      const ids=[], xs=[], zs=[], hps=[], acts=[];
+      const ids=[], xs=[], zs=[], hps=[], acts=[], types=[];
       changed.forEach(e => {
         ids.push(e.id);
         xs.push(+e.x.toFixed(2));
         zs.push(+e.z.toFixed(2));
         hps.push(e.hp);
         acts.push(e.active ? 1 : 0);
+        types.push(e.type);
       });
-      broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName, ids, xs, zs, hps, acts });
+      broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName, ids, xs, zs, hps, acts, types });
     }
   });
 }
@@ -2137,7 +2137,7 @@ wss.on('connection', ws => {
         if (!b.spawned || b.hp <= 0) break;
 
         // Cap damage (anti-cheat)
-        const bdmg = Math.min(data.dmg || 1, 9999999);
+        const bdmg = Math.min(data.dmg || 1, 999999);
         b.hp = Math.max(0, b.hp - bdmg);
 
         // Broadcast HP update to all players in zone
@@ -2189,14 +2189,16 @@ wss.on('connection', ws => {
             bossName: b.name,
           });
           // Reset boss after 3 minutes
+          // Capture bossZone NOW — player.zone may change before the timer fires
+          const bossZone = player.zone;
           setTimeout(() => {
-            if (g && g.zones[player.zone] && g.zones[player.zone].boss) {
-              const rb = g.zones[player.zone].boss;
+            if (g && g.zones[bossZone] && g.zones[bossZone].boss) {
+              const rb = g.zones[bossZone].boss;
               rb.hp = rb.maxHp;
               rb.phase = 1;
               rb.spawned = false; // will re-spawn when triggered client-side
-              broadcastToZone(g.id, player.zone, {
-                type: 'sv_boss_respawn', zone: player.zone, bossName: rb.name,
+              broadcastToZone(g.id, bossZone, {
+                type: 'sv_boss_respawn', zone: bossZone, bossName: rb.name,
               });
             }
           }, 3 * 60 * 1000);
@@ -2227,19 +2229,10 @@ wss.on('connection', ws => {
         break;
       }
 
-      case 'sv_zone_announce': {
-        // Player entered a zone — broadcast to game for world chat
-        if (!player.gameId || !player.zone) break;
-        const g = games.get(player.gameId);
-        if (!g) break;
-        // Broadcast to all OTHER players in the game
-        broadcastToGame(g.id, {
-          type: 'sv_player_entered',
-          name: player.name,
-          zone: player.zone,
-        }, ws);
+      case 'sv_zone_announce':
+        // Intentionally ignored — sv_enter_zone already sends sv_player_entered
+        // and sv_zone_entered_announce. Handling this separately caused duplicate chat messages.
         break;
-      }
     }
   });
 
@@ -2259,15 +2252,6 @@ setInterval(()=>{
   });
   broadcastGameList();
 }, 2*60*1000);
-
-// Clean up old games every hour
-setInterval(()=>{
-  const now = Date.now();
-  games.forEach((g,id) => {
-    if (now - g.createdAt > 6*60*60*1000) games.delete(id);
-  });
-  broadcastGameList();
-}, 60*60*1000);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log('Empire 2 server running on port ' + PORT));
