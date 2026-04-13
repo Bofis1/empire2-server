@@ -136,6 +136,9 @@ const ENEMY_STATS = {
   void_spike_horror:  {hp:3600,  atk:180, spd:0.040, aggroRange:12, reward:420, expR:140,  dmgReduction:0.15},
   // sanctuary
   sanctuary_guardian:  {hp:2400,  atk:95,  spd:0.025, aggroRange:8,  reward:280, expR:90,   dmgReduction:0},
+  // ── VOID CITADEL — LV.70+ DIMENSIONAL FORTRESS ──
+  void_construct:   {hp:32000, atk:320, spd:0.040, aggroRange:11, reward:1100, expR:820,  dmgReduction:0},
+  void_sentinel:    {hp:44000, atk:360, spd:0.015, aggroRange:16, reward:1300, expR:950,  dmgReduction:0.10},
 };
 
 // Zone scale multipliers — matches client scaleMap
@@ -144,7 +147,7 @@ const ZONE_SCALE = {
   sunken_sands:1.0, fungal:3.2, frostveil:3.6, ancient:4.0,
   sanctuary:1.0, dragonlair:1.0, riftvale:1.0, xumen:1.0,
   xumen_fortress:1.0, caves_of_despair:2.8, wyvernwastes:1.0, cemetery:1.4,
-  necropolis:1.0,
+  necropolis:1.0, void_citadel:1.0,
 };
 
 // ══════════════════════════════════════════════════════════
@@ -173,6 +176,7 @@ const ZONE_BOSS_HP = {
   xumen:            { hp:500000,   name:'XU SUPREME OVERLORD' },
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
   xumen_fortress:   { hp:1200000,  name:'THE APEX PYRAMID' },
+  void_citadel:     { hp:320000,   name:'COMMANDANT XERATH' },
 };
 
 const ZONE_SPAWNS = {
@@ -1561,6 +1565,48 @@ const ZONE_SPAWNS = {
     {tx:36,tz:68,type:'mycelium_horror'},
     {tx:10,tz:76,type:'fungal_shambler'},
     {tx:30,tz:74,type:'mushroom_man'}
+  ],
+  void_citadel: [
+    // ── FORTRESS GATE (entrance) ──
+    {tx:8, tz:8,  type:'void_construct'}, {tx:14,tz:6,  type:'void_construct'},
+    {tx:20,tz:8,  type:'void_sentinel'},  {tx:10,tz:14, type:'void_construct'},
+    {tx:26,tz:6,  type:'void_construct'}, {tx:6, tz:16, type:'void_sentinel'},
+    // ── INNER COURTYARD ──
+    {tx:16,tz:18, type:'void_construct'}, {tx:22,tz:16, type:'void_construct'},
+    {tx:18,tz:22, type:'void_sentinel'},  {tx:28,tz:18, type:'void_construct'},
+    {tx:12,tz:22, type:'rift_stalker'},   {tx:24,tz:24, type:'void_construct'},
+    // ── CAMP A — VOID GATE GUARD ──
+    {tx:14,tz:20, type:'void_construct'}, {tx:16,tz:18, type:'void_sentinel'},
+    {tx:18,tz:20, type:'void_construct'}, {tx:12,tz:18, type:'rift_stalker'},
+    // ── MID FORTRESS ──
+    {tx:30,tz:10, type:'void_construct'}, {tx:36,tz:8,  type:'void_sentinel'},
+    {tx:34,tz:16, type:'void_construct'}, {tx:32,tz:22, type:'rift_stalker'},
+    {tx:38,tz:20, type:'void_construct'}, {tx:28,tz:26, type:'void_sentinel'},
+    // ── CAMP B — SENTINEL BATTERY ──
+    {tx:34,tz:12, type:'void_sentinel'},  {tx:38,tz:14, type:'void_sentinel'},
+    {tx:36,tz:18, type:'void_construct'}, {tx:32,tz:16, type:'rift_weaver'},
+    // ── DEEP CITADEL ──
+    {tx:14,tz:30, type:'void_construct'}, {tx:20,tz:28, type:'rift_stalker'},
+    {tx:26,tz:32, type:'void_sentinel'},  {tx:12,tz:36, type:'void_construct'},
+    {tx:22,tz:34, type:'void_construct'}, {tx:30,tz:30, type:'rift_weaver'},
+    // ── SOUTHERN WING ──
+    {tx:8, tz:44, type:'void_sentinel'},  {tx:16,tz:42, type:'void_construct'},
+    {tx:24,tz:46, type:'rift_stalker'},   {tx:10,tz:52, type:'void_construct'},
+    {tx:20,tz:50, type:'void_sentinel'},  {tx:28,tz:48, type:'void_construct'},
+    // ── CAMP C — VOID CONSTRUCT PATROL ──
+    {tx:12,tz:48, type:'void_construct'}, {tx:14,tz:50, type:'void_construct'},
+    {tx:16,tz:48, type:'void_sentinel'},  {tx:10,tz:46, type:'rift_weaver'},
+    // ── THRONE APPROACH ──
+    {tx:34,tz:36, type:'void_sentinel'},  {tx:38,tz:34, type:'void_construct'},
+    {tx:36,tz:42, type:'rift_stalker'},   {tx:40,tz:38, type:'void_construct'},
+    {tx:32,tz:44, type:'void_sentinel'},  {tx:42,tz:44, type:'rift_weaver'},
+    // ── FAR REACHES ──
+    {tx:44,tz:10, type:'void_construct'}, {tx:52,tz:8,  type:'void_sentinel'},
+    {tx:60,tz:12, type:'rift_stalker'},   {tx:48,tz:20, type:'void_construct'},
+    {tx:56,tz:18, type:'void_sentinel'},  {tx:64,tz:16, type:'void_construct'},
+    {tx:46,tz:30, type:'rift_weaver'},    {tx:58,tz:28, type:'void_construct'},
+    {tx:66,tz:24, type:'void_sentinel'},  {tx:50,tz:40, type:'void_construct'},
+    {tx:62,tz:38, type:'rift_stalker'},   {tx:70,tz:36, type:'void_sentinel'},
   ],
 };
 ;
