@@ -2233,6 +2233,27 @@ wss.on('connection', ws => {
         // Intentionally ignored — sv_enter_zone already sends sv_player_entered
         // and sv_zone_entered_announce. Handling this separately caused duplicate chat messages.
         break;
+
+      case 'sv_vfx': {
+        // Lightweight VFX relay — forwards skill/spell VFX packets to all other players
+        // in the same zone. Belt-and-suspenders backup for PeerJS VFX broadcasts so VFX
+        // still reaches teammates if the P2P link is flaky or missing.
+        if (!player.gameId || !player.zone) break;
+        // Basic size guard so we never relay oversized or spammed packets
+        if (typeof data !== 'object' || !data.vt) break;
+        const relay = {
+          type: 'sv_vfx',
+          vt: String(data.vt).slice(0, 40),
+          zone: player.zone,
+          from: player.name,
+        };
+        // Allow a small fixed set of numeric/string fields only
+        ['px','pz','tx','tz','dx','dz','col','skId','wtype','r','br','t','heavy'].forEach(k=>{
+          if (data[k] !== undefined) relay[k] = data[k];
+        });
+        broadcastToZone(player.gameId, player.zone, relay, ws);
+        break;
+      }
     }
   });
 
