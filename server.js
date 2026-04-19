@@ -1756,6 +1756,14 @@ function tickGame(game) {
             send(ws, { type:'sv_enemy_attack', eid:e.id, dmg, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), zone:zoneName });
           }
         });
+        // Broadcast attack-animation cue to ALL players in zone (no damage, just visual)
+        // so party members see the mob's wind-up pose, not just the one being hit.
+        broadcastToZone(game.id, zoneName, {
+          type:'sv_enemy_anim', eid:e.id, a:'attack',
+          ex:+e.x.toFixed(2), ez:+e.z.toFixed(2),
+          tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2),
+          zone:zoneName
+        });
       }
     });
 
