@@ -175,7 +175,7 @@ const ZONE_BOSS_HP = {
   xumen:            { hp:500000,   name:'XU SUPREME OVERLORD' },
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
   xumen_fortress:   { hp:1200000,  name:'THE APEX PYRAMID' },
-  void_citadel:     { hp:320000,   name:'COMMANDANT XERATH' },
+  void_citadel:     { hp:1500000,  name:'COMMANDANT XERATH' },
 };
 
 const ZONE_SPAWNS = {
