@@ -138,6 +138,13 @@ const ENEMY_STATS = {
   // ── VOID CITADEL — LV.70+ DIMENSIONAL FORTRESS ──
   void_construct:   {hp:32000, atk:320, spd:0.040, aggroRange:11, reward:1100, expR:820,  dmgReduction:0},
   void_sentinel:    {hp:44000, atk:360, spd:0.015, aggroRange:16, reward:1300, expR:950,  dmgReduction:0.10},
+  // ── NEON HOLLOW — POST-CAP AA-GATED HARDEST ZONE ──
+  sentinel_drone:      {hp:65000,  atk:480, spd:0.060, aggroRange:14, reward:1800, expR:1350, dmgReduction:0},
+  maintenance_striker: {hp:95000,  atk:580, spd:0.048, aggroRange:10, reward:2200, expR:1600, dmgReduction:0.05},
+  skybridge_sniper:    {hp:55000,  atk:720, spd:0.028, aggroRange:20, reward:2000, expR:1500, dmgReduction:0},
+  hollow_enforcer:     {hp:140000, atk:640, spd:0.032, aggroRange:12, reward:3200, expR:2400, dmgReduction:0.15},
+  neon_wraith:         {hp:80000,  atk:620, spd:0.060, aggroRange:13, reward:2600, expR:1900, dmgReduction:0},
+  crash_car:           {hp:110000, atk:450, spd:0.085, aggroRange:15, reward:2400, expR:1800, dmgReduction:0},
 };
 
 // Zone scale multipliers — matches client scaleMap
@@ -146,7 +153,7 @@ const ZONE_SCALE = {
   sunken_sands:1.0, fungal:3.2, frostveil:3.6, ancient:4.0,
   sanctuary:1.0, dragonlair:1.0, riftvale:1.0, xumen:1.0,
   xumen_fortress:1.0, caves_of_despair:2.8, wyvernwastes:1.0, cemetery:1.4,
-  necropolis:1.0, void_citadel:1.0,
+  necropolis:1.0, void_citadel:1.0, neon_hollow:1.0,
 };
 
 // ══════════════════════════════════════════════════════════
@@ -176,6 +183,7 @@ const ZONE_BOSS_HP = {
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
   xumen_fortress:   { hp:1200000,  name:'THE APEX PYRAMID' },
   void_citadel:     { hp:1500000,  name:'COMMANDANT XERATH' },
+  neon_hollow:      { hp:1600000,  name:'THE CURATOR' },
 };
 
 const ZONE_SPAWNS = {
@@ -1632,6 +1640,70 @@ const ZONE_SPAWNS = {
     {tx:22,tz:72,type:'void_construct'}, {tx:30,tz:74,type:'rift_stalker'},
     {tx:50,tz:74,type:'rift_weaver'}, {tx:58,tz:72,type:'void_sentinel'},
     {tx:14,tz:74,type:'void_sentinel'}, {tx:66,tz:74,type:'void_sentinel'},
+  ],
+  // ── NEON HOLLOW — POST-CAP AA-GATED (matches client ZONE_DEFS.neon_hollow) ──
+  neon_hollow: [
+    // Entry boulevard sentinel drones
+    {tx:12,tz:36,type:'sentinel_drone'}, {tx:14,tz:44,type:'sentinel_drone'},
+    {tx:16,tz:38,type:'sentinel_drone'}, {tx:16,tz:42,type:'sentinel_drone'},
+    // Camp A1 — outer tower plaza NW
+    {tx:18,tz:12,type:'maintenance_striker'}, {tx:22,tz:14,type:'maintenance_striker'},
+    {tx:24,tz:18,type:'maintenance_striker'}, {tx:20,tz:16,type:'sentinel_drone'},
+    {tx:26,tz:12,type:'sentinel_drone'},
+    // Camp A2 — north skybridge
+    {tx:30,tz:8,type:'skybridge_sniper'},  {tx:34,tz:10,type:'skybridge_sniper'},
+    {tx:38,tz:8,type:'skybridge_sniper'},  {tx:32,tz:14,type:'sentinel_drone'},
+    {tx:36,tz:12,type:'sentinel_drone'},
+    // Camp A3 — NE tower base
+    {tx:52,tz:10,type:'maintenance_striker'}, {tx:56,tz:8,type:'maintenance_striker'},
+    {tx:58,tz:14,type:'hollow_enforcer'}, {tx:62,tz:12,type:'sentinel_drone'},
+    // Camp A4 — NE far edge patrol
+    {tx:68,tz:14,type:'sentinel_drone'}, {tx:72,tz:18,type:'sentinel_drone'},
+    {tx:74,tz:22,type:'sentinel_drone'}, {tx:70,tz:12,type:'skybridge_sniper'},
+    {tx:76,tz:16,type:'maintenance_striker'},
+    // North corridor patrol
+    {tx:8,tz:22,type:'sentinel_drone'},  {tx:14,tz:24,type:'sentinel_drone'},
+    {tx:28,tz:22,type:'sentinel_drone'}, {tx:42,tz:18,type:'maintenance_striker'},
+    {tx:48,tz:22,type:'sentinel_drone'}, {tx:64,tz:24,type:'maintenance_striker'},
+    // Camp B1 — warship docks mid-west
+    {tx:12,tz:46,type:'hollow_enforcer'}, {tx:16,tz:48,type:'hollow_enforcer'},
+    {tx:20,tz:50,type:'hollow_enforcer'}, {tx:14,tz:52,type:'maintenance_striker'},
+    {tx:22,tz:46,type:'maintenance_striker'},
+    // Camp B2 — mid-central neon wraiths
+    {tx:28,tz:30,type:'neon_wraith'}, {tx:32,tz:28,type:'neon_wraith'},
+    {tx:36,tz:32,type:'hollow_enforcer'}, {tx:30,tz:34,type:'sentinel_drone'},
+    // Camp B3 — neon strip east
+    {tx:52,tz:30,type:'sentinel_drone'}, {tx:56,tz:34,type:'sentinel_drone'},
+    {tx:58,tz:30,type:'crash_car'}, {tx:54,tz:36,type:'skybridge_sniper'},
+    // Mid corridor
+    {tx:14,tz:42,type:'neon_wraith'}, {tx:20,tz:48,type:'neon_wraith'},
+    {tx:28,tz:46,type:'hollow_enforcer'}, {tx:32,tz:50,type:'crash_car'},
+    {tx:48,tz:48,type:'crash_car'}, {tx:52,tz:46,type:'hollow_enforcer'},
+    {tx:60,tz:50,type:'skybridge_sniper'}, {tx:66,tz:46,type:'neon_wraith'},
+    // Camp C1 — SW tower base
+    {tx:8,tz:60,type:'maintenance_striker'}, {tx:12,tz:62,type:'maintenance_striker'},
+    {tx:14,tz:58,type:'neon_wraith'}, {tx:16,tz:66,type:'neon_wraith'},
+    {tx:10,tz:68,type:'hollow_enforcer'},
+    // Camp C2 — deep district gate
+    {tx:22,tz:62,type:'hollow_enforcer'}, {tx:26,tz:66,type:'hollow_enforcer'},
+    {tx:30,tz:62,type:'neon_wraith'}, {tx:28,tz:68,type:'skybridge_sniper'},
+    {tx:32,tz:64,type:'neon_wraith'},
+    // Camp C3 — SE tower base
+    {tx:52,tz:60,type:'neon_wraith'}, {tx:56,tz:64,type:'neon_wraith'},
+    {tx:58,tz:58,type:'skybridge_sniper'}, {tx:62,tz:62,type:'skybridge_sniper'},
+    {tx:60,tz:66,type:'hollow_enforcer'},
+    // Camp C4 — far south edge
+    {tx:38,tz:72,type:'neon_wraith'}, {tx:42,tz:74,type:'neon_wraith'},
+    {tx:44,tz:70,type:'hollow_enforcer'}, {tx:46,tz:76,type:'crash_car'},
+    // South patrols
+    {tx:6,tz:56,type:'neon_wraith'}, {tx:18,tz:70,type:'hollow_enforcer'},
+    {tx:36,tz:58,type:'skybridge_sniper'}, {tx:44,tz:62,type:'neon_wraith'},
+    {tx:66,tz:58,type:'maintenance_striker'}, {tx:72,tz:62,type:'neon_wraith'},
+    {tx:74,tz:70,type:'skybridge_sniper'}, {tx:68,tz:74,type:'hollow_enforcer'},
+    // Far east deep district
+    {tx:70,tz:30,type:'sentinel_drone'}, {tx:74,tz:34,type:'neon_wraith'},
+    {tx:78,tz:38,type:'skybridge_sniper'}, {tx:72,tz:42,type:'hollow_enforcer'},
+    {tx:76,tz:46,type:'maintenance_striker'}, {tx:68,tz:48,type:'neon_wraith'},
   ],
 };
 ;
