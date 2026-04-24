@@ -2619,7 +2619,9 @@ wss.on('connection', ws => {
         player._guildXpWindow.total += requestedXp;
         const oldLvl = found.guild.level || 1;
         awardGuildXp(player.name, requestedXp);
-        // If they leveled up, send fresh guild state
+        // Send authoritative XP sync back to the requester (cheap — no broadcast needed)
+        send(ws, {type:'guild_xp_sync', xp:found.guild.xp, level:found.guild.level||1});
+        // If they leveled up, broadcast full guild state to ALL members (level changes affect everyone's perks)
         const newLvl = found.guild.level || 1;
         if(newLvl > oldLvl){
           broadcastGuildUpdate(found.id);
