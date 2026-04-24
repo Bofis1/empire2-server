@@ -16,7 +16,13 @@ let nextGameId = 1;
 // GUILD SYSTEM
 // Guilds stored in guilds.json on disk — persists across restarts
 // ══════════════════════════════════════════════════════════
-const GUILDS_FILE = path.join(__dirname, 'guilds.json');
+// Persistent data directory — defaults to app root, but can be overridden via DATA_DIR env var
+// On Railway, set DATA_DIR to a mounted volume path (e.g. /data) so saves/guilds survive redeploys.
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+try { if(!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, {recursive:true}); } catch(e){}
+console.log(`[init] Data directory: ${DATA_DIR}`);
+
+const GUILDS_FILE = path.join(DATA_DIR, 'guilds.json');
 let guilds = {}; // guildIdLowercase -> guild obj
 
 try {
@@ -114,7 +120,7 @@ function awardGuildXp(charName, xp){
 // Saves stored in saves.json on disk — persists across restarts
 // Structure: { "username_raceid_class": { ...saveData, ts } }
 // ══════════════════════════════════════════════════════════
-const SAVES_FILE = path.join(__dirname, 'saves.json');
+const SAVES_FILE = path.join(DATA_DIR, 'saves.json');
 let cloudSaves = {};
 
 // Load saves from disk on startup
