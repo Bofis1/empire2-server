@@ -2591,6 +2591,35 @@ wss.on('connection', ws => {
         broadcastGuildUpdate(found.id);
         break;
       }
+
+      case 'guild_award_xp': {
+        // Solo-mode XP request — client tells server how much XP their kill earned.
+        // Server validates player is in a guild, then adds XP (with a safety cap).
+        if(!player.name) break;
+        const found = findPlayerGuild(player.name);
+        if(!found) break;
+        // Rate-limit: max 500 XP per request, and track per-connection total to prevent spam
+        const requestedXp = Math.min(500, Math.max(0, Math.floor(data.amount||0)));
+        if(requestedXp <= 0) break;
+        // Per-connection rate limit: max 5000 XP per 10 seconds
+        player._guildXpWindow = player._guildXpWindow || {start:Date.now(), total:0};
+        const now = Date.now();
+        if(now - player._guildXpWindow.start > 10000){
+          player._guildXpWindow = {start:now, total:0};
+        }
+        if(player._guildXpWindow.total + requestedXp > 5000){
+          break; // silently drop — likely spam/cheat
+        }
+        player._guildXpWindow.total += requestedXp;
+        const oldLvl = found.guild.level || 1;
+        awardGuildXp(player.name, requestedXp);
+        // If they leveled up, send fresh guild state
+        const newLvl = found.guild.level || 1;
+        if(newLvl > oldLvl){
+          broadcastGuildUpdate(found.id);
+        }
+        break;
+      }
     }
   });
 
