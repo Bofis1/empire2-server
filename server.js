@@ -13,6 +13,103 @@ const games   = new Map(); // gameId -> game obj
 let nextGameId = 1;
 
 // ══════════════════════════════════════════════════════════
+// GUILD SYSTEM
+// Guilds stored in guilds.json on disk — persists across restarts
+// ══════════════════════════════════════════════════════════
+const GUILDS_FILE = path.join(__dirname, 'guilds.json');
+let guilds = {}; // guildIdLowercase -> guild obj
+
+try {
+  if (fs.existsSync(GUILDS_FILE)) {
+    guilds = JSON.parse(fs.readFileSync(GUILDS_FILE, 'utf8'));
+    console.log(`[guilds] Loaded ${Object.keys(guilds).length} guilds from disk.`);
+  }
+} catch(e) {
+  console.warn('[guilds] Could not load guilds.json:', e.message);
+  guilds = {};
+}
+
+let _guildsDirtyTimer = null;
+function flushGuilds() {
+  if (_guildsDirtyTimer) return;
+  _guildsDirtyTimer = setTimeout(() => {
+    _guildsDirtyTimer = null;
+    try {
+      fs.writeFileSync(GUILDS_FILE, JSON.stringify(guilds), 'utf8');
+    } catch(e) {
+      console.warn('[guilds] Failed to write guilds.json:', e.message);
+    }
+  }, 5000);
+}
+
+// Guild XP required for each level
+const GUILD_XP_PER_LVL = [0, 100, 500, 1500, 5000, 15000, 40000, 100000, 250000, 500000];
+function guildLvlFromXp(xp){
+  let lvl = 1;
+  for(let i=1;i<GUILD_XP_PER_LVL.length;i++){
+    if(xp >= GUILD_XP_PER_LVL[i]) lvl = i;
+    else break;
+  }
+  return lvl;
+}
+
+// Get guild a player belongs to (by character name)
+function findPlayerGuild(charName){
+  if(!charName) return null;
+  const lcName = charName.toLowerCase();
+  for(const [gid, g] of Object.entries(guilds)){
+    if(g.members && g.members[charName]) return {id:gid, guild:g};
+    // Case-insensitive fallback
+    for(const mname of Object.keys(g.members||{})){
+      if(mname.toLowerCase() === lcName) return {id:gid, guild:g};
+    }
+  }
+  return null;
+}
+
+// Broadcast guild update to all online members
+function broadcastGuildUpdate(guildId){
+  const g = guilds[guildId];
+  if(!g) return;
+  const payload = {type:'guild_update', guildId, guild:g};
+  for(const [ws, p] of players){
+    if(!p.name) continue;
+    if(g.members && g.members[p.name]){
+      send(ws, payload);
+    }
+  }
+}
+
+// Broadcast guild chat to all online members
+function broadcastGuildChat(guildId, fromName, msg){
+  const g = guilds[guildId];
+  if(!g) return;
+  const payload = {type:'guild_chat', guildId, from:fromName, msg, ts:Date.now()};
+  for(const [ws, p] of players){
+    if(!p.name) continue;
+    if(g.members && g.members[p.name]){
+      send(ws, payload);
+    }
+  }
+}
+
+// Add XP to a player's guild (if they're in one)
+function awardGuildXp(charName, xp){
+  const found = findPlayerGuild(charName);
+  if(!found) return;
+  const {id, guild} = found;
+  const oldLvl = guild.level || 1;
+  guild.xp = (guild.xp || 0) + xp;
+  const newLvl = guildLvlFromXp(guild.xp);
+  if(newLvl > oldLvl){
+    guild.level = newLvl;
+    console.log(`[guild] ${guild.name} reached level ${newLvl}!`);
+  }
+  flushGuilds();
+  // Don't broadcast every XP tick — batched by periodic send
+}
+
+// ══════════════════════════════════════════════════════════
 // CLOUD SAVE SYSTEM
 // Saves stored in saves.json on disk — persists across restarts
 // Structure: { "username_raceid_class": { ...saveData, ts } }
@@ -1992,6 +2089,11 @@ wss.on('connection', ws => {
         broadcast({ type:'lobby_chat', name:'SERVER', msg:player.name+' entered the lobby.', system:true }, ws);
         broadcast({ type:'player_count', count:players.size });
         broadcastPlayerList();
+        // Send guild info (if any)
+        {
+          const _g = findPlayerGuild(player.name);
+          send(ws, {type:'guild_info', guildId:_g?_g.id:null, guild:_g?_g.guild:null});
+        }
         break;
 
       case 'lobby_chat':
@@ -2222,6 +2324,8 @@ wss.on('connection', ws => {
             ex:+e.x.toFixed(2), ez:+e.z.toFixed(2),
             killer: player.name
           });
+          // Award guild XP based on enemy expR value
+          awardGuildXp(player.name, Math.max(1, Math.floor((e.expR||1) / 2)));
         } else {
           // Broadcast HP update to everyone in zone
           broadcastToZone(g.id, player.zone, {
@@ -2294,6 +2398,8 @@ wss.on('connection', ws => {
             killer: player.name,
             bossName: b.name,
           });
+          // Award large guild XP for boss kill — scales with boss HP
+          awardGuildXp(player.name, Math.max(100, Math.floor((b.maxHp||1000) / 500)));
           // Reset boss after 3 minutes
           // Capture bossZone NOW — player.zone may change before the timer fires
           const bossZone = player.zone;
@@ -2358,6 +2464,131 @@ wss.on('connection', ws => {
           if (data[k] !== undefined) relay[k] = data[k];
         });
         broadcastToZone(player.gameId, player.zone, relay, ws);
+        break;
+      }
+
+      // ══════════════════════════════════════════════════════════
+      // GUILD SYSTEM
+      // ══════════════════════════════════════════════════════════
+      case 'guild_create': {
+        if(!player.name){ send(ws,{type:'guild_err',msg:'Not logged in.'}); break; }
+        const already = findPlayerGuild(player.name);
+        if(already){ send(ws,{type:'guild_err',msg:'You are already in a guild.'}); break; }
+        const gname = (data.name||'').trim().slice(0,32);
+        const gtag = (data.tag||'').trim().toUpperCase().slice(0,4);
+        if(gname.length < 3 || gtag.length < 2){
+          send(ws,{type:'guild_err',msg:'Name must be 3+ chars, tag must be 2-4 chars.'}); break;
+        }
+        // Name/tag uniqueness
+        const gid = gname.toLowerCase().replace(/[^a-z0-9]/g,'');
+        if(!gid){ send(ws,{type:'guild_err',msg:'Name must contain letters/numbers.'}); break; }
+        if(guilds[gid]){ send(ws,{type:'guild_err',msg:'A guild with that name exists.'}); break; }
+        for(const g of Object.values(guilds)){
+          if(g.tag === gtag){ send(ws,{type:'guild_err',msg:'That tag is taken.'}); break; }
+        }
+        // Create
+        guilds[gid] = {
+          name: gname,
+          tag: gtag,
+          level: 1,
+          xp: 0,
+          leader: player.name,
+          members: {[player.name]: Date.now()},
+          motd: '',
+          created: Date.now()
+        };
+        flushGuilds();
+        send(ws,{type:'guild_created', guildId:gid, guild:guilds[gid]});
+        console.log(`[guild] ${player.name} created guild "${gname}" [${gtag}]`);
+        break;
+      }
+
+      case 'guild_list': {
+        // Return sorted list (by member count, then by level)
+        const list = Object.entries(guilds).map(([id,g])=>({
+          id, name:g.name, tag:g.tag, level:g.level||1,
+          memberCount: Object.keys(g.members||{}).length,
+          leader: g.leader
+        })).sort((a,b)=>{
+          if(b.level !== a.level) return b.level - a.level;
+          return b.memberCount - a.memberCount;
+        });
+        send(ws,{type:'guild_list', guilds:list});
+        break;
+      }
+
+      case 'guild_join': {
+        if(!player.name){ send(ws,{type:'guild_err',msg:'Not logged in.'}); break; }
+        const already = findPlayerGuild(player.name);
+        if(already){ send(ws,{type:'guild_err',msg:'You are already in a guild.'}); break; }
+        const gid = (data.guildId||'').toLowerCase();
+        const g = guilds[gid];
+        if(!g){ send(ws,{type:'guild_err',msg:'Guild not found.'}); break; }
+        if(!g.members) g.members = {};
+        g.members[player.name] = Date.now();
+        flushGuilds();
+        send(ws,{type:'guild_joined', guildId:gid, guild:g});
+        broadcastGuildUpdate(gid);
+        broadcastGuildChat(gid, '[SYSTEM]', `${player.name} joined the guild.`);
+        console.log(`[guild] ${player.name} joined "${g.name}"`);
+        break;
+      }
+
+      case 'guild_leave': {
+        if(!player.name){ send(ws,{type:'guild_err',msg:'Not logged in.'}); break; }
+        const found = findPlayerGuild(player.name);
+        if(!found){ send(ws,{type:'guild_err',msg:'You are not in a guild.'}); break; }
+        const {id, guild} = found;
+        delete guild.members[player.name];
+        // If leader leaves, promote earliest-joined member (or delete if empty)
+        if(guild.leader === player.name){
+          const remaining = Object.entries(guild.members||{}).sort((a,b)=>a[1]-b[1]);
+          if(remaining.length === 0){
+            delete guilds[id];
+            console.log(`[guild] "${guild.name}" disbanded (leader left, no members).`);
+          } else {
+            guild.leader = remaining[0][0];
+            console.log(`[guild] ${guild.leader} is new leader of "${guild.name}"`);
+          }
+        }
+        flushGuilds();
+        send(ws,{type:'guild_left'});
+        if(guilds[id]){
+          broadcastGuildUpdate(id);
+          broadcastGuildChat(id, '[SYSTEM]', `${player.name} left the guild.`);
+        }
+        break;
+      }
+
+      case 'guild_chat_send': {
+        if(!player.name){ break; }
+        const found = findPlayerGuild(player.name);
+        if(!found) break;
+        const msg = (data.msg||'').trim().slice(0,200);
+        if(!msg) break;
+        broadcastGuildChat(found.id, player.name, msg);
+        break;
+      }
+
+      case 'guild_info': {
+        // Return current user's guild info (on login)
+        if(!player.name) break;
+        const found = findPlayerGuild(player.name);
+        if(found) send(ws,{type:'guild_info', guildId:found.id, guild:found.guild});
+        else send(ws,{type:'guild_info', guildId:null, guild:null});
+        break;
+      }
+
+      case 'guild_set_motd': {
+        if(!player.name) break;
+        const found = findPlayerGuild(player.name);
+        if(!found){ send(ws,{type:'guild_err',msg:'Not in a guild.'}); break; }
+        if(found.guild.leader !== player.name){
+          send(ws,{type:'guild_err',msg:'Only the leader can set MOTD.'}); break;
+        }
+        found.guild.motd = (data.motd||'').slice(0, 200);
+        flushGuilds();
+        broadcastGuildUpdate(found.id);
         break;
       }
     }
