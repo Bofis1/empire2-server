@@ -248,6 +248,15 @@ const ENEMY_STATS = {
   hollow_enforcer:     {hp:140000, atk:640, spd:0.032, aggroRange:12, reward:3200, expR:2400, dmgReduction:0.15},
   neon_wraith:         {hp:80000,  atk:620, spd:0.060, aggroRange:13, reward:2600, expR:1900, dmgReduction:0},
   crash_car:           {hp:110000, atk:450, spd:0.085, aggroRange:15, reward:2400, expR:1800, dmgReduction:0},
+  // ── VEILED SANCTUARY (v92.41) ──
+  veiled_acolyte:      {hp:42000,  atk:280, spd:0.052, aggroRange:11, reward:900,  expR:680,  dmgReduction:0},
+  censer_bearer:       {hp:62000,  atk:380, spd:0.040, aggroRange:10, reward:1200, expR:900,  dmgReduction:0.10},
+  stone_inquisitor:    {hp:130000, atk:520, spd:0.020, aggroRange:9,  reward:2400, expR:1800, dmgReduction:0.30},
+  choir_wraith:        {hp:38000,  atk:340, spd:0.058, aggroRange:13, reward:1100, expR:850,  dmgReduction:0},
+  ritual_guardian:     {hp:95000,  atk:440, spd:0.026, aggroRange:10, reward:1800, expR:1400, dmgReduction:0.20},
+  penitent_striker:    {hp:55000,  atk:480, spd:0.072, aggroRange:11, reward:1300, expR:1000, dmgReduction:0.05},
+  veiled_cardinal:     {hp:240000, atk:560, spd:0.038, aggroRange:14, reward:5000, expR:3800, dmgReduction:0.15},
+  forsaken_abbot:      {hp:280000, atk:620, spd:0.034, aggroRange:14, reward:5500, expR:4200, dmgReduction:0.20},
 };
 
 // Zone scale multipliers — matches client scaleMap
@@ -257,6 +266,7 @@ const ZONE_SCALE = {
   sanctuary:1.0, dragonlair:1.0, riftvale:1.0, xumen:1.0,
   xumen_fortress:1.0, caves_of_despair:2.8, wyvernwastes:1.0, cemetery:1.4,
   necropolis:1.0, void_citadel:1.0, neon_hollow:1.0,
+  veiled_sanctuary:1.0,  // v92.41
 };
 
 // ══════════════════════════════════════════════════════════
@@ -287,6 +297,7 @@ const ZONE_BOSS_HP = {
   xumen_fortress:   { hp:1200000,  name:'THE APEX PYRAMID' },
   void_citadel:     { hp:1500000,  name:'COMMANDANT XERATH' },
   neon_hollow:      { hp:1600000,  name:'THE CURATOR' },
+  veiled_sanctuary: { hp:850000,   name:'THE FINAL ABBOT' },  // v92.41
 };
 
 const ZONE_SPAWNS = {
@@ -1807,6 +1818,31 @@ const ZONE_SPAWNS = {
     {tx:70,tz:30,type:'sentinel_drone'}, {tx:74,tz:34,type:'neon_wraith'},
     {tx:78,tz:38,type:'skybridge_sniper'}, {tx:72,tz:42,type:'hollow_enforcer'},
     {tx:76,tz:46,type:'maintenance_striker'}, {tx:68,tz:48,type:'neon_wraith'},
+  ],
+  // ── VEILED SANCTUARY (v92.41) — matches client ZONE_DEFS.veiled_sanctuary ──
+  veiled_sanctuary: [
+    // ENTRANCE PROCESSION (west side)
+    {tx:14,tz:36, type:'veiled_acolyte'}, {tx:16,tz:42, type:'veiled_acolyte'},
+    {tx:18,tz:38, type:'censer_bearer'},  {tx:20,tz:44, type:'penitent_striker'},
+    {tx:22,tz:36, type:'veiled_acolyte'}, {tx:24,tz:42, type:'choir_wraith'},
+    // INNER COURTYARD
+    {tx:28,tz:30, type:'stone_inquisitor'}, {tx:30,tz:36, type:'censer_bearer'},
+    {tx:32,tz:42, type:'choir_wraith'},     {tx:34,tz:48, type:'penitent_striker'},
+    {tx:36,tz:30, type:'ritual_guardian'},  {tx:38,tz:42, type:'veiled_acolyte'},
+    {tx:40,tz:36, type:'stone_inquisitor'}, {tx:42,tz:48, type:'censer_bearer'},
+    {tx:44,tz:30, type:'choir_wraith'},     {tx:46,tz:42, type:'penitent_striker'},
+    // CARDINAL'S COURT (mini-boss)
+    {tx:50,tz:40, type:'veiled_cardinal'},
+    {tx:52,tz:34, type:'veiled_acolyte'},   {tx:52,tz:46, type:'veiled_acolyte'},
+    {tx:54,tz:38, type:'ritual_guardian'},  {tx:54,tz:42, type:'ritual_guardian'},
+    // FORSAKEN HALL
+    {tx:60,tz:34, type:'choir_wraith'},     {tx:60,tz:46, type:'choir_wraith'},
+    {tx:62,tz:40, type:'forsaken_abbot'},   // mini-boss
+    {tx:64,tz:36, type:'stone_inquisitor'}, {tx:64,tz:44, type:'stone_inquisitor'},
+    {tx:66,tz:38, type:'penitent_striker'}, {tx:66,tz:42, type:'penitent_striker'},
+    // FINAL APPROACH
+    {tx:70,tz:38, type:'ritual_guardian'},  {tx:70,tz:42, type:'ritual_guardian'},
+    {tx:72,tz:40, type:'censer_bearer'},
   ],
 };
 ;
