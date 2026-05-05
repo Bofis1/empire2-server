@@ -1853,31 +1853,54 @@ const ZONE_SPAWNS = {
     {tx:70,tz:38, type:'ritual_guardian'},  {tx:70,tz:42, type:'ritual_guardian'},
     {tx:72,tz:40, type:'censer_bearer'},
   ],
-  // ── BLOOMING WILDS (v92.49) — matches client ZONE_DEFS.blooming_wilds ──
+  // ── BLOOMING WILDS (v92.49+v92.50) — matches client ZONE_DEFS.blooming_wilds ──
   blooming_wilds: [
-    // ENTRANCE GLADE (south, z 60-74)
-    {tx:30,tz:66, type:'bloom_sprite'},   {tx:50,tz:66, type:'bloom_sprite'},
-    {tx:36,tz:62, type:'glimmer_fairy'},  {tx:44,tz:62, type:'glimmer_fairy'},
-    {tx:24,tz:60, type:'mushroom_brute'},{tx:56,tz:60, type:'mushroom_brute'},
+    // ENTRANCE GLADE (south, z 60-74) — 3 fairy camps + roaming brutes
+    {tx:22,tz:66, type:'bloom_sprite'},   {tx:22,tz:70, type:'bloom_sprite'},
+    {tx:18,tz:68, type:'glimmer_fairy'},  {tx:24,tz:64, type:'glimmer_fairy'},
+    {tx:58,tz:66, type:'bloom_sprite'},   {tx:58,tz:70, type:'bloom_sprite'},
+    {tx:62,tz:68, type:'glimmer_fairy'},  {tx:56,tz:64, type:'glimmer_fairy'},
+    {tx:36,tz:62, type:'mushroom_brute'},{tx:44,tz:62, type:'mushroom_brute'},
+    {tx:30,tz:72, type:'bloom_sprite'},   {tx:50,tz:72, type:'bloom_sprite'},
+
     // PETAL CLEARING (mid-south, z 48-58)
-    {tx:28,tz:54, type:'bloom_sprite'},   {tx:52,tz:54, type:'pollen_wraith'},
-    {tx:34,tz:50, type:'vine_stalker'},   {tx:46,tz:50, type:'vine_stalker'},
-    {tx:20,tz:50, type:'glimmer_fairy'},  {tx:60,tz:50, type:'glimmer_fairy'},
+    {tx:16,tz:50, type:'vine_stalker'},   {tx:18,tz:54, type:'vine_stalker'},
+    {tx:14,tz:52, type:'pollen_wraith'},
+    {tx:64,tz:50, type:'vine_stalker'},   {tx:62,tz:54, type:'vine_stalker'},
+    {tx:66,tz:52, type:'pollen_wraith'},
     {tx:38,tz:46, type:'mushroom_brute'},{tx:42,tz:46, type:'mushroom_brute'},
-    // ROSE GARDEN (mid, z 36-46) — Thorn Knight mini-boss
-    {tx:30,tz:42, type:'bloom_sprite'},   {tx:50,tz:42, type:'bloom_sprite'},
-    {tx:40,tz:38, type:'thorn_knight'},
-    {tx:34,tz:36, type:'pollen_wraith'},  {tx:46,tz:36, type:'pollen_wraith'},
-    {tx:24,tz:38, type:'vine_stalker'},   {tx:56,tz:38, type:'vine_stalker'},
-    // MUSHROOM RING (mid-north, z 24-34)
-    {tx:32,tz:30, type:'mushroom_brute'},{tx:48,tz:30, type:'mushroom_brute'},
-    {tx:40,tz:26, type:'pollen_wraith'},
-    {tx:28,tz:26, type:'vine_stalker'},   {tx:52,tz:26, type:'vine_stalker'},
-    {tx:18,tz:30, type:'glimmer_fairy'},  {tx:62,tz:30, type:'glimmer_fairy'},
+    {tx:28,tz:50, type:'glimmer_fairy'},  {tx:52,tz:50, type:'glimmer_fairy'},
+    {tx:32,tz:54, type:'bloom_sprite'},   {tx:48,tz:54, type:'bloom_sprite'},
+
+    // ROSE GARDEN (mid, z 36-46) — Thorn Knight mini-boss + court
+    {tx:40,tz:40, type:'thorn_knight'},
+    {tx:34,tz:38, type:'vine_stalker'},   {tx:46,tz:38, type:'vine_stalker'},
+    {tx:34,tz:42, type:'vine_stalker'},
+    {tx:18,tz:38, type:'pollen_wraith'},  {tx:22,tz:42, type:'pollen_wraith'},
+    {tx:20,tz:40, type:'bloom_sprite'},   {tx:24,tz:38, type:'bloom_sprite'},
+    {tx:60,tz:38, type:'pollen_wraith'},  {tx:56,tz:42, type:'pollen_wraith'},
+    {tx:58,tz:40, type:'bloom_sprite'},   {tx:54,tz:38, type:'bloom_sprite'},
+
+    // MUSHROOM RING (mid-north, z 24-34) — signature ring camp
+    {tx:32,tz:26, type:'mushroom_brute'},
+    {tx:48,tz:26, type:'mushroom_brute'},
+    {tx:32,tz:32, type:'mushroom_brute'},
+    {tx:48,tz:32, type:'mushroom_brute'},
+    {tx:40,tz:28, type:'pollen_wraith'},  {tx:40,tz:30, type:'pollen_wraith'},
+    {tx:18,tz:28, type:'glimmer_fairy'},  {tx:14,tz:30, type:'vine_stalker'},
+    {tx:16,tz:26, type:'bloom_sprite'},
+    {tx:62,tz:28, type:'glimmer_fairy'},  {tx:66,tz:30, type:'vine_stalker'},
+    {tx:64,tz:26, type:'bloom_sprite'},
+
     // WILDMOTHER'S APPROACH (z 12-22)
-    {tx:34,tz:20, type:'bloom_sprite'},   {tx:46,tz:20, type:'bloom_sprite'},
-    {tx:30,tz:14, type:'vine_stalker'},   {tx:50,tz:14, type:'vine_stalker'},
-    {tx:40,tz:16, type:'pollen_wraith'},
+    {tx:24,tz:18, type:'vine_stalker'},   {tx:20,tz:14, type:'vine_stalker'},
+    {tx:22,tz:20, type:'pollen_wraith'},
+    {tx:56,tz:18, type:'vine_stalker'},   {tx:60,tz:14, type:'vine_stalker'},
+    {tx:58,tz:20, type:'pollen_wraith'},
+    {tx:34,tz:16, type:'bloom_sprite'},   {tx:46,tz:16, type:'bloom_sprite'},
+    {tx:36,tz:20, type:'glimmer_fairy'},  {tx:44,tz:20, type:'glimmer_fairy'},
+    {tx:40,tz:18, type:'pollen_wraith'},
+    {tx:30,tz:12, type:'mushroom_brute'},{tx:50,tz:12, type:'mushroom_brute'},
   ],
 };
 ;
