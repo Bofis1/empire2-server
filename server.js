@@ -257,6 +257,13 @@ const ENEMY_STATS = {
   penitent_striker:    {hp:55000,  atk:480, spd:0.072, aggroRange:11, reward:1300, expR:1000, dmgReduction:0.05},
   veiled_cardinal:     {hp:240000, atk:560, spd:0.038, aggroRange:14, reward:5000, expR:3800, dmgReduction:0.15},
   forsaken_abbot:      {hp:280000, atk:620, spd:0.034, aggroRange:14, reward:5500, expR:4200, dmgReduction:0.20},
+  // ── BLOOMING WILDS (v92.49) — Lv 10+ fey garden ──
+  bloom_sprite:        {hp:380,    atk:32,  spd:0.058, aggroRange:11, reward:60,   expR:55,   dmgReduction:0},
+  glimmer_fairy:       {hp:280,    atk:26,  spd:0.080, aggroRange:13, reward:55,   expR:50,   dmgReduction:0},
+  mushroom_brute:      {hp:880,    atk:42,  spd:0.030, aggroRange:9,  reward:120,  expR:110,  dmgReduction:0.10},
+  vine_stalker:        {hp:550,    atk:36,  spd:0.044, aggroRange:11, reward:100,  expR:90,   dmgReduction:0},
+  pollen_wraith:       {hp:420,    atk:28,  spd:0.052, aggroRange:12, reward:80,   expR:75,   dmgReduction:0},
+  thorn_knight:        {hp:3200,   atk:60,  spd:0.038, aggroRange:13, reward:600,  expR:550,  dmgReduction:0.20},
 };
 
 // Zone scale multipliers — matches client scaleMap
@@ -267,6 +274,7 @@ const ZONE_SCALE = {
   xumen_fortress:1.0, caves_of_despair:2.8, wyvernwastes:1.0, cemetery:1.4,
   necropolis:1.0, void_citadel:1.0, neon_hollow:1.0,
   veiled_sanctuary:1.0,  // v92.41
+  blooming_wilds:1.0,    // v92.49
 };
 
 // ══════════════════════════════════════════════════════════
@@ -298,6 +306,7 @@ const ZONE_BOSS_HP = {
   void_citadel:     { hp:1500000,  name:'COMMANDANT XERATH' },
   neon_hollow:      { hp:1600000,  name:'THE CURATOR' },
   veiled_sanctuary: { hp:850000,   name:'THE FINAL ABBOT' },  // v92.41
+  blooming_wilds:   { hp:35000,    name:'THE WILDMOTHER' },   // v92.49
 };
 
 const ZONE_SPAWNS = {
@@ -1843,6 +1852,32 @@ const ZONE_SPAWNS = {
     // FINAL APPROACH
     {tx:70,tz:38, type:'ritual_guardian'},  {tx:70,tz:42, type:'ritual_guardian'},
     {tx:72,tz:40, type:'censer_bearer'},
+  ],
+  // ── BLOOMING WILDS (v92.49) — matches client ZONE_DEFS.blooming_wilds ──
+  blooming_wilds: [
+    // ENTRANCE GLADE (south, z 60-74)
+    {tx:30,tz:66, type:'bloom_sprite'},   {tx:50,tz:66, type:'bloom_sprite'},
+    {tx:36,tz:62, type:'glimmer_fairy'},  {tx:44,tz:62, type:'glimmer_fairy'},
+    {tx:24,tz:60, type:'mushroom_brute'},{tx:56,tz:60, type:'mushroom_brute'},
+    // PETAL CLEARING (mid-south, z 48-58)
+    {tx:28,tz:54, type:'bloom_sprite'},   {tx:52,tz:54, type:'pollen_wraith'},
+    {tx:34,tz:50, type:'vine_stalker'},   {tx:46,tz:50, type:'vine_stalker'},
+    {tx:20,tz:50, type:'glimmer_fairy'},  {tx:60,tz:50, type:'glimmer_fairy'},
+    {tx:38,tz:46, type:'mushroom_brute'},{tx:42,tz:46, type:'mushroom_brute'},
+    // ROSE GARDEN (mid, z 36-46) — Thorn Knight mini-boss
+    {tx:30,tz:42, type:'bloom_sprite'},   {tx:50,tz:42, type:'bloom_sprite'},
+    {tx:40,tz:38, type:'thorn_knight'},
+    {tx:34,tz:36, type:'pollen_wraith'},  {tx:46,tz:36, type:'pollen_wraith'},
+    {tx:24,tz:38, type:'vine_stalker'},   {tx:56,tz:38, type:'vine_stalker'},
+    // MUSHROOM RING (mid-north, z 24-34)
+    {tx:32,tz:30, type:'mushroom_brute'},{tx:48,tz:30, type:'mushroom_brute'},
+    {tx:40,tz:26, type:'pollen_wraith'},
+    {tx:28,tz:26, type:'vine_stalker'},   {tx:52,tz:26, type:'vine_stalker'},
+    {tx:18,tz:30, type:'glimmer_fairy'},  {tx:62,tz:30, type:'glimmer_fairy'},
+    // WILDMOTHER'S APPROACH (z 12-22)
+    {tx:34,tz:20, type:'bloom_sprite'},   {tx:46,tz:20, type:'bloom_sprite'},
+    {tx:30,tz:14, type:'vine_stalker'},   {tx:50,tz:14, type:'vine_stalker'},
+    {tx:40,tz:16, type:'pollen_wraith'},
   ],
 };
 ;
