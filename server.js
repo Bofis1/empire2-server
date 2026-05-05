@@ -264,6 +264,13 @@ const ENEMY_STATS = {
   vine_stalker:        {hp:550,    atk:36,  spd:0.044, aggroRange:11, reward:100,  expR:90,   dmgReduction:0},
   pollen_wraith:       {hp:420,    atk:28,  spd:0.052, aggroRange:12, reward:80,   expR:75,   dmgReduction:0},
   thorn_knight:        {hp:3200,   atk:60,  spd:0.038, aggroRange:13, reward:600,  expR:550,  dmgReduction:0.20},
+  // ── XERON (v92.55) — Lv 100+ orbital citadel, the final zone ──
+  corrupted_xu:        {hp:65000,  atk:480, spd:0.046, aggroRange:13, reward:2200, expR:1700, dmgReduction:0.10},
+  void_marine:         {hp:95000,  atk:580, spd:0.038, aggroRange:14, reward:2800, expR:2200, dmgReduction:0.18},
+  holo_wraith:         {hp:48000,  atk:380, spd:0.064, aggroRange:14, reward:1600, expR:1300, dmgReduction:0},
+  laser_turret:        {hp:70000,  atk:520, spd:0.000, aggroRange:18, reward:2000, expR:1500, dmgReduction:0.35},
+  cyber_ogre:          {hp:180000, atk:720, spd:0.030, aggroRange:11, reward:5500, expR:4400, dmgReduction:0.25},
+  shard_assassin:      {hp:55000,  atk:620, spd:0.085, aggroRange:14, reward:3000, expR:2400, dmgReduction:0.05},
 };
 
 // Zone scale multipliers — matches client scaleMap
@@ -275,6 +282,7 @@ const ZONE_SCALE = {
   necropolis:1.0, void_citadel:1.0, neon_hollow:1.0,
   veiled_sanctuary:1.0,  // v92.41
   blooming_wilds:1.0,    // v92.49
+  xeron:1.0,             // v92.55
 };
 
 // ══════════════════════════════════════════════════════════
@@ -307,6 +315,7 @@ const ZONE_BOSS_HP = {
   neon_hollow:      { hp:1600000,  name:'THE CURATOR' },
   veiled_sanctuary: { hp:850000,   name:'THE FINAL ABBOT' },  // v92.41
   blooming_wilds:   { hp:35000,    name:'THE WILDMOTHER' },   // v92.49
+  xeron:            { hp:3000000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
 };
 
 const ZONE_SPAWNS = {
@@ -1901,6 +1910,40 @@ const ZONE_SPAWNS = {
     {tx:36,tz:20, type:'glimmer_fairy'},  {tx:44,tz:20, type:'glimmer_fairy'},
     {tx:40,tz:18, type:'pollen_wraith'},
     {tx:30,tz:12, type:'mushroom_brute'},{tx:50,tz:12, type:'mushroom_brute'},
+  ],
+  // ── XERON (v92.55) — matches client ZONE_DEFS.xeron ──
+  xeron: [
+    // DOCKING SPIRE (entry, central z 38-42)
+    {tx:14,tz:36, type:'corrupted_xu'},     {tx:14,tz:44, type:'corrupted_xu'},
+    {tx:18,tz:38, type:'corrupted_xu'},     {tx:18,tz:42, type:'corrupted_xu'},
+    {tx:22,tz:36, type:'holo_wraith'},      {tx:22,tz:44, type:'holo_wraith'},
+    // LOWER INDUSTRIAL — 2 camps with turrets
+    {tx:26,tz:30, type:'void_marine'},      {tx:28,tz:32, type:'void_marine'},
+    {tx:30,tz:30, type:'void_marine'},      {tx:24,tz:34, type:'laser_turret'},
+    {tx:26,tz:36, type:'corrupted_xu'},
+    {tx:28,tz:48, type:'void_marine'},      {tx:30,tz:50, type:'void_marine'},
+    {tx:26,tz:50, type:'corrupted_xu'},     {tx:24,tz:46, type:'laser_turret'},
+    {tx:32,tz:48, type:'holo_wraith'},
+    // PLAZA OF SPIRES — open mid-zone with mini-boss
+    {tx:42,tz:40, type:'shard_assassin'},
+    {tx:38,tz:32, type:'holo_wraith'},      {tx:38,tz:48, type:'holo_wraith'},
+    {tx:42,tz:30, type:'corrupted_xu'},     {tx:42,tz:50, type:'corrupted_xu'},
+    {tx:46,tz:34, type:'laser_turret'},     {tx:46,tz:46, type:'laser_turret'},
+    {tx:44,tz:38, type:'void_marine'},      {tx:44,tz:42, type:'void_marine'},
+    // CYBER-FORGE DISTRICT — Cyber-Ogres + heavy combat
+    {tx:54,tz:30, type:'cyber_ogre'},
+    {tx:56,tz:32, type:'corrupted_xu'},     {tx:52,tz:34, type:'corrupted_xu'},
+    {tx:58,tz:30, type:'void_marine'},      {tx:54,tz:36, type:'holo_wraith'},
+    {tx:54,tz:50, type:'cyber_ogre'},
+    {tx:56,tz:48, type:'corrupted_xu'},     {tx:58,tz:50, type:'void_marine'},
+    {tx:52,tz:46, type:'laser_turret'},     {tx:54,tz:44, type:'holo_wraith'},
+    // THRONE APPROACH — final guard wave before boss
+    {tx:64,tz:34, type:'laser_turret'},     {tx:64,tz:46, type:'laser_turret'},
+    {tx:66,tz:40, type:'cyber_ogre'},
+    {tx:68,tz:38, type:'shard_assassin'},   {tx:68,tz:42, type:'shard_assassin'},
+    {tx:70,tz:36, type:'void_marine'},      {tx:70,tz:44, type:'void_marine'},
+    {tx:72,tz:38, type:'corrupted_xu'},     {tx:72,tz:42, type:'corrupted_xu'},
+    {tx:74,tz:36, type:'holo_wraith'},      {tx:74,tz:44, type:'holo_wraith'},
   ],
 };
 ;
