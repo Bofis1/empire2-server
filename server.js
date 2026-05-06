@@ -1911,12 +1911,15 @@ const ZONE_SPAWNS = {
     {tx:40,tz:18, type:'pollen_wraith'},
     {tx:30,tz:12, type:'mushroom_brute'},{tx:50,tz:12, type:'mushroom_brute'},
   ],
-  // ── XERON (v92.55) — matches client ZONE_DEFS.xeron ──
+  // ── XERON (v92.55+v92.58) — matches client ZONE_DEFS.xeron ──
   xeron: [
     // DOCKING SPIRE (entry, central z 38-42)
     {tx:14,tz:36, type:'corrupted_xu'},     {tx:14,tz:44, type:'corrupted_xu'},
     {tx:18,tz:38, type:'corrupted_xu'},     {tx:18,tz:42, type:'corrupted_xu'},
     {tx:22,tz:36, type:'holo_wraith'},      {tx:22,tz:44, type:'holo_wraith'},
+    {tx:10,tz:32, type:'corrupted_xu'},     {tx:10,tz:48, type:'corrupted_xu'},
+    {tx:14,tz:30, type:'holo_wraith'},      {tx:14,tz:50, type:'holo_wraith'},
+    {tx:20,tz:34, type:'void_marine'},      {tx:20,tz:46, type:'void_marine'},
     // LOWER INDUSTRIAL — 2 camps with turrets
     {tx:26,tz:30, type:'void_marine'},      {tx:28,tz:32, type:'void_marine'},
     {tx:30,tz:30, type:'void_marine'},      {tx:24,tz:34, type:'laser_turret'},
@@ -1924,26 +1927,44 @@ const ZONE_SPAWNS = {
     {tx:28,tz:48, type:'void_marine'},      {tx:30,tz:50, type:'void_marine'},
     {tx:26,tz:50, type:'corrupted_xu'},     {tx:24,tz:46, type:'laser_turret'},
     {tx:32,tz:48, type:'holo_wraith'},
-    // PLAZA OF SPIRES — open mid-zone with mini-boss
+    {tx:32,tz:30, type:'corrupted_xu'},     {tx:32,tz:50, type:'corrupted_xu'},
+    {tx:36,tz:32, type:'holo_wraith'},      {tx:36,tz:48, type:'holo_wraith'},
+    {tx:30,tz:36, type:'corrupted_xu'},     {tx:30,tz:44, type:'corrupted_xu'},
+    {tx:34,tz:36, type:'void_marine'},      {tx:34,tz:44, type:'void_marine'},
+    // PLAZA OF SPIRES
     {tx:42,tz:40, type:'shard_assassin'},
     {tx:38,tz:32, type:'holo_wraith'},      {tx:38,tz:48, type:'holo_wraith'},
     {tx:42,tz:30, type:'corrupted_xu'},     {tx:42,tz:50, type:'corrupted_xu'},
     {tx:46,tz:34, type:'laser_turret'},     {tx:46,tz:46, type:'laser_turret'},
     {tx:44,tz:38, type:'void_marine'},      {tx:44,tz:42, type:'void_marine'},
-    // CYBER-FORGE DISTRICT — Cyber-Ogres + heavy combat
+    {tx:40,tz:34, type:'corrupted_xu'},     {tx:40,tz:46, type:'corrupted_xu'},
+    {tx:46,tz:38, type:'holo_wraith'},      {tx:46,tz:42, type:'holo_wraith'},
+    {tx:38,tz:36, type:'void_marine'},      {tx:38,tz:44, type:'void_marine'},
+    {tx:50,tz:36, type:'corrupted_xu'},     {tx:50,tz:44, type:'corrupted_xu'},
+    // CYBER-FORGE DISTRICT
     {tx:54,tz:30, type:'cyber_ogre'},
     {tx:56,tz:32, type:'corrupted_xu'},     {tx:52,tz:34, type:'corrupted_xu'},
     {tx:58,tz:30, type:'void_marine'},      {tx:54,tz:36, type:'holo_wraith'},
     {tx:54,tz:50, type:'cyber_ogre'},
     {tx:56,tz:48, type:'corrupted_xu'},     {tx:58,tz:50, type:'void_marine'},
     {tx:52,tz:46, type:'laser_turret'},     {tx:54,tz:44, type:'holo_wraith'},
-    // THRONE APPROACH — final guard wave before boss
+    {tx:60,tz:32, type:'void_marine'},      {tx:60,tz:48, type:'void_marine'},
+    {tx:62,tz:36, type:'corrupted_xu'},     {tx:62,tz:44, type:'corrupted_xu'},
+    {tx:58,tz:36, type:'holo_wraith'},      {tx:58,tz:44, type:'holo_wraith'},
+    {tx:56,tz:38, type:'void_marine'},      {tx:56,tz:42, type:'void_marine'},
+    {tx:60,tz:40, type:'shard_assassin'},
+    // THRONE APPROACH
     {tx:64,tz:34, type:'laser_turret'},     {tx:64,tz:46, type:'laser_turret'},
     {tx:66,tz:40, type:'cyber_ogre'},
     {tx:68,tz:38, type:'shard_assassin'},   {tx:68,tz:42, type:'shard_assassin'},
     {tx:70,tz:36, type:'void_marine'},      {tx:70,tz:44, type:'void_marine'},
     {tx:72,tz:38, type:'corrupted_xu'},     {tx:72,tz:42, type:'corrupted_xu'},
     {tx:74,tz:36, type:'holo_wraith'},      {tx:74,tz:44, type:'holo_wraith'},
+    {tx:64,tz:38, type:'void_marine'},      {tx:64,tz:42, type:'void_marine'},
+    {tx:66,tz:36, type:'corrupted_xu'},     {tx:66,tz:44, type:'corrupted_xu'},
+    {tx:68,tz:34, type:'void_marine'},      {tx:68,tz:46, type:'void_marine'},
+    {tx:70,tz:40, type:'cyber_ogre'},
+    {tx:72,tz:36, type:'holo_wraith'},      {tx:72,tz:44, type:'holo_wraith'},
   ],
 };
 ;
