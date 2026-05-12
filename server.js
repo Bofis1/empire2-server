@@ -283,6 +283,7 @@ const ZONE_SCALE = {
   veiled_sanctuary:1.0,  // v92.41
   blooming_wilds:1.0,    // v92.49
   xeron:1.0,             // v92.55
+  convergence:2.0,       // v93.0 phase 3 — endgame procedural zone; enemies already at xeron-tier stats so 2.0x is plenty
 };
 
 // ══════════════════════════════════════════════════════════
@@ -316,6 +317,7 @@ const ZONE_BOSS_HP = {
   veiled_sanctuary: { hp:850000,   name:'THE FINAL ABBOT' },  // v92.41
   blooming_wilds:   { hp:35000,    name:'THE WILDMOTHER' },   // v92.49
   xeron:            { hp:3000000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
+  convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
 };
 
 const ZONE_SPAWNS = {
@@ -1966,6 +1968,10 @@ const ZONE_SPAWNS = {
     {tx:70,tz:40, type:'cyber_ogre'},
     {tx:72,tz:36, type:'holo_wraith'},      {tx:72,tz:44, type:'holo_wraith'},
   ],
+  // ── v93.0 phase 3 — THE CONVERGENCE ──
+  // Empty array marker. createZoneEnemies() special-cases 'convergence' and
+  // generates ~100 procedural spawns at game-create time via generateConvergenceSpawns().
+  convergence: [],
 };
 ;
 
@@ -1974,8 +1980,51 @@ const ZONE_SPAWNS = {
 // Each game has zones. Each zone has enemies[].
 // ══════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════
+// v93.0 Phase 3 — Convergence procedural enemy generator
+// Mirrors the client-side BSP logic conceptually but doesn't need exact layout
+// match — server enemies are positioned by AREA buckets across the 240x240 zone,
+// in a "spread evenly + cluster in chambers" pattern. Client sees BSP rooms;
+// server places enemies in those general areas. Close enough that combat feels
+// coherent (you walk into a chamber and there's enemies there).
+//
+// Pool: 8 broken-reality types matching the client side.
+// Density: ~80 enemies across the 240x240 zone (excluding the 60-tile spawn buffer).
+// ══════════════════════════════════════════════════════════
+function generateConvergenceSpawns() {
+  const POOL = ['corrupted_xu', 'void_marine', 'holo_wraith', 'crawler',
+                'wraith', 'elite', 'ash_wraith', 'void_eye'];
+  const spawns = [];
+  const W = 240;
+  const SPAWN_BUFFER_Z = 60; // no enemies in the top 60 tiles (spawn chamber + breathing room)
+
+  // Place enemies in clusters spread across the zone south of the spawn buffer.
+  // Use a coarse grid: divide the playable area into ~24x24 chunks and place
+  // 3-5 enemies in each chunk at random offsets. ~9x9 = 81 chunks south of buffer.
+  const CHUNK = 24;
+  for (let cz = SPAWN_BUFFER_Z; cz < W - CHUNK; cz += CHUNK) {
+    for (let cx = CHUNK; cx < W - CHUNK; cx += CHUNK) {
+      // Some chunks left empty for variety (~25% skip rate)
+      if (Math.random() < 0.25) continue;
+      const count = 3 + Math.floor(Math.random() * 3); // 3-5
+      for (let n = 0; n < count; n++) {
+        const ex = cx + 4 + Math.floor(Math.random() * (CHUNK - 8));
+        const ez = cz + 4 + Math.floor(Math.random() * (CHUNK - 8));
+        const etype = POOL[Math.floor(Math.random() * POOL.length)];
+        spawns.push({tx: ex, tz: ez, type: etype});
+      }
+    }
+  }
+  console.log(`[convergence] Generated ${spawns.length} enemy spawns across 240x240 zone`);
+  return spawns;
+}
+
 function createZoneEnemies(zoneName) {
-  const spawns = ZONE_SPAWNS[zoneName] || [];
+  // v93.0 phase 3 — special-case convergence: generate spawns procedurally
+  // per game-instance instead of using the static ZONE_SPAWNS entry.
+  const spawns = (zoneName === 'convergence')
+    ? generateConvergenceSpawns()
+    : (ZONE_SPAWNS[zoneName] || []);
   const scale  = ZONE_SCALE[zoneName]  || 1.0;
   return spawns.map((s, i) => {
     const st = ENEMY_STATS[s.type] || ENEMY_STATS.soldier;
