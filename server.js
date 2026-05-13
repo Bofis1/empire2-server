@@ -2683,6 +2683,8 @@ wss.on('connection', ws => {
         }
         console.log(`[convergence] Depth ${oldDepth} -> ${newDepth} (x${depthMul.toFixed(2)} stats). ${zone.enemies.length} enemies regenerated.`);
         // Broadcast the zone update to all players in convergence
+        // v93.0-a13 — Added `acts` field (active/dead flags). Client crashes
+        // reading data.acts[i] without it.
         broadcastToZone(g.id, 'convergence', {
           type: 'sv_zone_snapshot',
           zone: 'convergence',
@@ -2692,6 +2694,7 @@ wss.on('connection', ws => {
           hps: zone.enemies.map(e => e.hp),
           maxhps: zone.enemies.map(e => e.maxHp),
           types: zone.enemies.map(e => e.type),
+          acts: zone.enemies.map(e => e.active ? 1 : 0),
           rots: zone.enemies.map(() => 0),
         });
         break;
