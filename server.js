@@ -2056,6 +2056,8 @@ function getOrCreateZone(game, zoneName) {
     game.zones[zoneName] = {
       enemies: createZoneEnemies(zoneName),
       lastActivity: Date.now(),
+      // v93.0 phase 3.3 — Convergence-specific depth tracking
+      convergenceDepth: zoneName === 'convergence' ? 1 : undefined,
     };
   }
   return game.zones[zoneName];
@@ -2628,6 +2630,70 @@ wss.on('connection', ws => {
             }
           }, 3 * 60 * 1000);
         }
+        break;
+      }
+
+      case 'sv_set_depth': {
+        // v93.0 phase 3.3 — Client signals descent to deeper depth in The Convergence.
+        // Server bumps the zone's depth + regenerates enemies with scaled stats.
+        if (!player.gameId || !player.zone) break;
+        if (data.zone !== 'convergence') break; // only valid for convergence
+        const g = games.get(player.gameId);
+        if (!g) break;
+        const zone = g.zones['convergence'];
+        if (!zone) break;
+        const newDepth = Math.max(1, Math.min(50, parseInt(data.depth, 10) || 1));
+        const oldDepth = zone.convergenceDepth || 1;
+        if (newDepth === oldDepth) break;
+        zone.convergenceDepth = newDepth;
+        // Regenerate enemies with depth-scaled stats
+        // Multiplier: depth N = 1.0 + 0.5 * (N - 1)
+        const depthMul = 1.0 + 0.5 * (newDepth - 1);
+        const baseScale = ZONE_SCALE['convergence'] || 2.0;
+        const effectiveScale = baseScale * depthMul;
+        const procSpawns = generateConvergenceSpawns();
+        zone.enemies = procSpawns.map((s, i) => {
+          const st = ENEMY_STATS[s.type] || ENEMY_STATS.soldier;
+          return {
+            id: i,
+            type: s.type,
+            x: s.tx * TILE,
+            z: s.tz * TILE,
+            spawnX: s.tx * TILE,
+            spawnZ: s.tz * TILE,
+            hp: Math.round(st.hp * effectiveScale),
+            maxHp: Math.round(st.hp * effectiveScale),
+            atk: Math.round(st.atk * effectiveScale),
+            spd: st.spd,
+            aggroRange: st.aggroRange,
+            reward: Math.round(st.reward * effectiveScale),
+            expR: Math.round(st.expR * effectiveScale),
+            dmgReduction: st.dmgReduction || 0,
+            active: true,
+            aggroed: false,
+            attackTimer: Math.floor(Math.random() * 60),
+            respawnTimer: 0,
+          };
+        });
+        // Also reset the boss for the new depth
+        if (zone.boss) {
+          zone.boss.spawned = false;
+          zone.boss.hp = zone.boss.maxHp;
+          zone.boss.phase = 1;
+        }
+        console.log(`[convergence] Depth ${oldDepth} -> ${newDepth} (x${depthMul.toFixed(2)} stats). ${zone.enemies.length} enemies regenerated.`);
+        // Broadcast the zone update to all players in convergence
+        broadcastToZone(g.id, 'convergence', {
+          type: 'sv_zone_snapshot',
+          zone: 'convergence',
+          ids: zone.enemies.map(e => e.id),
+          xs: zone.enemies.map(e => e.x),
+          zs: zone.enemies.map(e => e.z),
+          hps: zone.enemies.map(e => e.hp),
+          maxhps: zone.enemies.map(e => e.maxHp),
+          types: zone.enemies.map(e => e.type),
+          rots: zone.enemies.map(() => 0),
+        });
         break;
       }
 
