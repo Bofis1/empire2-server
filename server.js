@@ -1992,8 +1992,11 @@ const ZONE_SPAWNS = {
 // Density: ~80 enemies across the 240x240 zone (excluding the 60-tile spawn buffer).
 // ══════════════════════════════════════════════════════════
 function generateConvergenceSpawns() {
-  const POOL = ['corrupted_xu', 'void_marine', 'holo_wraith', 'crawler',
-                'wraith', 'elite', 'ash_wraith', 'void_eye'];
+  // v93.0-a18 — Pool restricted to Xu-tier (48k-95k HP) + ash_wraith (2200 HP tier).
+  // Previous pool included crawler (210 HP), elite (540), wraith (480), void_eye (390),
+  // which a Lv 100 player 1-shots — completely defeating the endgame difficulty.
+  // ash_wraith stays as the lower-tier variety (still meaningful at 4400 HP after 2x scale).
+  const POOL = ['corrupted_xu', 'void_marine', 'holo_wraith', 'ash_wraith'];
   const spawns = [];
   const W = 240;
   const SPAWN_BUFFER_Z = 60; // no enemies in the top 60 tiles (spawn chamber + breathing room)
