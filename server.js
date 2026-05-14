@@ -2706,11 +2706,27 @@ wss.on('connection', ws => {
             _convergenceMods: modIds,
           };
         });
-        // Reset the boss for the new depth
+        // v93.0-a27 — Boss reset for new depth + scaling + respawn broadcast.
+        // Previous bug: server set spawned=false but never told the client. Client kept
+        // local boss alive, hit it, but server dropped hits ("if (!b.spawned) break").
+        // Damage numbers popped client-side, server HP never decreased.
         if (zone.boss) {
-          zone.boss.spawned = false;
-          zone.boss.hp = zone.boss.maxHp;
+          // Scale max HP for depth + Vital modifier
+          const _baseBossHp = (ZONE_BOSS_HP['convergence'] || {hp: 2000000}).hp;
+          const _scaledMaxHp = Math.round(_baseBossHp * depthMul * hpMul);
+          zone.boss.maxHp = _scaledMaxHp;
+          zone.boss.hp = _scaledMaxHp;
+          zone.boss.spawned = true; // mark as actively in world for the new depth
           zone.boss.phase = 1;
+          // Broadcast a fresh boss-spawned event so all clients re-sync
+          broadcastToZone(g.id, 'convergence', {
+            type: 'sv_boss_spawned',
+            zone: 'convergence',
+            bossName: zone.boss.name,
+            hp: zone.boss.hp,
+            maxHp: zone.boss.maxHp,
+          });
+          console.log(`[convergence] Boss reset for Depth ${newDepth}: ${_scaledMaxHp.toLocaleString()} HP (x${depthMul.toFixed(2)} depth, x${hpMul.toFixed(2)} vital)`);
         }
         console.log(`[convergence] Depth ${oldDepth} -> ${newDepth}. Mods: [${modIds.join(',')||'none'}]. ${zone.enemies.length} enemies. hpMul=${hpMul} atkMul=${atkMul} dr+${extraDR}`);
         broadcastToZone(g.id, 'convergence', {
