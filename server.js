@@ -2634,26 +2634,52 @@ wss.on('connection', ws => {
       }
 
       case 'sv_set_depth': {
-        // v93.0 phase 3.3 — Client signals descent to deeper depth in The Convergence.
-        // Server bumps the zone's depth + regenerates enemies with scaled stats.
+        // v93.0 phase 3.3/4.2 — Client signals descent + modifier roll.
+        // Server bumps depth, applies server-coord mods, regenerates enemies.
         if (!player.gameId || !player.zone) break;
-        if (data.zone !== 'convergence') break; // only valid for convergence
+        if (data.zone !== 'convergence') break;
         const g = games.get(player.gameId);
         if (!g) break;
         const zone = g.zones['convergence'];
         if (!zone) break;
         const newDepth = Math.max(1, Math.min(50, parseInt(data.depth, 10) || 1));
         const oldDepth = zone.convergenceDepth || 1;
-        if (newDepth === oldDepth) break;
+        // Accept the mod IDs (validated by name match)
+        const modIds = Array.isArray(data.modIds) ? data.modIds.slice(0, 5) : [];
+        const hasMod = (id) => modIds.includes(id);
+
+        // Skip if depth AND mods both unchanged
+        const sameMods = JSON.stringify(modIds.slice().sort()) === JSON.stringify((zone.activeModIds||[]).slice().sort());
+        if (newDepth === oldDepth && sameMods) break;
+
         zone.convergenceDepth = newDepth;
-        // Regenerate enemies with depth-scaled stats
-        // Multiplier: depth N = 1.0 + 0.5 * (N - 1)
+        zone.activeModIds = modIds;
+
+        // v93.0 phase 4.2 — Compute stat multipliers from depth + mods
         const depthMul = 1.0 + 0.5 * (newDepth - 1);
         const baseScale = ZONE_SCALE['convergence'] || 2.0;
-        const effectiveScale = baseScale * depthMul;
-        const procSpawns = generateConvergenceSpawns();
+        const hpMul = hasMod('vital') ? 2.0 : 1.0;
+        const atkMul = hasMod('brutal') ? 1.75 : 1.0;
+        const rewardMul = hasMod('bounty') ? 3.0 : 1.0;
+        // Hardened Echo: +50% dmg reduction (separate field)
+        const extraDR = hasMod('hardened_echo') ? 0.5 : 0;
+        // Frenzied: 60% faster attacks — multiplied into spd (lower attackTimer cooldown isn't a stat so we boost spd)
+        // Note: server doesn't tick enemy AI for combat; client AI handles. But Frenzied
+        // affects movement/positioning indirectly via spd.
+        // We pass it through via a custom field; client AI honors it if present.
+        const frenzyMul = hasMod('frenzied') ? 1.6 : 1.0;
+
+        // Density: 3x enemy count
+        const baseSpawns = generateConvergenceSpawns();
+        let procSpawns = baseSpawns;
+        if (hasMod('density')) {
+          procSpawns = baseSpawns.concat(generateConvergenceSpawns(), generateConvergenceSpawns());
+          console.log(`[convergence] Density active: ${procSpawns.length} enemies (3x base)`);
+        }
+
         zone.enemies = procSpawns.map((s, i) => {
           const st = ENEMY_STATS[s.type] || ENEMY_STATS.soldier;
+          const effectiveScale = baseScale * depthMul;
           return {
             id: i,
             type: s.type,
@@ -2661,30 +2687,29 @@ wss.on('connection', ws => {
             z: s.tz * TILE,
             spawnX: s.tx * TILE,
             spawnZ: s.tz * TILE,
-            hp: Math.round(st.hp * effectiveScale),
-            maxHp: Math.round(st.hp * effectiveScale),
-            atk: Math.round(st.atk * effectiveScale),
-            spd: st.spd,
+            hp: Math.round(st.hp * effectiveScale * hpMul),
+            maxHp: Math.round(st.hp * effectiveScale * hpMul),
+            atk: Math.round(st.atk * effectiveScale * atkMul),
+            spd: st.spd * frenzyMul,
             aggroRange: st.aggroRange,
-            reward: Math.round(st.reward * effectiveScale),
+            reward: Math.round(st.reward * effectiveScale * rewardMul),
             expR: Math.round(st.expR * effectiveScale),
-            dmgReduction: st.dmgReduction || 0,
+            dmgReduction: Math.min(0.85, (st.dmgReduction || 0) + extraDR),
             active: true,
             aggroed: false,
             attackTimer: Math.floor(Math.random() * 60),
             respawnTimer: 0,
+            // v93.0 phase 4.2 — Track which mods affect this enemy for client display
+            _convergenceMods: modIds,
           };
         });
-        // Also reset the boss for the new depth
+        // Reset the boss for the new depth
         if (zone.boss) {
           zone.boss.spawned = false;
           zone.boss.hp = zone.boss.maxHp;
           zone.boss.phase = 1;
         }
-        console.log(`[convergence] Depth ${oldDepth} -> ${newDepth} (x${depthMul.toFixed(2)} stats). ${zone.enemies.length} enemies regenerated.`);
-        // Broadcast the zone update to all players in convergence
-        // v93.0-a13 — Added `acts` field (active/dead flags). Client crashes
-        // reading data.acts[i] without it.
+        console.log(`[convergence] Depth ${oldDepth} -> ${newDepth}. Mods: [${modIds.join(',')||'none'}]. ${zone.enemies.length} enemies. hpMul=${hpMul} atkMul=${atkMul} dr+${extraDR}`);
         broadcastToZone(g.id, 'convergence', {
           type: 'sv_zone_snapshot',
           zone: 'convergence',
