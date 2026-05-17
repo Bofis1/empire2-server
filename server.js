@@ -2235,7 +2235,17 @@ function broadcast(data, exclude=null){
   });
 }
 function getPlayerNames(){ return [...players.values()].filter(p=>p.name).map(p=>p.name); }
-function broadcastPlayerList(){ broadcast({ type:'player_list', players:getPlayerNames() }); }
+// v93.0-a66 — richer payload: {name, level, cls, raceName} per player.
+// Defaults are sane for clients who haven't sent the new fields yet (old client).
+function getPlayerSummary(){
+  return [...players.values()].filter(p=>p.name).map(p=>({
+    name: p.name,
+    level: (typeof p.level === 'number') ? p.level : 1,
+    cls: p.cls || 'Warrior',
+    raceName: p.raceName || 'Xu'
+  }));
+}
+function broadcastPlayerList(){ broadcast({ type:'player_list', players:getPlayerSummary() }); }
 function sendGameList(ws){
   const list = [...games.values()].map(g => ({
     id:g.id, name:g.name, host:g.host, hostPeer:g.hostPeer,
@@ -2300,10 +2310,22 @@ wss.on('connection', ws => {
       // ── LOBBY ──────────────────────────────────────────
       case 'login':
         player.name = (data.name||'').slice(0,20).replace(/[<>]/g,'') || 'Adventurer';
+        // v93.0-a66 — capture level/class/race for the player list display.
+        // Sanitize: clamp level, strip dangerous chars from strings, length-limit.
+        {
+          const _lv = parseInt(data.level, 10);
+          player.level = (isFinite(_lv) && _lv >= 1 && _lv <= 200) ? _lv : 1;
+          player.cls = (typeof data.cls === 'string' ? data.cls : 'Warrior')
+                        .slice(0,16).replace(/[<>&"']/g,'') || 'Warrior';
+          player.raceId = (typeof data.raceId === 'string' ? data.raceId : 'xu')
+                          .slice(0,16).replace(/[^a-z_]/g,'') || 'xu';
+          player.raceName = (typeof data.raceName === 'string' ? data.raceName : 'Xu')
+                            .slice(0,16).replace(/[<>&"']/g,'') || 'Xu';
+        }
         send(ws, { type:'logged_in', name:player.name });
         sendGameList(ws);
         send(ws, { type:'player_count', count:players.size });
-        send(ws, { type:'player_list', players:getPlayerNames() });
+        send(ws, { type:'player_list', players:getPlayerSummary() });
         broadcast({ type:'lobby_chat', name:'SERVER', msg:player.name+' entered the lobby.', system:true }, ws);
         broadcast({ type:'player_count', count:players.size });
         broadcastPlayerList();
@@ -2322,7 +2344,7 @@ wss.on('connection', ws => {
         break;
 
       case 'request_player_list':
-        send(ws, { type:'player_list', players:getPlayerNames() });
+        send(ws, { type:'player_list', players:getPlayerSummary() });
         break;
 
       // ── CLOUD SAVES ────────────────────────────────────
