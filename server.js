@@ -2047,6 +2047,19 @@ function getOrCreateZone(game, zoneName) {
       lastActivity: Date.now(),
       // v93.0 phase 3.3 — Convergence-specific depth tracking
       convergenceDepth: zoneName === 'convergence' ? 1 : undefined,
+      // v93.0-a116 -- ALSO populate boss field. Previously this function created
+      // zones WITHOUT a boss, so any game that didn\'t go through the create_game
+      // path (e.g. join_game or any indirect zone init) had zone.boss=undefined.
+      // sv_hit_boss then hit "if (!zone.boss) break;" and silently dropped hits.
+      // Symptom: client renders boss + sends hits, server never responds with
+      // sv_boss_hp updates, boss bar stays at 100% forever -> "immortal boss."
+      boss: ZONE_BOSS_HP[zoneName] ? {
+        hp: ZONE_BOSS_HP[zoneName].hp,
+        maxHp: ZONE_BOSS_HP[zoneName].hp,
+        phase: 1,
+        spawned: false,
+        name: ZONE_BOSS_HP[zoneName].name,
+      } : null,
     };
   }
   return game.zones[zoneName];
@@ -2568,9 +2581,46 @@ wss.on('connection', ws => {
         const g = games.get(player.gameId);
         if (!g) break;
         const zone = g.zones[player.zone];
-        if (!zone || !zone.boss) break;
+        if (!zone) break;
+        // v93.0-a116 -- defensive: auto-init boss if missing instead of silently dropping
+        // the hit. Previously a missing zone.boss caused all hits to be dropped with no
+        // error, leading to "immortal boss" reports. Now we lazy-create the boss when
+        // the first hit arrives, using the depth scaling that should have been applied.
+        if (!zone.boss && ZONE_BOSS_HP[player.zone]) {
+          console.warn(`[boss] zone.boss missing for ${player.zone} on first hit. Auto-initializing.`);
+          const _curDepth = zone.convergenceDepth || 1;
+          const _depthMul = player.zone === 'convergence' ? (1.0 + 0.5 * (_curDepth - 1)) : 1.0;
+          const _baseHp = ZONE_BOSS_HP[player.zone].hp;
+          zone.boss = {
+            hp: Math.round(_baseHp * _depthMul),
+            maxHp: Math.round(_baseHp * _depthMul),
+            phase: 1,
+            spawned: true,
+            name: ZONE_BOSS_HP[player.zone].name,
+          };
+        }
+        if (!zone.boss) break;
         const b = zone.boss;
-        if (!b.spawned || b.hp <= 0) break;
+        // v93.0-a116 -- if boss exists but isn\'t marked spawned, mark it spawned NOW.
+        // This prevents the case where the boss was reset (e.g. on depth transition)
+        // but the client already started attacking and the spawned flag was stale.
+        if (!b.spawned) {
+          console.warn(`[boss] zone.boss.spawned was false in ${player.zone} on hit; auto-spawning.`);
+          b.spawned = true;
+          if (b.hp <= 0) {
+            // Boss was previously killed but the zone wasn't reset. Refresh.
+            b.hp = b.maxHp;
+            b.phase = 1;
+          }
+          broadcastToZone(g.id, player.zone, {
+            type: 'sv_boss_spawned',
+            zone: player.zone,
+            bossName: b.name,
+            hp: b.hp,
+            maxHp: b.maxHp,
+          });
+        }
+        if (b.hp <= 0) break;
 
         // Cap damage (anti-cheat)
         const bdmg = Math.min(data.dmg || 1, 999999);
