@@ -320,6 +320,30 @@ const ZONE_BOSS_HP = {
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
 };
 
+// ══════════════════════════════════════════════════════════
+// WORLD BOSS DEFS — server-authoritative (a146).
+// Mirrors the client's WORLD_BOSS_DEFS (in game.html ~L75833). Keep in sync.
+// World bosses are EPHEMERAL — one active at a time per game, spawned on
+// demand or by a server-side timer, killable by multiple players together.
+// Stats are intentionally close to the client's so the HP bar matches what
+// players see. Damage is server-authoritative once a game enters MP mode.
+// ══════════════════════════════════════════════════════════
+const WORLD_BOSS_DEFS = [
+  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'ashlands',     tx:30, tz:30, hp:280000, atk:115, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
+  { id:'ancient_wyrm',     name:'The Eyexor',             zone:'ancient',      tx:25, tz:25, hp:320000, atk:120, atkCooldown:85,  aggroRange:22, color:0xddbb60, lootTier:5 },
+  { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'cemetery',     tx:25, tz:25, hp:360000, atk:130, atkCooldown:90,  aggroRange:22, color:0xc080ff, lootTier:4 },
+  { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:30, tz:30, hp:440000, atk:145, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
+  { id:'abacus_of_flesh',  name:'The Abacus of Flesh',    zone:'void_citadel', tx:40, tz:40, hp:520000, atk:160, atkCooldown:100, aggroRange:24, color:0xcc1810, lootTier:7 },
+  { id:'overseer_of_discord', name:'The Overseer of Discord', zone:'arena',    tx:120,tz:120,hp:680000, atk:175, atkCooldown:80,  aggroRange:26, color:0xffd84a, lootTier:8 },
+];
+// id -> def lookup
+const WORLD_BOSS_BY_ID = {};
+WORLD_BOSS_DEFS.forEach(d => { WORLD_BOSS_BY_ID[d.id] = d; });
+// Despawn timer after kill before another world boss can be summoned (ms)
+const WORLD_BOSS_RESPAWN_MS = 2 * 60 * 1000; // 2 min
+// Auto-despawn an active boss that's been idle (no hits) for this long (ms)
+const WORLD_BOSS_IDLE_MS = 5 * 60 * 1000; // 5 min
+
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
@@ -2108,6 +2132,194 @@ const ATTACK_COOLDOWN = 60; // frames at 10Hz = 6 seconds... adjusted to ticks
 const ATTACK_RANGE   = 2.5;
 const RESPAWN_TICKS  = 300; // 30 seconds at 10Hz
 
+// ──────────────────────────────────────────────────────────
+// a146 — WORLD BOSS HELPERS (server-authoritative)
+// One active world boss per game. Multiple players can damage it; the server
+// tracks every contributor by name + total damage dealt so loot can be awarded
+// proportionally on kill.
+// ──────────────────────────────────────────────────────────
+function spawnWorldBoss(game, def) {
+  if (!game || !def) return null;
+  // If a world boss is already active, refuse
+  if (game.worldBoss && game.worldBoss.spawned) return null;
+  // Convert tx,tz tile coords to world coords (TILE constant from line ~293)
+  const wx = def.tx * TILE;
+  const wz = def.tz * TILE;
+  game.worldBoss = {
+    id: def.id,
+    name: def.name,
+    zone: def.zone,
+    x: wx, z: wz,
+    spawnX: wx, spawnZ: wz,
+    hp: def.hp,
+    maxHp: def.hp,
+    atk: def.atk,
+    atkCooldown: def.atkCooldown || 90,
+    aggroRange: def.aggroRange || 22,
+    color: def.color,
+    lootTier: def.lootTier,
+    phase: 1,
+    spawned: true,
+    attackTimer: 0,
+    aggroed: false,
+    contributors: {}, // name -> damage total
+    spawnedAt: Date.now(),
+    lastHitAt: Date.now(),
+  };
+  // Broadcast spawn to everyone in the game (not just the zone — it's an event)
+  broadcastToGame(game.id, {
+    type: 'sv_worldboss_spawned',
+    id: def.id,
+    name: def.name,
+    zone: def.zone,
+    x: +wx.toFixed(2),
+    z: +wz.toFixed(2),
+    hp: def.hp,
+    maxHp: def.hp,
+    color: def.color,
+    lootTier: def.lootTier,
+  });
+  // Global announce
+  broadcastToGame(game.id, {
+    type: 'sv_world_announce',
+    msg: `⚡ ${def.name} HAS APPEARED IN ${def.zone.replace(/_/g,' ').toUpperCase()}!`,
+    zone: def.zone,
+    worldBoss: true,
+    bossName: def.name,
+  });
+  return game.worldBoss;
+}
+
+function despawnWorldBoss(game, killed, killerName, bx, bz) {
+  if (!game || !game.worldBoss) return;
+  const wb = game.worldBoss;
+  // Mark dead and broadcast the outcome
+  if (killed) {
+    // Pick the top damage contributor as primary killer (already passed in as killerName
+    // which is the player who landed the killing blow). All contributors get rewarded.
+    const contribsList = Object.entries(wb.contributors || {})
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, dmg]) => ({ name, dmg }));
+    broadcastToGame(game.id, {
+      type: 'sv_worldboss_killed',
+      id: wb.id,
+      name: wb.name,
+      zone: wb.zone,
+      killer: killerName,
+      bx: bx || +wb.x.toFixed(2),
+      bz: bz || +wb.z.toFixed(2),
+      lootTier: wb.lootTier,
+      contributors: contribsList,
+    });
+    broadcastToGame(game.id, {
+      type: 'sv_world_announce',
+      msg: `⚔ ${killerName} SLEW ${wb.name}!`,
+      zone: wb.zone,
+      worldBoss: true,
+      bossName: wb.name,
+      killer: killerName,
+    });
+    // Award guild XP to every contributor in proportion to damage
+    const total = contribsList.reduce((s, c) => s + c.dmg, 0) || 1;
+    contribsList.forEach(c => {
+      const share = c.dmg / total;
+      const xp = Math.max(50, Math.floor((wb.maxHp / 400) * share));
+      awardGuildXp(c.name, xp);
+    });
+  } else {
+    // Idle despawn / forced
+    broadcastToGame(game.id, {
+      type: 'sv_worldboss_despawn',
+      id: wb.id,
+      name: wb.name,
+      zone: wb.zone,
+      reason: killed ? 'killed' : 'idle',
+    });
+  }
+  // Hold a cooldown before another world boss can be summoned
+  game.worldBossLastDespawnAt = Date.now();
+  game.worldBoss = null;
+}
+
+// Per-tick AI + broadcast for the current world boss in a game (called from tickGame)
+function tickWorldBoss(game) {
+  const wb = game.worldBoss;
+  if (!wb || !wb.spawned) return;
+  // Idle despawn — no damage taken in the cutoff window
+  if (Date.now() - wb.lastHitAt > WORLD_BOSS_IDLE_MS) {
+    despawnWorldBoss(game, false, null, wb.x, wb.z);
+    return;
+  }
+  const zonePlayers = getPlayersInZone(game.id, wb.zone);
+  if (zonePlayers.length === 0) {
+    // No one in zone — reset aggro, freeze position
+    if (wb.aggroed) { wb.aggroed = false; }
+    return;
+  }
+  // Find nearest player in the boss's zone
+  let nearest = null, nearestDist = Infinity;
+  zonePlayers.forEach(p => {
+    const dx = p.x - wb.x, dz = p.z - wb.z;
+    const d = Math.sqrt(dx*dx + dz*dz);
+    if (d < nearestDist) { nearestDist = d; nearest = p; }
+  });
+  if (!nearest) return;
+
+  // Aggro check
+  if (nearestDist <= wb.aggroRange) wb.aggroed = true;
+
+  let posChanged = false;
+  if (wb.aggroed) {
+    // Slow but inexorable march — world bosses aren't twitchy, they're heavy
+    if (nearestDist > ATTACK_RANGE + 1.2) {
+      const dx = nearest.x - wb.x, dz = nearest.z - wb.z;
+      const len = Math.sqrt(dx*dx + dz*dz) || 1;
+      const speed = 0.035; // a touch faster than xu_supreme, slower than berserker
+      wb.x += (dx / len) * speed * 1.6;
+      wb.z += (dz / len) * speed * 1.6;
+      posChanged = true;
+    }
+    // Melee swing — server does damage to the nearest player only, but broadcasts
+    // the swing animation cue to everyone in the zone so the boss looks alive.
+    wb.attackTimer++;
+    if (wb.attackTimer >= wb.atkCooldown && nearestDist <= ATTACK_RANGE + 1.8) {
+      wb.attackTimer = 0;
+      const dmg = Math.floor(wb.atk * (0.85 + Math.random() * 0.3));
+      players.forEach((p, ws) => {
+        if (p === nearest) {
+          send(ws, {
+            type: 'sv_worldboss_attack',
+            id: wb.id, dmg,
+            ex: +wb.x.toFixed(2), ez: +wb.z.toFixed(2),
+            zone: wb.zone,
+          });
+        }
+      });
+      broadcastToZone(game.id, wb.zone, {
+        type: 'sv_worldboss_anim',
+        id: wb.id, a: 'attack',
+        ex: +wb.x.toFixed(2), ez: +wb.z.toFixed(2),
+        tx: +nearest.x.toFixed(2), tz: +nearest.z.toFixed(2),
+        zone: wb.zone,
+      });
+    }
+  }
+
+  // Position broadcast — only when changed, and only to players in zone
+  if (posChanged) {
+    broadcastToZone(game.id, wb.zone, {
+      type: 'sv_worldboss_state',
+      id: wb.id,
+      x: +wb.x.toFixed(2),
+      z: +wb.z.toFixed(2),
+      hp: wb.hp,
+      maxHp: wb.maxHp,
+      phase: wb.phase,
+      zone: wb.zone,
+    });
+  }
+}
+
 function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
@@ -2193,6 +2405,8 @@ function tickGame(game) {
       broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName, ids, xs, zs, hps, acts, types });
     }
   });
+  // a146 — World boss AI tick (one per game, independent of zone enemy loop)
+  tickWorldBoss(game);
 }
 
 // Full snapshot for a player entering a zone
@@ -2211,6 +2425,23 @@ function sendZoneSnapshot(ws, game, zoneName) {
   const activeCount = acts.filter(a=>a===1).length;
   console.log(`[sendZoneSnapshot] zone=${zoneName} total=${ids.length} active=${activeCount}`);
   send(ws, { type:'sv_zone_snapshot', zone:zoneName, ids, xs, zs, hps, maxhps, types, acts });
+  // a146 — also send the active world boss state if one is alive in this zone
+  if (game.worldBoss && game.worldBoss.spawned && game.worldBoss.zone === zoneName) {
+    const wb = game.worldBoss;
+    send(ws, {
+      type: 'sv_worldboss_snapshot',
+      id: wb.id,
+      name: wb.name,
+      zone: wb.zone,
+      x: +wb.x.toFixed(2),
+      z: +wb.z.toFixed(2),
+      hp: wb.hp,
+      maxHp: wb.maxHp,
+      phase: wb.phase,
+      color: wb.color,
+      lootTier: wb.lootTier,
+    });
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2690,6 +2921,87 @@ wss.on('connection', ws => {
               });
             }
           }, 3 * 60 * 1000);
+        }
+        break;
+      }
+
+      // ──────────────────────────────────────────────────────
+      // a146 — WORLD BOSS HANDLERS (server-authoritative)
+      // ──────────────────────────────────────────────────────
+      case 'sv_worldboss_spawn': {
+        // Client requests a world boss spawn (via console spawnWorldBoss() or
+        //   the auto-timer that fires once enough players are online).
+        if (!player.gameId) break;
+        const g = games.get(player.gameId);
+        if (!g) break;
+        // Already one active?
+        if (g.worldBoss && g.worldBoss.spawned) {
+          send(ws, { type:'sv_worldboss_reject', reason:'active', activeId: g.worldBoss.id, name: g.worldBoss.name });
+          break;
+        }
+        // Cooldown after a kill
+        if (g.worldBossLastDespawnAt && (Date.now() - g.worldBossLastDespawnAt) < WORLD_BOSS_RESPAWN_MS) {
+          const remain = Math.ceil((WORLD_BOSS_RESPAWN_MS - (Date.now() - g.worldBossLastDespawnAt)) / 1000);
+          send(ws, { type:'sv_worldboss_reject', reason:'cooldown', remainSec: remain });
+          break;
+        }
+        // Pick def — by id if provided, else random
+        let def = null;
+        if (data.bossId && WORLD_BOSS_BY_ID[data.bossId]) {
+          def = WORLD_BOSS_BY_ID[data.bossId];
+        } else if (typeof data.idx === 'number' && data.idx >= 0 && data.idx < WORLD_BOSS_DEFS.length) {
+          def = WORLD_BOSS_DEFS[data.idx];
+        } else {
+          def = WORLD_BOSS_DEFS[Math.floor(Math.random() * WORLD_BOSS_DEFS.length)];
+        }
+        const spawned = spawnWorldBoss(g, def);
+        if (!spawned) send(ws, { type:'sv_worldboss_reject', reason:'failed' });
+        break;
+      }
+
+      case 'sv_worldboss_hit': {
+        if (!player.gameId) break;
+        const g = games.get(player.gameId);
+        if (!g) break;
+        const wb = g.worldBoss;
+        if (!wb || !wb.spawned) break;
+        if (wb.hp <= 0) break;
+        // Player must be in the boss's zone — prevents cross-zone hit exploits
+        if (player.zone !== wb.zone) break;
+        // Cap damage (anti-cheat) — world bosses can take big hits but not absurd ones
+        const dmg = Math.min(Math.max(0, data.dmg|0), 999999);
+        if (dmg <= 0) break;
+        wb.hp = Math.max(0, wb.hp - dmg);
+        wb.lastHitAt = Date.now();
+        // Track contributor by name (sum total dmg)
+        wb.contributors[player.name] = (wb.contributors[player.name] || 0) + dmg;
+        // Broadcast HP update to the zone
+        broadcastToZone(g.id, wb.zone, {
+          type: 'sv_worldboss_hp',
+          id: wb.id,
+          hp: wb.hp,
+          maxHp: wb.maxHp,
+          phase: wb.phase,
+          dmg,
+          hitter: player.name,
+        });
+        // Phase transitions
+        const pct = wb.hp / wb.maxHp;
+        const oldPhase = wb.phase;
+        if (wb.phase === 1 && pct <= 0.75) wb.phase = 2;
+        else if (wb.phase === 2 && pct <= 0.50) wb.phase = 3;
+        else if (wb.phase === 3 && pct <= 0.25) wb.phase = 4;
+        if (wb.phase !== oldPhase) {
+          broadcastToZone(g.id, wb.zone, {
+            type: 'sv_worldboss_phase',
+            id: wb.id,
+            phase: wb.phase,
+            bossName: wb.name,
+          });
+        }
+        // Death
+        if (wb.hp <= 0) {
+          despawnWorldBoss(g, true, player.name, +wb.x.toFixed(2), +wb.z.toFixed(2));
         }
         break;
       }
