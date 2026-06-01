@@ -195,6 +195,11 @@ const ENEMY_STATS = {
   geo_basilisk:      {hp:70000, atk:500, spd:0.050, aggroRange:13, reward:2000, expR:720,  dmgReduction:0},
   cube_drake:        {hp:64000, atk:480, spd:0.058, aggroRange:14, reward:1950, expR:700,  dmgReduction:0},
   raptor_shard:      {hp:60000, atk:520, spd:0.080, aggroRange:12, reward:1900, expR:700,  dmgReduction:0},
+  // a212 — Convergence Depth 5 technology tier
+  sentry_mech:       {hp:108000, atk:600, spd:0.030, aggroRange:13, reward:2600, expR:900,  dmgReduction:0.3},
+  hunter_drone:      {hp:80000,  atk:560, spd:0.085, aggroRange:15, reward:2300, expR:840,  dmgReduction:0},
+  plasma_bot:        {hp:92000,  atk:620, spd:0.046, aggroRange:14, reward:2450, expR:880,  dmgReduction:0},
+  cube_sentinel:     {hp:86000,  atk:580, spd:0.052, aggroRange:13, reward:2400, expR:860,  dmgReduction:0},
   xu_miner:          {hp:820,   atk:68,  spd:0.048, aggroRange:9,  reward:220,  expR:72,   dmgReduction:0},
   xu_overseer:       {hp:1400,  atk:95,  spd:0.040, aggroRange:11, reward:340,  expR:110,  dmgReduction:0},
   wyvern_warlord:    {hp:55000, atk:400, spd:0.065, aggroRange:15, reward:1600, expR:550,  dmgReduction:0},
@@ -2021,6 +2026,7 @@ const CONV_ENEMY_POOLS = {
   2: ['fire_demon', 'inferno_golem', 'lava_golem', 'magma_crab', 'ash_wraith'],
   3: ['arc_sentinel', 'tesla_golem', 'storm_wraith', 'volt_hound'],  // a209 — electric (no newbie mobs)
   4: ['saurian_brute', 'geo_basilisk', 'cube_drake', 'raptor_shard'],  // a211 — reptilian/geometric (no newbie mobs)
+  5: ['sentry_mech', 'hunter_drone', 'plasma_bot', 'cube_sentinel'],  // a212 — technology (no newbie mobs)
 };
 
 // a206 — Bofis: a "newbie" mob population existed at ALL depths of the
