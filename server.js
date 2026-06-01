@@ -2001,12 +2001,24 @@ const ZONE_SPAWNS = {
 // Pool: 8 broken-reality types matching the client side.
 // Density: ~80 enemies across the 240x240 zone (excluding the 60-tile spawn buffer).
 // ══════════════════════════════════════════════════════════
-function generateConvergenceSpawns() {
+// a197 — Per-depth enemy pools (server side, mirrors the client _CONV_ENEMY_POOLS).
+// Each Convergence depth gets its own mob set. Depth 1 = the original
+// "broken reality" Xu-tier mix. Depth 2 = the CINDER depth (matches the red
+// walls) — a fire/ash roster. All types must exist in ENEMY_STATS above.
+// Any depth without an explicit pool falls back to Depth 1's.
+const CONV_ENEMY_POOLS = {
+  1: ['corrupted_xu', 'void_marine', 'holo_wraith', 'ash_wraith'],
+  2: ['fire_demon', 'inferno_golem', 'lava_golem', 'magma_crab', 'ash_wraith'],
+};
+
+function generateConvergenceSpawns(depth) {
   // v93.0-a18 — Pool restricted to Xu-tier (48k-95k HP) + ash_wraith (2200 HP tier).
   // Previous pool included crawler (210 HP), elite (540), wraith (480), void_eye (390),
   // which a Lv 100 player 1-shots — completely defeating the endgame difficulty.
   // ash_wraith stays as the lower-tier variety (still meaningful at 4400 HP after 2x scale).
-  const POOL = ['corrupted_xu', 'void_marine', 'holo_wraith', 'ash_wraith'];
+  // a197 — pool is now depth-aware.
+  const _d = Math.max(1, parseInt(depth, 10) || 1);
+  const POOL = CONV_ENEMY_POOLS[_d] || CONV_ENEMY_POOLS[1];
   const spawns = [];
   const W = 240;
   const SPAWN_BUFFER_Z = 60; // no enemies in the top 60 tiles (spawn chamber + breathing room)
@@ -3043,10 +3055,10 @@ wss.on('connection', ws => {
         const frenzyMul = hasMod('frenzied') ? 1.6 : 1.0;
 
         // Density: 3x enemy count
-        const baseSpawns = generateConvergenceSpawns();
+        const baseSpawns = generateConvergenceSpawns(newDepth); // a197 — depth-aware pool
         let procSpawns = baseSpawns;
         if (hasMod('density')) {
-          procSpawns = baseSpawns.concat(generateConvergenceSpawns(), generateConvergenceSpawns());
+          procSpawns = baseSpawns.concat(generateConvergenceSpawns(newDepth), generateConvergenceSpawns(newDepth));
           console.log(`[convergence] Density active: ${procSpawns.length} enemies (3x base)`);
         }
 
