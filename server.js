@@ -185,6 +185,11 @@ const ENEMY_STATS = {
   wyvern:            {hp:27000, atk:260, spd:0.058, aggroRange:14, reward:1000, expR:350,  dmgReduction:0},
   void_spider:       {hp:21000, atk:220, spd:0.068, aggroRange:10, reward:850,  expR:290,  dmgReduction:0},
   inferno_golem:     {hp:66000, atk:400, spd:0.018, aggroRange:9,  reward:1500, expR:500,  dmgReduction:0},
+  // a209 — Convergence Depth 3 electric tier (mirror of client ENEMY_STATS)
+  arc_sentinel:      {hp:52000, atk:420, spd:0.034, aggroRange:13, reward:1700, expR:560,  dmgReduction:0},
+  tesla_golem:       {hp:74000, atk:460, spd:0.020, aggroRange:10, reward:1900, expR:620,  dmgReduction:0.3},
+  storm_wraith:      {hp:46000, atk:400, spd:0.062, aggroRange:14, reward:1600, expR:540,  dmgReduction:0},
+  volt_hound:        {hp:48000, atk:430, spd:0.072, aggroRange:12, reward:1650, expR:560,  dmgReduction:0},
   xu_miner:          {hp:820,   atk:68,  spd:0.048, aggroRange:9,  reward:220,  expR:72,   dmgReduction:0},
   xu_overseer:       {hp:1400,  atk:95,  spd:0.040, aggroRange:11, reward:340,  expR:110,  dmgReduction:0},
   wyvern_warlord:    {hp:55000, atk:400, spd:0.065, aggroRange:15, reward:1600, expR:550,  dmgReduction:0},
@@ -2009,6 +2014,7 @@ const ZONE_SPAWNS = {
 const CONV_ENEMY_POOLS = {
   1: ['corrupted_xu', 'void_marine', 'holo_wraith', 'ash_wraith'],
   2: ['fire_demon', 'inferno_golem', 'lava_golem', 'magma_crab', 'ash_wraith'],
+  3: ['arc_sentinel', 'tesla_golem', 'storm_wraith', 'volt_hound'],  // a209 — electric (no newbie mobs)
 };
 
 // a206 — Bofis: a "newbie" mob population existed at ALL depths of the
