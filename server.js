@@ -190,6 +190,11 @@ const ENEMY_STATS = {
   tesla_golem:       {hp:74000, atk:460, spd:0.020, aggroRange:10, reward:1900, expR:620,  dmgReduction:0.3},
   storm_wraith:      {hp:46000, atk:400, spd:0.062, aggroRange:14, reward:1600, expR:540,  dmgReduction:0},
   volt_hound:        {hp:48000, atk:430, spd:0.072, aggroRange:12, reward:1650, expR:560,  dmgReduction:0},
+  // a211 — Convergence Depth 4 reptilian/geometric tier
+  saurian_brute:     {hp:88000, atk:520, spd:0.038, aggroRange:12, reward:2200, expR:760,  dmgReduction:0.25},
+  geo_basilisk:      {hp:70000, atk:500, spd:0.050, aggroRange:13, reward:2000, expR:720,  dmgReduction:0},
+  cube_drake:        {hp:64000, atk:480, spd:0.058, aggroRange:14, reward:1950, expR:700,  dmgReduction:0},
+  raptor_shard:      {hp:60000, atk:520, spd:0.080, aggroRange:12, reward:1900, expR:700,  dmgReduction:0},
   xu_miner:          {hp:820,   atk:68,  spd:0.048, aggroRange:9,  reward:220,  expR:72,   dmgReduction:0},
   xu_overseer:       {hp:1400,  atk:95,  spd:0.040, aggroRange:11, reward:340,  expR:110,  dmgReduction:0},
   wyvern_warlord:    {hp:55000, atk:400, spd:0.065, aggroRange:15, reward:1600, expR:550,  dmgReduction:0},
@@ -2015,6 +2020,7 @@ const CONV_ENEMY_POOLS = {
   1: ['corrupted_xu', 'void_marine', 'holo_wraith', 'ash_wraith'],
   2: ['fire_demon', 'inferno_golem', 'lava_golem', 'magma_crab', 'ash_wraith'],
   3: ['arc_sentinel', 'tesla_golem', 'storm_wraith', 'volt_hound'],  // a209 — electric (no newbie mobs)
+  4: ['saurian_brute', 'geo_basilisk', 'cube_drake', 'raptor_shard'],  // a211 — reptilian/geometric (no newbie mobs)
 };
 
 // a206 — Bofis: a "newbie" mob population existed at ALL depths of the
