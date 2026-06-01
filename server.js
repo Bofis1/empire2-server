@@ -2011,6 +2011,22 @@ const CONV_ENEMY_POOLS = {
   2: ['fire_demon', 'inferno_golem', 'lava_golem', 'magma_crab', 'ash_wraith'],
 };
 
+// a206 — Bofis: a "newbie" mob population existed at ALL depths of the
+//   Convergence — basically free kills. Cause: three pool members carry their
+//   ORIGINAL low-tier HP from their home zones — ash_wraith (2200, in BOTH
+//   depth pools = every depth), lava_golem (2200) and magma_crab (2400, depth 2)
+//   — vs pool-mates at 36k-95k. After the x2 convergence scale they were only
+//   ~4-5k HP, one-shot by a Lv100 player. We must NOT raise their global
+//   ENEMY_STATS HP (they appear at appropriate levels in dragonlair/ashlands).
+//   Instead, floor the BASE hp used for convergence spawns to the pool tier
+//   (40k, in line with holo_wraith/fire_demon — the low end of the intended
+//   tier) BEFORE the convergence scale/depth multipliers apply, so they end up
+//   on par with the rest of the pool and still scale identically.
+const CONV_MIN_BASE_HP = 40000;
+function convBaseHp(type, rawHp){
+  return Math.max(rawHp, CONV_MIN_BASE_HP);
+}
+
 function generateConvergenceSpawns(depth) {
   // v93.0-a18 — Pool restricted to Xu-tier (48k-95k HP) + ash_wraith (2200 HP tier).
   // Previous pool included crawler (210 HP), elite (540), wraith (480), void_eye (390),
@@ -2053,6 +2069,8 @@ function createZoneEnemies(zoneName) {
   const scale  = ZONE_SCALE[zoneName]  || 1.0;
   return spawns.map((s, i) => {
     const st = ENEMY_STATS[s.type] || ENEMY_STATS.soldier;
+    // a206 — convergence under-tier HP floor (see convBaseHp). Only convergence.
+    const _baseHp = (zoneName === 'convergence') ? convBaseHp(s.type, st.hp) : st.hp;
     return {
       id: i,
       type: s.type,
@@ -2060,8 +2078,8 @@ function createZoneEnemies(zoneName) {
       z: s.tz * TILE,
       spawnX: s.tx * TILE,
       spawnZ: s.tz * TILE,
-      hp: Math.round(st.hp * scale),
-      maxHp: Math.round(st.hp * scale),
+      hp: Math.round(_baseHp * scale),
+      maxHp: Math.round(_baseHp * scale),
       atk: Math.round(st.atk * scale),
       spd: st.spd,
       aggroRange: st.aggroRange,
@@ -3065,6 +3083,8 @@ wss.on('connection', ws => {
         zone.enemies = procSpawns.map((s, i) => {
           const st = ENEMY_STATS[s.type] || ENEMY_STATS.soldier;
           const effectiveScale = baseScale * depthMul;
+          // a206 — floor under-tier convergence mobs to the pool tier (see convBaseHp)
+          const _baseHp = convBaseHp(s.type, st.hp);
           return {
             id: i,
             type: s.type,
@@ -3072,8 +3092,8 @@ wss.on('connection', ws => {
             z: s.tz * TILE,
             spawnX: s.tx * TILE,
             spawnZ: s.tz * TILE,
-            hp: Math.round(st.hp * effectiveScale * hpMul),
-            maxHp: Math.round(st.hp * effectiveScale * hpMul),
+            hp: Math.round(_baseHp * effectiveScale * hpMul),
+            maxHp: Math.round(_baseHp * effectiveScale * hpMul),
             atk: Math.round(st.atk * effectiveScale * atkMul),
             spd: st.spd * frenzyMul,
             aggroRange: st.aggroRange,
