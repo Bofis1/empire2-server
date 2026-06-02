@@ -2926,8 +2926,11 @@ wss.on('connection', ws => {
         if (!b.spawned) {
           console.warn(`[boss] zone.boss.spawned was false in ${player.zone} on hit; auto-spawning.`);
           b.spawned = true;
+          // a226 — ONLY refresh HP if the boss was actually dead (hp<=0). A live
+          //   boss whose spawned flag got flipped (stale depth-set, reconnect,
+          //   second player entering) must keep its current HP — refilling here
+          //   was a source of the random mid-fight "heal to full" (esp. Archon).
           if (b.hp <= 0) {
-            // Boss was previously killed but the zone wasn't reset. Refresh.
             b.hp = b.maxHp;
             b.phase = 1;
           }
@@ -3222,8 +3225,16 @@ wss.on('connection', ws => {
         if (!zone || !zone.boss) break;
         if (!zone.boss.spawned) {
           zone.boss.spawned = true;
-          zone.boss.hp = zone.boss.maxHp;
-          zone.boss.phase = 1;
+          // a226 — ONLY refill if the boss is actually dead. The client re-sends
+          //   sv_boss_spawned in several situations (proximity re-trigger, local
+          //   mesh re-spawn, reconnect). If the server's spawned flag happened to
+          //   be false at that moment, this used to slam hp back to maxHp mid-
+          //   fight — the random "Archon heals to full" bug. A live boss keeps
+          //   its current HP.
+          if (zone.boss.hp <= 0) {
+            zone.boss.hp = zone.boss.maxHp;
+            zone.boss.phase = 1;
+          }
           // Announce to zone
           broadcastToZone(g.id, player.zone, {
             type: 'sv_boss_spawned',
