@@ -2159,6 +2159,17 @@ function getOrCreateZone(game, zoneName) {
       lastActivity: Date.now(),
       // v93.0 phase 3.3 — Convergence-specific depth tracking
       convergenceDepth: zoneName === 'convergence' ? 1 : undefined,
+      // a233 — CO-OP: server-authoritative run seed for the procedural zones
+      //   (Convergence + The Reach). The client BSP layout is deterministic on
+      //   this seed; every player in the game must build the SAME map, so the
+      //   seed is owned by the server and handed to each player on entry. Without
+      //   this each client used its own Date.now() seed and got a different map —
+      //   players literally standing in each other's walls. The_reach is a fixed
+      //   layout but we still carry a seed for parity / future use.
+      runSeed: (zoneName === 'convergence' || zoneName === 'the_reach')
+        ? ((Date.now() ^ (Math.random()*0x7fffffff)) & 0x7fffffff)
+        : undefined,
+      activeModIds: (zoneName === 'convergence') ? [] : undefined,
       // v93.0-a116 -- ALSO populate boss field. Previously this function created
       // zones WITHOUT a boss, so any game that didn\'t go through the create_game
       // path (e.g. join_game or any indirect zone init) had zone.boss=undefined.
@@ -2175,6 +2186,20 @@ function getOrCreateZone(game, zoneName) {
     };
   }
   return game.zones[zoneName];
+}
+
+// a233 — CO-OP run-state broadcast. Tells every client the authoritative seed +
+//   depth + modifiers for a procedural zone so they all build the identical map
+//   and share the same depth/boss. Sent to one ws (on entry) or whole zone (on
+//   depth change / first descent).
+function buildRunState(zone, zoneName) {
+  return {
+    type: 'sv_run_state',
+    zone: zoneName,
+    seed: zone.runSeed || 1,
+    depth: (zoneName === 'convergence') ? (zone.convergenceDepth || 1) : 1,
+    modIds: (zone.activeModIds || []),
+  };
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2413,6 +2438,23 @@ function tickGame(game) {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
     const hasPlayers = zonePlayers.length > 0;
     if (hasPlayers) zone.lastActivity = Date.now();
+
+    // a233 — CO-OP: when the Convergence empties, end the shared run so the next
+    //   group starts fresh (new seed, Depth 1). Grace period avoids resetting
+    //   during the brief gap between a player leaving and another descending.
+    if (zoneName === 'convergence' && zone._runEstablished && !hasPlayers) {
+      if (!zone._emptySince) zone._emptySince = Date.now();
+      else if (Date.now() - zone._emptySince > 20000) {
+        zone._runEstablished = false;
+        zone.convergenceDepth = 1;
+        zone.activeModIds = [];
+        zone.runSeed = ((Date.now() ^ (Math.random()*0x7fffffff)) & 0x7fffffff);
+        zone._emptySince = 0;
+        console.log(`[convergence] Run reset (zone empty) — fresh seed ${zone.runSeed} for next group.`);
+      }
+    } else if (zoneName === 'convergence' && hasPlayers) {
+      zone._emptySince = 0;
+    }
 
     const changed = [];
 
@@ -2827,6 +2869,13 @@ wss.on('connection', ws => {
         console.log(`[sv_enter_zone] Sending snapshot: zone=${data.zone} total=${zoneEnemyCount} active=${activeCount}`);
         g.started = true;
         sendZoneSnapshot(ws, g, data.zone);
+        // a233 — CO-OP: hand the entering player the authoritative run seed + depth
+        //   + mods for procedural zones so they build the SAME map as everyone else
+        //   and join the in-progress depth instead of resetting it.
+        if (data.zone === 'convergence' || data.zone === 'the_reach') {
+          const _pz = getOrCreateZone(g, data.zone);
+          send(ws, buildRunState(_pz, data.zone));
+        }
         broadcastToZone(g.id, data.zone, {
           type:'sv_player_entered', name:player.name, zone:data.zone
         }, ws);
@@ -3112,6 +3161,34 @@ wss.on('connection', ws => {
         const modIds = Array.isArray(data.modIds) ? data.modIds.slice(0, 5) : [];
         const hasMod = (id) => modIds.includes(id);
 
+        // a233 — CO-OP guard. The Convergence zone is SHARED by everyone in the
+        //   game. A late-joiner's client always rolls a "fresh entry at Depth 1"
+        //   on zone-load and fires sv_set_depth — which previously regenerated the
+        //   entire zone at Depth 1, wiping the in-progress deeper run for everyone
+        //   already inside. Rule: a request may only ESTABLISH a run (no one in
+        //   yet) or ADVANCE it (deeper than the current live depth). A request at
+        //   a depth <= the live depth from someone who isn't actually driving the
+        //   run is treated as "I'm joining" — we just (re)send them the live run
+        //   state so they sync to the shared seed/depth/mods, and do NOT regen.
+        const playersHere = getPlayersInZone(g.id, 'convergence').length;
+        const runInProgress = !!zone._runEstablished;
+        const isAdvance = newDepth > oldDepth;
+        if (runInProgress && !isAdvance) {
+          // Joining / re-rolling at or below the live depth → adopt live run.
+          send(ws, buildRunState(zone, 'convergence'));
+          console.log(`[convergence] ${player.name} requested depth ${newDepth} but live run is at ${oldDepth} (players=${playersHere}) — synced to live run, no regen.`);
+          break;
+        }
+
+        // This request establishes or advances the shared run. The DRIVER's client
+        //   seed is adopted as the authoritative run seed on a fresh establish so
+        //   the driver's already-built local map matches the server; on a pure
+        //   advance we keep the existing run seed (continuity within a run).
+        if (!runInProgress && typeof data.seed === 'number' && isFinite(data.seed)) {
+          zone.runSeed = (data.seed & 0x7fffffff) || zone.runSeed;
+        }
+        zone._runEstablished = true;
+
         // Skip if depth AND mods both unchanged
         const sameMods = JSON.stringify(modIds.slice().sort()) === JSON.stringify((zone.activeModIds||[]).slice().sort());
         if (newDepth === oldDepth && sameMods) break;
@@ -3201,6 +3278,9 @@ wss.on('connection', ws => {
           console.log(`[convergence] Same-depth mod update at Depth ${newDepth} — boss HP left at ${(zone.boss.hp||0).toLocaleString()} (NOT refilled).`);
         }
         console.log(`[convergence] Depth ${oldDepth} -> ${newDepth}. Mods: [${modIds.join(',')||'none'}]. ${zone.enemies.length} enemies. hpMul=${hpMul} atkMul=${atkMul} dr+${extraDR}`);
+        // a233 — CO-OP: tell every player in the zone the new authoritative seed +
+        //   depth + mods so they all rebuild the IDENTICAL layout for this depth.
+        broadcastToZone(g.id, 'convergence', buildRunState(zone, 'convergence'));
         broadcastToZone(g.id, 'convergence', {
           type: 'sv_zone_snapshot',
           zone: 'convergence',
