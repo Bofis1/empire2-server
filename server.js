@@ -205,6 +205,12 @@ const ENEMY_STATS = {
   spore_fiend:       {hp:96000,  atk:640, spd:0.056, aggroRange:14, reward:2700, expR:980,  dmgReduction:0},
   vine_lasher:       {hp:104000, atk:660, spd:0.048, aggroRange:14, reward:2800, expR:1000, dmgReduction:0},
   bloom_wisp:        {hp:90000,  atk:620, spd:0.078, aggroRange:15, reward:2650, expR:960,  dmgReduction:0},
+  // a220 — THE REACH elite "mini-boss" mobs (mirror client ENEMY_STATS)
+  void_cube_warden:  {hp:340000, atk:900,  spd:0.022, aggroRange:18, reward:9000,  expR:4200, dmgReduction:0.4},
+  sphere_disruptor:  {hp:260000, atk:980,  spd:0.030, aggroRange:22, reward:8200,  expR:3800, dmgReduction:0.2},
+  cubic_annihilator: {hp:380000, atk:1100, spd:0.040, aggroRange:16, reward:9600,  expR:4400, dmgReduction:0.35},
+  harbinger_sphere:  {hp:300000, atk:920,  spd:0.026, aggroRange:22, reward:9200,  expR:4200, dmgReduction:0.25},
+  omega_observer:    {hp:440000, atk:1200, spd:0.028, aggroRange:24, reward:12000, expR:5200, dmgReduction:0.4},
   xu_miner:          {hp:820,   atk:68,  spd:0.048, aggroRange:9,  reward:220,  expR:72,   dmgReduction:0},
   xu_overseer:       {hp:1400,  atk:95,  spd:0.040, aggroRange:11, reward:340,  expR:110,  dmgReduction:0},
   wyvern_warlord:    {hp:55000, atk:400, spd:0.065, aggroRange:15, reward:1600, expR:550,  dmgReduction:0},
@@ -2003,6 +2009,21 @@ const ZONE_SPAWNS = {
   // Empty array marker. createZoneEnemies() special-cases 'convergence' and
   // generates ~100 procedural spawns at game-create time via generateConvergenceSpawns().
   convergence: [],
+  // ── a220 — THE REACH — 5 elite "mini-boss" mobs spread across the regions,
+  //   plus a few duplicates so the zone isn't empty after a kill. Kept clear of
+  //   the apex boss arena (~22 tiles of 120,78).
+  the_reach: [
+    {tx:48,tz:120, type:'void_cube_warden'},     // West — The Expanse (near spawn approach)
+    {tx:60,tz:60,  type:'sphere_disruptor'},      // NW — The Fallen Spheres
+    {tx:175,tz:95, type:'harbinger_sphere'},      // E — The Overgrowth/Spheres
+    {tx:120,tz:170,type:'cubic_annihilator'},     // S — The Collapse
+    {tx:185,tz:160,type:'omega_observer'},         // SE — deep end (the ultimate watcher)
+    // a few more so each region has a couple of threats
+    {tx:70,tz:140, type:'cubic_annihilator'},
+    {tx:150,tz:140,type:'sphere_disruptor'},
+    {tx:90,tz:50,  type:'void_cube_warden'},
+    {tx:200,tz:120,type:'harbinger_sphere'},
+  ],
 };
 ;
 
