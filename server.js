@@ -3136,7 +3136,14 @@ wss.on('connection', ws => {
         // Previous bug: server set spawned=false but never told the client. Client kept
         // local boss alive, hit it, but server dropped hits ("if (!b.spawned) break").
         // Damage numbers popped client-side, server HP never decreased.
-        if (zone.boss) {
+        // a218 — Bofis RED ALERT: Convergence bosses randomly healed to full
+        //   mid-fight. CAUSE: this block reset zone.boss.hp = maxHp whenever
+        //   sv_set_depth ran with the depth unchanged but the MODS changed
+        //   (a re-roll, a second player entering and rolling, a reconnect, etc.)
+        //   — refilling an in-progress boss. FIX: only refill the boss when the
+        //   DEPTH actually changes. A same-depth mod update still rescales
+        //   enemies but must NEVER touch the live boss HP.
+        if (zone.boss && newDepth !== oldDepth) {
           // Scale max HP for depth + Vital modifier
           const _baseBossHp = (ZONE_BOSS_HP['convergence'] || {hp: 2000000}).hp;
           const _scaledMaxHp = Math.round(_baseBossHp * depthMul * hpMul);
@@ -3153,6 +3160,8 @@ wss.on('connection', ws => {
             maxHp: zone.boss.maxHp,
           });
           console.log(`[convergence] Boss reset for Depth ${newDepth}: ${_scaledMaxHp.toLocaleString()} HP (x${depthMul.toFixed(2)} depth, x${hpMul.toFixed(2)} vital)`);
+        } else if (zone.boss) {
+          console.log(`[convergence] Same-depth mod update at Depth ${newDepth} — boss HP left at ${(zone.boss.hp||0).toLocaleString()} (NOT refilled).`);
         }
         console.log(`[convergence] Depth ${oldDepth} -> ${newDepth}. Mods: [${modIds.join(',')||'none'}]. ${zone.enemies.length} enemies. hpMul=${hpMul} atkMul=${atkMul} dr+${extraDR}`);
         broadcastToZone(g.id, 'convergence', {
