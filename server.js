@@ -338,6 +338,7 @@ const ZONE_BOSS_HP = {
   blooming_wilds:   { hp:35000,    name:'THE WILDMOTHER' },   // v92.49
   xeron:            { hp:3000000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
+  the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
 };
 
 // ══════════════════════════════════════════════════════════
