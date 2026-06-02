@@ -2013,16 +2013,28 @@ const ZONE_SPAWNS = {
   //   plus a few duplicates so the zone isn't empty after a kill. Kept clear of
   //   the apex boss arena (~22 tiles of 120,78).
   the_reach: [
-    {tx:48,tz:120, type:'void_cube_warden'},     // West — The Expanse (near spawn approach)
-    {tx:60,tz:60,  type:'sphere_disruptor'},      // NW — The Fallen Spheres
-    {tx:175,tz:95, type:'harbinger_sphere'},      // E — The Overgrowth/Spheres
-    {tx:120,tz:170,type:'cubic_annihilator'},     // S — The Collapse
-    {tx:185,tz:160,type:'omega_observer'},         // SE — deep end (the ultimate watcher)
-    // a few more so each region has a couple of threats
-    {tx:70,tz:140, type:'cubic_annihilator'},
-    {tx:150,tz:140,type:'sphere_disruptor'},
-    {tx:90,tz:50,  type:'void_cube_warden'},
-    {tx:200,tz:120,type:'harbinger_sphere'},
+    // a223 — ~20 elite spawns spread across all regions. Clear of the apex boss
+    //   arena (~18 tiles of 120,78) and the west spawn lane (~30,120). One Omega
+    //   Observer (the "ultimate" — strongest, so only one).
+    // West — The Expanse
+    {tx:48,tz:120, type:'void_cube_warden'},  {tx:55,tz:95,  type:'cubic_annihilator'},
+    {tx:40,tz:150, type:'sphere_disruptor'},  {tx:65,tz:135, type:'harbinger_sphere'},
+    // NW — The Fallen Spheres
+    {tx:60,tz:55,  type:'sphere_disruptor'},  {tx:85,tz:45,  type:'void_cube_warden'},
+    {tx:45,tz:40,  type:'harbinger_sphere'},
+    // N — mid-north
+    {tx:115,tz:35, type:'cubic_annihilator'}, {tx:150,tz:50, type:'sphere_disruptor'},
+    // E — The Overgrowth
+    {tx:175,tz:90, type:'harbinger_sphere'},  {tx:200,tz:70, type:'void_cube_warden'},
+    {tx:195,tz:120,type:'sphere_disruptor'},  {tx:215,tz:150,type:'cubic_annihilator'},
+    // S — The Collapse
+    {tx:115,tz:170,type:'cubic_annihilator'}, {tx:90,tz:185, type:'harbinger_sphere'},
+    {tx:150,tz:180,type:'void_cube_warden'},
+    // SE — deep end (the ultimate watcher)
+    {tx:185,tz:160,type:'omega_observer'},    {tx:205,tz:195,type:'harbinger_sphere'},
+    // mid-fill
+    {tx:95,tz:140, type:'sphere_disruptor'},  {tx:160,tz:135,type:'cubic_annihilator'},
+    {tx:70,tz:75,  type:'void_cube_warden'},
   ],
 };
 ;
