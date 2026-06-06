@@ -73,6 +73,16 @@ function findPlayerGuild(charName){
   return null;
 }
 
+// v93.0-a258 — sanitized guild tag for a character, from the PERSISTED registry.
+// The lobby player list uses this so tags are server-authoritative: the client
+// can't reliably send its own tag at login (its myGuild isn't populated until the
+// server replies with guild_info), so we resolve it here by character name instead.
+function _serverGuildTag(charName){
+  const pg = findPlayerGuild(charName);
+  if(!pg || !pg.guild || !pg.guild.tag) return null;
+  return String(pg.guild.tag).replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase() || null;
+}
+
 // Broadcast guild update to all online members
 function broadcastGuildUpdate(guildId){
   const g = guilds[guildId];
@@ -2604,7 +2614,7 @@ function getPlayerSummary(){
     cls: p.cls || 'Warrior',
     raceName: p.raceName || 'Xu',
     asc: (typeof p.asc === 'number') ? p.asc : 0,   // v93.0-a256 — ascendancy level
-    guildTag: p.guildTag || null   // v93.0-a257 — guild tag
+    guildTag: _serverGuildTag(p.name)               // v93.0-a258 — live, server-authoritative (was p.guildTag, always null)
   }));
 }
 function broadcastPlayerList(){ broadcast({ type:'player_list', players:getPlayerSummary() }); }
@@ -2686,10 +2696,10 @@ wss.on('connection', ws => {
           // v93.0-a256 — ascendancy level for the player list. Clamp to a sane range.
           const _asc = parseInt(data.asc, 10);
           player.asc = (isFinite(_asc) && _asc >= 0 && _asc <= 99999) ? _asc : 0;
-          // v93.0-a257 — guild tag: alphanumeric, max 4 chars, uppercase (null if none).
-          player.guildTag = (typeof data.guildTag === 'string')
-                            ? (data.guildTag.replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase() || null)
-                            : null;
+          // v93.0-a258 — guild tag is resolved server-side from our persisted guild
+          // registry (see getPlayerSummary → _serverGuildTag). We intentionally do NOT
+          // trust data.guildTag: the client's myGuild isn't populated until the server
+          // sends guild_info (later in this handler), so at login it was always null.
         }
         send(ws, { type:'logged_in', name:player.name });
         sendGameList(ws);
