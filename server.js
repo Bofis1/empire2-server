@@ -2602,7 +2602,8 @@ function getPlayerSummary(){
     name: p.name,
     level: (typeof p.level === 'number') ? p.level : 1,
     cls: p.cls || 'Warrior',
-    raceName: p.raceName || 'Xu'
+    raceName: p.raceName || 'Xu',
+    asc: (typeof p.asc === 'number') ? p.asc : 0   // v93.0-a256 — ascendancy level
   }));
 }
 function broadcastPlayerList(){ broadcast({ type:'player_list', players:getPlayerSummary() }); }
@@ -2681,6 +2682,9 @@ wss.on('connection', ws => {
                           .slice(0,16).replace(/[^a-z_]/g,'') || 'xu';
           player.raceName = (typeof data.raceName === 'string' ? data.raceName : 'Xu')
                             .slice(0,16).replace(/[<>&"']/g,'') || 'Xu';
+          // v93.0-a256 — ascendancy level for the player list. Clamp to a sane range.
+          const _asc = parseInt(data.asc, 10);
+          player.asc = (isFinite(_asc) && _asc >= 0 && _asc <= 99999) ? _asc : 0;
         }
         send(ws, { type:'logged_in', name:player.name });
         sendGameList(ws);
