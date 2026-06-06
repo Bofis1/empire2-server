@@ -2603,7 +2603,8 @@ function getPlayerSummary(){
     level: (typeof p.level === 'number') ? p.level : 1,
     cls: p.cls || 'Warrior',
     raceName: p.raceName || 'Xu',
-    asc: (typeof p.asc === 'number') ? p.asc : 0   // v93.0-a256 — ascendancy level
+    asc: (typeof p.asc === 'number') ? p.asc : 0,   // v93.0-a256 — ascendancy level
+    guildTag: p.guildTag || null   // v93.0-a257 — guild tag
   }));
 }
 function broadcastPlayerList(){ broadcast({ type:'player_list', players:getPlayerSummary() }); }
@@ -2685,6 +2686,10 @@ wss.on('connection', ws => {
           // v93.0-a256 — ascendancy level for the player list. Clamp to a sane range.
           const _asc = parseInt(data.asc, 10);
           player.asc = (isFinite(_asc) && _asc >= 0 && _asc <= 99999) ? _asc : 0;
+          // v93.0-a257 — guild tag: alphanumeric, max 4 chars, uppercase (null if none).
+          player.guildTag = (typeof data.guildTag === 'string')
+                            ? (data.guildTag.replace(/[^A-Za-z0-9]/g,'').slice(0,4).toUpperCase() || null)
+                            : null;
         }
         send(ws, { type:'logged_in', name:player.name });
         sendGameList(ws);
