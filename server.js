@@ -307,6 +307,10 @@ const ENEMY_STATS = {
   laser_turret:        {hp:70000,  atk:520, spd:0.000, aggroRange:18, reward:2000, expR:1500, dmgReduction:0.35},
   cyber_ogre:          {hp:180000, atk:720, spd:0.030, aggroRange:11, reward:5500, expR:4400, dmgReduction:0.25},
   shard_assassin:      {hp:55000,  atk:620, spd:0.085, aggroRange:14, reward:3000, expR:2400, dmgReduction:0.05},
+  // ── LUCIDWILDE (a297) — Lv 100+ uberzone, on par with The Reach ──
+  prismaraptor:        {hp:85000,  atk:460, spd:0.082, aggroRange:14, reward:1600, expR:1300, dmgReduction:0.05},
+  sporegon:            {hp:220000, atk:400, spd:0.022, aggroRange:9,  reward:2600, expR:2000, dmgReduction:0.30},
+  vortexwisp:          {hp:60000,  atk:520, spd:0.070, aggroRange:15, reward:1500, expR:1200, dmgReduction:0},
 };
 
 // Zone scale multipliers — matches client scaleMap
@@ -320,6 +324,7 @@ const ZONE_SCALE = {
   blooming_wilds:1.0,    // v92.49
   xeron:1.0,             // v92.55
   convergence:2.0,       // v93.0 phase 3 — endgame procedural zone; enemies already at xeron-tier stats so 2.0x is plenty
+  lucidwilde:1.0,        // a297 — Lucidwilde uberzone (mobs already endgame-tier)
 };
 
 // ══════════════════════════════════════════════════════════
@@ -355,6 +360,7 @@ const ZONE_BOSS_HP = {
   xeron:            { hp:3000000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
+  lucidwilde:       { hp:5000000,  name:'THE PIXIELORD' },     // a297 — Lucidwilde uberzone apex
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2045,6 +2051,25 @@ const ZONE_SPAWNS = {
     // mid-fill
     {tx:95,tz:140, type:'sphere_disruptor'},  {tx:160,tz:135,type:'cubic_annihilator'},
     {tx:70,tz:75,  type:'void_cube_warden'},
+  ],
+  // a297 — LUCIDWILDE (mirrors client ZONE_DEFS.lucidwilde.enemySpawns) — 52 across the 240x240 zone
+  lucidwilde: [
+    {tx:108,tz:204,type:'prismaraptor'},{tx:132,tz:204,type:'prismaraptor'},{tx:120,tz:200,type:'vortexwisp'},
+    {tx:96,tz:198,type:'sporegon'},     {tx:144,tz:198,type:'sporegon'},    {tx:120,tz:194,type:'prismaraptor'},
+    {tx:82,tz:190,type:'prismaraptor'}, {tx:158,tz:190,type:'vortexwisp'},  {tx:104,tz:188,type:'vortexwisp'},{tx:136,tz:188,type:'prismaraptor'},
+    {tx:66,tz:182,type:'sporegon'},     {tx:174,tz:182,type:'sporegon'},    {tx:120,tz:178,type:'prismaraptor'},
+    {tx:90,tz:174,type:'prismaraptor'}, {tx:150,tz:174,type:'vortexwisp'},  {tx:108,tz:170,type:'sporegon'},  {tx:132,tz:170,type:'prismaraptor'},
+    {tx:72,tz:164,type:'vortexwisp'},   {tx:168,tz:164,type:'prismaraptor'},{tx:120,tz:162,type:'vortexwisp'},
+    {tx:88,tz:158,type:'prismaraptor'}, {tx:152,tz:158,type:'sporegon'},    {tx:104,tz:156,type:'prismaraptor'},{tx:136,tz:156,type:'vortexwisp'},
+    {tx:70,tz:140,type:'sporegon'},     {tx:170,tz:140,type:'sporegon'},    {tx:120,tz:142,type:'prismaraptor'},
+    {tx:92,tz:136,type:'prismaraptor'}, {tx:148,tz:136,type:'vortexwisp'},  {tx:108,tz:134,type:'vortexwisp'},{tx:132,tz:134,type:'prismaraptor'},
+    {tx:78,tz:128,type:'prismaraptor'}, {tx:162,tz:128,type:'prismaraptor'},{tx:120,tz:130,type:'sporegon'},
+    {tx:96,tz:124,type:'vortexwisp'},   {tx:144,tz:124,type:'vortexwisp'},  {tx:108,tz:122,type:'prismaraptor'},{tx:132,tz:122,type:'prismaraptor'},
+    {tx:84,tz:118,type:'sporegon'},     {tx:156,tz:118,type:'sporegon'},
+    {tx:100,tz:128,type:'prismaraptor'},{tx:140,tz:128,type:'vortexwisp'},
+    {tx:36,tz:120,type:'prismaraptor'}, {tx:204,tz:120,type:'prismaraptor'},{tx:36,tz:170,type:'vortexwisp'},{tx:204,tz:170,type:'vortexwisp'},
+    {tx:200,tz:200,type:'sporegon'},    {tx:60,tz:210,type:'prismaraptor'}, {tx:180,tz:210,type:'prismaraptor'},
+    {tx:120,tz:150,type:'sporegon'},    {tx:110,tz:160,type:'vortexwisp'},  {tx:130,tz:160,type:'vortexwisp'},
   ],
 };
 ;
