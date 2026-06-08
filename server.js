@@ -3017,16 +3017,18 @@ wss.on('connection', ws => {
         // This prevents the case where the boss was reset (e.g. on depth transition)
         // but the client already started attacking and the spawned flag was stale.
         if (!b.spawned) {
+          // a298 — INSTANT-RESPAWN FIX. Do NOT resurrect a DEAD boss from a stray
+          //   hit. A high-DPS player vs a low-HP boss (the Wildmother is 35k) lands
+          //   extra hits in the network round-trip window AFTER the kill; those
+          //   arrived here with spawned=false + hp<=0, the old a226 code refilled
+          //   HP to full and re-broadcast a spawn -> the boss instantly respawned
+          //   (free XP farm) and the 5-minute lock was bypassed. A dead boss now
+          //   respawns ONLY via the timed sv_boss_respawn below. A live boss with a
+          //   merely-stale spawned flag (reconnect / depth-set / 2nd player) still
+          //   auto-spawns and KEEPS its current HP (the a226 heal-to-full fix holds).
+          if (b.hp <= 0) break;
           console.warn(`[boss] zone.boss.spawned was false in ${player.zone} on hit; auto-spawning.`);
           b.spawned = true;
-          // a226 — ONLY refresh HP if the boss was actually dead (hp<=0). A live
-          //   boss whose spawned flag got flipped (stale depth-set, reconnect,
-          //   second player entering) must keep its current HP — refilling here
-          //   was a source of the random mid-fight "heal to full" (esp. Archon).
-          if (b.hp <= 0) {
-            b.hp = b.maxHp;
-            b.phase = 1;
-          }
           broadcastToZone(g.id, player.zone, {
             type: 'sv_boss_spawned',
             zone: player.zone,
@@ -3091,7 +3093,9 @@ wss.on('connection', ws => {
           });
           // Award large guild XP for boss kill — scales with boss HP
           awardGuildXp(player.name, Math.max(100, Math.floor((b.maxHp||1000) / 500)));
-          // Reset boss after 3 minutes
+          b.killedAt = Date.now();
+          // a298 — respawn after 5 minutes (was 3) to match the client's hard
+          //   BOSS_RESPAWN_MS lock, so server + client agree on the cooldown.
           // Capture bossZone NOW — player.zone may change before the timer fires
           const bossZone = player.zone;
           setTimeout(() => {
@@ -3100,11 +3104,12 @@ wss.on('connection', ws => {
               rb.hp = rb.maxHp;
               rb.phase = 1;
               rb.spawned = false; // will re-spawn when triggered client-side
+              rb.killedAt = 0;    // a298 — clear the death stamp; cooldown is over
               broadcastToZone(g.id, bossZone, {
                 type: 'sv_boss_respawn', zone: bossZone, bossName: rb.name,
               });
             }
-          }, 3 * 60 * 1000);
+          }, 5 * 60 * 1000);
         }
         break;
       }
