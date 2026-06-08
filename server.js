@@ -2052,25 +2052,10 @@ const ZONE_SPAWNS = {
     {tx:95,tz:140, type:'sphere_disruptor'},  {tx:160,tz:135,type:'cubic_annihilator'},
     {tx:70,tz:75,  type:'void_cube_warden'},
   ],
-  // a297 — LUCIDWILDE (mirrors client ZONE_DEFS.lucidwilde.enemySpawns) — 52 across the 240x240 zone
-  lucidwilde: [
-    {tx:108,tz:204,type:'prismaraptor'},{tx:132,tz:204,type:'prismaraptor'},{tx:120,tz:200,type:'vortexwisp'},
-    {tx:96,tz:198,type:'sporegon'},     {tx:144,tz:198,type:'sporegon'},    {tx:120,tz:194,type:'prismaraptor'},
-    {tx:82,tz:190,type:'prismaraptor'}, {tx:158,tz:190,type:'vortexwisp'},  {tx:104,tz:188,type:'vortexwisp'},{tx:136,tz:188,type:'prismaraptor'},
-    {tx:66,tz:182,type:'sporegon'},     {tx:174,tz:182,type:'sporegon'},    {tx:120,tz:178,type:'prismaraptor'},
-    {tx:90,tz:174,type:'prismaraptor'}, {tx:150,tz:174,type:'vortexwisp'},  {tx:108,tz:170,type:'sporegon'},  {tx:132,tz:170,type:'prismaraptor'},
-    {tx:72,tz:164,type:'vortexwisp'},   {tx:168,tz:164,type:'prismaraptor'},{tx:120,tz:162,type:'vortexwisp'},
-    {tx:88,tz:158,type:'prismaraptor'}, {tx:152,tz:158,type:'sporegon'},    {tx:104,tz:156,type:'prismaraptor'},{tx:136,tz:156,type:'vortexwisp'},
-    {tx:70,tz:140,type:'sporegon'},     {tx:170,tz:140,type:'sporegon'},    {tx:120,tz:142,type:'prismaraptor'},
-    {tx:92,tz:136,type:'prismaraptor'}, {tx:148,tz:136,type:'vortexwisp'},  {tx:108,tz:134,type:'vortexwisp'},{tx:132,tz:134,type:'prismaraptor'},
-    {tx:78,tz:128,type:'prismaraptor'}, {tx:162,tz:128,type:'prismaraptor'},{tx:120,tz:130,type:'sporegon'},
-    {tx:96,tz:124,type:'vortexwisp'},   {tx:144,tz:124,type:'vortexwisp'},  {tx:108,tz:122,type:'prismaraptor'},{tx:132,tz:122,type:'prismaraptor'},
-    {tx:84,tz:118,type:'sporegon'},     {tx:156,tz:118,type:'sporegon'},
-    {tx:100,tz:128,type:'prismaraptor'},{tx:140,tz:128,type:'vortexwisp'},
-    {tx:36,tz:120,type:'prismaraptor'}, {tx:204,tz:120,type:'prismaraptor'},{tx:36,tz:170,type:'vortexwisp'},{tx:204,tz:170,type:'vortexwisp'},
-    {tx:200,tz:200,type:'sporegon'},    {tx:60,tz:210,type:'prismaraptor'}, {tx:180,tz:210,type:'prismaraptor'},
-    {tx:120,tz:150,type:'sporegon'},    {tx:110,tz:160,type:'vortexwisp'},  {tx:130,tz:160,type:'vortexwisp'},
-  ],
+  // a299 — LUCIDWILDE mobs are CLIENT-AUTHORITATIVE (bespoke psychedelic AI + abilities
+  //   run client-side). The server intentionally does NOT spawn them, so it sends an
+  //   empty Lucidwilde snapshot and the client owns movement + ability damage. The
+  //   PIXIELORD boss stays server-authoritative (see ZONE_BOSS_HP.lucidwilde).
 };
 ;
 
