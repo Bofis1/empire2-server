@@ -362,7 +362,7 @@ const ZONE_BOSS_HP = {
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
   lucidwilde:       { hp:5000000,  name:'THE PIXIELORD' },     // a297 — Lucidwilde uberzone apex
-  xulcan:           { hp:4500000,  name:'XU ZET-HORAK' },      // a337 — Xulcan Prime apex (Primus Harmonic Overseer)
+  xulcan:           { hp:2000000,  name:'XU ZET-HORAK' },      // a342 — Lv 90 apex, below Overseer Zero's 3M
 };
 
 // ══════════════════════════════════════════════════════════
