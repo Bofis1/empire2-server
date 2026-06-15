@@ -325,6 +325,7 @@ const ZONE_SCALE = {
   xeron:1.0,             // v92.55
   convergence:2.0,       // v93.0 phase 3 — endgame procedural zone; enemies already at xeron-tier stats so 2.0x is plenty
   lucidwilde:1.0,        // a297 — Lucidwilde uberzone (mobs already endgame-tier)
+  xulcan:1.0,            // a332 — Xulcan Prime (client-authoritative mobs; see ZONE_SPAWNS note)
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2056,6 +2057,10 @@ const ZONE_SPAWNS = {
   //   run client-side). The server intentionally does NOT spawn them, so it sends an
   //   empty Lucidwilde snapshot and the client owns movement + ability damage. The
   //   PIXIELORD boss stays server-authoritative (see ZONE_BOSS_HP.lucidwilde).
+  // a332 — XULCAN PRIME mobs are likewise CLIENT-AUTHORITATIVE (bespoke Xu Dominion AI
+  //   + abilities run client-side). No ZONE_SPAWNS entry on purpose: the server sends an
+  //   empty xulcan snapshot and the client spawns + owns the five Xu units. (The boss
+  //   XU ZET-HORAK will become server-authoritative when added — ZONE_BOSS_HP.xulcan.)
 };
 ;
 
