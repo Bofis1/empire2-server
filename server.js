@@ -311,6 +311,11 @@ const ENEMY_STATS = {
   prismaraptor:        {hp:85000,  atk:460, spd:0.082, aggroRange:14, reward:1600, expR:1300, dmgReduction:0.05},
   sporegon:            {hp:220000, atk:400, spd:0.022, aggroRange:9,  reward:2600, expR:2000, dmgReduction:0.30},
   vortexwisp:          {hp:60000,  atk:520, spd:0.070, aggroRange:15, reward:1500, expR:1200, dmgReduction:0},
+  // ── AVIA CANYON (a347) — Lv30 cybernetic birds (client-authoritative; here for parity) ──
+  skyscout:            {hp:2800,   atk:95,  spd:0.052, aggroRange:17, reward:240,  expR:200,  dmgReduction:0},
+  beakdrone:           {hp:4200,   atk:120, spd:0.070, aggroRange:14, reward:280,  expR:230,  dmgReduction:0.10},
+  wingguard:           {hp:9000,   atk:110, spd:0.030, aggroRange:11, reward:420,  expR:340,  dmgReduction:0.35},
+  spiraldive:          {hp:3400,   atk:130, spd:0.075, aggroRange:16, reward:320,  expR:270,  dmgReduction:0.05},
 };
 
 // Zone scale multipliers — matches client scaleMap
@@ -326,6 +331,7 @@ const ZONE_SCALE = {
   convergence:2.0,       // v93.0 phase 3 — endgame procedural zone; enemies already at xeron-tier stats so 2.0x is plenty
   lucidwilde:1.0,        // a297 — Lucidwilde uberzone (mobs already endgame-tier)
   xulcan:1.0,            // a332 — Xulcan Prime (client-authoritative mobs; see ZONE_SPAWNS note)
+  aviacanyon:1.0,        // a347 — Avia Canyon (client-authoritative birds; boss server-side)
 };
 
 // ══════════════════════════════════════════════════════════
@@ -363,6 +369,7 @@ const ZONE_BOSS_HP = {
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
   lucidwilde:       { hp:5000000,  name:'THE PIXIELORD' },     // a297 — Lucidwilde uberzone apex
   xulcan:           { hp:2000000,  name:'XU ZET-HORAK' },      // a342 — Lv 90 apex, below Overseer Zero's 3M
+  aviacanyon:       { hp:600000,   name:'XUBERRY' },          // a347 — Lv 30 parrot-warlord apex
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2062,6 +2069,8 @@ const ZONE_SPAWNS = {
   //   + abilities run client-side). No ZONE_SPAWNS entry on purpose: the server sends an
   //   empty xulcan snapshot and the client spawns + owns the five Xu units. (The boss
   //   XU ZET-HORAK will become server-authoritative when added — ZONE_BOSS_HP.xulcan.)
+  // a347 — AVIA CANYON birds are likewise CLIENT-AUTHORITATIVE (no ZONE_SPAWNS entry); the
+  //   XUBERRY boss is server-authoritative (ZONE_BOSS_HP.aviacanyon).
 };
 ;
 
