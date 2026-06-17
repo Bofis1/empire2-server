@@ -332,6 +332,7 @@ const ZONE_SCALE = {
   lucidwilde:1.0,        // a297 — Lucidwilde uberzone (mobs already endgame-tier)
   xulcan:1.0,            // a332 — Xulcan Prime (client-authoritative mobs; see ZONE_SPAWNS note)
   aviacanyon:1.0,        // a347 — Avia Canyon (client-authoritative birds; boss server-side)
+  forge:1.0,             // a361 — THE FORGE (client-authoritative foundry mobs; boss server-side)
 };
 
 // ══════════════════════════════════════════════════════════
@@ -370,6 +371,7 @@ const ZONE_BOSS_HP = {
   lucidwilde:       { hp:5000000,  name:'THE PIXIELORD' },     // a297 — Lucidwilde uberzone apex
   xulcan:           { hp:2000000,  name:'XU ZET-HORAK' },      // a342 — Lv 90 apex, below Overseer Zero's 3M
   aviacanyon:       { hp:600000,   name:'XUBERRY' },          // a347 — Lv 30 parrot-warlord apex
+  forge:            { hp:1500000,  name:'THE FURNACE CORE' },  // a361 — Lv 95 foundry titan (client-auth mobs, server-auth boss)
 };
 
 // ══════════════════════════════════════════════════════════
@@ -2071,6 +2073,8 @@ const ZONE_SPAWNS = {
   //   XU ZET-HORAK will become server-authoritative when added — ZONE_BOSS_HP.xulcan.)
   // a347 — AVIA CANYON birds are likewise CLIENT-AUTHORITATIVE (no ZONE_SPAWNS entry); the
   //   XUBERRY boss is server-authoritative (ZONE_BOSS_HP.aviacanyon).
+  // a361 — THE FORGE foundry mobs are likewise CLIENT-AUTHORITATIVE (no ZONE_SPAWNS entry); the
+  //   FURNACE CORE boss is server-authoritative (ZONE_BOSS_HP.forge).
 };
 ;
 
