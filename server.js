@@ -383,7 +383,7 @@ const ZONE_BOSS_HP = {
 // players see. Damage is server-authoritative once a game enters MP mode.
 // ══════════════════════════════════════════════════════════
 const WORLD_BOSS_DEFS = [
-  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'ashlands',     tx:30, tz:30, hp:280000, atk:115, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
+  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'ashlands',     tx:70, tz:70, hp:280000, atk:115, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
   { id:'ancient_wyrm',     name:'The Eyexor',             zone:'ancient',      tx:25, tz:25, hp:320000, atk:120, atkCooldown:85,  aggroRange:22, color:0xddbb60, lootTier:5 },
   { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'cemetery',     tx:25, tz:25, hp:360000, atk:130, atkCooldown:90,  aggroRange:22, color:0xc080ff, lootTier:4 },
   { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:30, tz:30, hp:440000, atk:145, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
@@ -1118,85 +1118,266 @@ const ZONE_SPAWNS = {
     {tx:72,tz:72,type:'xu_miner'},
   ],
   ashlands: [
-    {tx:10,tz:8,type:'berserker'},
-    {tx:22,tz:8,type:'berserker'},
-    {tx:8,tz:15,type:'ash_wraith'},
-    {tx:24,tz:20,type:'ash_wraith'},
-    {tx:28,tz:26,type:'ash_wraith'},
-    {tx:36,tz:30,type:'ash_wraith'},
-    {tx:16,tz:34,type:'berserker'},
-    {tx:38,tz:14,type:'berserker'},
-    {tx:18,tz:12,type:'lava_golem'},
-    {tx:22,tz:14,type:'lava_golem'},
-    {tx:14,tz:18,type:'lava_golem'},
-    {tx:30,tz:10,type:'lava_golem'},
-    {tx:28,tz:30,type:'magma_crab'},
-    {tx:32,tz:28,type:'magma_crab'},
-    {tx:30,tz:32,type:'magma_crab'},
-    {tx:26,tz:30,type:'berserker'},
-    {tx:32,tz:32,type:'berserker'},
-    {tx:36,tz:36,type:'berserker'},
-    {tx:16,tz:6,type:'magma_crab'},
-    {tx:28,tz:6,type:'magma_crab'},
-    {tx:20,tz:14,type:'magma_crab'},
-    {tx:10,tz:22,type:'magma_crab'},
-    {tx:44,tz:8,type:'berserker'},
-    {tx:54,tz:6,type:'ash_wraith'},
-    {tx:62,tz:10,type:'berserker'},
-    {tx:70,tz:8,type:'ash_wraith'},
-    {tx:76,tz:14,type:'berserker'},
-    {tx:48,tz:16,type:'ash_wraith'},
-    {tx:66,tz:18,type:'berserker'},
-    {tx:74,tz:22,type:'lava_golem'},
-    {tx:56,tz:18,type:'lava_golem'},
-    {tx:58,tz:20,type:'lava_golem'},
-    {tx:54,tz:20,type:'lava_golem'},
-    {tx:60,tz:18,type:'lava_golem'},
-    {tx:56,tz:22,type:'berserker'},
-    {tx:60,tz:22,type:'berserker'},
-    {tx:60,tz:40,type:'magma_crab'},
-    {tx:62,tz:42,type:'magma_crab'},
-    {tx:58,tz:42,type:'magma_crab'},
+    // camp 01 [caldera guard]
+    {tx:93,tz:139,type:'lava_golem'},
+    {tx:97,tz:139,type:'lava_golem'},
+    // camp 02 [caldera guard]
+    {tx:125,tz:87,type:'lava_golem'},
+    {tx:128,tz:88,type:'lava_golem'},
+    // camp 03 [caldera guard]
+    {tx:85,tz:136,type:'lava_golem'},
+    {tx:85,tz:137,type:'lava_golem'},
+    // camp 04 [caldera guard]
+    {tx:81,tz:123,type:'lava_golem'},
+    {tx:83,tz:122,type:'lava_golem'},
+    // camp 05 [caldera guard]
+    {tx:126,tz:160,type:'lava_golem'},
+    {tx:124,tz:162,type:'lava_golem'},
+    // camp 06 [caldera guard]
+    {tx:159,tz:105,type:'lava_golem'},
+    {tx:156,tz:105,type:'lava_golem'},
+    // camp 07 [caldera guard]
+    {tx:99,tz:157,type:'lava_golem'},
+    {tx:99,tz:156,type:'lava_golem'},
+    // camp 08 [caldera guard]
+    {tx:163,tz:127,type:'lava_golem'},
+    {tx:163,tz:126,type:'lava_golem'},
+    // camp 09 [caldera guard]
+    {tx:80,tz:110,type:'lava_golem'},
+    {tx:77,tz:109,type:'lava_golem'},
+    // camp 10 [caldera guard]
+    {tx:133,tz:165,type:'lava_golem'},
+    {tx:132,tz:166,type:'lava_golem'},
+    // camp 11 [caldera guard]
+    {tx:139,tz:77,type:'lava_golem'},
+    {tx:135,tz:76,type:'lava_golem'},
+    // camp 12 [caldera guard]
+    {tx:162,tz:145,type:'lava_golem'},
+    {tx:163,tz:142,type:'lava_golem'},
+    // camp 13 [caldera guard]
+    {tx:102,tz:76,type:'lava_golem'},
+    {tx:99,tz:76,type:'lava_golem'},
+    // camp 14 [caldera guard]
+    {tx:86,tz:160,type:'lava_golem'},
+    {tx:83,tz:161,type:'lava_golem'},
+    // camp 15 [caldera guard]
+    {tx:122,tz:67,type:'lava_golem'},
+    {tx:122,tz:68,type:'lava_golem'},
+    // camp 16 [caldera guard]
+    {tx:119,tz:175,type:'lava_golem'},
+    {tx:117,tz:173,type:'lava_golem'},
+    // camp 17 [caldera guard]
+    {tx:162,tz:159,type:'lava_golem'},
+    {tx:159,tz:156,type:'lava_golem'},
+    // camp 18 [caldera guard]
+    {tx:177,tz:120,type:'berserker'},
+    {tx:177,tz:119,type:'berserker'},
+    // camp 19 [caldera guard]
+    {tx:61,tz:117,type:'berserker'},
+    {tx:61,tz:119,type:'berserker'},
+    // camp 20 [caldera guard]
+    {tx:137,tz:174,type:'berserker'},
+    {tx:136,tz:177,type:'berserker'},
+    // camp 21 [caldera guard]
+    {tx:78,tz:80,type:'berserker'},
+    {tx:80,tz:80,type:'berserker'},
+    // camp 22 [caldera guard]
+    {tx:139,tz:65,type:'berserker'},
+    {tx:136,tz:64,type:'berserker'},
+    // camp 23 [caldera guard]
+    {tx:173,tz:94,type:'berserker'},
+    {tx:175,tz:94,type:'berserker'},
+    // camp 24 [caldera guard]
+    {tx:64,tz:101,type:'berserker'},
+    {tx:65,tz:102,type:'berserker'},
+    // camp 25 [caldera guard]
+    {tx:161,tz:79,type:'berserker'},
+    {tx:162,tz:79,type:'berserker'},
+    // camp 26 [caldera guard]
+    {tx:107,tz:177,type:'berserker'},
+    {tx:104,tz:178,type:'berserker'},
+    // camp 27 [caldera guard]
+    {tx:177,tz:142,type:'berserker'},
+    {tx:178,tz:139,type:'berserker'},
+    // camp 28 [caldera guard]
+    {tx:93,tz:63,type:'berserker'},
+    {tx:93,tz:64,type:'berserker'},
+    // camp 29 [caldera guard]
+    {tx:56,tz:141,type:'berserker'},
+    {tx:56,tz:140,type:'berserker'},
+    // camp 30 [caldera guard]
+    {tx:65,tz:161,type:'berserker'},
+    {tx:67,tz:157,type:'berserker'},
+    // camp 31 [caldera guard]
+    {tx:157,tz:179,type:'berserker'},
+    {tx:154,tz:179,type:'berserker'},
+    // camp 32 [caldera guard]
+    {tx:157,tz:60,type:'berserker'},
+    {tx:154,tz:60,type:'berserker'},
+    // camp 33 [caldera guard]
+    {tx:189,tz:119,type:'berserker'},
+    {tx:192,tz:119,type:'berserker'},
+    // camp 34 [caldera guard]
+    {tx:184,tz:86,type:'berserker'},
+    {tx:182,tz:89,type:'berserker'},
+    // camp 35 [caldera guard]
+    {tx:180,tz:155,type:'berserker'},
+    {tx:183,tz:155,type:'berserker'},
+    // camp 36 [caldera guard]
+    {tx:117,tz:192,type:'berserker'},
+    {tx:120,tz:193,type:'berserker'},
+    // camp 37 [caldera guard]
+    {tx:83,tz:58,type:'berserker'},
+    {tx:85,tz:56,type:'berserker'},
+    // camp 38 [caldera guard]
+    {tx:56,tz:77,type:'berserker'},
+    {tx:55,tz:80,type:'berserker'},
+    // camp 39 [caldera guard]
+    {tx:146,tz:46,type:'berserker'},
+    {tx:145,tz:46,type:'berserker'},
+    // camp 40 [caldera guard]
+    {tx:196,tz:102,type:'berserker'},
+    {tx:194,tz:100,type:'berserker'},
+    // camp 41 [caldera guard]
+    {tx:102,tz:193,type:'berserker'},
+    // camp 42 [caldera guard]
+    {tx:46,tz:144,type:'berserker'},
+    // camp 43 [caldera guard]
+    {tx:75,tz:182,type:'magma_crab'},
+    // camp 44 [caldera guard]
+    {tx:150,tz:50,type:'magma_crab'},
+    // camp 45 [caldera guard]
+    {tx:153,tz:192,type:'magma_crab'},
+    // camp 46 [caldera guard]
+    {tx:40,tz:117,type:'magma_crab'},
+    // camp 47 [caldera guard]
+    {tx:181,tz:67,type:'magma_crab'},
+    // camp 48 [caldera guard]
+    {tx:177,tz:178,type:'magma_crab'},
+    // camp 49 [caldera guard]
+    {tx:193,tz:157,type:'magma_crab'},
+    // camp 50 [caldera guard]
+    {tx:98,tz:42,type:'magma_crab'},
+    // camp 51 [caldera guard]
+    {tx:201,tz:131,type:'magma_crab'},
+    // camp 52 [caldera guard]
+    {tx:38,tz:107,type:'magma_crab'},
+    // camp 53 [caldera guard]
+    {tx:197,tz:84,type:'magma_crab'},
+    // camp 54 [caldera guard]
+    {tx:62,tz:178,type:'magma_crab'},
+    // camp 55 [caldera guard]
+    {tx:121,tz:37,type:'magma_crab'},
+    // camp 56 [caldera guard]
+    {tx:80,tz:45,type:'magma_crab'},
+    // camp 57 [ashfields]
+    {tx:83,tz:196,type:'magma_crab'},
+    // camp 58 [ashfields]
+    {tx:140,tz:201,type:'magma_crab'},
+    // camp 59 [ashfields]
+    {tx:46,tz:165,type:'magma_crab'},
+    // camp 60 [ashfields]
+    {tx:58,tz:60,type:'magma_crab'},
+    // camp 61 [ashfields]
+    {tx:43,tz:78,type:'magma_crab'},
+    // camp 62 [ashfields]
+    {tx:125,tz:209,type:'magma_crab'},
+    // camp 63 [ashfields]
+    {tx:171,tz:195,type:'magma_crab'},
+    // camp 64 [ashfields]
+    {tx:212,tz:121,type:'magma_crab'},
+    // camp 65 [ashfields]
+    {tx:175,tz:47,type:'magma_crab'},
+    // camp 66 [ashfields]
+    {tx:140,tz:210,type:'magma_crab'},
+    // camp 67 [ashfields]
+    {tx:85,tz:212,type:'magma_crab'},
+    // camp 68 [ashfields]
+    {tx:43,tz:178,type:'magma_crab'},
+    // camp 69 [ashfields]
+    {tx:40,tz:62,type:'magma_crab'},
+    // camp 70 [ashfields]
     {tx:64,tz:40,type:'magma_crab'},
-    {tx:60,tz:44,type:'berserker'},
-    {tx:64,tz:44,type:'berserker'},
-    {tx:56,tz:44,type:'lava_golem'},
-    {tx:44,tz:34,type:'magma_crab'},
-    {tx:52,tz:38,type:'berserker'},
-    {tx:68,tz:34,type:'ash_wraith'},
-    {tx:74,tz:40,type:'magma_crab'},
-    {tx:46,tz:50,type:'berserker'},
-    {tx:56,tz:52,type:'lava_golem'},
-    {tx:66,tz:56,type:'ash_wraith'},
-    {tx:72,tz:52,type:'berserker'},
-    {tx:68,tz:62,type:'ash_wraith'},
-    {tx:70,tz:64,type:'ash_wraith'},
-    {tx:66,tz:64,type:'ash_wraith'},
-    {tx:72,tz:62,type:'berserker'},
-    {tx:42,tz:60,type:'magma_crab'},
-    {tx:54,tz:66,type:'lava_golem'},
-    {tx:64,tz:70,type:'berserker'},
-    {tx:74,tz:70,type:'magma_crab'},
-    {tx:8,tz:44,type:'berserker'},
-    {tx:20,tz:42,type:'ash_wraith'},
-    {tx:32,tz:46,type:'berserker'},
-    {tx:12,tz:52,type:'lava_golem'},
-    {tx:26,tz:54,type:'ash_wraith'},
-    {tx:6,tz:60,type:'berserker'},
-    {tx:18,tz:58,type:'lava_golem'},
-    {tx:34,tz:56,type:'magma_crab'},
-    {tx:14,tz:64,type:'lava_golem'},
-    {tx:16,tz:66,type:'lava_golem'},
-    {tx:12,tz:66,type:'berserker'},
-    {tx:18,tz:64,type:'berserker'},
-    {tx:14,tz:68,type:'magma_crab'},
-    {tx:20,tz:68,type:'ash_wraith'},
-    {tx:8,tz:72,type:'berserker'},
-    {tx:28,tz:70,type:'lava_golem'},
-    {tx:22,tz:74,type:'ash_wraith'},
-    {tx:36,tz:68,type:'magma_crab'},
-    {tx:10,tz:76,type:'berserker'},
-    {tx:30,tz:74,type:'lava_golem'}
+    // camp 71 [ashfields]
+    {tx:212,tz:151,type:'magma_crab'},
+    // camp 72 [ashfields]
+    {tx:145,tz:24,type:'magma_crab'},
+    // camp 73 [ashfields]
+    {tx:21,tz:145,type:'magma_crab'},
+    // camp 74 [ashfields]
+    {tx:156,tz:27,type:'magma_crab'},
+    // camp 75 [ashfields]
+    {tx:102,tz:22,type:'magma_crab'},
+    // camp 76 [ashfields]
+    {tx:23,tz:151,type:'magma_crab'},
+    // camp 77 [ashfields]
+    {tx:218,tz:140,type:'ash_wraith'},
+    // camp 78 [ashfields]
+    {tx:204,tz:63,type:'ash_wraith'},
+    // camp 79 [ashfields]
+    {tx:97,tz:221,type:'ash_wraith'},
+    // camp 80 [ashfields]
+    {tx:57,tz:200,type:'ash_wraith'},
+    // camp 81 [ashfields]
+    {tx:218,tz:82,type:'ash_wraith'},
+    // camp 82 [ashfields]
+    {tx:222,tz:108,type:'ash_wraith'},
+    // camp 83 [ashfields]
+    {tx:202,tz:185,type:'ash_wraith'},
+    // camp 84 [ashfields]
+    {tx:19,tz:86,type:'ash_wraith'},
+    // camp 85 [ashfields]
+    {tx:210,tz:174,type:'ash_wraith'},
+    // camp 86 [ashfields]
+    {tx:212,tz:64,type:'ash_wraith'},
+    // camp 87 [ashfields]
+    {tx:86,tz:18,type:'ash_wraith'},
+    // camp 88 [ashfields]
+    {tx:192,tz:40,type:'ash_wraith'},
+    // camp 89 [ashfields]
+    {tx:27,tz:61,type:'ash_wraith'},
+    // camp 90 [ashfields]
+    {tx:158,tz:223,type:'ash_wraith'},
+    // camp 91 [ashfields]
+    {tx:40,tz:192,type:'ash_wraith'},
+    // camp 92 [ashfields]
+    {tx:181,tz:211,type:'ash_wraith'},
+    // camp 93 [ashfields]
+    {tx:200,tz:196,type:'ash_wraith'},
+    // camp 94 [ashfields]
+    {tx:66,tz:215,type:'ash_wraith'},
+    // camp 95 [ashfields]
+    {tx:178,tz:27,type:'ash_wraith'},
+    // camp 96 [ashfields]
+    {tx:66,tz:24,type:'ash_wraith'},
+    // camp 97 [ashfields]
+    {tx:46,tz:35,type:'ash_wraith'},
+    // camp 98 [ashfields]
+    {tx:19,tz:172,type:'ash_wraith'},
+    // camp 99 [ashfields]
+    {tx:29,tz:48,type:'ash_wraith'},
+    // camp 100 [ashfields]
+    {tx:50,tz:210,type:'ash_wraith'},
+    // camp 101 [ashfields]
+    {tx:41,tz:28,type:'ash_wraith'},
+    // camp 102 [ashfields]
+    {tx:204,tz:210,type:'ash_wraith'},
+    // camp 103 [ashfields]
+    {tx:219,tz:44,type:'ash_wraith'},
+    // camp 104 [ashfields]
+    {tx:218,tz:198,type:'ash_wraith'},
+    // camp 105 [ashfields]
+    {tx:198,tz:21,type:'ash_wraith'},
+    // camp 106 [ashfields]
+    {tx:19,tz:203,type:'ash_wraith'},
+    // camp 107 [ashfields]
+    {tx:28,tz:219,type:'ash_wraith'},
+    // camp 108 [ashfields]
+    {tx:24,tz:27,type:'ash_wraith'},
+    // camp 109 [ashfields]
+    {tx:221,tz:209,type:'ash_wraith'},
+    // camp 110 [ashfields]
+    {tx:217,tz:19,type:'ash_wraith'},
   ],
   sunken_sands: [
     {tx:14,tz:10,type:'sand_scorpion'},
