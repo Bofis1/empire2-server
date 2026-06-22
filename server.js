@@ -1746,102 +1746,267 @@ const ZONE_SPAWNS = {
     {tx:74,tz:72,type:'deep_wyrm'}
   ],
   xumen: [
-    {tx:10,tz:8,type:'xu_titan'},
-    {tx:18,tz:6,type:'xu_enforcer'},
-    {tx:26,tz:8,type:'xu_titan'},
-    {tx:14,tz:14,type:'xu_enforcer'},
-    {tx:8,tz:16,type:'xu_supreme'},
-    {tx:22,tz:14,type:'xu_titan'},
-    {tx:10,tz:22,type:'xu_annihilator'},
-    {tx:8,tz:24,type:'xu_titan'},
-    {tx:12,tz:24,type:'xu_titan'},
-    {tx:6,tz:26,type:'xu_enforcer'},
-    {tx:14,tz:22,type:'xu_enforcer'},
-    {tx:10,tz:28,type:'xu_supreme'},
-    {tx:30,tz:8,type:'xu_supreme'},
-    {tx:36,tz:6,type:'xu_titan'},
-    {tx:34,tz:14,type:'xu_annihilator'},
-    {tx:32,tz:16,type:'xu_supreme'},
-    {tx:36,tz:16,type:'xu_titan'},
-    {tx:28,tz:18,type:'xu_enforcer'},
-    {tx:34,tz:20,type:'xu_enforcer'},
-    {tx:20,tz:22,type:'xu_titan'},
-    {tx:22,tz:24,type:'xu_annihilator'},
-    {tx:18,tz:24,type:'xu_titan'},
-    {tx:20,tz:26,type:'xu_supreme'},
-    {tx:24,tz:20,type:'xu_enforcer'},
-    {tx:16,tz:20,type:'xu_enforcer'},
-    {tx:8,tz:36,type:'xu_enforcer'},
-    {tx:14,tz:34,type:'xu_titan'},
-    {tx:6,tz:42,type:'xu_titan'},
-    {tx:8,tz:44,type:'xu_annihilator'},
-    {tx:10,tz:46,type:'xu_titan'},
-    {tx:12,tz:42,type:'xu_enforcer'},
-    {tx:6,tz:48,type:'xu_supreme'},
-    {tx:14,tz:48,type:'xu_enforcer'},
-    {tx:28,tz:30,type:'xu_supreme'},
-    {tx:34,tz:28,type:'xu_titan'},
-    {tx:32,tz:36,type:'xu_annihilator'},
-    {tx:30,tz:38,type:'xu_supreme'},
-    {tx:34,tz:40,type:'xu_titan'},
-    {tx:28,tz:40,type:'xu_enforcer'},
-    {tx:36,tz:44,type:'xu_annihilator'},
-    {tx:32,tz:44,type:'xu_supreme'},
-    {tx:18,tz:36,type:'xu_titan'},
-    {tx:22,tz:38,type:'xu_supreme'},
-    {tx:16,tz:44,type:'xu_enforcer'},
-    {tx:20,tz:46,type:'xu_titan'},
-    {tx:24,tz:44,type:'xu_annihilator'},
-    {tx:26,tz:48,type:'xu_supreme'},
-    {tx:44,tz:8,type:'xu_enforcer'},
-    {tx:50,tz:6,type:'xu_titan'},
-    {tx:58,tz:8,type:'xu_annihilator'},
-    {tx:64,tz:6,type:'xu_titan'},
-    {tx:66,tz:8,type:'xu_supreme'},
-    {tx:70,tz:10,type:'xu_enforcer'},
-    {tx:74,tz:8,type:'xu_titan'},
-    {tx:46,tz:18,type:'xu_titan'},
-    {tx:54,tz:16,type:'xu_annihilator'},
-    {tx:62,tz:18,type:'xu_supreme'},
-    {tx:68,tz:20,type:'xu_titan'},
-    {tx:72,tz:18,type:'xu_enforcer'},
-    {tx:44,tz:28,type:'xu_supreme'},
-    {tx:52,tz:26,type:'xu_annihilator'},
-    {tx:60,tz:28,type:'xu_titan'},
-    {tx:68,tz:30,type:'xu_supreme'},
-    {tx:74,tz:28,type:'xu_annihilator'},
-    {tx:46,tz:38,type:'xu_titan'},
-    {tx:56,tz:36,type:'xu_enforcer'},
-    {tx:64,tz:38,type:'xu_annihilator'},
-    {tx:72,tz:40,type:'xu_supreme'},
-    {tx:42,tz:48,type:'xu_enforcer'},
-    {tx:50,tz:46,type:'xu_titan'},
-    {tx:58,tz:48,type:'xu_supreme'},
-    {tx:66,tz:46,type:'xu_annihilator'},
-    {tx:74,tz:50,type:'xu_titan'},
-    {tx:44,tz:58,type:'xu_supreme'},
-    {tx:54,tz:56,type:'xu_annihilator'},
-    {tx:62,tz:58,type:'xu_titan'},
-    {tx:70,tz:60,type:'xu_supreme'},
-    {tx:46,tz:68,type:'xu_enforcer'},
-    {tx:56,tz:66,type:'xu_titan'},
-    {tx:64,tz:68,type:'xu_annihilator'},
-    {tx:72,tz:70,type:'xu_supreme'},
-    {tx:8,tz:8,type:'xu_annihilator'},
-    {tx:20,tz:6,type:'xu_annihilator'},
-    {tx:36,tz:8,type:'xu_annihilator'},
-    {tx:52,tz:6,type:'xu_annihilator'},
-    {tx:68,tz:10,type:'xu_annihilator'},
-    {tx:76,tz:24,type:'xu_annihilator'},
-    {tx:74,tz:42,type:'xu_annihilator'},
-    {tx:72,tz:58,type:'xu_annihilator'},
-    {tx:60,tz:74,type:'xu_annihilator'},
-    {tx:44,tz:76,type:'xu_annihilator'},
-    {tx:28,tz:74,type:'xu_annihilator'},
-    {tx:10,tz:68,type:'xu_annihilator'},
-    {tx:6,tz:50,type:'xu_annihilator'},
-    {tx:8,tz:34,type:'xu_annihilator'},
-    {tx:38,tz:40,type:'xu_annihilator'}
+    // camp 01 [central garrison]
+    {tx:139,tz:98,type:'xu_supreme'},
+    {tx:139,tz:97,type:'xu_supreme'},
+    // camp 02 [central garrison]
+    {tx:87,tz:115,type:'xu_supreme'},
+    {tx:85,tz:118,type:'xu_supreme'},
+    // camp 03 [central garrison]
+    {tx:98,tz:143,type:'xu_supreme'},
+    {tx:97,tz:146,type:'xu_supreme'},
+    // camp 04 [central garrison]
+    {tx:143,tz:146,type:'xu_supreme'},
+    {tx:146,tz:145,type:'xu_supreme'},
+    // camp 05 [central garrison]
+    {tx:92,tz:98,type:'xu_supreme'},
+    {tx:94,tz:99,type:'xu_supreme'},
+    // camp 06 [central garrison]
+    {tx:152,tz:138,type:'xu_supreme'},
+    {tx:152,tz:137,type:'xu_supreme'},
+    // camp 07 [central garrison]
+    {tx:159,tz:127,type:'xu_supreme'},
+    {tx:160,tz:123,type:'xu_supreme'},
+    // camp 08 [central garrison]
+    {tx:135,tz:159,type:'xu_supreme'},
+    {tx:135,tz:158,type:'xu_supreme'},
+    // camp 09 [central garrison]
+    {tx:111,tz:78,type:'xu_supreme'},
+    {tx:113,tz:80,type:'xu_supreme'},
+    // camp 10 [central garrison]
+    {tx:137,tz:82,type:'xu_supreme'},
+    {tx:139,tz:83,type:'xu_supreme'},
+    // camp 11 [central garrison]
+    {tx:100,tz:161,type:'xu_supreme'},
+    {tx:99,tz:162,type:'xu_supreme'},
+    // camp 12 [central garrison]
+    {tx:110,tz:164,type:'xu_supreme'},
+    {tx:109,tz:165,type:'xu_supreme'},
+    // camp 13 [central garrison]
+    {tx:78,tz:142,type:'xu_supreme'},
+    {tx:77,tz:141,type:'xu_supreme'},
+    // camp 14 [central garrison]
+    {tx:156,tz:90,type:'xu_supreme'},
+    {tx:155,tz:93,type:'xu_supreme'},
+    // camp 15 [central garrison]
+    {tx:98,tz:79,type:'xu_supreme'},
+    {tx:98,tz:81,type:'xu_supreme'},
+    // camp 16 [central garrison]
+    {tx:156,tz:86,type:'xu_titan'},
+    {tx:155,tz:89,type:'xu_titan'},
+    // camp 17 [central garrison]
+    {tx:81,tz:152,type:'xu_titan'},
+    {tx:80,tz:153,type:'xu_titan'},
+    // camp 18 [central garrison]
+    {tx:72,tz:97,type:'xu_titan'},
+    {tx:75,tz:97,type:'xu_titan'},
+    // camp 19 [central garrison]
+    {tx:115,tz:68,type:'xu_titan'},
+    {tx:114,tz:67,type:'xu_titan'},
+    // camp 20 [central garrison]
+    {tx:103,tz:65,type:'xu_titan'},
+    {tx:101,tz:64,type:'xu_titan'},
+    // camp 21 [central garrison]
+    {tx:65,tz:143,type:'xu_titan'},
+    {tx:64,tz:142,type:'xu_titan'},
+    // camp 22 [central garrison]
+    {tx:82,tz:76,type:'xu_titan'},
+    {tx:84,tz:75,type:'xu_titan'},
+    // camp 23 [central garrison]
+    {tx:59,tz:119,type:'xu_titan'},
+    {tx:59,tz:121,type:'xu_titan'},
+    // camp 24 [central garrison]
+    {tx:164,tz:157,type:'xu_titan'},
+    {tx:163,tz:159,type:'xu_titan'},
+    // camp 25 [central garrison]
+    {tx:180,tz:121,type:'xu_titan'},
+    {tx:180,tz:120,type:'xu_titan'},
+    // camp 26 [central garrison]
+    {tx:147,tz:177,type:'xu_titan'},
+    {tx:146,tz:177,type:'xu_titan'},
+    // camp 27 [central garrison]
+    {tx:140,tz:59,type:'xu_titan'},
+    {tx:137,tz:61,type:'xu_titan'},
+    // camp 28 [central garrison]
+    {tx:62,tz:98,type:'xu_titan'},
+    {tx:60,tz:98,type:'xu_titan'},
+    // camp 29 [central garrison]
+    {tx:155,tz:66,type:'xu_titan'},
+    {tx:157,tz:68,type:'xu_titan'},
+    // camp 30 [central garrison]
+    {tx:172,tz:81,type:'xu_titan'},
+    {tx:174,tz:81,type:'xu_titan'},
+    // camp 31 [central garrison]
+    {tx:98,tz:182,type:'xu_titan'},
+    {tx:96,tz:178,type:'xu_titan'},
+    // camp 32 [central garrison]
+    {tx:122,tz:185,type:'xu_titan'},
+    {tx:123,tz:186,type:'xu_titan'},
+    // camp 33 [central garrison]
+    {tx:186,tz:106,type:'xu_titan'},
+    {tx:184,tz:108,type:'xu_titan'},
+    // camp 34 [central garrison]
+    {tx:186,tz:141,type:'xu_titan'},
+    {tx:184,tz:140,type:'xu_titan'},
+    // camp 35 [central garrison]
+    {tx:79,tz:61,type:'xu_titan'},
+    {tx:77,tz:63,type:'xu_titan'},
+    // camp 36 [central garrison]
+    {tx:65,tz:166,type:'xu_titan'},
+    {tx:65,tz:167,type:'xu_titan'},
+    // camp 37 [central garrison]
+    {tx:158,tz:183,type:'xu_annihilator'},
+    {tx:158,tz:184,type:'xu_annihilator'},
+    // camp 38 [central garrison]
+    {tx:83,tz:181,type:'xu_annihilator'},
+    {tx:82,tz:184,type:'xu_annihilator'},
+    // camp 39 [central garrison]
+    {tx:48,tz:144,type:'xu_annihilator'},
+    {tx:50,tz:145,type:'xu_annihilator'},
+    // camp 40 [central garrison]
+    {tx:45,tz:114,type:'xu_annihilator'},
+    // camp 41 [central garrison]
+    {tx:137,tz:47,type:'xu_annihilator'},
+    // camp 42 [central garrison]
+    {tx:185,tz:159,type:'xu_annihilator'},
+    // camp 43 [central garrison]
+    {tx:55,tz:82,type:'xu_annihilator'},
+    // camp 44 [central garrison]
+    {tx:195,tz:118,type:'xu_annihilator'},
+    // camp 45 [central garrison]
+    {tx:142,tz:194,type:'xu_annihilator'},
+    // camp 46 [central garrison]
+    {tx:119,tz:196,type:'xu_annihilator'},
+    // camp 47 [central garrison]
+    {tx:47,tz:102,type:'xu_annihilator'},
+    // camp 48 [central garrison]
+    {tx:107,tz:44,type:'xu_annihilator'},
+    // camp 49 [central garrison]
+    {tx:199,tz:105,type:'xu_annihilator'},
+    // camp 50 [central garrison]
+    {tx:176,tz:64,type:'xu_annihilator'},
+    // camp 51 [central garrison]
+    {tx:92,tz:195,type:'xu_annihilator'},
+    // camp 52 [city district]
+    {tx:121,tz:41,type:'xu_annihilator'},
+    // camp 53 [city district]
+    {tx:193,tz:151,type:'xu_annihilator'},
+    // camp 54 [city district]
+    {tx:191,tz:84,type:'xu_annihilator'},
+    // camp 55 [city district]
+    {tx:83,tz:194,type:'xu_annihilator'},
+    // camp 56 [city district]
+    {tx:202,tz:133,type:'xu_annihilator'},
+    // camp 57 [city district]
+    {tx:179,tz:177,type:'xu_annihilator'},
+    // camp 58 [city district]
+    {tx:59,tz:63,type:'xu_annihilator'},
+    // camp 59 [city district]
+    {tx:54,tz:174,type:'xu_annihilator'},
+    // camp 60 [city district]
+    {tx:80,tz:42,type:'xu_annihilator'},
+    // camp 61 [city district]
+    {tx:41,tz:82,type:'xu_annihilator'},
+    // camp 62 [city district]
+    {tx:172,tz:195,type:'xu_annihilator'},
+    // camp 63 [city district]
+    {tx:159,tz:40,type:'xu_annihilator'},
+    // camp 64 [city district]
+    {tx:35,tz:156,type:'xu_annihilator'},
+    // camp 65 [city district]
+    {tx:193,tz:176,type:'xu_annihilator'},
+    // camp 66 [city district]
+    {tx:99,tz:209,type:'xu_annihilator'},
+    // camp 67 [city district]
+    {tx:175,tz:41,type:'xu_annihilator'},
+    // camp 68 [city district]
+    {tx:29,tz:143,type:'xu_annihilator'},
+    // camp 69 [city district]
+    {tx:163,tz:205,type:'xu_annihilator'},
+    // camp 70 [city district]
+    {tx:23,tz:116,type:'xu_annihilator'},
+    // camp 71 [city district]
+    {tx:155,tz:211,type:'xu_annihilator'},
+    // camp 72 [city district]
+    {tx:69,tz:36,type:'xu_annihilator'},
+    // camp 73 [city district]
+    {tx:199,tz:61,type:'xu_annihilator'},
+    // camp 74 [city district]
+    {tx:219,tz:101,type:'xu_annihilator'},
+    // camp 75 [city district]
+    {tx:79,tz:213,type:'xu_annihilator'},
+    // camp 76 [city district]
+    {tx:33,tz:62,type:'xu_annihilator'},
+    // camp 77 [city district]
+    {tx:39,tz:185,type:'xu_annihilator'},
+    // camp 78 [city district]
+    {tx:52,tz:200,type:'xu_annihilator'},
+    // camp 79 [city district]
+    {tx:214,tz:160,type:'xu_annihilator'},
+    // camp 80 [city district]
+    {tx:223,tz:130,type:'xu_enforcer'},
+    // camp 81 [city district]
+    {tx:219,tz:87,type:'xu_enforcer'},
+    // camp 82 [city district]
+    {tx:142,tz:15,type:'xu_enforcer'},
+    // camp 83 [city district]
+    {tx:143,tz:223,type:'xu_enforcer'},
+    // camp 84 [city district]
+    {tx:104,tz:15,type:'xu_enforcer'},
+    // camp 85 [city district]
+    {tx:197,tz:192,type:'xu_enforcer'},
+    // camp 86 [city district]
+    {tx:160,tz:19,type:'xu_enforcer'},
+    // camp 87 [city district]
+    {tx:46,tz:44,type:'xu_enforcer'},
+    // camp 88 [city district]
+    {tx:75,tz:22,type:'xu_enforcer'},
+    // camp 89 [city district]
+    {tx:27,tz:64,type:'xu_enforcer'},
+    // camp 90 [city district]
+    {tx:203,tz:48,type:'xu_enforcer'},
+    // camp 91 [city district]
+    {tx:17,tz:160,type:'xu_enforcer'},
+    // camp 92 [city district]
+    {tx:42,tz:200,type:'xu_enforcer'},
+    // camp 93 [city district]
+    {tx:174,tz:222,type:'xu_enforcer'},
+    // camp 94 [city district]
+    {tx:176,tz:16,type:'xu_enforcer'},
+    // camp 95 [city district]
+    {tx:47,tz:31,type:'xu_enforcer'},
+    // camp 96 [city district]
+    {tx:224,tz:175,type:'xu_enforcer'},
+    // camp 97 [city district]
+    {tx:53,tz:217,type:'xu_enforcer'},
+    // camp 98 [city district]
+    {tx:21,tz:183,type:'xu_enforcer'},
+    // camp 99 [city district]
+    {tx:60,tz:19,type:'xu_enforcer'},
+    // camp 100 [city district]
+    {tx:225,tz:57,type:'xu_enforcer'},
+    // camp 101 [city district]
+    {tx:218,tz:48,type:'xu_enforcer'},
+    // camp 102 [city district]
+    {tx:195,tz:22,type:'xu_enforcer'},
+    // camp 103 [city district]
+    {tx:212,tz:202,type:'xu_enforcer'},
+    // camp 104 [city district]
+    {tx:25,tz:201,type:'xu_enforcer'},
+    // camp 105 [city district]
+    {tx:39,tz:220,type:'xu_enforcer'},
+    // camp 106 [city district]
+    {tx:205,tz:220,type:'xu_enforcer'},
+    // camp 107 [city district]
+    {tx:18,tz:34,type:'xu_enforcer'},
+    // camp 108 [city district]
+    {tx:25,tz:219,type:'xu_enforcer'},
+    // camp 109 [city district]
+    {tx:18,tz:31,type:'xu_enforcer'},
+    // camp 110 [city district]
+    {tx:212,tz:221,type:'xu_enforcer'},
+    // camp 111 [outer wall]
+    {tx:224,tz:24,type:'xu_enforcer'},
   ],
   necropolis: [
     {tx:10,tz:8,type:'necro_specter'},
