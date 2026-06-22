@@ -794,92 +794,274 @@ const ZONE_SPAWNS = {
     {tx:187,tz:222,type:'void_phantom'},{tx:185,tz:222,type:'void_stalker'}
   ],
   citadel: [
-    {tx:8,tz:6,type:'iron_guard'},
-    {tx:14,tz:6,type:'iron_guard'},
-    {tx:20,tz:6,type:'iron_guard'},
-    {tx:12,tz:10,type:'citadel_mage'},
-    {tx:18,tz:10,type:'xu_shieldbot'},
-    {tx:8,tz:14,type:'iron_guard'},
-    {tx:14,tz:14,type:'xu_commander_elite'},
-    {tx:22,tz:14,type:'citadel_mage'},
-    {tx:10,tz:18,type:'iron_guard'},
-    {tx:18,tz:18,type:'xu_sniper_elite'},
-    {tx:48,tz:6,type:'iron_guard'},
-    {tx:54,tz:6,type:'xu_sniper_elite'},
-    {tx:60,tz:6,type:'iron_guard'},
-    {tx:66,tz:6,type:'citadel_mage'},
-    {tx:52,tz:10,type:'xu_shieldbot'},
-    {tx:60,tz:10,type:'iron_guard'},
-    {tx:56,tz:14,type:'xu_commander_elite'},
-    {tx:64,tz:12,type:'xu_sniper_elite'},
-    {tx:50,tz:16,type:'citadel_mage'},
-    {tx:68,tz:16,type:'iron_guard'},
-    {tx:6,tz:28,type:'iron_guard'},
-    {tx:12,tz:26,type:'xu_shieldbot'},
-    {tx:18,tz:28,type:'citadel_mage'},
-    {tx:8,tz:34,type:'iron_guard'},
-    {tx:14,tz:32,type:'xu_sniper_elite'},
-    {tx:20,tz:34,type:'iron_guard'},
-    {tx:10,tz:38,type:'xu_commander_elite'},
-    {tx:18,tz:40,type:'citadel_mage'},
-    {tx:6,tz:42,type:'iron_guard'},
-    {tx:22,tz:38,type:'xu_shieldbot'},
-    {tx:30,tz:28,type:'xu_sniper_elite'},
-    {tx:38,tz:26,type:'iron_guard'},
-    {tx:46,tz:28,type:'citadel_mage'},
-    {tx:32,tz:34,type:'xu_shieldbot'},
-    {tx:42,tz:32,type:'xu_commander_elite'},
-    {tx:50,tz:34,type:'iron_guard'},
-    {tx:28,tz:40,type:'iron_guard'},
-    {tx:48,tz:42,type:'xu_sniper_elite'},
-    {tx:36,tz:46,type:'citadel_mage'},
-    {tx:44,tz:46,type:'iron_guard'},
-    {tx:56,tz:26,type:'iron_guard'},
-    {tx:64,tz:24,type:'xu_sniper_elite'},
-    {tx:70,tz:26,type:'citadel_mage'},
-    {tx:58,tz:32,type:'xu_shieldbot'},
-    {tx:66,tz:30,type:'iron_guard'},
-    {tx:74,tz:28,type:'xu_commander_elite'},
-    {tx:60,tz:38,type:'iron_guard'},
-    {tx:68,tz:38,type:'citadel_mage'},
-    {tx:56,tz:44,type:'xu_sniper_elite'},
-    {tx:72,tz:44,type:'iron_guard'},
-    {tx:8,tz:52,type:'iron_guard'},
-    {tx:16,tz:50,type:'xu_shieldbot'},
-    {tx:22,tz:52,type:'citadel_mage'},
-    {tx:10,tz:58,type:'iron_guard'},
-    {tx:18,tz:56,type:'xu_commander_elite'},
-    {tx:24,tz:60,type:'xu_sniper_elite'},
-    {tx:8,tz:64,type:'iron_guard'},
-    {tx:14,tz:64,type:'citadel_mage'},
-    {tx:20,tz:66,type:'iron_guard'},
-    {tx:26,tz:62,type:'xu_shieldbot'},
-    {tx:26,tz:70,type:'iron_guard'},
-    {tx:32,tz:68,type:'xu_sniper_elite'},
-    {tx:50,tz:68,type:'iron_guard'},
-    {tx:56,tz:70,type:'citadel_mage'},
-    {tx:52,tz:52,type:'xu_shieldbot'},
-    {tx:60,tz:50,type:'iron_guard'},
-    {tx:68,tz:52,type:'citadel_mage'},
-    {tx:54,tz:58,type:'xu_commander_elite'},
-    {tx:62,tz:56,type:'iron_guard'},
-    {tx:70,tz:58,type:'xu_sniper_elite'},
-    {tx:56,tz:64,type:'iron_guard'},
-    {tx:66,tz:64,type:'xu_shieldbot'},
-    {tx:72,tz:62,type:'citadel_mage'},
-    {tx:60,tz:68,type:'iron_guard'},
-    {tx:36,tz:8,type:'iron_guard'},
-    {tx:44,tz:8,type:'iron_guard'},
-    {tx:30,tz:14,type:'citadel_mage'},
-    {tx:50,tz:14,type:'xu_sniper_elite'},
-    {tx:76,tz:14,type:'xu_sniper_elite'},
-    {tx:76,tz:22,type:'citadel_mage'},
-    {tx:76,tz:44,type:'iron_guard'},
-    {tx:76,tz:52,type:'xu_sniper_elite'},
-    {tx:4,tz:56,type:'iron_guard'},
-    {tx:4,tz:64,type:'citadel_mage'},
-    {tx:34,tz:72,type:'iron_guard'},
-    {tx:48,tz:76,type:'iron_guard'}
+    // camp 01 [inner garrison]
+    {tx:97,tz:98,type:'xu_commander_elite'},
+    {tx:98,tz:99,type:'xu_commander_elite'},
+    // camp 02 [inner garrison]
+    {tx:110,tz:87,type:'xu_commander_elite'},
+    {tx:108,tz:87,type:'xu_commander_elite'},
+    // camp 03 [inner garrison]
+    {tx:150,tz:142,type:'xu_commander_elite'},
+    {tx:151,tz:139,type:'xu_commander_elite'},
+    // camp 04 [inner garrison]
+    {tx:83,tz:112,type:'xu_commander_elite'},
+    {tx:83,tz:110,type:'xu_commander_elite'},
+    // camp 05 [inner garrison]
+    {tx:160,tz:119,type:'xu_commander_elite'},
+    {tx:162,tz:117,type:'xu_commander_elite'},
+    // camp 06 [inner garrison]
+    {tx:82,tz:110,type:'xu_commander_elite'},
+    {tx:83,tz:109,type:'xu_commander_elite'},
+    // camp 07 [inner garrison]
+    {tx:130,tz:80,type:'xu_shieldbot'},
+    {tx:130,tz:78,type:'xu_shieldbot'},
+    // camp 08 [inner garrison]
+    {tx:76,tz:133,type:'xu_shieldbot'},
+    {tx:75,tz:133,type:'xu_shieldbot'},
+    // camp 09 [inner garrison]
+    {tx:120,tz:164,type:'xu_shieldbot'},
+    {tx:120,tz:166,type:'xu_shieldbot'},
+    // camp 10 [inner garrison]
+    {tx:147,tz:157,type:'xu_shieldbot'},
+    {tx:144,tz:156,type:'xu_shieldbot'},
+    // camp 11 [inner garrison]
+    {tx:147,tz:84,type:'xu_shieldbot'},
+    {tx:149,tz:86,type:'xu_shieldbot'},
+    // camp 12 [inner garrison]
+    {tx:102,tz:165,type:'xu_shieldbot'},
+    {tx:101,tz:165,type:'xu_shieldbot'},
+    // camp 13 [inner garrison]
+    {tx:161,tz:95,type:'xu_shieldbot'},
+    {tx:162,tz:95,type:'xu_shieldbot'},
+    // camp 14 [inner garrison]
+    {tx:153,tz:160,type:'xu_shieldbot'},
+    {tx:156,tz:161,type:'xu_shieldbot'},
+    // camp 15 [inner garrison]
+    {tx:67,tz:111,type:'xu_shieldbot'},
+    {tx:66,tz:113,type:'xu_shieldbot'},
+    // camp 16 [inner garrison]
+    {tx:102,tz:171,type:'xu_shieldbot'},
+    {tx:102,tz:173,type:'xu_shieldbot'},
+    // camp 17 [inner garrison]
+    {tx:161,tz:80,type:'xu_shieldbot'},
+    {tx:161,tz:81,type:'xu_shieldbot'},
+    // camp 18 [inner garrison]
+    {tx:177,tz:104,type:'xu_shieldbot'},
+    {tx:175,tz:103,type:'xu_shieldbot'},
+    // camp 19 [inner garrison]
+    {tx:179,tz:128,type:'xu_sniper_elite'},
+    {tx:179,tz:127,type:'xu_sniper_elite'},
+    // camp 20 [inner garrison]
+    {tx:98,tz:65,type:'xu_sniper_elite'},
+    {tx:100,tz:65,type:'xu_sniper_elite'},
+    // camp 21 [inner garrison]
+    {tx:119,tz:58,type:'xu_sniper_elite'},
+    {tx:121,tz:57,type:'xu_sniper_elite'},
+    // camp 22 [inner garrison]
+    {tx:77,tz:163,type:'xu_sniper_elite'},
+    {tx:74,tz:161,type:'xu_sniper_elite'},
+    // camp 23 [inner garrison]
+    {tx:168,tz:83,type:'xu_sniper_elite'},
+    {tx:169,tz:82,type:'xu_sniper_elite'},
+    // camp 24 [inner garrison]
+    {tx:177,tz:146,type:'xu_sniper_elite'},
+    {tx:178,tz:143,type:'xu_sniper_elite'},
+    // camp 25 [inner garrison]
+    {tx:127,tz:181,type:'xu_sniper_elite'},
+    {tx:125,tz:181,type:'xu_sniper_elite'},
+    // camp 26 [inner garrison]
+    {tx:132,tz:57,type:'xu_sniper_elite'},
+    {tx:133,tz:54,type:'xu_sniper_elite'},
+    // camp 27 [inner garrison]
+    {tx:75,tz:71,type:'xu_sniper_elite'},
+    {tx:77,tz:73,type:'xu_sniper_elite'},
+    // camp 28 [inner garrison]
+    {tx:57,tz:130,type:'xu_sniper_elite'},
+    {tx:55,tz:132,type:'xu_sniper_elite'},
+    // camp 29 [inner garrison]
+    {tx:180,tz:152,type:'xu_sniper_elite'},
+    {tx:176,tz:153,type:'xu_sniper_elite'},
+    // camp 30 [inner garrison]
+    {tx:67,tz:79,type:'xu_sniper_elite'},
+    {tx:67,tz:82,type:'xu_sniper_elite'},
+    // camp 31 [inner garrison]
+    {tx:57,tz:98,type:'xu_sniper_elite'},
+    {tx:58,tz:99,type:'xu_sniper_elite'},
+    // camp 32 [inner garrison]
+    {tx:138,tz:186,type:'citadel_mage'},
+    {tx:134,tz:184,type:'citadel_mage'},
+    // camp 33 [inner garrison]
+    {tx:65,tz:161,type:'citadel_mage'},
+    {tx:65,tz:164,type:'citadel_mage'},
+    // camp 34 [inner garrison]
+    {tx:166,tz:65,type:'citadel_mage'},
+    {tx:164,tz:64,type:'citadel_mage'},
+    // camp 35 [inner garrison]
+    {tx:162,tz:177,type:'citadel_mage'},
+    {tx:165,tz:176,type:'citadel_mage'},
+    // camp 36 [inner garrison]
+    {tx:50,tz:144,type:'citadel_mage'},
+    {tx:50,tz:142,type:'citadel_mage'},
+    // camp 37 [inner garrison]
+    {tx:81,tz:182,type:'citadel_mage'},
+    {tx:83,tz:183,type:'citadel_mage'},
+    // camp 38 [inner garrison]
+    {tx:70,tz:173,type:'citadel_mage'},
+    {tx:72,tz:173,type:'citadel_mage'},
+    // camp 39 [inner garrison]
+    {tx:135,tz:193,type:'citadel_mage'},
+    {tx:133,tz:191,type:'citadel_mage'},
+    // camp 40 [inner garrison]
+    {tx:47,tz:111,type:'citadel_mage'},
+    {tx:47,tz:113,type:'citadel_mage'},
+    // camp 41 [inner garrison]
+    {tx:125,tz:196,type:'citadel_mage'},
+    {tx:125,tz:194,type:'citadel_mage'},
+    // camp 42 [inner garrison]
+    {tx:153,tz:192,type:'citadel_mage'},
+    {tx:151,tz:189,type:'citadel_mage'},
+    // camp 43 [inner garrison]
+    {tx:175,tz:175,type:'citadel_mage'},
+    {tx:176,tz:175,type:'citadel_mage'},
+    // camp 44 [inner garrison]
+    {tx:77,tz:57,type:'citadel_mage'},
+    {tx:77,tz:56,type:'citadel_mage'},
+    // camp 45 [inner garrison]
+    {tx:145,tz:47,type:'citadel_mage'},
+    // camp 46 [city patrol]
+    {tx:48,tz:92,type:'citadel_mage'},
+    // camp 47 [city patrol]
+    {tx:103,tz:42,type:'citadel_mage'},
+    // camp 48 [city patrol]
+    {tx:198,tz:121,type:'citadel_mage'},
+    // camp 49 [city patrol]
+    {tx:118,tz:42,type:'citadel_mage'},
+    // camp 50 [city patrol]
+    {tx:195,tz:146,type:'citadel_mage'},
+    // camp 51 [city patrol]
+    {tx:176,tz:62,type:'citadel_mage'},
+    // camp 52 [city patrol]
+    {tx:61,tz:66,type:'citadel_mage'},
+    // camp 53 [city patrol]
+    {tx:43,tz:148,type:'iron_guard'},
+    // camp 54 [city patrol]
+    {tx:191,tz:77,type:'iron_guard'},
+    // camp 55 [city patrol]
+    {tx:82,tz:192,type:'iron_guard'},
+    // camp 56 [city patrol]
+    {tx:105,tz:203,type:'iron_guard'},
+    // camp 57 [city patrol]
+    {tx:170,tz:48,type:'iron_guard'},
+    // camp 58 [city patrol]
+    {tx:159,tz:43,type:'iron_guard'},
+    // camp 59 [city patrol]
+    {tx:196,tz:162,type:'iron_guard'},
+    // camp 60 [city patrol]
+    {tx:205,tz:98,type:'iron_guard'},
+    // camp 61 [city patrol]
+    {tx:74,tz:43,type:'iron_guard'},
+    // camp 62 [city patrol]
+    {tx:212,tz:124,type:'iron_guard'},
+    // camp 63 [city patrol]
+    {tx:174,tz:196,type:'iron_guard'},
+    // camp 64 [city patrol]
+    {tx:149,tz:209,type:'iron_guard'},
+    // camp 65 [city patrol]
+    {tx:35,tz:76,type:'iron_guard'},
+    // camp 66 [city patrol]
+    {tx:124,tz:215,type:'iron_guard'},
+    // camp 67 [city patrol]
+    {tx:98,tz:27,type:'iron_guard'},
+    // camp 68 [city patrol]
+    {tx:199,tz:172,type:'iron_guard'},
+    // camp 69 [city patrol]
+    {tx:71,tz:39,type:'iron_guard'},
+    // camp 70 [city patrol]
+    {tx:46,tz:62,type:'iron_guard'},
+    // camp 71 [city patrol]
+    {tx:28,tz:145,type:'iron_guard'},
+    // camp 72 [city patrol]
+    {tx:216,tz:97,type:'iron_guard'},
+    // camp 73 [city patrol]
+    {tx:36,tz:171,type:'iron_guard'},
+    // camp 74 [city patrol]
+    {tx:150,tz:25,type:'iron_guard'},
+    // camp 75 [city patrol]
+    {tx:85,tz:212,type:'iron_guard'},
+    // camp 76 [city patrol]
+    {tx:166,tz:212,type:'iron_guard'},
+    // camp 77 [city patrol]
+    {tx:62,tz:202,type:'iron_guard'},
+    // camp 78 [city patrol]
+    {tx:20,tz:114,type:'iron_guard'},
+    // camp 79 [city patrol]
+    {tx:70,tz:30,type:'iron_guard'},
+    // camp 80 [city patrol]
+    {tx:190,tz:47,type:'iron_guard'},
+    // camp 81 [city patrol]
+    {tx:42,tz:187,type:'iron_guard'},
+    // camp 82 [city patrol]
+    {tx:172,tz:206,type:'iron_guard'},
+    // camp 83 [city patrol]
+    {tx:138,tz:20,type:'iron_guard'},
+    // camp 84 [city patrol]
+    {tx:19,tz:104,type:'iron_guard'},
+    // camp 85 [city patrol]
+    {tx:208,tz:174,type:'iron_guard'},
+    // camp 86 [city patrol]
+    {tx:29,tz:69,type:'iron_guard'},
+    // camp 87 [city patrol]
+    {tx:225,tz:138,type:'iron_guard'},
+    // camp 88 [city patrol]
+    {tx:101,tz:223,type:'iron_guard'},
+    // camp 89 [city patrol]
+    {tx:204,tz:56,type:'iron_guard'},
+    // camp 90 [city patrol]
+    {tx:89,tz:16,type:'iron_guard'},
+    // camp 91 [city patrol]
+    {tx:217,tz:73,type:'iron_guard'},
+    // camp 92 [city patrol]
+    {tx:226,tz:159,type:'iron_guard'},
+    // camp 93 [city patrol]
+    {tx:18,tz:160,type:'iron_guard'},
+    // camp 94 [city patrol]
+    {tx:16,tz:81,type:'iron_guard'},
+    // camp 95 [city patrol]
+    {tx:67,tz:220,type:'iron_guard'},
+    // camp 96 [city patrol]
+    {tx:205,tz:197,type:'iron_guard'},
+    // camp 97 [city patrol]
+    {tx:180,tz:25,type:'iron_guard'},
+    // camp 98 [city patrol]
+    {tx:193,tz:209,type:'iron_guard'},
+    // camp 99 [city patrol]
+    {tx:216,tz:54,type:'iron_guard'},
+    // camp 100 [city patrol]
+    {tx:22,tz:183,type:'iron_guard'},
+    // camp 101 [city patrol]
+    {tx:32,tz:38,type:'iron_guard'},
+    // camp 102 [city patrol]
+    {tx:51,tz:20,type:'iron_guard'},
+    // camp 103 [city patrol]
+    {tx:211,tz:203,type:'iron_guard'},
+    // camp 104 [city patrol]
+    {tx:198,tz:25,type:'iron_guard'},
+    // camp 105 [city patrol]
+    {tx:20,tz:39,type:'iron_guard'},
+    // camp 106 [city patrol]
+    {tx:24,tz:204,type:'iron_guard'},
+    // camp 107 [city patrol]
+    {tx:39,tz:223,type:'iron_guard'},
+    // camp 108 [city patrol]
+    {tx:222,tz:37,type:'iron_guard'},
+    // camp 109 [outer wall watch]
+    {tx:214,tz:27,type:'iron_guard'},
+    // camp 110 [outer wall watch]
+    {tx:32,tz:20,type:'iron_guard'},
+    // camp 111 [outer wall watch]
+    {tx:17,tz:208,type:'iron_guard'},
+    // camp 112 [outer wall watch]
+    {tx:224,tz:215,type:'iron_guard'},
   ],
   caves_of_despair: [
     {tx: 8,tz: 8,type:'xu_miner'}, {tx:14,tz: 6,type:'xu_miner'},
