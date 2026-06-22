@@ -2051,52 +2051,280 @@ const ZONE_SPAWNS = {
   ],
   // ── BLOOMING WILDS (v92.49+v92.50) — matches client ZONE_DEFS.blooming_wilds ──
   blooming_wilds: [
-    // ENTRANCE GLADE (south, z 60-74) — 3 fairy camps + roaming brutes
-    {tx:22,tz:66, type:'bloom_sprite'},   {tx:22,tz:70, type:'bloom_sprite'},
-    {tx:18,tz:68, type:'glimmer_fairy'},  {tx:24,tz:64, type:'glimmer_fairy'},
-    {tx:58,tz:66, type:'bloom_sprite'},   {tx:58,tz:70, type:'bloom_sprite'},
-    {tx:62,tz:68, type:'glimmer_fairy'},  {tx:56,tz:64, type:'glimmer_fairy'},
-    {tx:36,tz:62, type:'mushroom_brute'},{tx:44,tz:62, type:'mushroom_brute'},
-    {tx:30,tz:72, type:'bloom_sprite'},   {tx:50,tz:72, type:'bloom_sprite'},
-
-    // PETAL CLEARING (mid-south, z 48-58)
-    {tx:16,tz:50, type:'vine_stalker'},   {tx:18,tz:54, type:'vine_stalker'},
-    {tx:14,tz:52, type:'pollen_wraith'},
-    {tx:64,tz:50, type:'vine_stalker'},   {tx:62,tz:54, type:'vine_stalker'},
-    {tx:66,tz:52, type:'pollen_wraith'},
-    {tx:38,tz:46, type:'mushroom_brute'},{tx:42,tz:46, type:'mushroom_brute'},
-    {tx:28,tz:50, type:'glimmer_fairy'},  {tx:52,tz:50, type:'glimmer_fairy'},
-    {tx:32,tz:54, type:'bloom_sprite'},   {tx:48,tz:54, type:'bloom_sprite'},
-
-    // ROSE GARDEN (mid, z 36-46) — Thorn Knight mini-boss + court
-    {tx:40,tz:40, type:'thorn_knight'},
-    {tx:34,tz:38, type:'vine_stalker'},   {tx:46,tz:38, type:'vine_stalker'},
-    {tx:34,tz:42, type:'vine_stalker'},
-    {tx:18,tz:38, type:'pollen_wraith'},  {tx:22,tz:42, type:'pollen_wraith'},
-    {tx:20,tz:40, type:'bloom_sprite'},   {tx:24,tz:38, type:'bloom_sprite'},
-    {tx:60,tz:38, type:'pollen_wraith'},  {tx:56,tz:42, type:'pollen_wraith'},
-    {tx:58,tz:40, type:'bloom_sprite'},   {tx:54,tz:38, type:'bloom_sprite'},
-
-    // MUSHROOM RING (mid-north, z 24-34) — signature ring camp
-    {tx:32,tz:26, type:'mushroom_brute'},
-    {tx:48,tz:26, type:'mushroom_brute'},
-    {tx:32,tz:32, type:'mushroom_brute'},
-    {tx:48,tz:32, type:'mushroom_brute'},
-    {tx:40,tz:28, type:'pollen_wraith'},  {tx:40,tz:30, type:'pollen_wraith'},
-    {tx:18,tz:28, type:'glimmer_fairy'},  {tx:14,tz:30, type:'vine_stalker'},
-    {tx:16,tz:26, type:'bloom_sprite'},
-    {tx:62,tz:28, type:'glimmer_fairy'},  {tx:66,tz:30, type:'vine_stalker'},
-    {tx:64,tz:26, type:'bloom_sprite'},
-
-    // WILDMOTHER'S APPROACH (z 12-22)
-    {tx:24,tz:18, type:'vine_stalker'},   {tx:20,tz:14, type:'vine_stalker'},
-    {tx:22,tz:20, type:'pollen_wraith'},
-    {tx:56,tz:18, type:'vine_stalker'},   {tx:60,tz:14, type:'vine_stalker'},
-    {tx:58,tz:20, type:'pollen_wraith'},
-    {tx:34,tz:16, type:'bloom_sprite'},   {tx:46,tz:16, type:'bloom_sprite'},
-    {tx:36,tz:20, type:'glimmer_fairy'},  {tx:44,tz:20, type:'glimmer_fairy'},
-    {tx:40,tz:18, type:'pollen_wraith'},
-    {tx:30,tz:12, type:'mushroom_brute'},{tx:50,tz:12, type:'mushroom_brute'},
+    // camp 01 [deep garden]
+    {tx:144,tz:101,type:'thorn_knight'},
+    {tx:147,tz:101,type:'thorn_knight'},
+    // camp 02 [deep garden]
+    {tx:147,tz:140,type:'thorn_knight'},
+    {tx:147,tz:142,type:'thorn_knight'},
+    // camp 03 [deep garden]
+    {tx:100,tz:148,type:'mushroom_brute'},
+    {tx:99,tz:147,type:'mushroom_brute'},
+    // camp 04 [deep garden]
+    {tx:155,tz:139,type:'mushroom_brute'},
+    {tx:153,tz:137,type:'mushroom_brute'},
+    // camp 05 [deep garden]
+    {tx:85,tz:103,type:'mushroom_brute'},
+    {tx:86,tz:103,type:'mushroom_brute'},
+    // camp 06 [deep garden]
+    {tx:127,tz:78,type:'mushroom_brute'},
+    {tx:126,tz:81,type:'mushroom_brute'},
+    // camp 07 [deep garden]
+    {tx:108,tz:158,type:'mushroom_brute'},
+    {tx:106,tz:159,type:'mushroom_brute'},
+    // camp 08 [deep garden]
+    {tx:162,tz:105,type:'mushroom_brute'},
+    {tx:160,tz:106,type:'mushroom_brute'},
+    // camp 09 [deep garden]
+    {tx:85,tz:147,type:'mushroom_brute'},
+    {tx:86,tz:146,type:'mushroom_brute'},
+    // camp 10 [deep garden]
+    {tx:94,tz:82,type:'mushroom_brute'},
+    {tx:97,tz:82,type:'mushroom_brute'},
+    // camp 11 [deep garden]
+    {tx:77,tz:114,type:'mushroom_brute'},
+    {tx:74,tz:112,type:'mushroom_brute'},
+    // camp 12 [deep garden]
+    {tx:166,tz:119,type:'mushroom_brute'},
+    {tx:165,tz:118,type:'mushroom_brute'},
+    // camp 13 [deep garden]
+    {tx:112,tz:167,type:'mushroom_brute'},
+    {tx:113,tz:167,type:'mushroom_brute'},
+    // camp 14 [deep garden]
+    {tx:140,tz:164,type:'mushroom_brute'},
+    {tx:144,tz:165,type:'mushroom_brute'},
+    // camp 15 [deep garden]
+    {tx:145,tz:75,type:'vine_stalker'},
+    {tx:146,tz:75,type:'vine_stalker'},
+    // camp 16 [deep garden]
+    {tx:156,tz:82,type:'vine_stalker'},
+    {tx:157,tz:83,type:'vine_stalker'},
+    // camp 17 [deep garden]
+    {tx:83,tz:161,type:'vine_stalker'},
+    {tx:84,tz:159,type:'vine_stalker'},
+    // camp 18 [deep garden]
+    {tx:102,tz:67,type:'vine_stalker'},
+    {tx:105,tz:69,type:'vine_stalker'},
+    // camp 19 [deep garden]
+    {tx:128,tz:64,type:'vine_stalker'},
+    {tx:126,tz:66,type:'vine_stalker'},
+    // camp 20 [deep garden]
+    {tx:113,tz:175,type:'vine_stalker'},
+    {tx:116,tz:175,type:'vine_stalker'},
+    // camp 21 [deep garden]
+    {tx:134,tz:61,type:'vine_stalker'},
+    {tx:130,tz:63,type:'vine_stalker'},
+    // camp 22 [deep garden]
+    {tx:61,tz:100,type:'vine_stalker'},
+    {tx:61,tz:102,type:'vine_stalker'},
+    // camp 23 [deep garden]
+    {tx:168,tz:161,type:'vine_stalker'},
+    {tx:165,tz:161,type:'vine_stalker'},
+    // camp 24 [deep garden]
+    {tx:184,tz:126,type:'vine_stalker'},
+    {tx:183,tz:129,type:'vine_stalker'},
+    // camp 25 [deep garden]
+    {tx:63,tz:143,type:'vine_stalker'},
+    {tx:64,tz:143,type:'vine_stalker'},
+    // camp 26 [deep garden]
+    {tx:152,tz:68,type:'vine_stalker'},
+    {tx:153,tz:65,type:'vine_stalker'},
+    // camp 27 [deep garden]
+    {tx:181,tz:104,type:'vine_stalker'},
+    {tx:183,tz:106,type:'vine_stalker'},
+    // camp 28 [deep garden]
+    {tx:57,tz:116,type:'vine_stalker'},
+    {tx:56,tz:115,type:'vine_stalker'},
+    // camp 29 [deep garden]
+    {tx:183,tz:132,type:'vine_stalker'},
+    {tx:182,tz:134,type:'vine_stalker'},
+    // camp 30 [deep garden]
+    {tx:75,tz:73,type:'vine_stalker'},
+    {tx:76,tz:75,type:'vine_stalker'},
+    // camp 31 [deep garden]
+    {tx:146,tz:181,type:'vine_stalker'},
+    {tx:144,tz:180,type:'vine_stalker'},
+    // camp 32 [deep garden]
+    {tx:103,tz:182,type:'pollen_wraith'},
+    {tx:101,tz:186,type:'pollen_wraith'},
+    // camp 33 [deep garden]
+    {tx:82,tz:62,type:'pollen_wraith'},
+    {tx:83,tz:64,type:'pollen_wraith'},
+    // camp 34 [deep garden]
+    {tx:165,tz:176,type:'pollen_wraith'},
+    {tx:164,tz:177,type:'pollen_wraith'},
+    // camp 35 [deep garden]
+    {tx:65,tz:167,type:'pollen_wraith'},
+    {tx:67,tz:169,type:'pollen_wraith'},
+    // camp 36 [deep garden]
+    {tx:58,tz:79,type:'pollen_wraith'},
+    {tx:60,tz:82,type:'pollen_wraith'},
+    // camp 37 [deep garden]
+    {tx:180,tz:163,type:'pollen_wraith'},
+    {tx:178,tz:165,type:'pollen_wraith'},
+    // camp 38 [deep garden]
+    {tx:82,tz:187,type:'pollen_wraith'},
+    {tx:82,tz:185,type:'pollen_wraith'},
+    // camp 39 [deep garden]
+    {tx:42,tz:117,type:'pollen_wraith'},
+    {tx:44,tz:117,type:'pollen_wraith'},
+    // camp 40 [wildwood]
+    {tx:127,tz:199,type:'pollen_wraith'},
+    {tx:125,tz:198,type:'pollen_wraith'},
+    // camp 41 [wildwood]
+    {tx:95,tz:198,type:'pollen_wraith'},
+    {tx:94,tz:197,type:'pollen_wraith'},
+    // camp 42 [wildwood]
+    {tx:44,tz:144,type:'pollen_wraith'},
+    {tx:43,tz:139,type:'pollen_wraith'},
+    // camp 43 [wildwood]
+    {tx:133,tz:198,type:'pollen_wraith'},
+    {tx:133,tz:200,type:'pollen_wraith'},
+    // camp 44 [wildwood]
+    {tx:182,tz:174,type:'pollen_wraith'},
+    {tx:183,tz:175,type:'pollen_wraith'},
+    // camp 45 [wildwood]
+    {tx:188,tz:74,type:'pollen_wraith'},
+    {tx:186,tz:74,type:'pollen_wraith'},
+    // camp 46 [wildwood]
+    {tx:203,tz:103,type:'glimmer_fairy'},
+    {tx:201,tz:103,type:'glimmer_fairy'},
+    // camp 47 [wildwood]
+    {tx:65,tz:62,type:'glimmer_fairy'},
+    // camp 48 [wildwood]
+    {tx:100,tz:39,type:'glimmer_fairy'},
+    // camp 49 [wildwood]
+    {tx:41,tz:101,type:'glimmer_fairy'},
+    // camp 50 [wildwood]
+    {tx:47,tz:152,type:'glimmer_fairy'},
+    // camp 51 [wildwood]
+    {tx:135,tz:35,type:'glimmer_fairy'},
+    // camp 52 [wildwood]
+    {tx:204,tz:118,type:'glimmer_fairy'},
+    // camp 53 [wildwood]
+    {tx:122,tz:35,type:'glimmer_fairy'},
+    // camp 54 [wildwood]
+    {tx:42,tz:85,type:'glimmer_fairy'},
+    // camp 55 [wildwood]
+    {tx:84,tz:199,type:'glimmer_fairy'},
+    // camp 56 [wildwood]
+    {tx:87,tz:37,type:'glimmer_fairy'},
+    // camp 57 [wildwood]
+    {tx:209,tz:139,type:'glimmer_fairy'},
+    // camp 58 [wildwood]
+    {tx:67,tz:47,type:'glimmer_fairy'},
+    // camp 59 [wildwood]
+    {tx:188,tz:59,type:'glimmer_fairy'},
+    // camp 60 [wildwood]
+    {tx:152,tz:32,type:'glimmer_fairy'},
+    // camp 61 [wildwood]
+    {tx:162,tz:201,type:'glimmer_fairy'},
+    // camp 62 [wildwood]
+    {tx:177,tz:46,type:'glimmer_fairy'},
+    // camp 63 [wildwood]
+    {tx:195,tz:64,type:'glimmer_fairy'},
+    // camp 64 [wildwood]
+    {tx:190,tz:178,type:'glimmer_fairy'},
+    // camp 65 [wildwood]
+    {tx:124,tz:24,type:'glimmer_fairy'},
+    // camp 66 [wildwood]
+    {tx:53,tz:185,type:'glimmer_fairy'},
+    // camp 67 [wildwood]
+    {tx:25,tz:113,type:'glimmer_fairy'},
+    // camp 68 [wildwood]
+    {tx:103,tz:212,type:'glimmer_fairy'},
+    // camp 69 [wildwood]
+    {tx:205,tz:81,type:'glimmer_fairy'},
+    // camp 70 [wildwood]
+    {tx:201,tz:167,type:'glimmer_fairy'},
+    // camp 71 [wildwood]
+    {tx:103,tz:25,type:'glimmer_fairy'},
+    // camp 72 [wildwood]
+    {tx:28,tz:98,type:'glimmer_fairy'},
+    // camp 73 [wildwood]
+    {tx:212,tz:96,type:'glimmer_fairy'},
+    // camp 74 [wildwood]
+    {tx:215,tz:123,type:'glimmer_fairy'},
+    // camp 75 [wildwood]
+    {tx:136,tz:216,type:'bloom_sprite'},
+    // camp 76 [wildwood]
+    {tx:217,tz:142,type:'bloom_sprite'},
+    // camp 77 [wildwood]
+    {tx:215,tz:160,type:'bloom_sprite'},
+    // camp 78 [wildwood]
+    {tx:35,tz:61,type:'bloom_sprite'},
+    // camp 79 [wildwood]
+    {tx:67,tz:208,type:'bloom_sprite'},
+    // camp 80 [wildwood]
+    {tx:184,tz:201,type:'bloom_sprite'},
+    // camp 81 [wildwood]
+    {tx:192,tz:197,type:'bloom_sprite'},
+    // camp 82 [wildwood]
+    {tx:158,tz:22,type:'bloom_sprite'},
+    // camp 83 [wildwood]
+    {tx:15,tz:140,type:'bloom_sprite'},
+    // camp 84 [wildwood]
+    {tx:220,tz:78,type:'bloom_sprite'},
+    // camp 85 [wildwood]
+    {tx:17,tz:154,type:'bloom_sprite'},
+    // camp 86 [wildwood]
+    {tx:18,tz:81,type:'bloom_sprite'},
+    // camp 87 [wildwood]
+    {tx:34,tz:186,type:'bloom_sprite'},
+    // camp 88 [wildwood]
+    {tx:75,tz:22,type:'bloom_sprite'},
+    // camp 89 [wildwood]
+    {tx:43,tz:46,type:'bloom_sprite'},
+    // camp 90 [wildwood]
+    {tx:213,tz:63,type:'bloom_sprite'},
+    // camp 91 [wildwood]
+    {tx:215,tz:176,type:'bloom_sprite'},
+    // camp 92 [wildwood]
+    {tx:81,tz:222,type:'bloom_sprite'},
+    // camp 93 [wildwood]
+    {tx:145,tz:11,type:'bloom_sprite'},
+    // camp 94 [wildwood]
+    {tx:35,tz:195,type:'bloom_sprite'},
+    // camp 95 [wildwood]
+    {tx:204,tz:50,type:'bloom_sprite'},
+    // camp 96 [wildwood]
+    {tx:163,tz:224,type:'bloom_sprite'},
+    // camp 97 [wildwood]
+    {tx:21,tz:182,type:'bloom_sprite'},
+    // camp 98 [wildwood]
+    {tx:180,tz:220,type:'bloom_sprite'},
+    // camp 99 [wildwood]
+    {tx:57,tz:221,type:'bloom_sprite'},
+    // camp 100 [wildwood]
+    {tx:193,tz:26,type:'bloom_sprite'},
+    // camp 101 [wildwood]
+    {tx:63,tz:15,type:'bloom_sprite'},
+    // camp 102 [wildwood]
+    {tx:27,tz:45,type:'bloom_sprite'},
+    // camp 103 [wildwood]
+    {tx:16,tz:60,type:'bloom_sprite'},
+    // camp 104 [wildwood]
+    {tx:185,tz:12,type:'bloom_sprite'},
+    // camp 105 [wildwood]
+    {tx:42,tz:22,type:'bloom_sprite'},
+    // camp 106 [wildwood]
+    {tx:218,tz:202,type:'bloom_sprite'},
+    // camp 107 [wildwood]
+    {tx:15,tz:199,type:'bloom_sprite'},
+    // camp 108 [outer bloom]
+    {tx:40,tz:226,type:'bloom_sprite'},
+    // camp 109 [outer bloom]
+    {tx:205,tz:224,type:'bloom_sprite'},
+    // camp 110 [outer bloom]
+    {tx:21,tz:26,type:'bloom_sprite'},
+    // camp 111 [outer bloom]
+    {tx:227,tz:34,type:'bloom_sprite'},
+    // camp 112 [outer bloom]
+    {tx:228,tz:27,type:'bloom_sprite'},
+    // camp 113 [outer bloom]
+    {tx:14,tz:217,type:'bloom_sprite'},
+    // camp 114 [outer bloom]
+    {tx:222,tz:220,type:'bloom_sprite'},
   ],
   // ── XERON (v93.0-a94) — matches client ZONE_DEFS.xeron ──
   // Cut from 86 → 51 mobs to address dense-combat feedback.
