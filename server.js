@@ -2615,6 +2615,7 @@ const ZONE_SPAWNS = {
     {tx:33,tz:223,type:'spore_walker'},
     // camp 111 [mushroom forest]
     {tx:219,tz:211,type:'spore_walker'},
+  
   ],
   void_citadel: [
     {tx: 8,tz: 8,type:'void_construct'}, {tx:10,tz:10,type:'void_sentinel'},
