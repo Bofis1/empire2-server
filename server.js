@@ -3,10 +3,15 @@ const { WebSocketServer } = require('ws');
 const http = require('http');
 const fs   = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+// a481 — SERVER-2: cap frame size. The default maxPayload is 100MB, which lets a
+//   single client send a giant frame (e.g. a bloated sv_cloud_save) and force a
+//   full synchronous disk rewrite, or just exhaust memory. 256KB is far larger than
+//   any legitimate message (the biggest is a full character save) with headroom.
+const wss = new WebSocketServer({ server, maxPayload: 256 * 1024 });
 
 const players = new Map(); // ws -> player obj
 const games   = new Map(); // gameId -> game obj
@@ -40,11 +45,15 @@ function flushGuilds() {
   if (_guildsDirtyTimer) return;
   _guildsDirtyTimer = setTimeout(() => {
     _guildsDirtyTimer = null;
-    try {
-      fs.writeFileSync(GUILDS_FILE, JSON.stringify(guilds), 'utf8');
-    } catch(e) {
-      console.warn('[guilds] Failed to write guilds.json:', e.message);
-    }
+    // a481 — SERVER-3/4: async, atomic write (temp + rename), same as flushSaves.
+    const payload = JSON.stringify(guilds);
+    const tmp = GUILDS_FILE + '.tmp';
+    fs.writeFile(tmp, payload, 'utf8', (err) => {
+      if (err) { console.warn('[guilds] Failed to write temp file:', err.message); return; }
+      fs.rename(tmp, GUILDS_FILE, (err2) => {
+        if (err2) console.warn('[guilds] Failed to rename guilds file:', err2.message);
+      });
+    });
   }, 5000);
 }
 
@@ -132,16 +141,29 @@ function awardGuildXp(charName, xp){
 // ══════════════════════════════════════════════════════════
 const SAVES_FILE = path.join(DATA_DIR, 'saves.json');
 let cloudSaves = {};
+let saveOwners = {}; // a481 — saveKey -> owner token (declared before load block that uses it)
 
 // Load saves from disk on startup
 try {
   if (fs.existsSync(SAVES_FILE)) {
-    cloudSaves = JSON.parse(fs.readFileSync(SAVES_FILE, 'utf8'));
-    console.log(`[saves] Loaded ${Object.keys(cloudSaves).length} cloud saves from disk.`);
+    const _parsed = JSON.parse(fs.readFileSync(SAVES_FILE, 'utf8'));
+    // a481 — file shape migration. New format is { saves:{...}, owners:{...} }.
+    //   Legacy files were the flat saves object with no owners — detect that (no
+    //   `saves` key) and load it as saves with an empty owners map, so every legacy
+    //   save is un-owned and gets grandfather-claimed on its owner's next save/load.
+    if (_parsed && _parsed.saves && typeof _parsed.saves === 'object') {
+      cloudSaves  = _parsed.saves;
+      saveOwners  = (_parsed.owners && typeof _parsed.owners === 'object') ? _parsed.owners : {};
+    } else {
+      cloudSaves  = _parsed || {};
+      saveOwners  = {};
+    }
+    console.log(`[saves] Loaded ${Object.keys(cloudSaves).length} cloud saves (${Object.keys(saveOwners).length} owned) from disk.`);
   }
 } catch(e) {
   console.warn('[saves] Could not load saves.json:', e.message);
   cloudSaves = {};
+  saveOwners = {};
 }
 
 // Write saves to disk (debounced — max once per 10s)
@@ -150,17 +172,39 @@ function flushSaves() {
   if (_saveDirtyTimer) return;
   _saveDirtyTimer = setTimeout(() => {
     _saveDirtyTimer = null;
-    try {
-      fs.writeFileSync(SAVES_FILE, JSON.stringify(cloudSaves), 'utf8');
-    } catch(e) {
-      console.warn('[saves] Failed to write saves.json:', e.message);
-    }
+    // a481 — SERVER-3/4: async, atomic write. Old code used writeFileSync of the
+    //   whole object, which blocks the event loop for every player during the flush
+    //   and, if the process dies mid-write (Railway redeploy, OOM), leaves a
+    //   truncated saves.json that takes ALL cloud saves with it. Now we serialize
+    //   the {saves, owners} envelope, write to a temp file, then rename() — which is
+    //   atomic on the same filesystem, so a crash never leaves a half-written file.
+    const payload = JSON.stringify({ saves: cloudSaves, owners: saveOwners });
+    const tmp = SAVES_FILE + '.tmp';
+    fs.writeFile(tmp, payload, 'utf8', (err) => {
+      if (err) { console.warn('[saves] Failed to write temp file:', err.message); return; }
+      fs.rename(tmp, SAVES_FILE, (err2) => {
+        if (err2) console.warn('[saves] Failed to rename save file:', err2.message);
+      });
+    });
   }, 10000);
 }
 
 function getSaveKey(name, raceId, cls) {
   return (name + '_' + raceId + '_' + cls).toLowerCase();
 }
+
+// a481 — SERVER-1: save ownership tokens. Without these, login trusts any name and
+//   the save handlers trust data.name, so anyone could load (steal) or overwrite
+//   (grief) another player's character just by knowing the handle. We record an
+//   opaque owner token per save key. The client generates a random token once,
+//   stores it locally, and sends it with every save/load. First contact with an
+//   un-owned key (new save, or a legacy save from before this system) CLAIMS it for
+//   the presenting token — so existing players are grandfathered on their next save
+//   or load from their own machine. After that, only the matching token can
+//   overwrite or load that save. Tokens live in a sibling map persisted in the same
+//   file as the saves, so ownership survives restarts.
+function _validToken(t){ return typeof t === 'string' && t.length >= 8 && t.length <= 128; }
+function mintToken(){ return crypto.randomBytes(24).toString('hex'); }
 
 function getAllSavesForUser(name) {
   const prefix = name.toLowerCase() + '_';
@@ -2607,6 +2651,19 @@ wss.on('connection', ws => {
 
   ws.on('message', raw => {
     ws.isAlive = true;
+    // a481 — SERVER-2: per-connection rate limit. Token bucket, ~30 msg/sec with a
+    //   burst allowance of 60. Prevents a single client from flooding the handler
+    //   (and, via sv_cloud_save, hammering disk writes). Legitimate play sends a
+    //   handful of messages per second; state updates are the most frequent and sit
+    //   well under this. Over-budget messages are silently dropped.
+    {
+      const _now = Date.now();
+      if (ws._rlTokens === undefined) { ws._rlTokens = 60; ws._rlLast = _now; }
+      ws._rlTokens = Math.min(60, ws._rlTokens + (_now - ws._rlLast) * (30 / 1000));
+      ws._rlLast = _now;
+      if (ws._rlTokens < 1) return;   // over budget — drop
+      ws._rlTokens -= 1;
+    }
     let data;
     try { data = JSON.parse(raw); } catch { return; }
     const player = players.get(ws);
@@ -2668,6 +2725,29 @@ wss.on('connection', ws => {
         if (!name) break;
         const key = getSaveKey(name, data.raceId, data.cls);
         const incoming = data.saveData;
+        // a481 — SERVER-2: per-save size cap. maxPayload already bounds the frame,
+        //   but cap the stored blob too so no single save can bloat the file.
+        if (JSON.stringify(incoming).length > 200 * 1024) {
+          send(ws, { type:'sv_cloud_save_ok', key, skipped:true, error:'save_too_large' });
+          break;
+        }
+        // a481 — SERVER-1: ownership. The client sends a locally-generated token.
+        //   If this key has no owner yet (new save, or a legacy pre-token save), the
+        //   presenting token CLAIMS it. If it's already owned, the token must match
+        //   or we refuse — this is what stops someone overwriting/griefing a save
+        //   they don't own just by knowing the character name.
+        const token = _validToken(data.token) ? data.token : null;
+        const owner = saveOwners[key];
+        if (owner) {
+          if (!token || token !== owner) {
+            send(ws, { type:'sv_cloud_save_denied', key, reason:'not_owner' });
+            console.log(`[saves] DENIED overwrite of owned key ${key} (token mismatch)`);
+            break;
+          }
+        } else if (token) {
+          saveOwners[key] = token;   // claim
+          console.log(`[saves] Key ${key} claimed by presenting token.`);
+        }
         const existing = cloudSaves[key];
         // Only overwrite if incoming is newer
         if (!existing || (incoming.ts && incoming.ts > (existing.ts||0))) {
@@ -2686,15 +2766,43 @@ wss.on('connection', ws => {
         if (!data.name) break;
         const name = data.name.slice(0,20).replace(/[^a-zA-Z0-9_\- ]/g,'');
         if (!name) break;
-        const saves = getAllSavesForUser(name);
+        // a481 — SERVER-1: ownership-gated load. A save is returned only when the
+        //   requester presents its owner token, OR the save is still un-owned (in
+        //   which case presenting a valid token claims it — this is how a returning
+        //   legacy player, or the same player on a new device with their stored
+        //   token, recovers their character). Un-owned + no token still returns the
+        //   save (so first-ever load before the client has minted a token works),
+        //   but that window closes permanently the moment an owner is recorded.
+        const token = _validToken(data.token) ? data.token : null;
+        const all = getAllSavesForUser(name);
+        const saves = [];
+        for (const rec of all) {
+          const owner = saveOwners[rec.key];
+          if (owner) {
+            if (token && token === owner) saves.push(rec);   // owner — allowed
+            // else: owned by someone else — silently omit (no theft)
+          } else {
+            if (token) saveOwners[rec.key] = token;          // claim on load
+            saves.push(rec);
+          }
+        }
+        if (Object.keys(saveOwners).length) flushSaves(); // persist any claims
         send(ws, { type:'sv_cloud_load_result', saves, name });
-        console.log(`[saves] Load request for '${name}': ${saves.length} save(s) found`);
+        console.log(`[saves] Load request for '${name}': ${saves.length}/${all.length} save(s) returned (ownership-filtered)`);
         break;
       }
 
       case 'sv_cloud_load_one': {
         // Client requesting a single specific save key
         if (!data.key) break;
+        // a481 — SERVER-1: same ownership gate as bulk load.
+        const token = _validToken(data.token) ? data.token : null;
+        const owner = saveOwners[data.key];
+        if (owner && (!token || token !== owner)) {
+          send(ws, { type:'sv_cloud_load_one_result', key: data.key, save: null, denied:true });
+          break;
+        }
+        if (!owner && token && cloudSaves[data.key]) { saveOwners[data.key] = token; flushSaves(); }
         const save = cloudSaves[data.key] || null;
         send(ws, { type:'sv_cloud_load_one_result', key: data.key, save });
         break;
