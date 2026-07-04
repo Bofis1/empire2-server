@@ -383,7 +383,7 @@ const ZONE_SCALE = {
 // ZONE ENEMY SPAWNS — mirrors ZONE_DEFS.enemySpawns
 // Only the spawn positions and types; stats come from ENEMY_STATS
 // ══════════════════════════════════════════════════════════
-const TILE = 1.6; // matches client TILE constant
+const TILE = 1.5; // a486 — MUST equal the client TILE (10_core_setup: const TILE=1.5). Was 1.6 — the comment claimed it matched, and every server→client world coordinate was skewed +6.7% because of it.
 
 // ══════════════════════════════════════════════════════════
 // ZONE BOSS HP — server-authoritative boss HP per zone
@@ -426,13 +426,21 @@ const ZONE_BOSS_HP = {
 // Stats are intentionally close to the client's so the HP bar matches what
 // players see. Damage is server-authoritative once a game enters MP mode.
 // ══════════════════════════════════════════════════════════
+// a486 — TABLE SYNCED TO THE CLIENT (WORLD_BOSS_DEFS in 80_zone_defs.part, a458
+//   anchors, post-240×240 coordinates). The old table was ancient: it filed the
+//   Hollow Reaper under 'cemetery' at tile (25,25) while the client placed it in
+//   'necropolis' at (56,120) — so the server's authoritative boss and the mesh
+//   players saw were in DIFFERENT ZONES. The fight could never work: the server
+//   boss idled unhit in an empty zone while players chased a local ghost.
+//   Zones/coords now mirror the client exactly; server hp/atk tuning kept.
 const WORLD_BOSS_DEFS = [
-  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'ashlands',     tx:70, tz:70, hp:280000, atk:115, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
-  { id:'ancient_wyrm',     name:'The Eyexor',             zone:'ancient',      tx:25, tz:25, hp:320000, atk:120, atkCooldown:85,  aggroRange:22, color:0xddbb60, lootTier:5 },
-  { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'cemetery',     tx:25, tz:25, hp:360000, atk:130, atkCooldown:90,  aggroRange:22, color:0xc080ff, lootTier:4 },
-  { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:30, tz:30, hp:440000, atk:145, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
-  { id:'abacus_of_flesh',  name:'The Abacus of Flesh',    zone:'void_citadel', tx:40, tz:40, hp:520000, atk:160, atkCooldown:100, aggroRange:24, color:0xcc1810, lootTier:7 },
+  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'citadel',      tx:120,tz:56, hp:280000, atk:115, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
+  { id:'ancient_wyrm',     name:'Eyexor',                 zone:'dragonlair',   tx:40, tz:64, hp:320000, atk:120, atkCooldown:85,  aggroRange:22, color:0xaa44ff, lootTier:5 },
+  { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'necropolis',   tx:56, tz:120,hp:360000, atk:130, atkCooldown:90,  aggroRange:22, color:0x44ddff, lootTier:4 },
+  { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:56, tz:120,hp:440000, atk:145, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
+  { id:'abacus_of_flesh',  name:'The Abacus of Flesh',    zone:'void_citadel', tx:56, tz:120,hp:520000, atk:160, atkCooldown:100, aggroRange:24, color:0xcc1810, lootTier:7 },
   { id:'overseer_of_discord', name:'The Overseer of Discord', zone:'arena',    tx:120,tz:120,hp:680000, atk:175, atkCooldown:80,  aggroRange:26, color:0xffd84a, lootTier:8 },
+  { id:'electronoid',      name:'Electronoid',            zone:'forge',        tx:120,tz:150,hp:960000, atk:190, atkCooldown:85,  aggroRange:24, color:0x46b4ff, lootTier:9 },   // a486 — existed client-side (a411) but the server never learned it
 ];
 // id -> def lookup
 const WORLD_BOSS_BY_ID = {};
@@ -2323,6 +2331,10 @@ function despawnWorldBoss(game, killed, killerName, bx, bz) {
 function tickWorldBoss(game) {
   const wb = game.worldBoss;
   if (!wb || !wb.spawned) return;
+  // a486 — players PRESENT in the boss's zone count as activity. The idle
+  //   despawn exists for abandoned bosses, not for ones players are still
+  //   traveling to or actively kiting between hits.
+  if (getPlayersInZone(game.id, wb.zone).length > 0) wb.lastHitAt = Date.now();
   // Idle despawn — no damage taken in the cutoff window
   if (Date.now() - wb.lastHitAt > WORLD_BOSS_IDLE_MS) {
     despawnWorldBoss(game, false, null, wb.x, wb.z);
