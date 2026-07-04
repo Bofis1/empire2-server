@@ -1750,30 +1750,7 @@ const ZONE_SPAWNS = {
     {tx:149,tz:155,type:'sentinel_drone'},
   ],
   // ── VEILED SANCTUARY (v92.41) — matches client ZONE_DEFS.veiled_sanctuary ──
-  veiled_sanctuary: [
-    // ENTRANCE PROCESSION (west side)
-    {tx:14,tz:36, type:'veiled_acolyte'}, {tx:16,tz:42, type:'veiled_acolyte'},
-    {tx:18,tz:38, type:'censer_bearer'},  {tx:20,tz:44, type:'penitent_striker'},
-    {tx:22,tz:36, type:'veiled_acolyte'}, {tx:24,tz:42, type:'choir_wraith'},
-    // INNER COURTYARD
-    {tx:28,tz:30, type:'stone_inquisitor'}, {tx:30,tz:36, type:'censer_bearer'},
-    {tx:32,tz:42, type:'choir_wraith'},     {tx:34,tz:48, type:'penitent_striker'},
-    {tx:36,tz:30, type:'ritual_guardian'},  {tx:38,tz:42, type:'veiled_acolyte'},
-    {tx:40,tz:36, type:'stone_inquisitor'}, {tx:42,tz:48, type:'censer_bearer'},
-    {tx:44,tz:30, type:'choir_wraith'},     {tx:46,tz:42, type:'penitent_striker'},
-    // CARDINAL'S COURT (mini-boss)
-    {tx:50,tz:40, type:'veiled_cardinal'},
-    {tx:52,tz:34, type:'veiled_acolyte'},   {tx:52,tz:46, type:'veiled_acolyte'},
-    {tx:54,tz:38, type:'ritual_guardian'},  {tx:54,tz:42, type:'ritual_guardian'},
-    // FORSAKEN HALL
-    {tx:60,tz:34, type:'choir_wraith'},     {tx:60,tz:46, type:'choir_wraith'},
-    {tx:62,tz:40, type:'forsaken_abbot'},   // mini-boss
-    {tx:64,tz:36, type:'stone_inquisitor'}, {tx:64,tz:44, type:'stone_inquisitor'},
-    {tx:66,tz:38, type:'penitent_striker'}, {tx:66,tz:42, type:'penitent_striker'},
-    // FINAL APPROACH
-    {tx:70,tz:38, type:'ritual_guardian'},  {tx:70,tz:42, type:'ritual_guardian'},
-    {tx:72,tz:40, type:'censer_bearer'},
-  ],
+  veiled_sanctuary: [],   // a484 — client-authoritative now (bespoke ritual AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   // ── BLOOMING WILDS (v92.49+v92.50) — matches client ZONE_DEFS.blooming_wilds ──
   blooming_wilds: [],   // a465 — client-authoritative now (custom client AI); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   // ── XERON (v93.0-a94) — matches client ZONE_DEFS.xeron ──
