@@ -462,32 +462,7 @@ const ZONE_SPAWNS = {
   sunken_sands: [],   // a497 — client-authoritative now (bespoke desert AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   frostveil: [],   // a473 — client-authoritative (bespoke ice AI client-side); server no longer spawns/owns these mobs.
   ancient: [],   // a475 — client-authoritative (bespoke arcane AI client-side); server no longer spawns/owns these mobs.
-  dragonlair: [
-    {tx:12,tz:8,type:'ancient_guardian'},
-    {tx:16,tz:6,type:'citadel_mage'},
-    {tx:8,tz:20,type:'ancient_guardian'},
-    {tx:20,tz:8,type:'iron_guard'},
-    {tx:30,tz:15,type:'fire_demon'},
-    {tx:45,tz:20,type:'fire_demon'},
-    {tx:35,tz:40,type:'fire_demon'},
-    {tx:55,tz:30,type:'fire_demon'},
-    {tx:25,tz:55,type:'fire_demon'},
-    {tx:50,tz:55,type:'fire_demon'},
-    {tx:38,tz:12,type:'wyvern'},
-    {tx:55,tz:18,type:'wyvern'},
-    {tx:22,tz:35,type:'wyvern'},
-    {tx:60,tz:45,type:'wyvern'},
-    {tx:40,tz:65,type:'wyvern'},
-    {tx:8,tz:35,type:'void_spider'},
-    {tx:15,tz:50,type:'void_spider'},
-    {tx:65,tz:25,type:'void_spider'},
-    {tx:70,tz:50,type:'void_spider'},
-    {tx:30,tz:68,type:'void_spider'},
-    {tx:55,tz:68,type:'void_spider'},
-    {tx:45,tz:40,type:'inferno_golem'},
-    {tx:60,tz:60,type:'inferno_golem'},
-    {tx:30,tz:50,type:'inferno_golem'}
-  ],
+  dragonlair: [],   // a506 — client-authoritative now (bespoke volcanic AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   riftvale: [],   // a477 — client-authoritative (bespoke void/rift AI client-side); server no longer spawns/owns these mobs.
   wyvernwastes: [],   // a488 — client-authoritative now (bespoke pack AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   xumen: [],   // a489 — client-authoritative now (bespoke capital-guard AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
