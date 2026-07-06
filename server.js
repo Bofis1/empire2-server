@@ -874,8 +874,18 @@ function tickWorldBoss(game) {
   //   despawn exists for abandoned bosses, not for ones players are still
   //   traveling to or actively kiting between hits.
   if (getPlayersInZone(game.id, wb.zone).length > 0) wb.lastHitAt = Date.now();
-  // Idle despawn — no damage taken in the cutoff window
-  if (Date.now() - wb.lastHitAt > WORLD_BOSS_IDLE_MS) {
+  // a504 — SPAWN GRACE. Root cause of the instant-retreat: a world boss spawned
+  //   while the only player's server-side zone/position hadn't been reported yet
+  //   (client sends sv_player_state on its own cadence; a boss requested right
+  //   after a zone change can tick before the first state arrives). With nobody
+  //   detected "in zone", lastHitAt never refreshed, and on a server that had
+  //   been up a while Date.now()-lastHitAt could already exceed the window on
+  //   the very first tick — instant idle-despawn. Never idle-despawn a boss
+  //   that's existed for less than its full idle window measured from SPAWN,
+  //   and clamp lastHitAt so it can't be read as stale on tick one.
+  const _wbAge = Date.now() - (wb.spawnedAt || 0);
+  // Idle despawn — no damage taken in the cutoff window (and boss is past grace)
+  if (_wbAge > WORLD_BOSS_IDLE_MS && Date.now() - wb.lastHitAt > WORLD_BOSS_IDLE_MS) {
     despawnWorldBoss(game, false, null, wb.x, wb.z);
     return;
   }
