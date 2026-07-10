@@ -1032,25 +1032,6 @@ function tickGame(game) {
 
       // Aggro check
       if (nearestDist <= e.aggroRange) e.aggroed = true;
-
-      // a523 — TEMP DIAGNOSTIC (remove after): color-codes how far through the real
-      //   impale gate each scorpion gets, so we can SEE which condition fails.
-      //     MAGENTA = within 30u but NOT aggroed  -> aggro is failing
-      //     CYAN    = aggroed but never within 3.4u -> distance/position mismatch
-      //     GREEN   = aggroed AND within 3.4u -> gate MET, bug is in the fire logic
-      //   Slower pulse (every 8 ticks) so the color is readable.
-      if (e.type === 'sand_scorpion' && nearestPlayer && nearestDist < 30) {
-        e._diagT = (e._diagT || 0) + 1;
-        if (e._diagT % 8 === 0) {
-          const _gateMet = e.aggroed && nearestDist < 3.4;
-          const _col = _gateMet   ? 'rgba(40,255,90,.55)'
-                     : e.aggroed  ? 'rgba(30,200,255,.55)'
-                     :              'rgba(255,0,255,.5)';
-          console.log(`[SCORP DIAG] eid=${e.id} aggroed=${e.aggroed} dist=${nearestDist.toFixed(1)} gateMet=${_gateMet} aggroRange=${e.aggroRange} gid=${game.id}`);
-          players.forEach((p, ws) => { if (p === nearestPlayer) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'diag', flash:_col, shake:6 }); });
-        }
-      }
-
       if (!e.aggroed) return;
 
       // Move toward player
@@ -1108,7 +1089,7 @@ function tickGame(game) {
             zonePlayers.forEach(p => {
               if (p.x === undefined) return;
               const ddx = p.x - hx, ddz = p.z - hz;
-              if (ddx*ddx + ddz*ddz < 1.5*1.5) victim = p;
+              if (ddx*ddx + ddz*ddz < 2.2*2.2) victim = p; // a524 widened hit radius
             });
             console.log(`[SD impale] RESOLVE eid=${e.id} victim=${victim?victim.name:'NONE'} hx=${hx.toFixed(1)} hz=${hz.toFixed(1)} players=${zonePlayers.length}`); // a520 diag
             if (victim) {
@@ -1122,10 +1103,10 @@ function tickGame(game) {
             }
           }
         } else {
-          if (e._sdImpCd === undefined) e._sdImpCd = 8 + Math.floor(Math.random()*6); // a521 TEST-tuned fast
+          if (e._sdImpCd === undefined) e._sdImpCd = 15 + Math.floor(Math.random()*10); // a524 ~1.5-2.5s first
           e._sdImpCd--;
-          if (e._sdImpCd <= 0 && nearestDist < 3.4) {
-            e._sdImpCd = 12 + Math.floor(Math.random()*8); // a521 TEST-tuned fast (~1.2-2s)
+          if (e._sdImpCd <= 0) { // a524 — fire on cooldown once AGGROED; hit-test at resolve decides the hit (no fragile distance gate)
+            e._sdImpCd = 20 + Math.floor(Math.random()*15); // a524 ~2-3.5s between impales
             e._sdImpAng = Math.atan2(nearestPlayer.x - e.x, nearestPlayer.z - e.z);
             e._sdImpFire = 5; // a521 ~0.5s telegraph (more visible)
             console.log(`[SD impale] WINDUP eid=${e.id} zone=${zoneName} dist=${nearestDist.toFixed(1)}`); // a520 diag
