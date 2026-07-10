@@ -459,7 +459,50 @@ const ZONE_SPAWNS = {
   citadel: [],   // a470 — client-authoritative (bespoke futuristic AI client-side); server no longer spawns/owns these mobs.
   caves_of_despair: [],   // a498 — client-authoritative now (bespoke mine AI + two new species client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   ashlands: [],   // a469 — client-authoritative (bespoke fire/volcanic AI client-side); server no longer spawns/owns these mobs.
-  sunken_sands: [],   // a497 — client-authoritative now (bespoke desert AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a519 — SERVER-AUTHORITATIVE again (multiplayer migration): the server owns
+  //   simulation/positions/HP for Sunken Sands. Transcribed from the client
+  //   ZONE_DEFS.sunken_sands.enemySpawns (150 mobs). The client sv_zone_snapshot
+  //   fallback self-disables once this snapshot arrives non-empty.
+  sunken_sands: [
+    {tx:153,tz:80,type:'sand_worm'}, {tx:109,tz:82,type:'sand_worm'}, {tx:119,tz:86,type:'sand_worm'}, {tx:139,tz:88,type:'sand_worm'},
+    {tx:83,tz:96,type:'sand_worm'}, {tx:157,tz:106,type:'sand_worm'}, {tx:171,tz:114,type:'sand_worm'}, {tx:65,tz:117,type:'sand_worm'},
+    {tx:154,tz:121,type:'sand_worm'}, {tx:85,tz:125,type:'sand_worm'}, {tx:88,tz:136,type:'sand_worm'}, {tx:156,tz:140,type:'sand_worm'},
+    {tx:143,tz:141,type:'sand_worm'}, {tx:100,tz:145,type:'sand_worm'}, {tx:142,tz:157,type:'sand_worm'}, {tx:84,tz:158,type:'sand_worm'},
+    {tx:120,tz:159,type:'sand_worm'}, {tx:103,tz:167,type:'sand_worm'}, {tx:100,tz:46,type:'sand_mummy'}, {tx:137,tz:48,type:'sand_mummy'},
+    {tx:80,tz:49,type:'sand_mummy'}, {tx:142,tz:60,type:'sand_mummy'}, {tx:101,tz:61,type:'sand_mummy'}, {tx:165,tz:62,type:'sand_mummy'},
+    {tx:76,tz:63,type:'sand_mummy'}, {tx:64,tz:77,type:'sand_mummy'}, {tx:177,tz:79,type:'sand_mummy'}, {tx:80,tz:82,type:'sand_mummy'},
+    {tx:48,tz:97,type:'sand_mummy'}, {tx:64,tz:100,type:'sand_mummy'}, {tx:178,tz:101,type:'sand_mummy'}, {tx:196,tz:116,type:'sand_mummy'},
+    {tx:60,tz:137,type:'sand_mummy'}, {tx:181,tz:138,type:'sand_mummy'}, {tx:196,tz:141,type:'sand_mummy'}, {tx:179,tz:151,type:'sand_mummy'},
+    {tx:60,tz:163,type:'sand_mummy'}, {tx:165,tz:166,type:'sand_mummy'}, {tx:137,tz:172,type:'sand_mummy'}, {tx:155,tz:174,type:'sand_mummy'},
+    {tx:87,tz:175,type:'sand_mummy'}, {tx:102,tz:177,type:'sand_mummy'}, {tx:61,tz:178,type:'sand_mummy'}, {tx:122,tz:182,type:'sand_mummy'},
+    {tx:141,tz:196,type:'sand_mummy'}, {tx:106,tz:201,type:'sand_mummy'}, {tx:116,tz:24,type:'dune_skeleton'}, {tx:105,tz:26,type:'dune_skeleton'},
+    {tx:121,tz:37,type:'dune_skeleton'}, {tx:179,tz:40,type:'dune_skeleton'}, {tx:159,tz:46,type:'dune_skeleton'}, {tx:184,tz:59,type:'dune_skeleton'},
+    {tx:64,tz:63,type:'dune_skeleton'}, {tx:196,tz:80,type:'dune_skeleton'}, {tx:44,tz:87,type:'dune_skeleton'}, {tx:198,tz:97,type:'dune_skeleton'},
+    {tx:31,tz:99,type:'dune_skeleton'}, {tx:37,tz:115,type:'dune_skeleton'}, {tx:218,tz:115,type:'dune_skeleton'}, {tx:29,tz:119,type:'dune_skeleton'},
+    {tx:208,tz:134,type:'dune_skeleton'}, {tx:24,tz:138,type:'dune_skeleton'}, {tx:41,tz:143,type:'dune_skeleton'}, {tx:212,tz:154,type:'dune_skeleton'},
+    {tx:39,tz:156,type:'dune_skeleton'}, {tx:199,tz:164,type:'dune_skeleton'}, {tx:181,tz:177,type:'dune_skeleton'}, {tx:67,tz:190,type:'dune_skeleton'},
+    {tx:85,tz:196,type:'dune_skeleton'}, {tx:155,tz:198,type:'dune_skeleton'}, {tx:114,tz:201,type:'dune_skeleton'}, {tx:101,tz:212,type:'dune_skeleton'},
+    {tx:134,tz:18,type:'desert_snake'}, {tx:43,tz:21,type:'desert_snake'}, {tx:60,tz:23,type:'desert_snake'}, {tx:181,tz:24,type:'desert_snake'},
+    {tx:165,tz:25,type:'desert_snake'}, {tx:82,tz:29,type:'desert_snake'}, {tx:59,tz:41,type:'desert_snake'}, {tx:195,tz:43,type:'desert_snake'},
+    {tx:42,tz:45,type:'desert_snake'}, {tx:216,tz:50,type:'desert_snake'}, {tx:41,tz:57,type:'desert_snake'}, {tx:224,tz:57,type:'desert_snake'},
+    {tx:200,tz:63,type:'desert_snake'}, {tx:26,tz:67,type:'desert_snake'}, {tx:221,tz:76,type:'desert_snake'}, {tx:29,tz:78,type:'desert_snake'},
+    {tx:217,tz:94,type:'desert_snake'}, {tx:28,tz:164,type:'desert_snake'}, {tx:19,tz:178,type:'desert_snake'}, {tx:219,tz:184,type:'desert_snake'},
+    {tx:201,tz:185,type:'desert_snake'}, {tx:39,tz:187,type:'desert_snake'}, {tx:23,tz:197,type:'desert_snake'}, {tx:201,tz:197,type:'desert_snake'},
+    {tx:48,tz:199,type:'desert_snake'}, {tx:210,tz:199,type:'desert_snake'}, {tx:180,tz:201,type:'desert_snake'}, {tx:181,tz:212,type:'desert_snake'},
+    {tx:84,tz:215,type:'desert_snake'}, {tx:156,tz:215,type:'desert_snake'}, {tx:194,tz:217,type:'desert_snake'}, {tx:44,tz:218,type:'desert_snake'},
+    {tx:69,tz:221,type:'desert_snake'}, {tx:139,tz:221,type:'desert_snake'}, {tx:210,tz:21,type:'sand_scorpion'}, {tx:203,tz:22,type:'sand_scorpion'},
+    {tx:21,tz:27,type:'sand_scorpion'}, {tx:23,tz:40,type:'sand_scorpion'}, {tx:133,tz:49,type:'sand_scorpion'}, {tx:102,tz:59,type:'sand_scorpion'},
+    {tx:142,tz:59,type:'sand_scorpion'}, {tx:166,tz:60,type:'sand_scorpion'}, {tx:78,tz:63,type:'sand_scorpion'}, {tx:63,tz:76,type:'sand_scorpion'},
+    {tx:177,tz:77,type:'sand_scorpion'}, {tx:106,tz:81,type:'sand_scorpion'}, {tx:78,tz:82,type:'sand_scorpion'}, {tx:153,tz:82,type:'sand_scorpion'},
+    {tx:119,tz:85,type:'sand_scorpion'}, {tx:140,tz:88,type:'sand_scorpion'}, {tx:86,tz:98,type:'sand_scorpion'}, {tx:64,tz:103,type:'sand_scorpion'},
+    {tx:178,tz:103,type:'sand_scorpion'}, {tx:158,tz:105,type:'sand_scorpion'}, {tx:175,tz:115,type:'sand_scorpion'}, {tx:70,tz:118,type:'sand_scorpion'},
+    {tx:155,tz:124,type:'sand_scorpion'}, {tx:88,tz:127,type:'sand_scorpion'}, {tx:61,tz:138,type:'sand_scorpion'}, {tx:87,tz:139,type:'sand_scorpion'},
+    {tx:183,tz:139,type:'sand_scorpion'}, {tx:153,tz:140,type:'sand_scorpion'}, {tx:146,tz:142,type:'sand_scorpion'}, {tx:98,tz:143,type:'sand_scorpion'},
+    {tx:177,tz:153,type:'sand_scorpion'}, {tx:121,tz:158,type:'sand_scorpion'}, {tx:139,tz:158,type:'sand_scorpion'}, {tx:84,tz:160,type:'sand_scorpion'},
+    {tx:106,tz:164,type:'sand_scorpion'}, {tx:165,tz:165,type:'sand_scorpion'}, {tx:134,tz:170,type:'sand_scorpion'}, {tx:101,tz:173,type:'sand_scorpion'},
+    {tx:88,tz:174,type:'sand_scorpion'}, {tx:155,tz:177,type:'sand_scorpion'}, {tx:123,tz:181,type:'sand_scorpion'}, {tx:139,tz:195,type:'sand_scorpion'},
+    {tx:21,tz:212,type:'sand_scorpion'}, {tx:214,tz:219,type:'sand_scorpion'}
+  ],
   frostveil: [],   // a473 — client-authoritative (bespoke ice AI client-side); server no longer spawns/owns these mobs.
   ancient: [],   // a475 — client-authoritative (bespoke arcane AI client-side); server no longer spawns/owns these mobs.
   dragonlair: [],   // a506 — client-authoritative now (bespoke volcanic AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
@@ -1019,6 +1062,58 @@ function tickGame(game) {
           tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2),
           zone:zoneName
         });
+      }
+
+      // ══════════════════════════════════════════════════════════
+      // a519 — MULTIPLAYER MIGRATION: Sunken Sands server-authoritative kit.
+      //   First ported special — the DUNE SCORPION's STINGER IMPALE. The server
+      //   owns the hit test: it locks a thrust direction, telegraphs it (sv_fx),
+      //   and 3 ticks (~0.3s) later tests a lead point against LIVE player
+      //   positions — so a sidestep out of the committed lane avoids it. On a hit
+      //   it deals damage (reused sv_enemy_attack) and commands the player-effect
+      //   root+poison+flash+shake via the new sv_player_fx channel. This is the
+      //   reusable spine every subsequent kit ability rides on.
+      // ══════════════════════════════════════════════════════════
+      if (e.type === 'sand_scorpion' && e.aggroed) {
+        if (e._sdImpFire > 0) {
+          e._sdImpFire--;
+          if (e._sdImpFire === 0) {
+            const la = e._sdImpAng || 0;
+            const hx = e.x + Math.sin(la) * 2.3, hz = e.z + Math.cos(la) * 2.3;
+            // the barb strikes the ground point — everyone in the zone sees it
+            broadcastToZone(game.id, zoneName, {
+              type:'sv_fx', vt:'sd_stinger', zone:zoneName,
+              ex:+hx.toFixed(2), ez:+hz.toFixed(2)
+            });
+            let victim = null;
+            zonePlayers.forEach(p => {
+              if (p.x === undefined) return;
+              const ddx = p.x - hx, ddz = p.z - hz;
+              if (ddx*ddx + ddz*ddz < 1.5*1.5) victim = p;
+            });
+            if (victim) {
+              const idmg = Math.floor(e.atk * 1.3);
+              players.forEach((p, ws) => {
+                if (p === victim) {
+                  send(ws, { type:'sv_enemy_attack', eid:e.id, dmg:idmg, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), zone:zoneName });
+                  send(ws, { type:'sv_player_fx', zone:zoneName, eff:'impale', root:600, slow:0.1, status:'poison', statusDur:180, flash:'rgba(154,200,50,.18)', shake:2 });
+                }
+              });
+            }
+          }
+        } else {
+          if (e._sdImpCd === undefined) e._sdImpCd = 20 + Math.floor(Math.random()*20);
+          e._sdImpCd--;
+          if (e._sdImpCd <= 0 && nearestDist < 3.4) {
+            e._sdImpCd = 26 + Math.floor(Math.random()*16); // ~2.6-4.2s between impales @10Hz
+            e._sdImpAng = Math.atan2(nearestPlayer.x - e.x, nearestPlayer.z - e.z);
+            e._sdImpFire = 3; // ~0.3s telegraph before it lands
+            broadcastToZone(game.id, zoneName, {
+              type:'sv_fx', vt:'sd_stinger_windup', zone:zoneName,
+              ex:+e.x.toFixed(2), ez:+e.z.toFixed(2)
+            });
+          }
+        }
       }
     });
 
