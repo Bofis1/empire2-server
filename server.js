@@ -1097,18 +1097,18 @@ function tickGame(game) {
               players.forEach((p, ws) => {
                 if (p === victim) {
                   send(ws, { type:'sv_enemy_attack', eid:e.id, dmg:idmg, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), zone:zoneName });
-                  send(ws, { type:'sv_player_fx', zone:zoneName, eff:'impale', root:600, slow:0.1, status:'poison', statusDur:180, flash:'rgba(154,200,50,.18)', shake:2 });
+                  send(ws, { type:'sv_player_fx', zone:zoneName, eff:'impale', root:600, slow:0.1, status:'poison', statusDur:180, flash:'rgba(154,220,60,.42)', shake:12 }); // a521 stronger flash+shake
                 }
               });
             }
           }
         } else {
-          if (e._sdImpCd === undefined) e._sdImpCd = 20 + Math.floor(Math.random()*20);
+          if (e._sdImpCd === undefined) e._sdImpCd = 8 + Math.floor(Math.random()*6); // a521 TEST-tuned fast
           e._sdImpCd--;
           if (e._sdImpCd <= 0 && nearestDist < 3.4) {
-            e._sdImpCd = 26 + Math.floor(Math.random()*16); // ~2.6-4.2s between impales @10Hz
+            e._sdImpCd = 12 + Math.floor(Math.random()*8); // a521 TEST-tuned fast (~1.2-2s)
             e._sdImpAng = Math.atan2(nearestPlayer.x - e.x, nearestPlayer.z - e.z);
-            e._sdImpFire = 3; // ~0.3s telegraph before it lands
+            e._sdImpFire = 5; // a521 ~0.5s telegraph (more visible)
             console.log(`[SD impale] WINDUP eid=${e.id} zone=${zoneName} dist=${nearestDist.toFixed(1)}`); // a520 diag
             broadcastToZone(game.id, zoneName, {
               type:'sv_fx', vt:'sd_stinger_windup', zone:zoneName,
