@@ -1033,18 +1033,21 @@ function tickGame(game) {
       // Aggro check
       if (nearestDist <= e.aggroRange) e.aggroed = true;
 
-      // a522 — TEMP DIAGNOSTIC (remove after): unconditional scorpion pulse to
-      //   isolate WHERE the impale pipeline breaks. Runs BEFORE the aggro return so
-      //   we can even tell whether scorpions aggro. Every 5 ticks, for ANY scorpion
-      //   within 30u of a player: console.log + broadcastToZone a ring (tests the
-      //   broadcast pipe) + direct-send a magenta flash to nearest player (tests the
-      //   send pipe + sv_player_fx handler). Bypasses aggro/cooldown/hit-test.
+      // a523 — TEMP DIAGNOSTIC (remove after): color-codes how far through the real
+      //   impale gate each scorpion gets, so we can SEE which condition fails.
+      //     MAGENTA = within 30u but NOT aggroed  -> aggro is failing
+      //     CYAN    = aggroed but never within 3.4u -> distance/position mismatch
+      //     GREEN   = aggroed AND within 3.4u -> gate MET, bug is in the fire logic
+      //   Slower pulse (every 8 ticks) so the color is readable.
       if (e.type === 'sand_scorpion' && nearestPlayer && nearestDist < 30) {
         e._diagT = (e._diagT || 0) + 1;
-        if (e._diagT % 5 === 0) {
-          console.log(`[SCORP DIAG] eid=${e.id} aggroed=${e.aggroed} dist=${nearestDist.toFixed(1)} zone=${zoneName} gid=${game.id}`);
-          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_stinger_windup', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2) });
-          players.forEach((p, ws) => { if (p === nearestPlayer) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'diag', flash:'rgba(255,0,255,.5)', shake:8 }); });
+        if (e._diagT % 8 === 0) {
+          const _gateMet = e.aggroed && nearestDist < 3.4;
+          const _col = _gateMet   ? 'rgba(40,255,90,.55)'
+                     : e.aggroed  ? 'rgba(30,200,255,.55)'
+                     :              'rgba(255,0,255,.5)';
+          console.log(`[SCORP DIAG] eid=${e.id} aggroed=${e.aggroed} dist=${nearestDist.toFixed(1)} gateMet=${_gateMet} aggroRange=${e.aggroRange} gid=${game.id}`);
+          players.forEach((p, ws) => { if (p === nearestPlayer) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'diag', flash:_col, shake:6 }); });
         }
       }
 
