@@ -1091,6 +1091,7 @@ function tickGame(game) {
               const ddx = p.x - hx, ddz = p.z - hz;
               if (ddx*ddx + ddz*ddz < 1.5*1.5) victim = p;
             });
+            console.log(`[SD impale] RESOLVE eid=${e.id} victim=${victim?victim.name:'NONE'} hx=${hx.toFixed(1)} hz=${hz.toFixed(1)} players=${zonePlayers.length}`); // a520 diag
             if (victim) {
               const idmg = Math.floor(e.atk * 1.3);
               players.forEach((p, ws) => {
@@ -1108,6 +1109,7 @@ function tickGame(game) {
             e._sdImpCd = 26 + Math.floor(Math.random()*16); // ~2.6-4.2s between impales @10Hz
             e._sdImpAng = Math.atan2(nearestPlayer.x - e.x, nearestPlayer.z - e.z);
             e._sdImpFire = 3; // ~0.3s telegraph before it lands
+            console.log(`[SD impale] WINDUP eid=${e.id} zone=${zoneName} dist=${nearestDist.toFixed(1)}`); // a520 diag
             broadcastToZone(game.id, zoneName, {
               type:'sv_fx', vt:'sd_stinger_windup', zone:zoneName,
               ex:+e.x.toFixed(2), ez:+e.z.toFixed(2)
