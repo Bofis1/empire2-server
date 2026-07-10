@@ -1111,7 +1111,7 @@ function tickGame(game) {
             e._sdImpFire = 5; // a521 ~0.5s telegraph (more visible)
             console.log(`[SD impale] WINDUP eid=${e.id} zone=${zoneName} dist=${nearestDist.toFixed(1)}`); // a520 diag
             broadcastToZone(game.id, zoneName, {
-              type:'sv_fx', vt:'sd_stinger_windup', zone:zoneName,
+              type:'sv_fx', vt:'sd_stinger_windup', zone:zoneName, eid:e.id,
               ex:+e.x.toFixed(2), ez:+e.z.toFixed(2)
             });
           }
