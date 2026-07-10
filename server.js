@@ -1034,8 +1034,8 @@ function tickGame(game) {
       if (nearestDist <= e.aggroRange) e.aggroed = true;
       if (!e.aggroed) return;
 
-      // Move toward player
-      if (nearestDist > ATTACK_RANGE) {
+      // Move toward player (generic chase — scorpions use their own skitter below)
+      if (e.type !== 'sand_scorpion' && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
         const len = Math.sqrt(dx*dx + dz*dz) || 1;
         e.x += (dx/len) * e.spd * 1.6; // 1.6 = server tick scale
@@ -1045,7 +1045,7 @@ function tickGame(game) {
 
       // Attack
       e.attackTimer++;
-      if (e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {
+      if (e.type !== 'sand_scorpion' && e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {
         e.attackTimer = 0;
         const dmg = Math.floor(e.atk * (0.85 + Math.random() * 0.3));
         // Send damage directly to the nearest player only
@@ -1075,6 +1075,39 @@ function tickGame(game) {
       //   reusable spine every subsequent kit ability rides on.
       // ══════════════════════════════════════════════════════════
       if (e.type === 'sand_scorpion' && e.aggroed) {
+        // ── a526: DUNE SCORPION bespoke locomotion + light attacks (ported from the
+        //   client kit, re-timed 60fps->10Hz). Skitter-approach with a strafe weave,
+        //   circle-strafe when point-blank, fast pincer nips (~1/s), and a scuttle
+        //   sidestep dart. The stinger impale (below) is the heavy hit.
+        {
+          const sdx = nearestPlayer.x - e.x, sdz = nearestPlayer.z - e.z;
+          const sdd = Math.sqrt(sdx*sdx + sdz*sdz) || 0.0001;
+          const sSin = sdx/sdd, sCos = sdz/sdd;   // unit vector toward player
+          const sPr = sCos, sPq = -sSin;          // perpendicular = strafe axis
+          if (e._strafe === undefined) e._strafe = Math.random() < 0.5 ? 1 : -1;
+          if (Math.random() < 0.04) e._strafe = -e._strafe;
+          const MSs = 0.31;                        // ~3 u/s @10Hz (client MS 0.052/frame)
+          if (sdd > 2.2) { e.x += (sSin*0.85 + sPr*e._strafe*0.5)*MSs; e.z += (sCos*0.85 + sPq*e._strafe*0.5)*MSs; }
+          else           { e.x += (sPr*e._strafe)*MSs;                 e.z += (sPq*e._strafe)*MSs; }
+          changed.push(e);
+          // pincer nips — fast, light melee
+          e._nip = (e._nip || 0) + 1;
+          if (nearestDist < 2.6 && e._nip >= 9) {
+            e._nip = 0;
+            const ndmg = Math.floor(e.atk * 0.85);
+            players.forEach((p, ws) => { if (p === nearestPlayer) send(ws, { type:'sv_enemy_attack', eid:e.id, dmg:ndmg, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), zone:zoneName }); });
+            broadcastToZone(game.id, zoneName, { type:'sv_enemy_anim', eid:e.id, a:'attack', ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2), zone:zoneName });
+          }
+          // scuttle sidestep — darts 2.2u perpendicular when point-blank (~every 2.2s)
+          e._scut = (e._scut || 0) + 1;
+          if (nearestDist < 2.2 && e._scut >= 22) {
+            e._scut = 0;
+            const ca = Math.atan2(sdx, sdz) + 1.5708 * (Math.random() < 0.5 ? 1 : -1);
+            e.x += Math.sin(ca) * 2.2; e.z += Math.cos(ca) * 2.2; // position already in `changed` from the move above
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_scuttle', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2) });
+          }
+        }
+
         if (e._sdImpFire > 0) {
           e._sdImpFire--;
           if (e._sdImpFire === 0) {
@@ -1091,7 +1124,6 @@ function tickGame(game) {
               const ddx = p.x - hx, ddz = p.z - hz;
               if (ddx*ddx + ddz*ddz < 2.2*2.2) victim = p; // a524 widened hit radius
             });
-            console.log(`[SD impale] RESOLVE eid=${e.id} victim=${victim?victim.name:'NONE'} hx=${hx.toFixed(1)} hz=${hz.toFixed(1)} players=${zonePlayers.length}`); // a520 diag
             if (victim) {
               const idmg = Math.floor(e.atk * 1.3);
               players.forEach((p, ws) => {
@@ -1103,13 +1135,12 @@ function tickGame(game) {
             }
           }
         } else {
-          if (e._sdImpCd === undefined) e._sdImpCd = 15 + Math.floor(Math.random()*10); // a524 ~1.5-2.5s first
+          if (e._sdImpCd === undefined) e._sdImpCd = 20 + Math.floor(Math.random()*15); // a526 ~2-3.5s first
           e._sdImpCd--;
           if (e._sdImpCd <= 0) { // a524 — fire on cooldown once AGGROED; hit-test at resolve decides the hit (no fragile distance gate)
-            e._sdImpCd = 20 + Math.floor(Math.random()*15); // a524 ~2-3.5s between impales
+            e._sdImpCd = 28 + Math.floor(Math.random()*16); // a526 ~2.8-4.4s between impales
             e._sdImpAng = Math.atan2(nearestPlayer.x - e.x, nearestPlayer.z - e.z);
             e._sdImpFire = 5; // a521 ~0.5s telegraph (more visible)
-            console.log(`[SD impale] WINDUP eid=${e.id} zone=${zoneName} dist=${nearestDist.toFixed(1)}`); // a520 diag
             broadcastToZone(game.id, zoneName, {
               type:'sv_fx', vt:'sd_stinger_windup', zone:zoneName, eid:e.id,
               ex:+e.x.toFixed(2), ez:+e.z.toFixed(2)
