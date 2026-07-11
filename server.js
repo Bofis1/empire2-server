@@ -648,6 +648,10 @@ function generateConvergenceSpawns(depth) {
   return spawns;
 }
 
+// a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
+//   feel dangerous for its level band without inflating damage or loot. The sand worm
+//   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
+const ZONE_HP_MULT = { sunken_sands: 6 };
 function createZoneEnemies(zoneName) {
   // v93.0 phase 3 — special-case convergence: generate spawns procedurally
   // per game-instance instead of using the static ZONE_SPAWNS entry.
@@ -659,6 +663,7 @@ function createZoneEnemies(zoneName) {
     const st = ENEMY_STATS[s.type] || ENEMY_STATS.soldier;
     // a206 — convergence under-tier HP floor (see convBaseHp). Only convergence.
     const _baseHp = (zoneName === 'convergence') ? convBaseHp(s.type, st.hp) : st.hp;
+    const _hpMul = (ZONE_HP_MULT[zoneName] || 1) * (s.type === 'sand_worm' ? 0.6 : 1); // a528
     return {
       id: i,
       type: s.type,
@@ -666,8 +671,8 @@ function createZoneEnemies(zoneName) {
       z: s.tz * TILE,
       spawnX: s.tx * TILE,
       spawnZ: s.tz * TILE,
-      hp: Math.round(_baseHp * scale),
-      maxHp: Math.round(_baseHp * scale),
+      hp: Math.round(_baseHp * scale * _hpMul),
+      maxHp: Math.round(_baseHp * scale * _hpMul),
       atk: Math.round(st.atk * scale),
       spd: st.spd,
       aggroRange: st.aggroRange,
@@ -1243,6 +1248,53 @@ function tickGame(game) {
           }
         }
       }
+
+      // ── a528: SAND WORM — surfaced spouts + geyser volleys, then DIVE into a
+      //   racing wake and BREACH up under you. The "thing under the dunes."
+      if (e.type === 'sand_worm' && e.aggroed) {
+        const dx2=nearestPlayer.x-e.x, dz2=nearestPlayer.z-e.z, dd=Math.sqrt(dx2*dx2+dz2*dz2)||0.0001;
+        const s2=dx2/dd, c2=dz2/dd, ang=Math.atan2(dx2,dz2);
+        if (e._wk==='wake') {
+          e._wt=(e._wt||0)+1;
+          e.x += s2*0.66; e.z += c2*0.66; changed.push(e);   // the mound races
+          if (e._wt%2===0) broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_poof', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), col:0xb08d42, n:3 });
+          if (dd<2.0 || e._wt>=18){ e._wk='breach'; e._wt=0;
+            e.x=nearestPlayer.x; e.z=nearestPlayer.z; changed.push(e);   // surfaces under the player
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_geyser_warn', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2) });
+          }
+        } else if (e._wk==='breach') {
+          e._wt=(e._wt||0)+1;
+          if (e._wt>=5){ e._wk=0; e._wt=0;
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_worm_surface', zone:zoneName, eid:e.id, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2) });
+            const bd=Math.floor(e.atk*1.4);
+            zonePlayers.forEach(p=>{ if(p.x===undefined)return; const px=p.x-e.x, pz=p.z-e.z; if(px*px+pz*pz<2.8*2.8){ players.forEach((pp,ws)=>{ if(pp===p){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:bd,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:8}); } }); } });
+          }
+        } else {
+          if (dd>2.6){ e.x += s2*0.12; e.z += c2*0.12; changed.push(e); }
+          e._wm=(e._wm||0)+1;
+          if (nearestDist<3.2 && e._wm>=12){ e._wm=0; const md=Math.floor(e.atk*1.15);
+            players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:md,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:4}); } });
+          }
+          e._sp=(e._sp||0)+1;
+          if (dd>2.8 && dd<13 && e._sp>=11){ e._sp=0;
+            _sdSpawnProj(game, zoneName, e, ang-0.18, 0xd8b45e, Math.floor(e.atk*0.6), 'plasma', null, 0);
+            _sdSpawnProj(game, zoneName, e, ang+0.18, 0xd8b45e, Math.floor(e.atk*0.6), 'plasma', null, 0);
+          }
+          e._gv=(e._gv||0)+1;
+          if (dd>3 && dd<14 && e._gv>=37){ e._gv=0;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            for (let gi=0; gi<3; gi++){
+              const gx=nearestPlayer.x+(Math.random()-0.5)*4, gz=nearestPlayer.z+(Math.random()-0.5)*4;
+              game._sdGeyser.push({ zone:zoneName, x:gx, z:gz, fuse:5+gi*3, dmg:Math.floor(e.atk*0.8), eid:e.id });
+              broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_geyser_warn', zone:zoneName, ex:+gx.toFixed(2), ez:+gz.toFixed(2) });
+            }
+          }
+          e._wc=(e._wc||Math.floor(Math.random()*27))+1;
+          if (dd>4 && dd<16 && e._wc>=50){ e._wc=0; e._wk='wake'; e._wt=0;
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_worm_dive', zone:zoneName, eid:e.id, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2) });
+          }
+        }
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -1278,12 +1330,28 @@ function tickGame(game) {
     }
     game._sdProj = keep;
   }
+  // a528 — resolve pending SD sand geysers (delayed AoE eruptions)
+  if (game._sdGeyser && game._sdGeyser.length) {
+    const keepG = [];
+    for (const gy of game._sdGeyser) {
+      gy.fuse--;
+      if (gy.fuse <= 0) {
+        broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_geyser_hit', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2) });
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== gy.zone || p.x === undefined) return;
+          const ddx=p.x-gy.x, ddz=p.z-gy.z;
+          if (ddx*ddx + ddz*ddz < 2.3*2.3) send(ws, { type:'sv_enemy_attack', eid:gy.eid, dmg:gy.dmg, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), zone:gy.zone });
+        });
+      } else keepG.push(gy);
+    }
+    game._sdGeyser = keepG;
+  }
   // a146 — World boss AI tick (one per game, independent of zone enemy loop)
   tickWorldBoss(game);
 }
 
 // a527 — Sunken Sands mobs that run bespoke server AI (skip the generic chase/melee).
-const SD_BESPOKE = { sand_scorpion:1, desert_snake:1, dune_skeleton:1, sand_mummy:1 };
+const SD_BESPOKE = { sand_scorpion:1, desert_snake:1, dune_skeleton:1, sand_mummy:1, sand_worm:1 };
 // a527 — spawn a server-owned SD projectile (server resolves the hit; client renders the flyer).
 function _sdSpawnProj(game, zoneName, e, ang, col, dmg, kind, status, statusDur){
   if(!game._sdProj) game._sdProj = [];
