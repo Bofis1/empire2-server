@@ -453,7 +453,159 @@ const WORLD_BOSS_IDLE_MS = 5 * 60 * 1000; // 5 min
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
-  patrol: [],   // a465 — client-authoritative now (custom client AI); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a529 — MULTIPLAYER MIGRATION: Xu Patrol is now server-authoritative (bespoke patrol AI server-side).
+  patrol: [
+    {type:'xu_rebel', tx:20, tz:27},
+    {type:'xu_rebel', tx:19, tz:32},
+    {type:'xu_rebel', tx:25, tz:29},
+    {type:'bandit', tx:23, tz:33},
+    {type:'bandit', tx:25, tz:31},
+    {type:'bandit', tx:25, tz:32},
+    {type:'bandit_archer', tx:25, tz:22},
+    {type:'bandit_archer', tx:33, tz:11},
+    {type:'bandit_archer', tx:25, tz:10},
+    {type:'sniper', tx:30, tz:22},
+    {type:'sniper', tx:24, tz:12},
+    {type:'sniper', tx:22, tz:29},
+    {type:'xu_siege_bot', tx:20, tz:16},
+    {type:'xu_siege_bot', tx:31, tz:30},
+    {type:'xu_siege_bot', tx:24, tz:10},
+    {type:'xu_rebel', tx:187, tz:33},
+    {type:'xu_rebel', tx:185, tz:16},
+    {type:'xu_rebel', tx:192, tz:25},
+    {type:'bandit', tx:190, tz:33},
+    {type:'bandit', tx:203, tz:11},
+    {type:'bandit', tx:209, tz:19},
+    {type:'bandit_archer', tx:199, tz:33},
+    {type:'bandit_archer', tx:200, tz:18},
+    {type:'bandit_archer', tx:185, tz:14},
+    {type:'sniper', tx:204, tz:24},
+    {type:'sniper', tx:208, tz:11},
+    {type:'sniper', tx:184, tz:29},
+    {type:'xu_siege_bot', tx:202, tz:31},
+    {type:'xu_siege_bot', tx:184, tz:11},
+    {type:'xu_siege_bot', tx:203, tz:21},
+    {type:'xu_rebel', tx:17, tz:200},
+    {type:'xu_rebel', tx:21, tz:192},
+    {type:'xu_rebel', tx:18, tz:185},
+    {type:'bandit', tx:33, tz:197},
+    {type:'bandit', tx:21, tz:195},
+    {type:'bandit', tx:11, tz:185},
+    {type:'bandit_archer', tx:10, tz:189},
+    {type:'bandit_archer', tx:11, tz:201},
+    {type:'bandit_archer', tx:19, tz:190},
+    {type:'sniper', tx:29, tz:193},
+    {type:'sniper', tx:27, tz:188},
+    {type:'sniper', tx:23, tz:202},
+    {type:'xu_siege_bot', tx:33, tz:200},
+    {type:'xu_siege_bot', tx:17, tz:192},
+    {type:'xu_siege_bot', tx:13, tz:203},
+    {type:'xu_rebel', tx:203, tz:192},
+    {type:'xu_rebel', tx:215, tz:190},
+    {type:'xu_rebel', tx:213, tz:205},
+    {type:'bandit', tx:193, tz:205},
+    {type:'bandit', tx:206, tz:192},
+    {type:'bandit', tx:191, tz:199},
+    {type:'bandit_archer', tx:193, tz:202},
+    {type:'bandit_archer', tx:201, tz:199},
+    {type:'bandit_archer', tx:202, tz:213},
+    {type:'sniper', tx:208, tz:196},
+    {type:'sniper', tx:205, tz:193},
+    {type:'sniper', tx:206, tz:204},
+    {type:'xu_siege_bot', tx:191, tz:189},
+    {type:'xu_siege_bot', tx:202, tz:203},
+    {type:'xu_siege_bot', tx:216, tz:193},
+    {type:'xu_scout', tx:42, tz:35},
+    {type:'xu_siege_bot', tx:207, tz:205},
+    {type:'xu_commander', tx:20, tz:155},
+    {type:'wraith', tx:152, tz:195},
+    {type:'xu_scout', tx:42, tz:205},
+    {type:'xu_siege_bot', tx:155, tz:108},
+    {type:'xu_commander', tx:196, tz:165},
+    {type:'wraith', tx:155, tz:174},
+    {type:'xu_scout', tx:35, tz:64},
+    {type:'xu_siege_bot', tx:35, tz:42},
+    {type:'xu_commander', tx:174, tz:125},
+    {type:'wraith', tx:165, tz:53},
+    {type:'xu_scout', tx:75, tz:141},
+    {type:'xu_siege_bot', tx:205, tz:97},
+    {type:'xu_commander', tx:97, tz:45},
+    {type:'wraith', tx:205, tz:108},
+    {type:'xu_scout', tx:218, tz:35},
+    {type:'xu_siege_bot', tx:35, tz:196},
+    {type:'xu_commander', tx:115, tz:75},
+    {type:'wraith', tx:31, tz:125},
+    {type:'xu_scout', tx:35, tz:97},
+    {type:'xu_siege_bot', tx:75, tz:207},
+    {type:'xu_commander', tx:75, tz:31},
+    {type:'wraith', tx:75, tz:86},
+    {type:'xu_scout', tx:45, tz:174},
+    {type:'xu_siege_bot', tx:130, tz:45},
+    {type:'xu_commander', tx:155, tz:64},
+    {type:'wraith', tx:195, tz:185},
+    {type:'xu_scout', tx:86, tz:165},
+    {type:'xu_siege_bot', tx:53, tz:115},
+    {type:'xu_commander', tx:53, tz:205},
+    {type:'wraith', tx:155, tz:42},
+    {type:'xu_scout', tx:42, tz:165},
+    {type:'xu_siege_bot', tx:218, tz:115},
+    {type:'xu_commander', tx:119, tz:85},
+    {type:'wraith', tx:155, tz:20},
+    {type:'xu_scout', tx:64, tz:35},
+    {type:'xu_siege_bot', tx:205, tz:152},
+    {type:'xu_commander', tx:152, tz:165},
+    {type:'wraith', tx:165, tz:152},
+    {type:'xu_scout', tx:141, tz:75},
+    {type:'xu_siege_bot', tx:35, tz:218},
+    {type:'xu_commander', tx:195, tz:31},
+    {type:'wraith', tx:165, tz:130},
+    {type:'xu_scout', tx:207, tz:45},
+    {type:'xu_siege_bot', tx:108, tz:165},
+    {type:'xu_commander', tx:205, tz:119},
+    {type:'wraith', tx:85, tz:64},
+    {type:'xu_scout', tx:20, tz:45},
+    {type:'xu_siege_bot', tx:185, tz:75},
+    {type:'xu_commander', tx:42, tz:75},
+    {type:'xu_scout', tx:155, tz:196},
+    {type:'xu_siege_bot', tx:75, tz:125},
+    {type:'xu_commander', tx:163, tz:155},
+    {type:'xu_scout', tx:45, tz:86},
+    {type:'xu_scout', tx:205, tz:174},
+    {type:'xu_scout', tx:86, tz:115},
+    {type:'xu_scout', tx:35, tz:141},
+    {type:'xu_scout', tx:196, tz:85},
+    {type:'xu_scout', tx:125, tz:207},
+    {type:'xu_scout', tx:125, tz:152},
+    {type:'xu_scout', tx:205, tz:53},
+    {type:'xu_scout', tx:196, tz:45},
+    {type:'xu_scout', tx:75, tz:97},
+    {type:'xu_scout', tx:75, tz:174},
+    {type:'xu_scout', tx:85, tz:218},
+    {type:'xu_scout', tx:35, tz:185},
+    {type:'xu_scout', tx:45, tz:20},
+    {type:'xu_scout', tx:155, tz:31},
+    {type:'xu_scout', tx:195, tz:64},
+    {type:'xu_scout', tx:205, tz:141},
+    {type:'xu_scout', tx:152, tz:45},
+    {type:'xu_scout', tx:130, tz:165},
+    {type:'xu_scout', tx:20, tz:205},
+    {type:'xu_rebel', tx:48, tz:116},
+    {type:'xu_rebel', tx:178, tz:110},
+    {type:'xu_rebel', tx:32, tz:51},
+    {type:'xu_rebel', tx:213, tz:152},
+    {type:'xu_rebel', tx:134, tz:69},
+    {type:'xu_rebel', tx:109, tz:30},
+    {type:'xu_rebel', tx:175, tz:129},
+    {type:'xu_rebel', tx:228, tz:143},
+    {type:'xu_rebel', tx:126, tz:37},
+    {type:'xu_rebel', tx:94, tz:223},
+    {type:'xu_rebel', tx:144, tz:173},
+    {type:'xu_rebel', tx:100, tz:226},
+    {type:'bandit', tx:78, tz:191},
+    {type:'bandit', tx:26, tz:68},
+    {type:'bandit', tx:156, tz:20},
+    {type:'bandit', tx:154, tz:103}
+  ],
   cemetery: [],   // a467 — client-authoritative (bespoke necro AI client-side); server no longer spawns/owns these mobs.
   void: [],   // a466 — client-authoritative (bespoke void AI client-side); server no longer spawns/owns these mobs.
   citadel: [],   // a470 — client-authoritative (bespoke futuristic AI client-side); server no longer spawns/owns these mobs.
@@ -1039,8 +1191,10 @@ function tickGame(game) {
       if (nearestDist <= e.aggroRange) e.aggroed = true;
       if (!e.aggroed) return;
 
-      // Move toward player (generic chase — scorpions use their own skitter below)
-      if (!SD_BESPOKE[e.type] && nearestDist > ATTACK_RANGE) {
+      // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]);
+      // Move toward player (generic chase — bespoke mobs use their own movement below)
+      if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
         const len = Math.sqrt(dx*dx + dz*dz) || 1;
         e.x += (dx/len) * e.spd * 1.6; // 1.6 = server tick scale
@@ -1050,7 +1204,7 @@ function tickGame(game) {
 
       // Attack
       e.attackTimer++;
-      if (!SD_BESPOKE[e.type] && e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {
+      if (!_bespoke && e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {
         e.attackTimer = 0;
         const dmg = Math.floor(e.atk * (0.85 + Math.random() * 0.3));
         // Send damage directly to the nearest player only
@@ -1285,7 +1439,7 @@ function tickGame(game) {
             if(!game._sdGeyser) game._sdGeyser=[];
             for (let gi=0; gi<3; gi++){
               const gx=nearestPlayer.x+(Math.random()-0.5)*4, gz=nearestPlayer.z+(Math.random()-0.5)*4;
-              game._sdGeyser.push({ zone:zoneName, x:gx, z:gz, fuse:5+gi*3, dmg:Math.floor(e.atk*0.8), eid:e.id });
+              game._sdGeyser.push({ zone:zoneName, x:gx, z:gz, fuse:5+gi*3, dmg:Math.floor(e.atk*0.8), eid:e.id, col:0xd8b45e, radius:2.3 });
               broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_geyser_warn', zone:zoneName, ex:+gx.toFixed(2), ez:+gz.toFixed(2) });
             }
           }
@@ -1294,6 +1448,108 @@ function tickGame(game) {
             broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_worm_dive', zone:zoneName, eid:e.id, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2) });
           }
         }
+      }
+
+      // ── a529: XU PATROL squad AI (zone-gated to 'patrol'; these types also live in
+      //   other zones). Reuses the projectile / beam(laser) / telegraph / shock spine.
+      //   Frame counters from the client kit are re-timed 60fps -> 10Hz (~/6).
+      if (zoneName === 'patrol' && e.aggroed && PATROL_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.036) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1;
+        if(e._pmBuff>0) e._pmBuff--;
+        const bspd = e._pmBuff>0 ? 1.35 : 1.0, bdmg = e._pmBuff>0 ? 1.30 : 1.0;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+        const pmRally=(col)=>{ for(let ri=0;ri<zone.enemies.length;ri++){ const o=zone.enemies[ri]; if(!o||!o.active||o===e||!PATROL_BESPOKE[o.type]) continue; const odx=o.x-e.x, odz=o.z-e.z; if(odx*odx+odz*odz<196){ o._pmBuff=40; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.7,ez:+e.z.toFixed(2),tx:+o.x.toFixed(2),tz:+o.z.toFixed(2),col:col,w:0.14}); } } e._pmBuff=40; };
+
+        if(e.type==='xu_rebel'){
+          const MSs=0.31;
+          if(dd>3.0) mv(sin*0.7+pr*strafe*0.7, cos*0.7+pq*strafe*0.7, MSs*bspd); else mv(pr*strafe, pq*strafe, MSs*bspd);
+          e._m1=(e._m1||0)+1; if(dd<3.2 && e._m1>=8){ e._m1=0; hit(_pmDmg(e,bdmg)); }
+          if(dd>3 && dd<18 && e._ab>=18){ e._ab=0; e._burst=3; }
+          if(e._burst>0){ e._burst--; _sdSpawnProj(game,zoneName,e,ang,0x6cff7a,_pmDmg(e,0.5*bdmg),'bolt',null,0); }
+          e._roll=(e._roll||0)+1; if(dd<9 && e._roll>=25){ e._roll=0; mv(pr*strafe,pq*strafe,MSs*9); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_poof',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0x6cff7a,n:5}); }
+        }
+        else if(e.type==='bandit'){
+          const MSs=0.35;
+          if(e._lunge==='wind'){ if(e._ab>=2){ e._lunge='go'; e._ab=0; e._ldir=ang; e._lhit=0; } }
+          else if(e._lunge==='go'){
+            mv(Math.sin(e._ldir),Math.cos(e._ldir),MSs*2.6);
+            if(dd<2.4 && !e._lhit){ e._lhit=1; hit(_pmDmg(e,1.5*bdmg)); _pmShock(game,zoneName,e,e.x,e.z,1.8,0,0xff4030,players,send); }
+            if(e._ab>=2){ e._lunge=0; e._ab=0; }
+          } else {
+            if(dd>2.6) mv(sin*0.6+pr*strafe*0.8, cos*0.6+pq*strafe*0.8, MSs*bspd); else mv(pr*strafe, pq*strafe, MSs*bspd);
+            e._m1=(e._m1||0)+1; if(dd<2.8 && e._m1>=7){ e._m1=0; hit(_pmDmg(e,bdmg)); }
+            if(dd>3 && dd<14 && e._ab>=22){ e._lunge='wind'; e._ab=0; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xff4030,n:6}); }
+          }
+        }
+        else if(e.type==='bandit_archer'){
+          const MSs=0.30;
+          if(dd<7) mv(-sin*0.8+pr*strafe*0.7,-cos*0.8+pq*strafe*0.7,MSs*bspd); else if(dd>13) mv(sin*0.6,cos*0.6,MSs*bspd); else mv(pr*strafe,pq*strafe,MSs*bspd);
+          e._s1=(e._s1||0)+1; if(dd>2.5 && dd<20 && e._s1>=9){ e._s1=0; _sdSpawnProj(game,zoneName,e,ang,0xff8020,_pmDmg(e,0.7*bdmg),'bolt',null,0); }
+          if(dd<22 && e._ab>=27){ e._ab=0; for(let mi=0;mi<5;mi++){ _sdSpawnProj(game,zoneName,e,ang+(mi-2)*0.16,0xff8020,_pmDmg(e,0.55*bdmg),'bolt',null,0); } }
+        }
+        else if(e.type==='sniper'){
+          const MSs=0.20;
+          if(e._rail==='aim'){
+            e._rt=(e._rt||0)+1;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:0xff4030,w:0.04});
+            if(e._rt>=7){ e._rail='fire'; e._rt=0; e._rlx=nearestPlayer.x; e._rlz=nearestPlayer.z; }
+          } else if(e._rail==='fire'){
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+e._rlx.toFixed(2),tz:+e._rlz.toFixed(2),col:0xffffff,w:0.10});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+e._rlx.toFixed(2),tz:+e._rlz.toFixed(2),col:0xff4030,w:0.18});
+            const rdx=nearestPlayer.x-e._rlx, rdz=nearestPlayer.z-e._rlz;
+            if(rdx*rdx+rdz*rdz < 4.84){ hit(_pmDmg(e,2.2*bdmg)); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:5}); }); }
+            e._rail='reloc'; e._rt=0;
+          } else if(e._rail==='reloc'){
+            e._rt=(e._rt||0)+1; mv(pr*strafe,pq*strafe,MSs*2.2); if(e._rt>=3){ e._rail=0; e._rt=0; }
+          } else {
+            if(dd<10) mv(-sin*0.7,-cos*0.7,MSs*bspd); else if(dd>18) mv(sin*0.6,cos*0.6,MSs*bspd); else mv(pr*strafe*0.7,pq*strafe*0.7,MSs*bspd);
+            if(dd>5 && dd<26 && e._ab>=20){ e._rail='aim'; e._ab=0; e._rt=0; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xff4030,n:5}); }
+            e._s1=(e._s1||0)+1; if(dd<22 && e._s1>=15){ e._s1=0; _sdSpawnProj(game,zoneName,e,ang,0xff4030,_pmDmg(e,0.6*bdmg),'bolt',null,0); }
+          }
+        }
+        else if(e.type==='wraith'){
+          const MSs=0.37;
+          if(dd>2.4) mv(sin*0.7+pr*strafe*0.9, cos*0.7+pq*strafe*0.9, MSs*bspd); else mv(pr*strafe, pq*strafe, MSs*bspd);
+          e._m1=(e._m1||0)+1; if(dd<2.8 && e._m1>=7){ e._m1=0; hit(_pmDmg(e,bdmg)); }
+          if(e._ab>=23){ e._ab=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_poof',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xb060ff,n:12});
+            const ba=ang+(Math.random()<0.5?1:-1)*1.4, br=3.5+Math.random()*2.5;
+            e.x=nearestPlayer.x-Math.sin(ba)*br; e.z=nearestPlayer.z-Math.cos(ba)*br; _moved=true;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_poof',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xb060ff,n:12});
+          }
+          e._wail=(e._wail||0)+1; if(dd<8 && e._wail>=37){ e._wail=0; _pmShock(game,zoneName,e,e.x,e.z,5,_pmDmg(e,1.2*bdmg),0xb060ff,players,send,0.55,1500); }
+        }
+        else if(e.type==='xu_scout'){
+          const MSs=0.47, band=5;
+          mv(pr*strafe + (dd>band?sin:-sin)*0.5, pq*strafe + (dd>band?cos:-cos)*0.5, MSs*bspd);
+          e._m1=(e._m1||0)+1; if(dd<3.0 && e._m1>=8){ e._m1=0; hit(_pmDmg(e,bdmg)); }
+          if(dd<24 && e._ab>=25){ e._ab=0; _pmTelegraph(game,zoneName,e,nearestPlayer.x,nearestPlayer.z,5,2.6,_pmDmg(e,1.0*bdmg),0x40d0ff); }
+          e._rally=(e._rally||0)+1; if(e._rally>=50){ e._rally=0; pmRally(0x40d0ff); }
+        }
+        else if(e.type==='xu_siege_bot'){
+          const MSs=0.144;
+          if(dd>9) mv(sin,cos,MSs*bspd);
+          e._m1=(e._m1||0)+1; if(dd<3.4 && e._m1>=12){ e._m1=0; hit(_pmDmg(e,bdmg)); }
+          if(dd>4 && dd<28 && e._ab>=22){ e._ab=0; for(let mk=0;mk<3;mk++){ const mtx=nearestPlayer.x+(Math.random()-0.5)*8, mtz=nearestPlayer.z+(Math.random()-0.5)*8; _pmTelegraph(game,zoneName,e,mtx,mtz,5+mk*2,3.0,_pmDmg(e,0.9*bdmg),0xff8020); } }
+          e._stomp=(e._stomp||0)+1; if(dd<5 && e._stomp>=30){ e._stomp=0; _pmShock(game,zoneName,e,e.x,e.z,5.5,_pmDmg(e,1.4*bdmg),0xffcf3a,players,send,0.6,1200); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:6}); }); }
+        }
+        else if(e.type==='xu_commander'){
+          const MSs=0.28;
+          if(dd>6) mv(sin*0.6+pr*strafe*0.6, cos*0.6+pq*strafe*0.6, MSs*bspd); else mv(pr*strafe, pq*strafe, MSs*bspd);
+          e._m1=(e._m1||0)+1; if(dd<3.2 && e._m1>=9){ e._m1=0; hit(_pmDmg(e,bdmg)); }
+          e._v1=(e._v1||0)+1; if(dd>3 && dd<20 && e._v1>=12){ e._v1=0; for(let ci=0;ci<3;ci++){ _sdSpawnProj(game,zoneName,e,ang+(ci-1)*0.14,0xffcf3a,_pmDmg(e,0.6*bdmg),'plasma',null,0); } }
+          e._rally=(e._rally||0)+1; if(e._rally>=47){ e._rally=0; pmRally(0xffcf3a); }
+          if(dd<26 && e._ab>=35){ e._ab=0; _pmTelegraph(game,zoneName,e,nearestPlayer.x,nearestPlayer.z,7,4.2,_pmDmg(e,1.8*bdmg),0xff4030); }
+        }
+
+        if(_moved) changed.push(e);
       }
     });
 
@@ -1336,11 +1592,12 @@ function tickGame(game) {
     for (const gy of game._sdGeyser) {
       gy.fuse--;
       if (gy.fuse <= 0) {
-        broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_geyser_hit', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2) });
+        const _gr = gy.radius || 2.3;
+        broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_geyser_hit', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0xd8b45e), radius:_gr });
         players.forEach((p, ws) => {
           if (p.gameId !== game.id || p.zone !== gy.zone || p.x === undefined) return;
           const ddx=p.x-gy.x, ddz=p.z-gy.z;
-          if (ddx*ddx + ddz*ddz < 2.3*2.3) send(ws, { type:'sv_enemy_attack', eid:gy.eid, dmg:gy.dmg, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), zone:gy.zone });
+          if (ddx*ddx + ddz*ddz < _gr*_gr) send(ws, { type:'sv_enemy_attack', eid:gy.eid, dmg:gy.dmg, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), zone:gy.zone });
         });
       } else keepG.push(gy);
     }
@@ -1352,7 +1609,27 @@ function tickGame(game) {
 
 // a527 — Sunken Sands mobs that run bespoke server AI (skip the generic chase/melee).
 const SD_BESPOKE = { sand_scorpion:1, desert_snake:1, dune_skeleton:1, sand_mummy:1, sand_worm:1 };
+// a529 — XU PATROL bespoke AI (zone-gated: these types also live in other zones,
+//   so their patrol kit only runs when zoneName==='patrol'). PM_PWR = damage dials.
+const PATROL_BESPOKE = { xu_rebel:1, bandit:1, bandit_archer:1, sniper:1, wraith:1, xu_scout:1, xu_siege_bot:1, xu_commander:1 };
+const PM_PWR = { xu_rebel:38, bandit:40, bandit_archer:34, sniper:36, wraith:38, xu_scout:34, xu_siege_bot:52, xu_commander:50 };
+function _pmDmg(e, mult){ return Math.floor((PM_PWR[e.type] || e.atk || 30) * mult); }
 // a527 — spawn a server-owned SD projectile (server resolves the hit; client renders the flyer).
+// a529 — telegraphed ground strike (recon ping / mortar / airstrike): warning ring now, AoE later.
+function _pmTelegraph(game, zoneName, e, tx, tz, fuseTicks, radius, dmg, col){
+  if(!game._sdGeyser) game._sdGeyser = [];
+  game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:fuseTicks, dmg:dmg, eid:e.id, col:col, radius:radius });
+  broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_geyser_warn', zone:zoneName, ex:+tx.toFixed(2), ez:+tz.toFixed(2), col:col });
+}
+// a529 — instant shockwave + AoE (shock stomp / spectral wail / lunge impact).
+function _pmShock(game, zoneName, e, cx, cz, radius, dmg, col, players, send, slow, slowDur){
+  broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_shock', zone:zoneName, ex:+cx.toFixed(2), ez:+cz.toFixed(2), col:col, r:radius });
+  if(dmg>0){ players.forEach((p, ws)=>{ if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+    const ddx=p.x-cx, ddz=p.z-cz; if(ddx*ddx+ddz*ddz < radius*radius){
+      send(ws, { type:'sv_enemy_attack', eid:e.id, dmg:dmg, ex:+cx.toFixed(2), ez:+cz.toFixed(2), zone:zoneName });
+      if(slow) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:slow, root:(slowDur||1200) });
+    } }); }
+}
 function _sdSpawnProj(game, zoneName, e, ang, col, dmg, kind, status, statusDur){
   if(!game._sdProj) game._sdProj = [];
   game._sdProj.push({ zone:zoneName, x:e.x, z:e.z, vx:Math.sin(ang)*1.4, vz:Math.cos(ang)*1.4, dmg:dmg, status:status||null, statusDur:statusDur||0, life:10, eid:e.id });
