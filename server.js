@@ -1035,7 +1035,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // Move toward player (generic chase — scorpions use their own skitter below)
-      if (e.type !== 'sand_scorpion' && nearestDist > ATTACK_RANGE) {
+      if (!SD_BESPOKE[e.type] && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
         const len = Math.sqrt(dx*dx + dz*dz) || 1;
         e.x += (dx/len) * e.spd * 1.6; // 1.6 = server tick scale
@@ -1045,7 +1045,7 @@ function tickGame(game) {
 
       // Attack
       e.attackTimer++;
-      if (e.type !== 'sand_scorpion' && e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {
+      if (!SD_BESPOKE[e.type] && e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {
         e.attackTimer = 0;
         const dmg = Math.floor(e.atk * (0.85 + Math.random() * 0.3));
         // Send damage directly to the nearest player only
@@ -1148,6 +1148,101 @@ function tickGame(game) {
           }
         }
       }
+
+      // ── a527: DESERT SNAKE — sidewind weave, venom spit, bite+poison, coiled strike ──
+      if (e.type === 'desert_snake' && e.aggroed) {
+        const dx2=nearestPlayer.x-e.x, dz2=nearestPlayer.z-e.z, dd=Math.sqrt(dx2*dx2+dz2*dz2)||0.0001;
+        const s2=dx2/dd, c2=dz2/dd, pr2=c2, pq2=-s2, ang=Math.atan2(dx2,dz2);
+        const MSs=0.42;
+        e._sw=(e._sw||0)+1; const wob=Math.sin(e._sw*0.15)*1.2;
+        if (e._co==='wind') {
+          e._ct=(e._ct||0)+1;
+          if (e._ct%2===0) broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_motes', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), col:0x9ac832, n:2 });
+          if (e._ct>=4){ e._co='go'; e._ct=0; e._cdir=ang; e._chit=0; }
+        } else if (e._co==='go') {
+          e._ct=(e._ct||0)+1;
+          e.x+=Math.sin(e._cdir)*MSs*3.0; e.z+=Math.cos(e._cdir)*MSs*3.0; changed.push(e);
+          if (nearestDist<2.4 && !e._chit){ e._chit=1; const cd=Math.floor(e.atk*1.2);
+            players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:cd,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'poison',statusDur:150}); } });
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_motes', zone:zoneName, ex:+nearestPlayer.x.toFixed(2), ez:+nearestPlayer.z.toFixed(2), col:0x9ac832, n:6 });
+          }
+          if (e._ct>=2){ e._co=0; e._ct=0; }
+        } else {
+          if (dd>2.0){ e.x+=(s2*0.8+pr2*wob*0.5)*MSs; e.z+=(c2*0.8+pq2*wob*0.5)*MSs; changed.push(e); }
+          e._bite=(e._bite||0)+1;
+          if (nearestDist<2.4 && e._bite>=8){ e._bite=0; const bd=Math.floor(e.atk*0.8);
+            players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:bd,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'poison',statusDur:120}); } });
+          }
+          e._spit=(e._spit||0)+1;
+          if (dd>2.5 && dd<11 && e._spit>=12){ e._spit=0; _sdSpawnProj(game, zoneName, e, ang, 0x9ac832, Math.floor(e.atk*0.6), 'plasma', 'poison', 120); }
+          e._cs=(e._cs||0)+1;
+          if (dd>3 && dd<8 && e._cs>=28){ e._cs=0; e._co='wind'; e._ct=0; }
+        }
+      }
+
+      // ── a527: DUNE SKELETON — bone javelin, mirage step, HEAT RAY channel ──
+      if (e.type === 'dune_skeleton' && e.aggroed) {
+        const dx2=nearestPlayer.x-e.x, dz2=nearestPlayer.z-e.z, dd=Math.sqrt(dx2*dx2+dz2*dz2)||0.0001;
+        const s2=dx2/dd, c2=dz2/dd, pr2=c2, pq2=-s2, ang=Math.atan2(dx2,dz2);
+        if (e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        const MSs=0.19;
+        if (dd>2.8){ e.x+=(s2*0.9+pr2*e._strafe*0.3)*MSs; e.z+=(c2*0.9+pq2*e._strafe*0.3)*MSs; changed.push(e); }
+        e._sm=(e._sm||0)+1;
+        if (nearestDist<3.0 && e._sm>=10){ e._sm=0; const md=Math.floor(e.atk*0.95);
+          players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:md,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); });
+          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_motes', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), col:0xf0e6c8, n:3 });
+        }
+        e._jav=(e._jav||0)+1;
+        if (dd>2.6 && dd<13 && e._jav>=13){ e._jav=0; _sdSpawnProj(game, zoneName, e, ang, 0xf0e6c8, Math.floor(e.atk*0.65), 'bolt', null, 0); }
+        e._mg=(e._mg||0)+1;
+        if (dd<9 && e._mg>=37){ e._mg=0;
+          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_poof', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), col:0xffdf70, n:5 });
+          const ma=ang+(Math.random()<0.5?1.4:-1.4); e.x+=Math.sin(ma)*3.5; e.z+=Math.cos(ma)*3.5; changed.push(e);
+          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_poof', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), col:0xffdf70, n:5 });
+        }
+        if (e._hrOn) {
+          e._hrT=(e._hrT||0)+1;
+          if (e._hrT%3===0){ e._hrK=(e._hrK||0)+1;
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_beam', zone:zoneName, ex:+e.x.toFixed(2), ey:1.4, ez:+e.z.toFixed(2), tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2), col:(e._hrK%2?0xffdf70:0xff8c2a), w:0.16 });
+            if (nearestDist<14){ const hd=Math.floor(e.atk*0.42);
+              players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:hd,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); if(e._hrK===3) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'burn',statusDur:140}); } });
+            }
+            if (e._hrK>=4){ e._hrOn=0; e._hrK=0; e._hrT=0; }
+          }
+        } else {
+          e._hr=(e._hr||Math.floor(Math.random()*24))+1;
+          if (dd>2.5 && dd<13 && e._hr>=44){ e._hr=0; e._hrOn=1; e._hrK=0; e._hrT=0; }
+        }
+      }
+
+      // ── a527: SAND MUMMY — curse melee, curse of the tomb (root), SANDSTORM SHROUD ──
+      if (e.type === 'sand_mummy' && e.aggroed) {
+        const dx2=nearestPlayer.x-e.x, dz2=nearestPlayer.z-e.z, dd=Math.sqrt(dx2*dx2+dz2*dz2)||0.0001;
+        const s2=dx2/dd, c2=dz2/dd;
+        if (e._shT>0){ e._shT--; if (e._shT<=0){ e._ssOn=0; if(e._ssBase!==undefined) e.dmgReduction=e._ssBase; } }
+        const MSs = 0.144 * (e._shT>0 ? 1.6 : 1);
+        if (dd>2.4){ e.x+=s2*MSs; e.z+=c2*MSs; changed.push(e); }
+        e._mm=(e._mm||0)+1;
+        if (nearestDist<2.8 && e._mm>=11){ e._mm=0; const md=Math.floor(e.atk*1.05);
+          players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:md,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); });
+          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_motes', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), col:0x6a4dc8, n:4 });
+        }
+        e._ct2=(e._ct2||0)+1;
+        if (dd>2 && dd<8 && e._ct2>=35){ e._ct2=0;
+          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_beam', zone:zoneName, ex:+e.x.toFixed(2), ey:1.1, ez:+e.z.toFixed(2), tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2), col:0xf0e6c8, w:0.22 });
+          const cd=Math.floor(e.atk*0.9);
+          players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:cd,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'curse',root:900,slow:0.15}); } });
+          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_motes', zone:zoneName, ex:+nearestPlayer.x.toFixed(2), ez:+nearestPlayer.z.toFixed(2), col:0x6a4dc8, n:7 });
+        }
+        if (!e._ssOn){
+          e._ss=(e._ss||Math.floor(Math.random()*30))+1;
+          if (dd<10 && e._ss>=63){ e._ss=0; e._ssOn=1; e._shT=50;
+            if (e._ssBase===undefined) e._ssBase=e.dmgReduction||0;
+            e.dmgReduction=Math.min(0.8, e._ssBase+0.35);
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_shroud', zone:zoneName, eid:e.id, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2) });
+          }
+        }
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -1164,8 +1259,36 @@ function tickGame(game) {
       broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName, ids, xs, zs, hps, acts, types });
     }
   });
+  // a527 — advance server-owned SD projectiles once per tick; resolve hits
+  if (game._sdProj && game._sdProj.length) {
+    const keep = [];
+    for (const pr of game._sdProj) {
+      pr.x += pr.vx; pr.z += pr.vz; pr.life--;
+      let hit = false;
+      players.forEach((p, ws) => {
+        if (hit || p.gameId !== game.id || p.zone !== pr.zone || p.x === undefined) return;
+        const ddx=p.x-pr.x, ddz=p.z-pr.z;
+        if (ddx*ddx + ddz*ddz < 1.5*1.5) {
+          send(ws, { type:'sv_enemy_attack', eid:pr.eid, dmg:pr.dmg, ex:+pr.x.toFixed(2), ez:+pr.z.toFixed(2), zone:pr.zone });
+          if (pr.status) send(ws, { type:'sv_player_fx', zone:pr.zone, eff:'status', status:pr.status, statusDur:pr.statusDur });
+          hit = true;
+        }
+      });
+      if (!hit && pr.life > 0) keep.push(pr);
+    }
+    game._sdProj = keep;
+  }
   // a146 — World boss AI tick (one per game, independent of zone enemy loop)
   tickWorldBoss(game);
+}
+
+// a527 — Sunken Sands mobs that run bespoke server AI (skip the generic chase/melee).
+const SD_BESPOKE = { sand_scorpion:1, desert_snake:1, dune_skeleton:1, sand_mummy:1 };
+// a527 — spawn a server-owned SD projectile (server resolves the hit; client renders the flyer).
+function _sdSpawnProj(game, zoneName, e, ang, col, dmg, kind, status, statusDur){
+  if(!game._sdProj) game._sdProj = [];
+  game._sdProj.push({ zone:zoneName, x:e.x, z:e.z, vx:Math.sin(ang)*1.4, vz:Math.cos(ang)*1.4, dmg:dmg, status:status||null, statusDur:statusDur||0, life:10, eid:e.id });
+  broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_proj', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), ang:+ang.toFixed(3), col:col, kind:kind });
 }
 
 // Full snapshot for a player entering a zone
