@@ -934,6 +934,11 @@ function generateConvergenceSpawns(depth) {
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
 const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15 };
+// a532 — per-zone-per-type HP override. void_sentinel/void_construct carry boss-tier HP
+//   that is correct for VOID CITADEL but far too tanky for the lvl15-28 VOID WASTES where
+//   they also spawn. Scope a zone-appropriate HP to Void Wastes only (base stats untouched,
+//   so the Citadel versions keep their heavy HP). Their damage already uses VW_PWR, not atk.
+const ZONE_TYPE_HP = { void: { void_sentinel: 4500, void_construct: 3600 } };
 function createZoneEnemies(zoneName) {
   // v93.0 phase 3 — special-case convergence: generate spawns procedurally
   // per game-instance instead of using the static ZONE_SPAWNS entry.
@@ -944,7 +949,8 @@ function createZoneEnemies(zoneName) {
   return spawns.map((s, i) => {
     const st = ENEMY_STATS[s.type] || ENEMY_STATS.soldier;
     // a206 — convergence under-tier HP floor (see convBaseHp). Only convergence.
-    const _baseHp = (zoneName === 'convergence') ? convBaseHp(s.type, st.hp) : st.hp;
+    const _ovHp = ZONE_TYPE_HP[zoneName] && ZONE_TYPE_HP[zoneName][s.type];
+    const _baseHp = _ovHp || ((zoneName === 'convergence') ? convBaseHp(s.type, st.hp) : st.hp);
     const _hpMul = (ZONE_HP_MULT[zoneName] || 1) * (s.type === 'sand_worm' ? 0.6 : 1); // a528
     return {
       id: i,
@@ -1492,7 +1498,7 @@ function tickGame(game) {
         if (e._hrOn) {
           e._hrT=(e._hrT||0)+1;
           if (e._hrT%3===0){ e._hrK=(e._hrK||0)+1;
-            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_beam', zone:zoneName, ex:+e.x.toFixed(2), ey:1.4, ez:+e.z.toFixed(2), tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2), col:(e._hrK%2?0xffdf70:0xff8c2a), w:0.16 });
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_beam', zone:zoneName, eid:e.id, ex:+e.x.toFixed(2), ey:1.4, ez:+e.z.toFixed(2), tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2), col:(e._hrK%2?0xffdf70:0xff8c2a), w:0.16 });
             if (nearestDist<14){ const hd=Math.floor(e.atk*0.42);
               players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:hd,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); if(e._hrK===3) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'burn',statusDur:140}); } });
             }
@@ -1518,7 +1524,7 @@ function tickGame(game) {
         }
         e._ct2=(e._ct2||0)+1;
         if (dd>2 && dd<8 && e._ct2>=35){ e._ct2=0;
-          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_beam', zone:zoneName, ex:+e.x.toFixed(2), ey:1.1, ez:+e.z.toFixed(2), tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2), col:0xf0e6c8, w:0.22 });
+          broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_beam', zone:zoneName, eid:e.id, ex:+e.x.toFixed(2), ey:1.1, ez:+e.z.toFixed(2), tx:+nearestPlayer.x.toFixed(2), tz:+nearestPlayer.z.toFixed(2), col:0xf0e6c8, w:0.22 });
           const cd=Math.floor(e.atk*0.9);
           players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:cd,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'curse',root:900,slow:0.15}); } });
           broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_motes', zone:zoneName, ex:+nearestPlayer.x.toFixed(2), ez:+nearestPlayer.z.toFixed(2), col:0x6a4dc8, n:7 });
@@ -1595,7 +1601,7 @@ function tickGame(game) {
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
         const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
-        const pmRally=(col)=>{ for(let ri=0;ri<zone.enemies.length;ri++){ const o=zone.enemies[ri]; if(!o||!o.active||o===e||!PATROL_BESPOKE[o.type]) continue; const odx=o.x-e.x, odz=o.z-e.z; if(odx*odx+odz*odz<196){ o._pmBuff=40; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.7,ez:+e.z.toFixed(2),tx:+o.x.toFixed(2),tz:+o.z.toFixed(2),col:col,w:0.14}); } } e._pmBuff=40; };
+        const pmRally=(col)=>{ for(let ri=0;ri<zone.enemies.length;ri++){ const o=zone.enemies[ri]; if(!o||!o.active||o===e||!PATROL_BESPOKE[o.type]) continue; const odx=o.x-e.x, odz=o.z-e.z; if(odx*odx+odz*odz<196){ o._pmBuff=40; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.7,ez:+e.z.toFixed(2),tx:+o.x.toFixed(2),tz:+o.z.toFixed(2),col:col,w:0.14}); } } e._pmBuff=40; };
 
         if(e.type==='xu_rebel'){
           const MSs=0.31;
@@ -1628,11 +1634,11 @@ function tickGame(game) {
           const MSs=0.20;
           if(e._rail==='aim'){
             e._rt=(e._rt||0)+1;
-            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:0xff4030,w:0.04});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:0xff4030,w:0.04});
             if(e._rt>=7){ e._rail='fire'; e._rt=0; e._rlx=nearestPlayer.x; e._rlz=nearestPlayer.z; }
           } else if(e._rail==='fire'){
-            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+e._rlx.toFixed(2),tz:+e._rlz.toFixed(2),col:0xffffff,w:0.10});
-            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+e._rlx.toFixed(2),tz:+e._rlz.toFixed(2),col:0xff4030,w:0.18});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+e._rlx.toFixed(2),tz:+e._rlz.toFixed(2),col:0xffffff,w:0.10});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+e._rlx.toFixed(2),tz:+e._rlz.toFixed(2),col:0xff4030,w:0.18});
             const rdx=nearestPlayer.x-e._rlx, rdz=nearestPlayer.z-e._rlz;
             if(rdx*rdx+rdz*rdz < 4.84){ hit(_pmDmg(e,2.2*bdmg)); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:5}); }); }
             e._rail='reloc'; e._rt=0;
@@ -1712,11 +1718,11 @@ function tickGame(game) {
           if(dd<8) mv(-sin*0.7+pr*strafe*0.6,-cos*0.7+pq*strafe*0.6,MSs); else if(dd>16) mv(sin*0.6,cos*0.6,MSs); else mv(pr*strafe*0.7,pq*strafe*0.7,MSs);
           e._s1=(e._s1||0)+1; if(dd<22 && e._s1>=12){ e._s1=0; for(let oi=0;oi<3;oi++) _sdSpawnProj(game,zoneName,e,ang+(oi-1)*0.18,0xc850ff,_vwDmg(e,0.6),'plasma',null,0); }
           if(e._gaze==='aim'){ e._gt=(e._gt||0)+1;
-            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:0x9b30ff,w:0.05});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:0x9b30ff,w:0.05});
             if(e._gt>=7){ e._gaze='fire'; e._gt=0; e._gx=nearestPlayer.x; e._gz=nearestPlayer.z; } }
           else if(e._gaze==='fire'){
-            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+e._gx.toFixed(2),tz:+e._gz.toFixed(2),col:0xe0c0ff,w:0.12});
-            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+e._gx.toFixed(2),tz:+e._gz.toFixed(2),col:0x9b30ff,w:0.22});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+e._gx.toFixed(2),tz:+e._gz.toFixed(2),col:0xe0c0ff,w:0.12});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+e._gx.toFixed(2),tz:+e._gz.toFixed(2),col:0x9b30ff,w:0.22});
             const gdx=nearestPlayer.x-e._gx, gdz=nearestPlayer.z-e._gz;
             if(gdx*gdx+gdz*gdz<5.76){ hit(_vwDmg(e,1.8)); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:2}); }); }
             e._gaze=0; e._gt=0; }
@@ -1728,7 +1734,7 @@ function tickGame(game) {
           e._m1=(e._m1||0)+1; if(dd<2.8 && e._m1>=7){ e._m1=0; hit(_vwDmg(e,1.0)); }
           if(e._ab>=22){ e._ab=0; rift(0x6a2cff); const ba=ang+(Math.random()<0.5?1:-1)*1.3, br=4+Math.random()*3; e.x=nearestPlayer.x-Math.sin(ba)*br; e.z=nearestPlayer.z-Math.cos(ba)*br; _moved=true; rift(0x6a2cff); }
           e._drain=(e._drain||0)+1; if(dd<10 && e._drain>=30){ e._drain=0;
-            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,ex:+e.x.toFixed(2),ey:1.3,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:0x66ff99,w:0.14});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.3,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:0x66ff99,w:0.14});
             hit(_vwDmg(e,1.1)); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'slow',slow:0.6,root:1000}); });
           }
         }
