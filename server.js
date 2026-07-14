@@ -966,6 +966,70 @@ const ZONE_SPAWNS = {
   // ── XERON (v93.0-a94) — matches client ZONE_DEFS.xeron ──
   // Cut from 86 → 51 mobs to address dense-combat feedback.
   // Also incorporates a92's docking spire pushback (entry now tx 18-30, not 10-22).
+  // a537 — MULTIPLAYER MIGRATION: Avia Canyon birds are now server-authoritative WITH maze
+  //   collision (see _aviaWalkable). Spawn tiles generated from the deterministic maze grid;
+  //   every tile verified walkable. XUBERRY stays server-authoritative via ZONE_BOSS_HP.
+  aviacanyon: [
+    {type:'skyscout', tx:99, tz:18},
+    {type:'beakdrone', tx:58, tz:26},
+    {type:'spiraldive', tx:146, tz:26},
+    {type:'skyscout', tx:42, tz:34},
+    {type:'beakdrone', tx:130, tz:34},
+    {type:'wingguard', tx:26, tz:42},
+    {type:'spiraldive', tx:130, tz:42},
+    {type:'skyscout', tx:26, tz:50},
+    {type:'skyscout', tx:114, tz:50},
+    {type:'beakdrone', tx:202, tz:50},
+    {type:'spiraldive', tx:98, tz:58},
+    {type:'skyscout', tx:186, tz:58},
+    {type:'beakdrone', tx:82, tz:66},
+    {type:'wingguard', tx:170, tz:66},
+    {type:'spiraldive', tx:66, tz:74},
+    {type:'skyscout', tx:154, tz:74},
+    {type:'skyscout', tx:50, tz:82},
+    {type:'beakdrone', tx:138, tz:82},
+    {type:'spiraldive', tx:33, tz:89},
+    {type:'skyscout', tx:122, tz:90},
+    {type:'beakdrone', tx:210, tz:90},
+    {type:'wingguard', tx:106, tz:98},
+    {type:'spiraldive', tx:194, tz:98},
+    {type:'skyscout', tx:87, tz:103},
+    {type:'skyscout', tx:177, tz:105},
+    {type:'beakdrone', tx:76, tz:112},
+    {type:'spiraldive', tx:159, tz:112},
+    {type:'skyscout', tx:58, tz:122},
+    {type:'beakdrone', tx:146, tz:122},
+    {type:'wingguard', tx:42, tz:130},
+    {type:'spiraldive', tx:130, tz:130},
+    {type:'skyscout', tx:26, tz:138},
+    {type:'skyscout', tx:114, tz:138},
+    {type:'beakdrone', tx:202, tz:138},
+    {type:'spiraldive', tx:98, tz:146},
+    {type:'skyscout', tx:186, tz:146},
+    {type:'beakdrone', tx:82, tz:154},
+    {type:'wingguard', tx:170, tz:154},
+    {type:'spiraldive', tx:63, tz:159},
+    {type:'skyscout', tx:151, tz:159},
+    {type:'skyscout', tx:50, tz:170},
+    {type:'beakdrone', tx:138, tz:170},
+    {type:'spiraldive', tx:33, tz:177},
+    {type:'skyscout', tx:121, tz:177},
+    {type:'beakdrone', tx:210, tz:178},
+    {type:'wingguard', tx:106, tz:186},
+    {type:'spiraldive', tx:194, tz:186},
+    {type:'skyscout', tx:90, tz:194},
+    {type:'skyscout', tx:178, tz:194},
+    {type:'beakdrone', tx:104, tz:32},
+    {type:'beakdrone', tx:136, tz:32},
+    {type:'wingguard', tx:100, tz:48},
+    {type:'wingguard', tx:140, tz:48},
+    {type:'skyscout', tx:114, tz:26},
+    {type:'skyscout', tx:126, tz:26},
+    {type:'spiraldive', tx:110, tz:56},
+    {type:'spiraldive', tx:130, tz:56},
+    {type:'skyscout', tx:120, tz:60},
+    {type:'beakdrone', tx:120, tz:28}
+  ],
   xeron: [],   // a491 — client-authoritative now (bespoke spacetime AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   // ── v93.0 phase 3 — THE CONVERGENCE ──
   // Empty array marker. createZoneEnemies() special-cases 'convergence' and
@@ -1006,8 +1070,8 @@ const ZONE_SPAWNS = {
   //   + abilities run client-side). No ZONE_SPAWNS entry on purpose: the server sends an
   //   empty xulcan snapshot and the client spawns + owns the five Xu units. (The boss
   //   XU ZET-HORAK will become server-authoritative when added — ZONE_BOSS_HP.xulcan.)
-  // a347 — AVIA CANYON birds are likewise CLIENT-AUTHORITATIVE (no ZONE_SPAWNS entry); the
-  //   XUBERRY boss is server-authoritative (ZONE_BOSS_HP.aviacanyon).
+  // a537 — AVIA CANYON birds are now SERVER-AUTHORITATIVE (ZONE_SPAWNS.aviacanyon + maze
+  //   collision via _aviaWalkable). The XUBERRY boss remains server-authoritative (ZONE_BOSS_HP.aviacanyon).
   // a361 — THE FORGE foundry mobs are likewise CLIENT-AUTHORITATIVE (no ZONE_SPAWNS entry); the
   //   FURNACE CORE boss is server-authoritative (ZONE_BOSS_HP.forge).
 };
@@ -1096,6 +1160,19 @@ function generateConvergenceSpawns(depth) {
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
 const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2 };
+// a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
+//   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
+//   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
+//   can collide birds against the cliffs exactly like the client's walkableR. Built by
+//   the offline gen script (faithful port of the carve). See _aviaWalkable below.
+const _AVIA_W = 240, _AVIA_TILE = 1.5;
+const _aviaBits = Buffer.from('////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////HwAAAADw////////////////////////////////DwAAAADg////////////////////////////////BwAAAADA////////////////////////////////AwAAAACA////////////////////////////////AQAAAAAA////////////////////////////////AAAAAAAA/v////////////////8/AAAAAADADwAAAAAAAAAADAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAACAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/APwA8APA//8BAAAAAAAAAAD///8A8APA//////8/APwA8APA//8BAAAAAAAAAAD///8A8APA//////8/APwA8APA//8BAAAAAAAAAAD///8A8APA//////8/APwA8APA//8AAAAAAAAAAAD///8A8APA//////8/APwA8APA//8AAAAAAAAAAAD///8A8APA//////8/APwA8APA//8AAAAAAAAAAAD///8A8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAABAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAABAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAABAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAABAAAAAAAAAAA/APwA8APA//////////8A8P//DwADAAAAAAAAgP8/APwA8APA//////////8A8P//DwADAAAAAAAAgP8/APwA8APA//////////8A8P//DwADAAAAAAAAgP8/APwA8APA//////////8A8P//DwAHAAAAAAAAwP8/APwA8APA//////////8A8P//DwAHAAAAAAAAwP8/APwA8APA//////////8A8P//DwAPAAAAAAAA4P8/APwA8APA//////8/AAAAAAAAAAAPAAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAAfAAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAAfAAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/APz//wPADwA/AAAAAAD+DwA/APwA8APA//////8/APz//wPADwA/AAAAAID/DwA/APwA8APA//////8/APz//wPADwA/AAwAAOD/DwA/APwA8APA//////8/APz//wPADwA/AHwAAPz/DwA/APwA8APA//////8/APz//wPADwA/APwAgP//DwA/APwA8APA//////8/APz//wPADwA/APwAgP//DwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8A8APADwD///8A8APA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP//////////////////', 'base64');
+function _aviaWall(tx, tz){ if(tx<0||tz<0||tx>=_AVIA_W||tz>=_AVIA_W) return true; const idx=tz*_AVIA_W+tx; return (_aviaBits[idx>>3] & (1<<(idx&7)))!==0; }
+function _aviaWalkable(wx, wz, r){ r=r||0.3;
+  return !_aviaWall(((wx-r)/_AVIA_TILE)|0, ((wz-r)/_AVIA_TILE)|0)
+      && !_aviaWall(((wx+r)/_AVIA_TILE)|0, ((wz-r)/_AVIA_TILE)|0)
+      && !_aviaWall(((wx-r)/_AVIA_TILE)|0, ((wz+r)/_AVIA_TILE)|0)
+      && !_aviaWall(((wx+r)/_AVIA_TILE)|0, ((wz+r)/_AVIA_TILE)|0); }
 // a532 — per-zone-per-type HP override. void_sentinel/void_construct carry boss-tier HP
 //   that is correct for VOID CITADEL but far too tanky for the lvl15-28 VOID WASTES where
 //   they also spawn. Scope a zone-appropriate HP to Void Wastes only (base stats untouched,
@@ -1490,7 +1567,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -2013,6 +2090,79 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a537: AVIA CANYON cyber-birds — SERVER-AUTHORITATIVE with real MAZE COLLISION.
+      //   The server owns x/z + abilities + wingguard's shield dmgReduction. Flight ALTITUDE
+      //   (hover/dive) is rendered client-side (server birds carry no y). mvA() collides against
+      //   the embedded canyon grid exactly like the client's walkableR, so birds respect cliffs.
+      //   Re-timed 60->10Hz; speeds use e.spd*6 to match the client's per-frame velocity.
+      if (zoneName === 'aviacanyon' && e.aggroed && AV_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sinp=dxp/dd, cosp=dzp/dd, ang=Math.atan2(dxp,dzp);
+        const SP=e.spd*6;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mvA=(vx,vz,sp)=>{ const nx=e.x+vx*sp, nz=e.z+vz*sp; if(_aviaWalkable(nx,nz,0.3)){ e.x=nx; e.z=nz; _moved=true; } };
+        const hitA=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+
+        if(e.type==='skyscout'){
+          // RANGED KITER — holds range, strafes, 3-round feather-dart burst
+          if(dd<9) mvA(-sinp,-cosp,SP);
+          else if(dd>15) mvA(sinp,cosp,SP*0.85);
+          else mvA(cosp,-sinp,SP*0.5);
+          if(dd<20 && e._ab>=13){ e._ab=0; e._burst=3; }
+          if(e._burst>0 && e.attackTimer%2===0){ e._burst--; const a=ang+(Math.random()-0.5)*0.10; _sdSpawnProj(game,zoneName,e,a,0x5ce4f0,_avDmg(e,0.8),'plasma',null,0); }
+        }
+        else if(e.type==='beakdrone'){
+          // MELEE CHARGER — fast pecks + lunge-peck on a cd
+          if(e._lunge==='wind'){ if(e._ab>=2){ e._lunge='go'; e._ab=0; e._ldir=ang; e._lhit=0; } }
+          else if(e._lunge==='go'){
+            mvA(Math.sin(e._ldir),Math.cos(e._ldir),SP*3.2);
+            if(dd<1.9 && !e._lhit){ hitA(_avDmg(e,1.4)); e._lhit=1; _pmShock(game,zoneName,e,e.x,e.z,1.8,0,0xffc24a,players,send); }
+            if(e._ab>=3){ e._lunge=null; e._ab=0; }
+          } else {
+            if(dd>2.0) mvA(sinp,cosp,SP);
+            if(dd<2.4 && e.attackTimer%7===0){ hitA(_avDmg(e,1.0)); }
+            if(dd<13 && e._ab>=25){ e._lunge='wind'; e._ab=0; }
+          }
+        }
+        else if(e.type==='wingguard'){
+          // SHIELD-CYCLER TANK — guard (near-immune, advances) -> drop guard (punish window) -> bash.
+          //   Server owns e.dmgReduction; hits resolve against it in sv_hit_enemy.
+          if(e._gp===undefined){ e._gp='guard'; e._gt=0; e.dmgReduction=0.85; }
+          e._gt++;
+          if(e._gp==='guard'){
+            if(dd>2.4) mvA(sinp,cosp,SP*1.4);
+            if(e._gt>=28 && dd<6){ e._gp='wind'; e._gt=0; }
+          } else if(e._gp==='wind'){
+            e.dmgReduction=0.10;
+            if(e._gt>=4){ e._gp='bash'; e._gt=0; e._bhit=0; e._bdir=ang; }
+          } else {
+            mvA(Math.sin(e._bdir),Math.cos(e._bdir),SP*2.6);
+            if(dd<2.6 && !e._bhit){ hitA(_avDmg(e,1.6)); e._bhit=1; _pmShock(game,zoneName,e,e.x,e.z,2.4,0,0x46d8e6,players,send); }
+            if(e._gt>=4){ e._gp='guard'; e._gt=0; e.dmgReduction=0.85; }
+          }
+        }
+        else { // spiraldive — AERIAL DIVE-BOMBER (altitude cue sent to client)
+          if(e._dive==='wind'){
+            if(e._ab>=3){ e._dive='go'; e._ab=0; e._ddir=ang; e._dhit=0; e._dtx=nearestPlayer.x; e._dtz=nearestPlayer.z;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'av_dive',zone:zoneName,eid:e.id,dur:900}); }
+          } else if(e._dive==='go'){
+            const tdx=e._dtx-e.x, tdz=e._dtz-e.z, td=Math.hypot(tdx,tdz)||0.001;
+            mvA(tdx/td, tdz/td, SP*3.6);
+            if((dd<2.2||td<1.4) && !e._dhit){ hitA(_avDmg(e,1.5)); e._dhit=1; _pmShock(game,zoneName,e,e.x,e.z,2.2,0,0x6ceaff,players,send); }
+            if(td<1.2 || e._ab>=4){ e._dive='rise'; e._ab=0; }
+          } else if(e._dive==='rise'){
+            mvA(-sinp,-cosp,SP*1.2);
+            if(e._ab>=3){ e._dive=null; e._ab=0; }
+          } else {
+            if(dd>11) mvA(sinp,cosp,SP*0.9);
+            else mvA(cosp,-sinp,SP*0.8);
+            if(dd<16 && e._ab>=20){ e._dive='wind'; e._ab=0; }
+          }
+        }
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -2085,6 +2235,10 @@ const VW_BESPOKE = { void_stalker:1, void_eye:1, void_phantom:1, void_sentinel:1
 // a535 — BLOOMING WILDS bespoke AI (zone-gated to 'blooming_wilds'). Tier 2, lvl 10-25.
 const BW_BESPOKE = { bloom_sprite:1, glimmer_fairy:1, mushroom_brute:1, pollen_wraith:1, thorn_knight:1, vine_stalker:1 };
 const BW_PWR = { bloom_sprite:36, glimmer_fairy:38, mushroom_brute:50, pollen_wraith:40, thorn_knight:58, vine_stalker:44 };
+// a537 — AVIA CANYON cyber-birds (zone-gated to 'aviacanyon'). They scale straight off
+//   e.atk like the client kit (no player-HP term), so the server can mirror the damage 1:1.
+const AV_BESPOKE = { skyscout:1, beakdrone:1, wingguard:1, spiraldive:1 };
+function _avDmg(e, mult){ return Math.floor((e.atk || 100) * mult); }
 function _bwDmg(e, mult){ return Math.floor((BW_PWR[e.type] || e.atk || 32) * mult); }
 const VW_PWR = { void_stalker:42, void_eye:40, void_phantom:48, void_sentinel:60, void_construct:54, void_spike_horror:56, wraith:38 };
 function _vwDmg(e, mult){ return Math.floor((VW_PWR[e.type] || e.atk || 36) * mult); }
