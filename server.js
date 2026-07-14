@@ -800,7 +800,169 @@ const ZONE_SPAWNS = {
   // ── VEILED SANCTUARY (v92.41) — matches client ZONE_DEFS.veiled_sanctuary ──
   veiled_sanctuary: [],   // a484 — client-authoritative now (bespoke ritual AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   // ── BLOOMING WILDS (v92.49+v92.50) — matches client ZONE_DEFS.blooming_wilds ──
-  blooming_wilds: [],   // a465 — client-authoritative now (custom client AI); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a535 — MULTIPLAYER MIGRATION: The Blooming Wilds is now server-authoritative.
+  blooming_wilds: [
+    {type:'thorn_knight', tx:144, tz:101},
+    {type:'thorn_knight', tx:147, tz:101},
+    {type:'thorn_knight', tx:147, tz:140},
+    {type:'thorn_knight', tx:147, tz:142},
+    {type:'mushroom_brute', tx:100, tz:148},
+    {type:'mushroom_brute', tx:99, tz:147},
+    {type:'mushroom_brute', tx:155, tz:139},
+    {type:'mushroom_brute', tx:153, tz:137},
+    {type:'mushroom_brute', tx:85, tz:103},
+    {type:'mushroom_brute', tx:86, tz:103},
+    {type:'mushroom_brute', tx:127, tz:78},
+    {type:'mushroom_brute', tx:126, tz:81},
+    {type:'mushroom_brute', tx:108, tz:158},
+    {type:'mushroom_brute', tx:106, tz:159},
+    {type:'mushroom_brute', tx:162, tz:105},
+    {type:'mushroom_brute', tx:160, tz:106},
+    {type:'mushroom_brute', tx:85, tz:147},
+    {type:'mushroom_brute', tx:86, tz:146},
+    {type:'mushroom_brute', tx:94, tz:82},
+    {type:'mushroom_brute', tx:97, tz:82},
+    {type:'mushroom_brute', tx:77, tz:114},
+    {type:'mushroom_brute', tx:74, tz:112},
+    {type:'mushroom_brute', tx:166, tz:119},
+    {type:'mushroom_brute', tx:165, tz:118},
+    {type:'mushroom_brute', tx:112, tz:167},
+    {type:'mushroom_brute', tx:113, tz:167},
+    {type:'mushroom_brute', tx:140, tz:164},
+    {type:'mushroom_brute', tx:144, tz:165},
+    {type:'vine_stalker', tx:145, tz:75},
+    {type:'vine_stalker', tx:146, tz:75},
+    {type:'vine_stalker', tx:156, tz:82},
+    {type:'vine_stalker', tx:157, tz:83},
+    {type:'vine_stalker', tx:83, tz:161},
+    {type:'vine_stalker', tx:84, tz:159},
+    {type:'vine_stalker', tx:102, tz:67},
+    {type:'vine_stalker', tx:105, tz:69},
+    {type:'vine_stalker', tx:128, tz:64},
+    {type:'vine_stalker', tx:126, tz:66},
+    {type:'vine_stalker', tx:113, tz:175},
+    {type:'vine_stalker', tx:116, tz:175},
+    {type:'vine_stalker', tx:134, tz:61},
+    {type:'vine_stalker', tx:130, tz:63},
+    {type:'vine_stalker', tx:61, tz:100},
+    {type:'vine_stalker', tx:61, tz:102},
+    {type:'vine_stalker', tx:168, tz:161},
+    {type:'vine_stalker', tx:165, tz:161},
+    {type:'vine_stalker', tx:184, tz:126},
+    {type:'vine_stalker', tx:183, tz:129},
+    {type:'vine_stalker', tx:63, tz:143},
+    {type:'vine_stalker', tx:64, tz:143},
+    {type:'vine_stalker', tx:152, tz:68},
+    {type:'vine_stalker', tx:153, tz:65},
+    {type:'vine_stalker', tx:181, tz:104},
+    {type:'vine_stalker', tx:183, tz:106},
+    {type:'vine_stalker', tx:57, tz:116},
+    {type:'vine_stalker', tx:56, tz:115},
+    {type:'vine_stalker', tx:183, tz:132},
+    {type:'vine_stalker', tx:182, tz:134},
+    {type:'vine_stalker', tx:75, tz:73},
+    {type:'vine_stalker', tx:76, tz:75},
+    {type:'vine_stalker', tx:146, tz:181},
+    {type:'vine_stalker', tx:144, tz:180},
+    {type:'pollen_wraith', tx:103, tz:182},
+    {type:'pollen_wraith', tx:101, tz:186},
+    {type:'pollen_wraith', tx:82, tz:62},
+    {type:'pollen_wraith', tx:83, tz:64},
+    {type:'pollen_wraith', tx:165, tz:176},
+    {type:'pollen_wraith', tx:164, tz:177},
+    {type:'pollen_wraith', tx:65, tz:167},
+    {type:'pollen_wraith', tx:67, tz:169},
+    {type:'pollen_wraith', tx:58, tz:79},
+    {type:'pollen_wraith', tx:60, tz:82},
+    {type:'pollen_wraith', tx:180, tz:163},
+    {type:'pollen_wraith', tx:178, tz:165},
+    {type:'pollen_wraith', tx:82, tz:187},
+    {type:'pollen_wraith', tx:82, tz:185},
+    {type:'pollen_wraith', tx:42, tz:117},
+    {type:'pollen_wraith', tx:44, tz:117},
+    {type:'pollen_wraith', tx:127, tz:199},
+    {type:'pollen_wraith', tx:125, tz:198},
+    {type:'pollen_wraith', tx:95, tz:198},
+    {type:'pollen_wraith', tx:94, tz:197},
+    {type:'pollen_wraith', tx:44, tz:144},
+    {type:'pollen_wraith', tx:43, tz:139},
+    {type:'pollen_wraith', tx:133, tz:198},
+    {type:'pollen_wraith', tx:133, tz:200},
+    {type:'pollen_wraith', tx:182, tz:174},
+    {type:'pollen_wraith', tx:183, tz:175},
+    {type:'pollen_wraith', tx:188, tz:74},
+    {type:'pollen_wraith', tx:186, tz:74},
+    {type:'glimmer_fairy', tx:203, tz:103},
+    {type:'glimmer_fairy', tx:201, tz:103},
+    {type:'glimmer_fairy', tx:65, tz:62},
+    {type:'glimmer_fairy', tx:100, tz:39},
+    {type:'glimmer_fairy', tx:41, tz:101},
+    {type:'glimmer_fairy', tx:47, tz:152},
+    {type:'glimmer_fairy', tx:135, tz:35},
+    {type:'glimmer_fairy', tx:204, tz:118},
+    {type:'glimmer_fairy', tx:122, tz:35},
+    {type:'glimmer_fairy', tx:42, tz:85},
+    {type:'glimmer_fairy', tx:84, tz:199},
+    {type:'glimmer_fairy', tx:87, tz:37},
+    {type:'glimmer_fairy', tx:209, tz:139},
+    {type:'glimmer_fairy', tx:67, tz:47},
+    {type:'glimmer_fairy', tx:188, tz:59},
+    {type:'glimmer_fairy', tx:152, tz:32},
+    {type:'glimmer_fairy', tx:162, tz:201},
+    {type:'glimmer_fairy', tx:177, tz:46},
+    {type:'glimmer_fairy', tx:195, tz:64},
+    {type:'glimmer_fairy', tx:190, tz:178},
+    {type:'glimmer_fairy', tx:124, tz:24},
+    {type:'glimmer_fairy', tx:53, tz:185},
+    {type:'glimmer_fairy', tx:25, tz:113},
+    {type:'glimmer_fairy', tx:103, tz:212},
+    {type:'glimmer_fairy', tx:205, tz:81},
+    {type:'glimmer_fairy', tx:201, tz:167},
+    {type:'glimmer_fairy', tx:103, tz:25},
+    {type:'glimmer_fairy', tx:28, tz:98},
+    {type:'glimmer_fairy', tx:212, tz:96},
+    {type:'glimmer_fairy', tx:215, tz:123},
+    {type:'bloom_sprite', tx:136, tz:216},
+    {type:'bloom_sprite', tx:217, tz:142},
+    {type:'bloom_sprite', tx:215, tz:160},
+    {type:'bloom_sprite', tx:35, tz:61},
+    {type:'bloom_sprite', tx:67, tz:208},
+    {type:'bloom_sprite', tx:184, tz:201},
+    {type:'bloom_sprite', tx:192, tz:197},
+    {type:'bloom_sprite', tx:158, tz:22},
+    {type:'bloom_sprite', tx:15, tz:140},
+    {type:'bloom_sprite', tx:220, tz:78},
+    {type:'bloom_sprite', tx:17, tz:154},
+    {type:'bloom_sprite', tx:18, tz:81},
+    {type:'bloom_sprite', tx:34, tz:186},
+    {type:'bloom_sprite', tx:75, tz:22},
+    {type:'bloom_sprite', tx:43, tz:46},
+    {type:'bloom_sprite', tx:213, tz:63},
+    {type:'bloom_sprite', tx:215, tz:176},
+    {type:'bloom_sprite', tx:81, tz:222},
+    {type:'bloom_sprite', tx:145, tz:11},
+    {type:'bloom_sprite', tx:35, tz:195},
+    {type:'bloom_sprite', tx:204, tz:50},
+    {type:'bloom_sprite', tx:163, tz:224},
+    {type:'bloom_sprite', tx:21, tz:182},
+    {type:'bloom_sprite', tx:180, tz:220},
+    {type:'bloom_sprite', tx:57, tz:221},
+    {type:'bloom_sprite', tx:193, tz:26},
+    {type:'bloom_sprite', tx:63, tz:15},
+    {type:'bloom_sprite', tx:27, tz:45},
+    {type:'bloom_sprite', tx:16, tz:60},
+    {type:'bloom_sprite', tx:185, tz:12},
+    {type:'bloom_sprite', tx:42, tz:22},
+    {type:'bloom_sprite', tx:218, tz:202},
+    {type:'bloom_sprite', tx:15, tz:199},
+    {type:'bloom_sprite', tx:40, tz:226},
+    {type:'bloom_sprite', tx:205, tz:224},
+    {type:'bloom_sprite', tx:21, tz:26},
+    {type:'bloom_sprite', tx:227, tz:34},
+    {type:'bloom_sprite', tx:228, tz:27},
+    {type:'bloom_sprite', tx:14, tz:217},
+    {type:'bloom_sprite', tx:222, tz:220}
+  ],
   // ── XERON (v93.0-a94) — matches client ZONE_DEFS.xeron ──
   // Cut from 86 → 51 mobs to address dense-combat feedback.
   // Also incorporates a92's docking spire pushback (entry now tx 18-30, not 10-22).
@@ -933,7 +1095,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15 };
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2 };
 // a532 — per-zone-per-type HP override. void_sentinel/void_construct carry boss-tier HP
 //   that is correct for VOID CITADEL but far too tanky for the lvl15-28 VOID WASTES where
 //   they also spawn. Scope a zone-appropriate HP to Void Wastes only (base stats untouched,
@@ -1328,7 +1490,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -1781,6 +1943,76 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a535: BLOOMING WILDS fey-garden AI (zone-gated to 'blooming_wilds'). Reuses the
+      //   projectile / beam / telegraph / cloud / shock / rift spine. Re-timed 60->10Hz.
+      if (zoneName === 'blooming_wilds' && e.aggroed && BW_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1;
+        if(e._bwHealCD>0) e._bwHealCD--;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+        const shoot=(baseAng,col,mult,kind,spread,count)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_bwDmg(e,mult),kind,null,0); } };
+        const tele=(tx,tz,fuse,radius,mult,col,slow,slowDur)=>{ if(!game._sdGeyser) game._sdGeyser=[]; game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:fuse, dmg:_bwDmg(e,mult), eid:e.id, col:col, radius:radius, slow:(slow||0), slowDur:(slowDur||1000) }); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+        const bwCloud=(tx,tz,ticks,mult,col,slow,poison)=>{ if(!game._sdGeyser) game._sdGeyser=[]; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); for(let i=0;i<ticks;i++){ game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:3+i*3, dmg:_bwDmg(e,mult), eid:e.id, col:col, radius:3.4, soft:1, slow:(slow||0), slowDur:400, status:(poison?'poison':null), statusDur:120 }); } };
+        const bwBlink=()=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xff44aa}); const a=ang+(Math.random()<0.5?1:-1)*1.4, r=4+Math.random()*3; e.x=nearestPlayer.x-Math.sin(a)*r; e.z=nearestPlayer.z-Math.cos(a)*r; _moved=true; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xff44aa}); };
+        const bwPull=()=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:0.8,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:0x6cff7a,w:0.16}); players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_player_fx',zone:zoneName,eff:'pull',px:+e.x.toFixed(2),pz:+e.z.toFixed(2),pull:1.6}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'slow',slow:0.0,root:600}); if(dd<5) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_bwDmg(e,0.9),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); } }); };
+        const feyBless=()=>{ let best=null, bestFrac=0.6; for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i]; if(!o||!o.active||o===e||!BW_BESPOKE[o.type]) continue; if((o._bwHealCD||0)>0) continue; if(Math.hypot(o.x-e.x,o.z-e.z)>12) continue; const fr=o.hp/o.maxHp; if(fr<bestFrac){ bestFrac=fr; best=o; } } if(best){ best.hp=Math.min(best.maxHp, best.hp+Math.floor(best.maxHp*0.03)); best._bwHealCD=20; changed.push(best); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+best.x.toFixed(2),tz:+best.z.toFixed(2),col:0x6cff7a,w:0.12}); } };
+
+        if(e.type==='bloom_sprite'){ const MSs=0.35;
+          mv(pr*strafe+(dd>5?sin:-sin)*0.5+(Math.random()-0.5)*0.3, pq*strafe+(dd>5?cos:-cos)*0.5+(Math.random()-0.5)*0.3, MSs);
+          e._m1=(e._m1||0)+1; if(dd<2.6 && e._m1>=9){ e._m1=0; hit(_bwDmg(e,0.8)); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xff88cc,n:4}); }
+          if(dd>2.5 && dd<16 && e._ab>=15){ e._ab=0; shoot(ang,0xff88cc,0.55,'plasma',0.22,3); }
+        }
+        else if(e.type==='glimmer_fairy'){ const MSs=0.40;
+          if(dd<6) mv(-sin*0.8+pr*strafe*0.7,-cos*0.8+pq*strafe*0.7,MSs); else if(dd>12) mv(sin*0.6,cos*0.6,MSs); else mv(pr*strafe,pq*strafe,MSs);
+          e._s1=(e._s1||0)+1; if(dd>2.5 && dd<18 && e._s1>=8){ e._s1=0; shoot(ang,0xffe060,0.6,'plasma',0,1); }
+          if(e._ab>=22){ e._ab=0; bwBlink(); }
+          e._hex=(e._hex||7)+1; if(dd<20 && e._hex>=33){ e._hex=0; tele(nearestPlayer.x,nearestPlayer.z,6,2.4,1.1,0xffe060,0.5,1400); }
+          if(e._bless===undefined) e._bless=Math.floor(Math.random()*80);
+          e._bless++; if(e._bless>=80){ e._bless=0; feyBless(); }
+        }
+        else if(e.type==='mushroom_brute'){ const MSs=0.144;
+          if(dd>3.2) mv(sin,cos,MSs);
+          e._m1=(e._m1||0)+1; if(dd<3.6 && e._m1>=13){ e._m1=0; hit(_bwDmg(e,1.0)); }
+          if(dd<22 && e._ab>=25){ e._ab=0; bwCloud(nearestPlayer.x,nearestPlayer.z,8,0.45,0x88ff44,0.7,true); }
+          e._slam=(e._slam||7)+1; if(dd<5 && e._slam>=28){ e._slam=0; tele(e.x,e.z,6,2.88,1.4,0xccaa66,0,0); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:3}); }); }
+          e._lob=(e._lob||0)+1; if(dd>5 && dd<20 && e._lob>=18){ e._lob=0; shoot(ang,0x88ff44,0.7,'plasma',0,1); }
+        }
+        else if(e.type==='pollen_wraith'){ const MSs=0.29;
+          if(dd<7) mv(-sin*0.6+pr*strafe*0.8,-cos*0.6+pq*strafe*0.8,MSs); else mv(pr*strafe*0.9+sin*0.3,pq*strafe*0.9+cos*0.3,MSs);
+          e._s1=(e._s1||0)+1; if(dd>2.5 && dd<18 && e._s1>=10){ e._s1=0; shoot(ang,0xb060ff,0.55,'plasma',0.12,2); }
+          if(dd<20 && e._ab>=23){ e._ab=0; bwCloud(nearestPlayer.x,nearestPlayer.z,7,0.4,0xb060ff,0.55,false); }
+          e._drift=(e._drift||8)+1; if(e._drift>=35){ e._drift=0; bwBlink(); }
+        }
+        else if(e.type==='thorn_knight'){ const MSs=0.24;
+          if(e._charge){ e._cst=(e._cst||0)+1;
+            if(e._charge==='wind'){ if(e._cst>=3){ e._charge='go'; e._cst=0; e._cdir=ang; e._chit=0; } }
+            else { mv(Math.sin(e._cdir),Math.cos(e._cdir),MSs*3.0);
+              if(dd<2.6 && !e._chit){ hit(_bwDmg(e,1.5)); e._chit=1; _pmShock(game,zoneName,e,e.x,e.z,2.2,0,0x6cff7a,players,send); }
+              if(e._cst>=3){ e._charge=0; e._cst=0; } }
+          } else {
+            if(dd>3.0) mv(sin*0.7+pr*strafe*0.5,cos*0.7+pq*strafe*0.5,MSs); else mv(pr*strafe,pq*strafe,MSs);
+            e._m1=(e._m1||0)+1; if(dd<3.6 && e._m1>=10){ e._m1=0; hit(_bwDmg(e,1.0)); }
+            e._vw=(e._vw||0)+1; if(dd>3 && dd<9 && e._vw>=20){ e._vw=0; bwPull(); }
+            e._nova=(e._nova||0)+1; if(dd<8 && e._nova>=33){ e._nova=0; tele(e.x,e.z,6,3.6,1.3,0x6cff7a,0,0); }
+            e._tc=(e._tc||0)+1; if(dd>5 && dd<16 && e._tc>=30){ e._tc=0; e._charge='wind'; e._cst=0; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0x6cff7a,n:6}); }
+          }
+        }
+        else if(e.type==='vine_stalker'){ const MSs=0.34;
+          if(dd>2.8) mv(sin*0.7+pr*strafe*0.7,cos*0.7+pq*strafe*0.7,MSs); else mv(pr*strafe,pq*strafe,MSs);
+          e._m1=(e._m1||0)+1; if(dd<3.0 && e._m1>=8){ e._m1=0; hit(_bwDmg(e,1.0)); }
+          e._grab=(e._grab||5)+1; if(dd>3 && dd<11 && e._grab>=22){ e._grab=0; bwPull(); }
+          e._lash=(e._lash||0)+1; if(dd>3 && dd<15 && e._lash>=12){ e._lash=0; shoot(ang,0x6cff7a,0.6,'bolt',0,1); }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -1823,7 +2055,8 @@ function tickGame(game) {
       gy.fuse--;
       if (gy.fuse <= 0) {
         const _gr = gy.radius || 2.3;
-        broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_geyser_hit', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0xd8b45e), radius:_gr });
+        if (gy.soft) broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_motes', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0x88ff44), n:5 });
+        else broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_geyser_hit', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0xd8b45e), radius:_gr });
         players.forEach((p, ws) => {
           if (p.gameId !== game.id || p.zone !== gy.zone || p.x === undefined) return;
           const ddx=p.x-gy.x, ddz=p.z-gy.z;
@@ -1831,6 +2064,7 @@ function tickGame(game) {
             send(ws, { type:'sv_enemy_attack', eid:gy.eid, dmg:gy.dmg, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), zone:gy.zone });
             if (gy.slow) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'slow', slow:gy.slow, root:(gy.slowDur||1000) });
             if (gy.pull) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'pull', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), pull:gy.pull });
+            if (gy.status) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'status', status:gy.status, statusDur:(gy.statusDur||120) });
           }
         });
       } else keepG.push(gy);
@@ -1848,6 +2082,10 @@ const SD_BESPOKE = { sand_scorpion:1, desert_snake:1, dune_skeleton:1, sand_mumm
 const PATROL_BESPOKE = { xu_rebel:1, bandit:1, bandit_archer:1, sniper:1, wraith:1, xu_scout:1, xu_siege_bot:1, xu_commander:1 };
 // a531 — VOID WASTES bespoke AI (zone-gated to 'void'; 'wraith' is shared with other zones).
 const VW_BESPOKE = { void_stalker:1, void_eye:1, void_phantom:1, void_sentinel:1, void_construct:1, void_spike_horror:1, wraith:1 };
+// a535 — BLOOMING WILDS bespoke AI (zone-gated to 'blooming_wilds'). Tier 2, lvl 10-25.
+const BW_BESPOKE = { bloom_sprite:1, glimmer_fairy:1, mushroom_brute:1, pollen_wraith:1, thorn_knight:1, vine_stalker:1 };
+const BW_PWR = { bloom_sprite:36, glimmer_fairy:38, mushroom_brute:50, pollen_wraith:40, thorn_knight:58, vine_stalker:44 };
+function _bwDmg(e, mult){ return Math.floor((BW_PWR[e.type] || e.atk || 32) * mult); }
 const VW_PWR = { void_stalker:42, void_eye:40, void_phantom:48, void_sentinel:60, void_construct:54, void_spike_horror:56, wraith:38 };
 function _vwDmg(e, mult){ return Math.floor((VW_PWR[e.type] || e.atk || 36) * mult); }
 const PM_PWR = { xu_rebel:38, bandit:40, bandit_archer:34, sniper:36, wraith:38, xu_scout:34, xu_siege_bot:52, xu_commander:50 };
