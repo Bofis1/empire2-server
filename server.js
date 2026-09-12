@@ -267,6 +267,11 @@ const ENEMY_STATS = {
   omega_observer:    {hp:440000, atk:1200, spd:0.028, aggroRange:24, reward:12000, expR:5200, dmgReduction:0.4},
   xu_miner:          {hp:820,   atk:68,  spd:0.048, aggroRange:9,  reward:220,  expR:72,   dmgReduction:0},
   xu_overseer:       {hp:1400,  atk:95,  spd:0.040, aggroRange:11, reward:340,  expR:110,  dmgReduction:0},
+  // a540 — these two existed ONLY in the client stat tables; the server's unknown-type
+  //   fallback is soldier (hp:270), so migrating the caves without them would have spawned
+  //   half the mine at 270 HP (the a495 void_construct bug). Values mirror the client table.
+  blast_sapper:      {hp:950,   atk:80,  spd:0.055, aggroRange:12, reward:300,  expR:95,   dmgReduction:0},
+  crystal_lurker:    {hp:1600,  atk:88,  spd:0.044, aggroRange:7,  reward:380,  expR:120,  dmgReduction:0.15},
   wyvern_warlord:    {hp:55000, atk:400, spd:0.065, aggroRange:15, reward:1600, expR:550,  dmgReduction:0},
   elder_dragon:      {hp:90000, atk:480, spd:0.040, aggroRange:14, reward:2000, expR:680,  dmgReduction:0},
   deep_wyrm:         {hp:75000, atk:440, spd:0.030, aggroRange:11, reward:1800, expR:600,  dmgReduction:0},
@@ -957,7 +962,112 @@ const ZONE_SPAWNS = {
     {type:'void_stalker', tx:185, tz:222}
   ],
   citadel: [],   // a470 — client-authoritative (bespoke futuristic AI client-side); server no longer spawns/owns these mobs.
-  caves_of_despair: [],   // a498 — client-authoritative now (bespoke mine AI + two new species client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a540 — MULTIPLAYER MIGRATION: Caves of Despair is now server-authoritative.
+  caves_of_despair: [
+    {type:'xu_miner', tx:8, tz:8},
+    {type:'xu_overseer', tx:14, tz:6},
+    {type:'blast_sapper', tx:18, tz:10},
+    {type:'crystal_lurker', tx:22, tz:8},
+    {type:'xu_miner', tx:26, tz:10},
+    {type:'xu_overseer', tx:30, tz:6},
+    {type:'blast_sapper', tx:44, tz:8},
+    {type:'crystal_lurker', tx:52, tz:6},
+    {type:'xu_miner', tx:60, tz:10},
+    {type:'xu_overseer', tx:68, tz:8},
+    {type:'blast_sapper', tx:74, tz:12},
+    {type:'crystal_lurker', tx:6, tz:16},
+    {type:'xu_miner', tx:8, tz:18},
+    {type:'xu_overseer', tx:10, tz:16},
+    {type:'blast_sapper', tx:6, tz:20},
+    {type:'crystal_lurker', tx:10, tz:20},
+    {type:'xu_miner', tx:32, tz:14},
+    {type:'xu_overseer', tx:34, tz:16},
+    {type:'blast_sapper', tx:36, tz:14},
+    {type:'crystal_lurker', tx:32, tz:18},
+    {type:'xu_miner', tx:62, tz:16},
+    {type:'xu_overseer', tx:64, tz:18},
+    {type:'blast_sapper', tx:66, tz:16},
+    {type:'crystal_lurker', tx:62, tz:20},
+    {type:'xu_miner', tx:14, tz:26},
+    {type:'xu_overseer', tx:16, tz:28},
+    {type:'blast_sapper', tx:18, tz:26},
+    {type:'crystal_lurker', tx:14, tz:30},
+    {type:'xu_miner', tx:18, tz:30},
+    {type:'xu_overseer', tx:50, tz:26},
+    {type:'blast_sapper', tx:52, tz:28},
+    {type:'crystal_lurker', tx:54, tz:26},
+    {type:'xu_miner', tx:50, tz:30},
+    {type:'xu_overseer', tx:54, tz:30},
+    {type:'blast_sapper', tx:24, tz:24},
+    {type:'crystal_lurker', tx:30, tz:26},
+    {type:'xu_miner', tx:40, tz:28},
+    {type:'xu_overseer', tx:44, tz:26},
+    {type:'blast_sapper', tx:60, tz:26},
+    {type:'crystal_lurker', tx:68, tz:28},
+    {type:'xu_miner', tx:74, tz:26},
+    {type:'xu_overseer', tx:6, tz:28},
+    {type:'blast_sapper', tx:8, tz:32},
+    {type:'crystal_lurker', tx:22, tz:34},
+    {type:'xu_miner', tx:28, tz:32},
+    {type:'xu_overseer', tx:70, tz:32},
+    {type:'blast_sapper', tx:74, tz:34},
+    {type:'crystal_lurker', tx:6, tz:40},
+    {type:'xu_miner', tx:10, tz:42},
+    {type:'xu_overseer', tx:14, tz:40},
+    {type:'blast_sapper', tx:16, tz:42},
+    {type:'crystal_lurker', tx:60, tz:40},
+    {type:'xu_miner', tx:64, tz:42},
+    {type:'xu_overseer', tx:70, tz:40},
+    {type:'blast_sapper', tx:74, tz:42},
+    {type:'crystal_lurker', tx:10, tz:50},
+    {type:'xu_miner', tx:12, tz:52},
+    {type:'xu_overseer', tx:14, tz:50},
+    {type:'blast_sapper', tx:10, tz:54},
+    {type:'crystal_lurker', tx:14, tz:54},
+    {type:'xu_miner', tx:36, tz:50},
+    {type:'xu_overseer', tx:38, tz:52},
+    {type:'blast_sapper', tx:40, tz:50},
+    {type:'crystal_lurker', tx:36, tz:54},
+    {type:'xu_miner', tx:40, tz:54},
+    {type:'xu_overseer', tx:64, tz:50},
+    {type:'blast_sapper', tx:66, tz:52},
+    {type:'crystal_lurker', tx:68, tz:50},
+    {type:'xu_miner', tx:64, tz:54},
+    {type:'xu_overseer', tx:68, tz:54},
+    {type:'blast_sapper', tx:22, tz:48},
+    {type:'crystal_lurker', tx:26, tz:52},
+    {type:'xu_miner', tx:30, tz:48},
+    {type:'xu_overseer', tx:48, tz:48},
+    {type:'blast_sapper', tx:54, tz:52},
+    {type:'crystal_lurker', tx:58, tz:48},
+    {type:'xu_miner', tx:22, tz:58},
+    {type:'xu_overseer', tx:28, tz:60},
+    {type:'blast_sapper', tx:48, tz:58},
+    {type:'crystal_lurker', tx:54, tz:60},
+    {type:'xu_miner', tx:10, tz:66},
+    {type:'xu_overseer', tx:12, tz:68},
+    {type:'blast_sapper', tx:14, tz:66},
+    {type:'crystal_lurker', tx:10, tz:70},
+    {type:'xu_miner', tx:14, tz:70},
+    {type:'xu_overseer', tx:36, tz:68},
+    {type:'blast_sapper', tx:38, tz:66},
+    {type:'crystal_lurker', tx:40, tz:68},
+    {type:'xu_miner', tx:36, tz:70},
+    {type:'xu_overseer', tx:40, tz:70},
+    {type:'blast_sapper', tx:38, tz:72},
+    {type:'crystal_lurker', tx:62, tz:66},
+    {type:'xu_miner', tx:64, tz:68},
+    {type:'xu_overseer', tx:66, tz:66},
+    {type:'blast_sapper', tx:62, tz:70},
+    {type:'crystal_lurker', tx:66, tz:70},
+    {type:'xu_miner', tx:20, tz:64},
+    {type:'xu_overseer', tx:26, tz:68},
+    {type:'blast_sapper', tx:48, tz:66},
+    {type:'crystal_lurker', tx:54, tz:68},
+    {type:'xu_miner', tx:24, tz:74},
+    {type:'xu_overseer', tx:50, tz:74},
+    {type:'blast_sapper', tx:72, tz:72}
+  ],
   // a539 — MULTIPLAYER MIGRATION: The Ashlands is now server-authoritative.
   ashlands: [
     {type:'lava_golem', tx:93, tz:139},
@@ -1937,7 +2047,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -2687,6 +2797,108 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a540: CAVES OF DESPAIR mine AI (zone-gated to 'caves_of_despair'). Full kit on the
+      //   shared spine: ambush wake, ore toss, panic lantern, whip crack, overseer's bellow,
+      //   bomb toss, planted blasting charge (outlives its owner), crystal spike rows,
+      //   resonance armor. Re-timed 60->10Hz.
+      if (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _CDA=0x8a5adf, _CDT=0x35e0c8, _CDF=0xff8c2a, _CDR=0x9a8468, _CDL=0xffb040;
+        // CRYSTAL LURKER AMBUSH — dormant rock until the player closes. Server owns the wake
+        //   so every player sees the same lurkers sleeping/waking; the client mirrors the flare.
+        if(e.type==='crystal_lurker' && !e._cdAwake){
+          if(dd<6){ e._cdAwake=1; e.aggroed=true;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'cd_wake',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CDA});
+          } else { return; }   // it is a rock. nothing is here.
+        }
+        if(!e.aggroed) return;
+        if(e._pkT>0) e._pkT--;                       // OVERSEER'S BELLOW surge
+        const _pk = (e._pkT>0) ? 1.25 : 1;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+        const shoot=(baseAng,col,mult,count,spread)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_cdDmgS(e,mult),'bolt',null,0); } };
+        const tele=(tx,tz,fuse,radius,mult,col,status,sdur)=>{ if(!game._sdGeyser) game._sdGeyser=[]; game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:fuse, dmg:_cdDmgS(e,mult), eid:e.id, col:col, radius:radius, status:(status||null), statusDur:(sdur||0) }); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+
+        if(e.type==='xu_miner'){
+          // PIT WORKER — pickaxe, ORE TOSS, PANIC (drops a burning lantern and flees)
+          const MS=0.276*_pk;
+          if(e._fl>0){ e._fl--; mv(-sin,-cos,MS*1.3); if(_moved) changed.push(e); return; }   // fleeing
+          if(dd>2.4) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS);
+          if(dd<2.6 && e.attackTimer%(e._pkT>0?7:10)===0){ hit(_cdDmgS(e,0.9)); }
+          if(dd>3 && dd<11 && e._ab>=28){ e._ab=0; tele(nearestPlayer.x,nearestPlayer.z,6,2.0,0.85,_CDR,null,0); }
+          // PANIC — badly hurt: drop the lantern (burning oil pool) and run into the dark
+          if(!e._pd && (e.hp/e.maxHp)<0.30){ e._pd=1; e._fl=12;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            const lx=e.x, lz=e.z;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+lx.toFixed(2),ez:+lz.toFixed(2),col:_CDL});
+            for(let i=0;i<10;i++) game._sdGeyser.push({ zone:zoneName, x:lx, z:lz, fuse:3+i*3, dmg:_cdDmgS(e,0.35), eid:e.id, col:_CDL, radius:1.8, soft:1, status:(i%4===0?'burn':null), statusDur:100 });
+          }
+        }
+        else if(e.type==='xu_overseer'){
+          // PIT BOSS — whip crack (hobble), lantern lob, OVERSEER'S BELLOW (rallies the mine)
+          const MS=0.228*_pk;
+          if(dd>2.6) mv(sin*0.85+pr*strafe*0.35, cos*0.85+pq*strafe*0.35, MS);
+          if(dd<3.0 && e.attackTimer%10===0){ hit(_cdDmgS(e,1.0)); }
+          e._wc2=(e._wc2||0)+1;
+          if(dd>2 && dd<7 && e._wc2>=30){ e._wc2=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.3,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_CDR,w:0.14});
+            players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_cdDmgS(e,1.0),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'slow',slow:0.5,root:700,flash:'rgba(154,132,104,.12)'}); } }); }
+          if(dd>3 && dd<11 && e._ab>=36){ e._ab=0; tele(nearestPlayer.x,nearestPlayer.z,6,2.4,0.9,_CDL,'burn',120); }
+          // OVERSEER'S BELLOW — back to work, all of you
+          if(e._ob===undefined) e._ob=Math.floor(Math.random()*34);
+          e._ob++;
+          if(dd<12 && e._ob>=63){ e._ob=0;
+            _pmShock(game,zoneName,e,e.x,e.z,4.0,0,_CDR,players,send);
+            for(let ri=0;ri<zone.enemies.length;ri++){ const o=zone.enemies[ri];
+              if(!o||!o.active||o===e||!CD_BESPOKE[o.type]) continue;
+              const odx=o.x-e.x, odz=o.z-e.z; if(odx*odx+odz*odz>196) continue;
+              o.aggroed=true; o._pkT=47;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.7,ez:+e.z.toFixed(2),tx:+o.x.toFixed(2),tz:+o.z.toFixed(2),col:_CDR,w:0.12}); } }
+        }
+        else if(e.type==='blast_sapper'){
+          // DEMOLITION XU — keeps its distance, lobs bombs, PLANTS A BLASTING CHARGE
+          const MS=0.30*_pk;
+          if(dd<4) mv(-sin*0.9+pr*strafe*0.5, -cos*0.9+pq*strafe*0.5, MS);
+          else if(dd>10) mv(sin*0.8, cos*0.8, MS);
+          else mv(pr*strafe, pq*strafe, MS);
+          if(dd>3 && dd<11 && e.attackTimer%18===0){ tele(nearestPlayer.x,nearestPlayer.z,6,2.4,1.0,_CDF,'burn',100); }
+          // PLANTED CHARGE — a real bomb on an accelerating fuse. Pushed to the zone geyser
+          //   list, NOT tied to the sapper's life: it detonates even if the sapper dies.
+          if(e._pc===undefined) e._pc=Math.floor(Math.random()*25);
+          e._pc++;
+          if(dd>2 && dd<9 && e._pc>=43){ e._pc=0;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            const bx=e.x, bz=e.z;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'cd_charge',zone:zoneName,ex:+bx.toFixed(2),ez:+bz.toFixed(2),col:_CDF,dur:1800});
+            game._sdGeyser.push({ zone:zoneName, x:bx, z:bz, fuse:18, dmg:_cdDmgS(e,1.5), eid:e.id, col:_CDF, radius:3.2, status:'burn', statusDur:120, shake:3 }); }
+        }
+        else { // crystal_lurker — THE MINE ITSELF
+          const MS=0.252*_pk;
+          if(dd>2.2) mv(sin*0.9+pr*strafe*0.4, cos*0.9+pq*strafe*0.4, MS);
+          if(dd<2.6 && e.attackTimer%10===0){ hit(_cdDmgS(e,1.05)); }
+          if(dd>2.4 && dd<10 && e.attackTimer%13===0){ shoot(ang,_CDA,0.6,2,0.16); }
+          // CRYSTAL SPIKE ROW — the floor grows teeth, marching toward the player
+          if(dd>2.5 && dd<10 && e._ab>=35){ e._ab=0;
+            for(let si=0;si<4;si++){ const fr=(si+1)/4;
+              tele(e.x+(nearestPlayer.x-e.x)*fr, e.z+(nearestPlayer.z-e.z)*fr, 3+si*2, 1.4, 0.8, _CDA, null, 0); } }
+          // RESONANCE — shard nova, and its back hardens for a beat
+          e._rn=(e._rn||0)+1;
+          if(dd<5 && e._rn>=40){ e._rn=0;
+            _pmShock(game,zoneName,e,e.x,e.z,3.0,(dd<3.4?_cdDmgS(e,1.1):0),_CDA,players,send);
+            if(e._rnBase===undefined) e._rnBase=e.dmgReduction||0;
+            e.dmgReduction=Math.min(0.7, e._rnBase+0.30); e._rnT=18; }
+          if(e._rnT>0){ e._rnT--; if(e._rnT===0 && e._rnBase!==undefined) e.dmgReduction=e._rnBase; }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -2739,6 +2951,7 @@ function tickGame(game) {
             if (gy.slow) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'slow', slow:gy.slow, root:(gy.slowDur||1000) });
             if (gy.pull) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'pull', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), pull:gy.pull });
             if (gy.status) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'status', status:gy.status, statusDur:(gy.statusDur||120) });
+            if (gy.shake) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'shake', shake:gy.shake });   // a540 — blasting charge
           }
         });
       } else keepG.push(gy);
@@ -2772,6 +2985,12 @@ const CM_BESPOKE = { skeleton_warrior:1, bone_mage:1, grave_crawler:1, death_kni
 //   cemetery, the client's _alDmg adds player-maxHP and player-DEF terms the server can't see;
 //   we use the same flat _AL_PWR floor it falls back to. Burn DoT rides the spine's status field.
 const AL_BESPOKE = { ash_wraith:1, berserker:1, lava_golem:1, magma_crab:1 };
+// a540 — CAVES OF DESPAIR mine AI (zone-gated to 'caves_of_despair'). HP intentionally
+//   UNCHANGED here (the client kit applies no bump). Same flat-PWR damage mirror as the
+//   cemetery/ashlands: the client's _cdDmg adds player-maxHP/DEF terms the server can't see.
+const CD_BESPOKE = { xu_miner:1, xu_overseer:1, blast_sapper:1, crystal_lurker:1 };
+const CD_PWR = { xu_miner:78, xu_overseer:92, blast_sapper:88, crystal_lurker:105 };
+function _cdDmgS(e, mult){ return Math.floor((CD_PWR[e.type] || e.atk || 85) * mult); }
 const AL_PWR = { ash_wraith:46, berserker:54, lava_golem:58, magma_crab:60 };
 function _alDmgS(e, mult){ return Math.floor((AL_PWR[e.type] || e.atk || 40) * mult); }
 const CM_PWR = { skeleton_warrior:48, bone_mage:46, grave_crawler:44, death_knight:62, wraith:40 };
