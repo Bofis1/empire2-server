@@ -958,7 +958,159 @@ const ZONE_SPAWNS = {
   ],
   citadel: [],   // a470 — client-authoritative (bespoke futuristic AI client-side); server no longer spawns/owns these mobs.
   caves_of_despair: [],   // a498 — client-authoritative now (bespoke mine AI + two new species client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
-  ashlands: [],   // a469 — client-authoritative (bespoke fire/volcanic AI client-side); server no longer spawns/owns these mobs.
+  // a539 — MULTIPLAYER MIGRATION: The Ashlands is now server-authoritative.
+  ashlands: [
+    {type:'lava_golem', tx:93, tz:139},
+    {type:'lava_golem', tx:97, tz:139},
+    {type:'lava_golem', tx:125, tz:87},
+    {type:'lava_golem', tx:128, tz:88},
+    {type:'lava_golem', tx:85, tz:136},
+    {type:'lava_golem', tx:85, tz:137},
+    {type:'lava_golem', tx:81, tz:123},
+    {type:'lava_golem', tx:83, tz:122},
+    {type:'lava_golem', tx:126, tz:160},
+    {type:'lava_golem', tx:124, tz:162},
+    {type:'lava_golem', tx:159, tz:105},
+    {type:'lava_golem', tx:156, tz:105},
+    {type:'lava_golem', tx:99, tz:157},
+    {type:'lava_golem', tx:99, tz:156},
+    {type:'lava_golem', tx:163, tz:127},
+    {type:'lava_golem', tx:163, tz:126},
+    {type:'lava_golem', tx:80, tz:110},
+    {type:'lava_golem', tx:77, tz:109},
+    {type:'lava_golem', tx:133, tz:165},
+    {type:'lava_golem', tx:132, tz:166},
+    {type:'lava_golem', tx:139, tz:77},
+    {type:'lava_golem', tx:135, tz:76},
+    {type:'lava_golem', tx:162, tz:145},
+    {type:'lava_golem', tx:163, tz:142},
+    {type:'lava_golem', tx:102, tz:76},
+    {type:'lava_golem', tx:99, tz:76},
+    {type:'lava_golem', tx:86, tz:160},
+    {type:'lava_golem', tx:83, tz:161},
+    {type:'lava_golem', tx:122, tz:67},
+    {type:'lava_golem', tx:122, tz:68},
+    {type:'lava_golem', tx:119, tz:175},
+    {type:'lava_golem', tx:117, tz:173},
+    {type:'lava_golem', tx:162, tz:159},
+    {type:'lava_golem', tx:159, tz:156},
+    {type:'berserker', tx:177, tz:120},
+    {type:'berserker', tx:177, tz:119},
+    {type:'berserker', tx:61, tz:117},
+    {type:'berserker', tx:61, tz:119},
+    {type:'berserker', tx:137, tz:174},
+    {type:'berserker', tx:136, tz:177},
+    {type:'berserker', tx:78, tz:80},
+    {type:'berserker', tx:80, tz:80},
+    {type:'berserker', tx:139, tz:65},
+    {type:'berserker', tx:136, tz:64},
+    {type:'berserker', tx:173, tz:94},
+    {type:'berserker', tx:175, tz:94},
+    {type:'berserker', tx:64, tz:101},
+    {type:'berserker', tx:65, tz:102},
+    {type:'berserker', tx:161, tz:79},
+    {type:'berserker', tx:162, tz:79},
+    {type:'berserker', tx:107, tz:177},
+    {type:'berserker', tx:104, tz:178},
+    {type:'berserker', tx:177, tz:142},
+    {type:'berserker', tx:178, tz:139},
+    {type:'berserker', tx:93, tz:63},
+    {type:'berserker', tx:93, tz:64},
+    {type:'berserker', tx:56, tz:141},
+    {type:'berserker', tx:56, tz:140},
+    {type:'berserker', tx:65, tz:161},
+    {type:'berserker', tx:67, tz:157},
+    {type:'berserker', tx:157, tz:179},
+    {type:'berserker', tx:154, tz:179},
+    {type:'berserker', tx:157, tz:60},
+    {type:'berserker', tx:154, tz:60},
+    {type:'berserker', tx:189, tz:119},
+    {type:'berserker', tx:192, tz:119},
+    {type:'berserker', tx:184, tz:86},
+    {type:'berserker', tx:182, tz:89},
+    {type:'berserker', tx:180, tz:155},
+    {type:'berserker', tx:183, tz:155},
+    {type:'berserker', tx:117, tz:192},
+    {type:'berserker', tx:120, tz:193},
+    {type:'berserker', tx:83, tz:58},
+    {type:'berserker', tx:85, tz:56},
+    {type:'berserker', tx:56, tz:77},
+    {type:'berserker', tx:55, tz:80},
+    {type:'berserker', tx:146, tz:46},
+    {type:'berserker', tx:145, tz:46},
+    {type:'berserker', tx:196, tz:102},
+    {type:'berserker', tx:194, tz:100},
+    {type:'berserker', tx:102, tz:193},
+    {type:'berserker', tx:46, tz:144},
+    {type:'magma_crab', tx:75, tz:182},
+    {type:'magma_crab', tx:150, tz:50},
+    {type:'magma_crab', tx:153, tz:192},
+    {type:'magma_crab', tx:40, tz:117},
+    {type:'magma_crab', tx:181, tz:67},
+    {type:'magma_crab', tx:177, tz:178},
+    {type:'magma_crab', tx:193, tz:157},
+    {type:'magma_crab', tx:98, tz:42},
+    {type:'magma_crab', tx:201, tz:131},
+    {type:'magma_crab', tx:38, tz:107},
+    {type:'magma_crab', tx:197, tz:84},
+    {type:'magma_crab', tx:62, tz:178},
+    {type:'magma_crab', tx:121, tz:37},
+    {type:'magma_crab', tx:80, tz:45},
+    {type:'magma_crab', tx:83, tz:196},
+    {type:'magma_crab', tx:140, tz:201},
+    {type:'magma_crab', tx:46, tz:165},
+    {type:'magma_crab', tx:58, tz:60},
+    {type:'magma_crab', tx:43, tz:78},
+    {type:'magma_crab', tx:125, tz:209},
+    {type:'magma_crab', tx:171, tz:195},
+    {type:'magma_crab', tx:212, tz:121},
+    {type:'magma_crab', tx:175, tz:47},
+    {type:'magma_crab', tx:140, tz:210},
+    {type:'magma_crab', tx:85, tz:212},
+    {type:'magma_crab', tx:43, tz:178},
+    {type:'magma_crab', tx:40, tz:62},
+    {type:'magma_crab', tx:64, tz:40},
+    {type:'magma_crab', tx:212, tz:151},
+    {type:'magma_crab', tx:145, tz:24},
+    {type:'magma_crab', tx:21, tz:145},
+    {type:'magma_crab', tx:156, tz:27},
+    {type:'magma_crab', tx:102, tz:22},
+    {type:'magma_crab', tx:23, tz:151},
+    {type:'ash_wraith', tx:218, tz:140},
+    {type:'ash_wraith', tx:204, tz:63},
+    {type:'ash_wraith', tx:97, tz:221},
+    {type:'ash_wraith', tx:57, tz:200},
+    {type:'ash_wraith', tx:218, tz:82},
+    {type:'ash_wraith', tx:222, tz:108},
+    {type:'ash_wraith', tx:202, tz:185},
+    {type:'ash_wraith', tx:19, tz:86},
+    {type:'ash_wraith', tx:210, tz:174},
+    {type:'ash_wraith', tx:212, tz:64},
+    {type:'ash_wraith', tx:86, tz:18},
+    {type:'ash_wraith', tx:192, tz:40},
+    {type:'ash_wraith', tx:27, tz:61},
+    {type:'ash_wraith', tx:158, tz:223},
+    {type:'ash_wraith', tx:40, tz:192},
+    {type:'ash_wraith', tx:181, tz:211},
+    {type:'ash_wraith', tx:200, tz:196},
+    {type:'ash_wraith', tx:66, tz:215},
+    {type:'ash_wraith', tx:178, tz:27},
+    {type:'ash_wraith', tx:66, tz:24},
+    {type:'ash_wraith', tx:46, tz:35},
+    {type:'ash_wraith', tx:19, tz:172},
+    {type:'ash_wraith', tx:29, tz:48},
+    {type:'ash_wraith', tx:50, tz:210},
+    {type:'ash_wraith', tx:41, tz:28},
+    {type:'ash_wraith', tx:204, tz:210},
+    {type:'ash_wraith', tx:219, tz:44},
+    {type:'ash_wraith', tx:218, tz:198},
+    {type:'ash_wraith', tx:198, tz:21},
+    {type:'ash_wraith', tx:19, tz:203},
+    {type:'ash_wraith', tx:28, tz:219},
+    {type:'ash_wraith', tx:24, tz:27},
+    {type:'ash_wraith', tx:221, tz:209},
+    {type:'ash_wraith', tx:217, tz:19}
+  ],
   // a519 — SERVER-AUTHORITATIVE again (multiplayer migration): the server owns
   //   simulation/positions/HP for Sunken Sands. Transcribed from the client
   //   ZONE_DEFS.sunken_sands.enemySpawns (150 mobs). The client sv_zone_snapshot
@@ -1377,7 +1529,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -1785,7 +1937,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -2467,6 +2619,74 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a539: THE ASHLANDS fire/volcanic AI (zone-gated to 'ashlands'). Full lava kit on the
+      //   shared projectile / telegraph / pool / shock spine, with burn DoT. Re-timed 60->10Hz.
+      if (zoneName === 'ashlands' && e.aggroed && AL_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _ALL=0xff5a1e, _ALF=0xff8c1a, _ALE=0xffd24a, _ALD=0xcc2200;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        // melee/ability hit that also applies BURN
+        const hitB=(dmg,burnDur)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); if(burnDur) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'burn',statusDur:burnDur}); } }); };
+        const shoot=(baseAng,col,mult,kind,spread,count)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_alDmgS(e,mult),kind,'burn',90); } };
+        // ERUPTION — telegraphed ground slam / meteor
+        const erupt=(tx,tz,fuse,radius,mult)=>{ if(!game._sdGeyser) game._sdGeyser=[]; game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:fuse, dmg:_alDmgS(e,mult), eid:e.id, col:_ALL, radius:radius, status:'burn', statusDur:150 }); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:_ALL}); };
+        // LAVA POOL — lingering burn DoT patch (soft, like the spore/cursed clouds)
+        const pool=(tx,tz,ticks,mult)=>{ if(!game._sdGeyser) game._sdGeyser=[]; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:_ALL}); for(let i=0;i<ticks;i++){ game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:3+i*3, dmg:_alDmgS(e,mult), eid:e.id, col:_ALL, radius:3.0, soft:1, status:'burn', statusDur:90 }); } };
+        const alBlink=()=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_ALF}); const a=ang+(Math.random()<0.5?1:-1)*1.3, r=4+Math.random()*3; e.x=nearestPlayer.x-Math.sin(a)*r; e.z=nearestPlayer.z-Math.cos(a)*r; _moved=true; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_ALF}); };
+
+        if(e.type==='ash_wraith'){
+          // EMBER BARRAGE · ASH BLINK · IGNITING TOUCH
+          const MS=0.312;
+          if(dd>2.4) mv(sin*0.7+pr*strafe*0.8, cos*0.7+pq*strafe*0.8, MS); else mv(pr*strafe,pq*strafe,MS);
+          if(dd<2.8 && e.attackTimer%7===0){ hitB(_alDmgS(e,1.0),120); }
+          if(dd>3 && dd<18 && e.attackTimer%12===0){ shoot(ang,_ALF,0.6,'plasma',0.18,3); }
+          if(e._ab>=22){ e._ab=0; alBlink(); }
+        }
+        else if(e.type==='berserker'){
+          // FLAME CHARGE (lays a lava trail) · FIRE WHIRLWIND · LOW-HP ENRAGE
+          const enr = (e.hp>0 && e.maxHp>0 && e.hp/e.maxHp < 0.35);
+          const MS = 0.396 * (enr?1.25:1);
+          if(e._charge){ e._cst=(e._cst||0)+1;
+            if(e._charge==='wind'){ if(e._cst>=2){ e._charge='go'; e._cst=0; e._cdir=ang; e._chit=0; } }
+            else { mv(Math.sin(e._cdir),Math.cos(e._cdir),MS*2.8);
+              if(e._cst%1===0) pool(e.x, e.z, 3, 0.35);                       // burning trail
+              if(dd<2.5 && !e._chit){ hitB(_alDmgS(e,1.4),150); e._chit=1; _pmShock(game,zoneName,e,e.x,e.z,2.4,0,_ALL,players,send); }
+              if(e._cst>=3){ e._charge=0; e._cst=0; } }
+          } else {
+            if(dd>2.6) mv(sin*0.8+pr*strafe*0.5, cos*0.8+pq*strafe*0.5, MS); else mv(pr*strafe,pq*strafe,MS);
+            if(dd<2.8 && e.attackTimer%(enr?5:7)===0){ hitB(_alDmgS(e,1.0),0); }
+            if(dd<4 && e._ab>=18){ e._ab=0; _pmShock(game,zoneName,e,e.x,e.z,4.0,(dd<4.5?_alDmgS(e,1.2):0),_ALF,players,send); if(dd<4.5) players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'burn',statusDur:120}); }); }
+            e._fc=(e._fc||0)+1; if(dd>5 && dd<18 && e._fc>=23){ e._fc=0; e._charge='wind'; e._cst=0; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_ALL,n:6}); }
+          }
+        }
+        else if(e.type==='lava_golem'){
+          // GROUND ERUPTION · LOBBED MAGMA BOMB -> LAVA POOL
+          const MS=0.12;
+          if(dd>3.5) mv(sin,cos,MS);
+          if(dd<4.0 && e.attackTimer%13===0){ hitB(_alDmgS(e,1.0),0); }
+          if(dd<4.5 && e._ab>=20){ e._ab=0; erupt(e.x,e.z,5,4.5,1.3); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:3}); }); }
+          e._bomb=(e._bomb||8)+1; if(dd>4 && dd<22 && e._bomb>=25){ e._bomb=0;
+            const tx=nearestPlayer.x+(Math.random()-0.5)*3, tz=nearestPlayer.z+(Math.random()-0.5)*3;
+            shoot(ang,_ALL,0.5,'bolt',0,1);
+            pool(tx,tz,9,0.4); }
+        }
+        else { // magma_crab — LAVA-SPIT FAN · SHELL SLAM · MOLTEN-BURST NOVA
+          const MS=0.144;
+          if(dd>3.2) mv(sin*0.8+pr*strafe*0.3, cos*0.8+pq*strafe*0.3, MS); else mv(pr*strafe*0.6,pq*strafe*0.6,MS);
+          if(dd<3.6 && e.attackTimer%12===0){ hitB(_alDmgS(e,1.0),0); }
+          if(dd>3 && dd<20 && e.attackTimer%11===0){ shoot(ang,_ALL,0.55,'plasma',0.16,5); }
+          if(dd<7 && e._ab>=25){ e._ab=0; const N=12; for(let i=0;i<N;i++){ const a=(i/N)*Math.PI*2; _sdSpawnProj(game,zoneName,e,a,_ALE,_alDmgS(e,0.5),'plasma','burn',90); } _pmShock(game,zoneName,e,e.x,e.z,2.4,0,_ALL,players,send); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:2}); }); }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -2547,6 +2767,13 @@ const AV_BESPOKE = { skyscout:1, beakdrone:1, wingguard:1, spiraldive:1 };
 //   The client's _cmDmg adds player-maxHP and player-DEF terms the server can't see; we use
 //   the same flat _CM_PWR floor it falls back to, so damage stays faithful and level-correct.
 const CM_BESPOKE = { skeleton_warrior:1, bone_mage:1, grave_crawler:1, death_knight:1, wraith:1 };
+// a539 — THE ASHLANDS fire/volcanic AI (zone-gated to 'ashlands' — berserker/ash_wraith/
+//   lava_golem/magma_crab also appear in other zones, so the gate is mandatory). As with the
+//   cemetery, the client's _alDmg adds player-maxHP and player-DEF terms the server can't see;
+//   we use the same flat _AL_PWR floor it falls back to. Burn DoT rides the spine's status field.
+const AL_BESPOKE = { ash_wraith:1, berserker:1, lava_golem:1, magma_crab:1 };
+const AL_PWR = { ash_wraith:46, berserker:54, lava_golem:58, magma_crab:60 };
+function _alDmgS(e, mult){ return Math.floor((AL_PWR[e.type] || e.atk || 40) * mult); }
 const CM_PWR = { skeleton_warrior:48, bone_mage:46, grave_crawler:44, death_knight:62, wraith:40 };
 function _cmDmgS(e, mult){ return Math.floor((CM_PWR[e.type] || e.atk || 36) * mult); }
 function _avDmg(e, mult){ return Math.floor((e.atk || 100) * mult); }
