@@ -1423,7 +1423,149 @@ const ZONE_SPAWNS = {
     {tx:88,tz:174,type:'sand_scorpion'}, {tx:155,tz:177,type:'sand_scorpion'}, {tx:123,tz:181,type:'sand_scorpion'}, {tx:139,tz:195,type:'sand_scorpion'},
     {tx:21,tz:212,type:'sand_scorpion'}, {tx:214,tz:219,type:'sand_scorpion'}
   ],
-  frostveil: [],   // a473 — client-authoritative (bespoke ice AI client-side); server no longer spawns/owns these mobs.
+  // a542 — MULTIPLAYER MIGRATION: Frostveil Tundra is now server-authoritative.
+  frostveil: [
+    {type:'ice_golem', tx:200, tz:133},
+    {type:'ice_golem', tx:201, tz:133},
+    {type:'ice_golem', tx:199, tz:132},
+    {type:'ice_golem', tx:200, tz:132},
+    {type:'ice_golem', tx:43, tz:153},
+    {type:'ice_golem', tx:42, tz:154},
+    {type:'ice_golem', tx:41, tz:155},
+    {type:'ice_golem', tx:41, tz:153},
+    {type:'ice_golem', tx:201, tz:90},
+    {type:'ice_golem', tx:200, tz:87},
+    {type:'ice_golem', tx:198, tz:89},
+    {type:'ice_golem', tx:200, tz:88},
+    {type:'ice_golem', tx:136, tz:203},
+    {type:'ice_golem', tx:136, tz:202},
+    {type:'ice_golem', tx:140, tz:204},
+    {type:'ice_golem', tx:138, tz:206},
+    {type:'ice_golem', tx:103, tz:36},
+    {type:'ice_golem', tx:107, tz:34},
+    {type:'ice_golem', tx:105, tz:35},
+    {type:'ice_golem', tx:107, tz:35},
+    {type:'ice_golem', tx:88, tz:201},
+    {type:'ice_golem', tx:89, tz:206},
+    {type:'ice_golem', tx:91, tz:200},
+    {type:'ice_golem', tx:89, tz:205},
+    {type:'frost_wraith', tx:146, tz:204},
+    {type:'frost_wraith', tx:147, tz:204},
+    {type:'frost_wraith', tx:149, tz:202},
+    {type:'frost_wraith', tx:147, tz:203},
+    {type:'frost_wraith', tx:81, tz:38},
+    {type:'frost_wraith', tx:81, tz:34},
+    {type:'frost_wraith', tx:81, tz:35},
+    {type:'frost_wraith', tx:80, tz:39},
+    {type:'frost_wraith', tx:214, tz:130},
+    {type:'frost_wraith', tx:214, tz:126},
+    {type:'frost_wraith', tx:215, tz:131},
+    {type:'frost_wraith', tx:64, tz:43},
+    {type:'frost_wraith', tx:68, tz:42},
+    {type:'frost_wraith', tx:66, tz:41},
+    {type:'frost_wraith', tx:72, tz:202},
+    {type:'frost_wraith', tx:69, tz:203},
+    {type:'frost_wraith', tx:68, tz:201},
+    {type:'frost_wraith', tx:139, tz:18},
+    {type:'frost_wraith', tx:140, tz:21},
+    {type:'frost_wraith', tx:138, tz:21},
+    {type:'frost_wraith', tx:25, tz:79},
+    {type:'frost_wraith', tx:24, tz:80},
+    {type:'frost_wraith', tx:27, tz:78},
+    {type:'frost_wraith', tx:144, tz:218},
+    {type:'frost_wraith', tx:148, tz:216},
+    {type:'frost_wraith', tx:147, tz:217},
+    {type:'frost_wraith', tx:19, tz:154},
+    {type:'frost_wraith', tx:22, tz:155},
+    {type:'frost_wraith', tx:21, tz:153},
+    {type:'frost_wraith', tx:221, tz:148},
+    {type:'frost_wraith', tx:219, tz:153},
+    {type:'frost_wraith', tx:221, tz:150},
+    {type:'frost_wraith', tx:137, tz:224},
+    {type:'frost_wraith', tx:136, tz:227},
+    {type:'frost_wraith', tx:134, tz:223},
+    {type:'frost_wraith', tx:82, tz:218},
+    {type:'frost_wraith', tx:85, tz:220},
+    {type:'frost_wraith', tx:82, tz:219},
+    {type:'frost_wraith', tx:172, tz:213},
+    {type:'frost_wraith', tx:171, tz:213},
+    {type:'frost_wraith', tx:175, tz:214},
+    {type:'frost_wraith', tx:224, tz:95},
+    {type:'polar_bear', tx:226, tz:95},
+    {type:'polar_bear', tx:225, tz:94},
+    {type:'polar_bear', tx:40, tz:194},
+    {type:'polar_bear', tx:38, tz:193},
+    {type:'polar_bear', tx:40, tz:192},
+    {type:'polar_bear', tx:83, tz:17},
+    {type:'polar_bear', tx:83, tz:14},
+    {type:'polar_bear', tx:82, tz:18},
+    {type:'polar_bear', tx:159, tz:15},
+    {type:'polar_bear', tx:158, tz:15},
+    {type:'polar_bear', tx:161, tz:15},
+    {type:'polar_bear', tx:199, tz:38},
+    {type:'polar_bear', tx:197, tz:36},
+    {type:'polar_bear', tx:198, tz:40},
+    {type:'polar_bear', tx:44, tz:38},
+    {type:'polar_bear', tx:45, tz:39},
+    {type:'polar_bear', tx:49, tz:38},
+    {type:'polar_bear', tx:58, tz:20},
+    {type:'polar_bear', tx:61, tz:23},
+    {type:'polar_bear', tx:59, tz:24},
+    {type:'polar_bear', tx:20, tz:62},
+    {type:'polar_bear', tx:18, tz:63},
+    {type:'polar_bear', tx:21, tz:66},
+    {type:'polar_bear', tx:189, tz:26},
+    {type:'polar_bear', tx:190, tz:29},
+    {type:'polar_bear', tx:189, tz:27},
+    {type:'polar_bear', tx:215, tz:191},
+    {type:'polar_bear', tx:214, tz:191},
+    {type:'polar_bear', tx:215, tz:192},
+    {type:'polar_bear', tx:222, tz:181},
+    {type:'polar_bear', tx:220, tz:181},
+    {type:'polar_bear', tx:222, tz:178},
+    {type:'frost_specter', tx:60, tz:223},
+    {type:'frost_specter', tx:61, tz:223},
+    {type:'frost_specter', tx:61, tz:222},
+    {type:'frost_specter', tx:226, tz:64},
+    {type:'frost_specter', tx:226, tz:66},
+    {type:'frost_specter', tx:224, tz:65},
+    {type:'frost_specter', tx:179, tz:15},
+    {type:'frost_specter', tx:176, tz:17},
+    {type:'frost_specter', tx:176, tz:16},
+    {type:'frost_specter', tx:49, tz:214},
+    {type:'frost_specter', tx:48, tz:218},
+    {type:'frost_specter', tx:50, tz:215},
+    {type:'frost_specter', tx:13, tz:174},
+    {type:'frost_specter', tx:16, tz:176},
+    {type:'frost_specter', tx:12, tz:177},
+    {type:'frost_specter', tx:49, tz:25},
+    {type:'frost_specter', tx:50, tz:24},
+    {type:'frost_specter', tx:45, tz:22},
+    {type:'frost_specter', tx:18, tz:194},
+    {type:'frost_specter', tx:19, tz:193},
+    {type:'frost_specter', tx:18, tz:192},
+    {type:'frost_specter', tx:222, tz:39},
+    {type:'frost_specter', tx:219, tz:39},
+    {type:'frost_specter', tx:219, tz:40},
+    {type:'frost_specter', tx:195, tz:227},
+    {type:'frost_specter', tx:193, tz:231},
+    {type:'frost_specter', tx:193, tz:229},
+    {type:'frost_specter', tx:15, tz:38},
+    {type:'frost_specter', tx:18, tz:36},
+    {type:'frost_specter', tx:17, tz:37},
+    {type:'frost_specter', tx:27, tz:217},
+    {type:'frost_specter', tx:28, tz:217},
+    {type:'frost_specter', tx:26, tz:217},
+    {type:'frost_specter', tx:215, tz:215},
+    {type:'frost_specter', tx:219, tz:213},
+    {type:'frost_specter', tx:221, tz:213},
+    {type:'frost_specter', tx:219, tz:18},
+    {type:'frost_specter', tx:221, tz:21},
+    {type:'frost_specter', tx:217, tz:24},
+    {type:'frost_specter', tx:15, tz:17},
+    {type:'frost_specter', tx:15, tz:19},
+    {type:'frost_specter', tx:15, tz:16}
+  ],
   ancient: [],   // a475 — client-authoritative (bespoke arcane AI client-side); server no longer spawns/owns these mobs.
   dragonlair: [],   // a506 — client-authoritative now (bespoke volcanic AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   riftvale: [],   // a477 — client-authoritative (bespoke void/rift AI client-side); server no longer spawns/owns these mobs.
@@ -1797,7 +1939,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -2205,7 +2347,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -3180,6 +3322,101 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a542: FROSTVEIL TUNDRA ice AI (zone-gated to 'frostveil'). Glacial slams, frost-nova
+      //   hard freezes, ice armor, frost-trail charges, the winter-nightmare blizzard whiteout,
+      //   ice-lance volleys, shard novas, freeze beams, phase blinks. Re-timed 60->10Hz.
+      if (zoneName === 'frostveil' && e.aggroed && FZ_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _FZI=0xbfe8ff, _FZC=0x66ccff, _FZW=0xffffff, _FZP=0xa8d8f0, _FZD=0x2a6ad0, _FZF=0xd0f0ff;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+        const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+        const shootIce=(baseAng,mult,count,spread)=>{ const col=(Math.random()<0.5)?_FZC:_FZI; for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_fzDmgS(e,mult),'plasma',null,0); } };
+        // ICE SPIKES — telegraphed eruption that also chills (slow)
+        const iceSpikes=(tx,tz,mult)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:5, dmg:_fzDmgS(e,mult), eid:e.id, col:_FZI, radius:3.4, slow:0.5, slowDur:900 });
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:_FZC}); };
+        // FROST NOVA — radial burst that HARD FREEZES (root, slow 0.0)
+        const frostNova=(mult)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          game._sdGeyser.push({ zone:zoneName, x:e.x, z:e.z, fuse:5, dmg:_fzDmgS(e,mult), eid:e.id, col:_FZC, radius:5.5, slow:0.0, slowDur:620, shake:2, freeze:1 });
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_FZD}); };
+        // SNOWSTORM — winter-nightmare whiteout + heavy slow + chip damage while in range
+        const snowstorm=(ticks,chipMult)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'fz_blizzard',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:ticks*300,r:18});
+          for(let k=0;k<ticks;k++) game._sdGeyser.push({ zone:zoneName, x:e.x, z:e.z, fuse:2+k*3, dmg:(k%2===0?_fzDmgS(e,chipMult):0), eid:e.id, col:_FZW, radius:16.0, soft:1, slow:0.45, slowDur:420 }); };
+        const fzBlink=(distB)=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_FZC});
+          e.x-=Math.sin(ang)*distB; e.z-=Math.cos(ang)*distB; _moved=true;
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_FZI}); };
+
+        if(e.type==='ice_golem'){
+          // GLACIAL TANK — ground ice-spike slam, FROST NOVA root, ICE ARMOR
+          const MS=0.096;
+          if(dd>3.6) mv(sin,cos,MS);
+          if(dd<4.2 && e.attackTimer%13===0){ hit(_fzDmgS(e,1.0)); toPlayer({ eff:'shake', shake:2 }); }
+          if(dd>3 && dd<16 && e._ab>=27){ e._ab=0; iceSpikes(nearestPlayer.x,nearestPlayer.z,1.2); }
+          e._nova=(e._nova||10)+1; if(dd<7 && e._nova>=35){ e._nova=0; frostNova(1.1); }
+          // ICE ARMOR — periodic self-shield (server owns the dmgReduction)
+          e._arm=(e._arm||0)+1;
+          if(e._arm>=50){ e._arm=0;
+            if(e._fzArmBase===undefined) e._fzArmBase=e.dmgReduction||0;
+            e.dmgReduction=Math.min(0.6,(e.dmgReduction||0)+0.15); e._armT=40;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_FZI}); }
+          if(e._armT>0){ e._armT--; if(e._armT===0 && e._fzArmBase!==undefined) e.dmgReduction=e._fzArmBase; }
+        }
+        else if(e.type==='polar_bear'){
+          // BEAST — frost-trail CHARGE, maul, BLIZZARD ROAR
+          const MS=0.228;
+          if(e._charge){ e._cst=(e._cst||0)+1;
+            mv(Math.sin(e._cdir),Math.cos(e._cdir),MS*2.6);
+            if(dd<2.6 && !e._chit){ hit(_fzDmgS(e,1.3)); e._chit=1; toPlayer({ eff:'slow', slow:0.5, root:900 }); }
+            if(e._cst>=3){ e._charge=0; e._cst=0; }
+          } else {
+            if(dd>2.8) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS); else mv(pr*strafe,pq*strafe,MS);
+            if(dd<3.0 && e.attackTimer%8===0){ hit(_fzDmgS(e,1.0)); }
+            if(dd>5 && dd<15 && e._ab>=23){ e._ab=0; e._charge=1; e._cst=0; e._cdir=ang; e._chit=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_FZI,n:6}); }
+            e._roar=(e._roar||0)+1; if(dd<16 && e._roar>=53){ e._roar=0; snowstorm(10,0.35); }
+          }
+        }
+        else if(e.type==='frost_wraith'){
+          // RANGED — ICE-LANCE volleys, SHARD NOVA, frost blink
+          const MS=0.312;
+          if(dd<6) mv(-sin*0.7+pr*strafe*0.6,-cos*0.7+pq*strafe*0.6,MS);
+          else if(dd>16) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+          if(dd>2.5 && dd<20 && e.attackTimer%8===0){ shootIce(ang,0.55,3,0.16); }
+          if(dd<12 && e._ab>=28){ e._ab=0; for(let i=0;i<8;i++){ _sdSpawnProj(game,zoneName,e,i*0.785,_FZI,_fzDmgS(e,0.7),'plasma',null,0); }
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_poof',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_FZC,n:8}); }
+          if(dd<4 && (e._blk=(e._blk||0)+1)>=25){ e._blk=0; fzBlink(7); }
+        }
+        else { // frost_specter — NIGHTMARE CASTER
+          const MS=0.30;
+          if(dd<7) mv(-sin*0.6+pr*strafe*0.7,-cos*0.6+pq*strafe*0.7,MS);
+          else if(dd>17) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe*0.6,pq*strafe*0.6,MS);
+          if(dd>2.5 && dd<18 && e.attackTimer%10===0){ shootIce(ang,0.5,1,0); }
+          // SPECTRAL BLIZZARD — the winter nightmare
+          if(dd<17 && e._ab>=40){ e._ab=0; snowstorm(11,0.4); }
+          // FREEZE BEAM — telegraphed HARD ROOT
+          e._beam=(e._beam||15)+1;
+          if(dd<14 && e._beam>=43){ e._beam=0;
+            const tx=nearestPlayer.x, tz=nearestPlayer.z;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+tx.toFixed(2),tz:+tz.toFixed(2),col:_FZC,w:0.5});
+            if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:6, dmg:_fzDmgS(e,1.2), eid:e.id, col:_FZD, radius:3.0, slow:0.0, slowDur:680, freeze:1 });
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:_FZD}); }
+          if(dd<4 && (e._ph=(e._ph||0)+1)>=28){ e._ph=0; fzBlink(8); }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -3242,6 +3479,7 @@ function tickGame(game) {
             if (gy.pull) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'pull', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), pull:gy.pull });
             if (gy.status) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'status', status:gy.status, statusDur:(gy.statusDur||120) });
             if (gy.shake) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'shake', shake:gy.shake });   // a540 — blasting charge
+            if (gy.freeze) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'freeze', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), col:(gy.col||0xbfe8ff) });   // a542 — hard freeze VFX cue
           }
         });
       } else keepG.push(gy);
@@ -3286,6 +3524,13 @@ const CD_BESPOKE = { xu_miner:1, xu_overseer:1, blast_sapper:1, crystal_lurker:1
 //   base — the client's _ctDmg uses the same flat floor plus player-maxHP/DEF terms the
 //   server can't see, so we mirror the floor and apply the 1.5 multiplier explicitly).
 const CT_BESPOKE = { iron_guard:1, citadel_mage:1, xu_sniper_elite:1, xu_shieldbot:1, xu_commander_elite:1 };
+// a542 — FROSTVEIL TUNDRA ice AI (zone-gated to 'frostveil' — all four types also appear in
+//   the mirrored zone, so the gate is mandatory). The client kit bumps HP x6.0 (a474 doubled
+//   it from 3.0) AND ATK x2.2 zone-locally: HP rides ZONE_HP_MULT, the ATK bump is folded in
+//   below. Same flat-PWR mirror as the other zones (client _fzDmg adds maxHP/DEF terms).
+const FZ_BESPOKE = { ice_golem:1, polar_bear:1, frost_wraith:1, frost_specter:1 };
+const FZ_PWR = { ice_golem:140, polar_bear:120, frost_wraith:100, frost_specter:95 };
+function _fzDmgS(e, mult){ return Math.floor((FZ_PWR[e.type] || e.atk || 90) * 2.2 * mult); }
 const CT_PWR = { iron_guard:80, citadel_mage:78, xu_sniper_elite:85, xu_shieldbot:72, xu_commander_elite:95 };
 function _ctDmgS(e, mult){ return Math.floor((CT_PWR[e.type] || e.atk || 60) * 1.5 * mult); }
 const CD_PWR = { xu_miner:78, xu_overseer:92, blast_sapper:88, crystal_lurker:105 };
