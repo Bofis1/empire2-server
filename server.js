@@ -961,7 +961,165 @@ const ZONE_SPAWNS = {
     {type:'void_phantom', tx:187, tz:222},
     {type:'void_stalker', tx:185, tz:222}
   ],
-  citadel: [],   // a470 — client-authoritative (bespoke futuristic AI client-side); server no longer spawns/owns these mobs.
+  // a541 — MULTIPLAYER MIGRATION: Xu Citadel is now server-authoritative.
+  citadel: [
+    {type:'xu_commander_elite', tx:97, tz:98},
+    {type:'xu_commander_elite', tx:98, tz:99},
+    {type:'xu_commander_elite', tx:110, tz:87},
+    {type:'xu_commander_elite', tx:108, tz:87},
+    {type:'xu_commander_elite', tx:150, tz:142},
+    {type:'xu_commander_elite', tx:151, tz:139},
+    {type:'xu_commander_elite', tx:83, tz:112},
+    {type:'xu_commander_elite', tx:83, tz:110},
+    {type:'xu_commander_elite', tx:160, tz:119},
+    {type:'xu_commander_elite', tx:162, tz:117},
+    {type:'xu_commander_elite', tx:82, tz:110},
+    {type:'xu_commander_elite', tx:83, tz:109},
+    {type:'xu_shieldbot', tx:130, tz:80},
+    {type:'xu_shieldbot', tx:130, tz:78},
+    {type:'xu_shieldbot', tx:76, tz:133},
+    {type:'xu_shieldbot', tx:75, tz:133},
+    {type:'xu_shieldbot', tx:120, tz:164},
+    {type:'xu_shieldbot', tx:120, tz:166},
+    {type:'xu_shieldbot', tx:147, tz:157},
+    {type:'xu_shieldbot', tx:144, tz:156},
+    {type:'xu_shieldbot', tx:147, tz:84},
+    {type:'xu_shieldbot', tx:149, tz:86},
+    {type:'xu_shieldbot', tx:102, tz:165},
+    {type:'xu_shieldbot', tx:101, tz:165},
+    {type:'xu_shieldbot', tx:161, tz:95},
+    {type:'xu_shieldbot', tx:162, tz:95},
+    {type:'xu_shieldbot', tx:153, tz:160},
+    {type:'xu_shieldbot', tx:156, tz:161},
+    {type:'xu_shieldbot', tx:67, tz:111},
+    {type:'xu_shieldbot', tx:66, tz:113},
+    {type:'xu_shieldbot', tx:102, tz:171},
+    {type:'xu_shieldbot', tx:102, tz:173},
+    {type:'xu_shieldbot', tx:161, tz:80},
+    {type:'xu_shieldbot', tx:161, tz:81},
+    {type:'xu_shieldbot', tx:177, tz:104},
+    {type:'xu_shieldbot', tx:175, tz:103},
+    {type:'xu_sniper_elite', tx:179, tz:128},
+    {type:'xu_sniper_elite', tx:179, tz:127},
+    {type:'xu_sniper_elite', tx:98, tz:65},
+    {type:'xu_sniper_elite', tx:100, tz:65},
+    {type:'xu_sniper_elite', tx:119, tz:58},
+    {type:'xu_sniper_elite', tx:121, tz:57},
+    {type:'xu_sniper_elite', tx:77, tz:163},
+    {type:'xu_sniper_elite', tx:74, tz:161},
+    {type:'xu_sniper_elite', tx:168, tz:83},
+    {type:'xu_sniper_elite', tx:169, tz:82},
+    {type:'xu_sniper_elite', tx:177, tz:146},
+    {type:'xu_sniper_elite', tx:178, tz:143},
+    {type:'xu_sniper_elite', tx:127, tz:181},
+    {type:'xu_sniper_elite', tx:125, tz:181},
+    {type:'xu_sniper_elite', tx:132, tz:57},
+    {type:'xu_sniper_elite', tx:133, tz:54},
+    {type:'xu_sniper_elite', tx:75, tz:71},
+    {type:'xu_sniper_elite', tx:77, tz:73},
+    {type:'xu_sniper_elite', tx:57, tz:130},
+    {type:'xu_sniper_elite', tx:55, tz:132},
+    {type:'xu_sniper_elite', tx:180, tz:152},
+    {type:'xu_sniper_elite', tx:176, tz:153},
+    {type:'xu_sniper_elite', tx:67, tz:79},
+    {type:'xu_sniper_elite', tx:67, tz:82},
+    {type:'xu_sniper_elite', tx:57, tz:98},
+    {type:'xu_sniper_elite', tx:58, tz:99},
+    {type:'citadel_mage', tx:138, tz:186},
+    {type:'citadel_mage', tx:134, tz:184},
+    {type:'citadel_mage', tx:65, tz:161},
+    {type:'citadel_mage', tx:65, tz:164},
+    {type:'citadel_mage', tx:166, tz:65},
+    {type:'citadel_mage', tx:164, tz:64},
+    {type:'citadel_mage', tx:162, tz:177},
+    {type:'citadel_mage', tx:165, tz:176},
+    {type:'citadel_mage', tx:50, tz:144},
+    {type:'citadel_mage', tx:50, tz:142},
+    {type:'citadel_mage', tx:81, tz:182},
+    {type:'citadel_mage', tx:83, tz:183},
+    {type:'citadel_mage', tx:70, tz:173},
+    {type:'citadel_mage', tx:72, tz:173},
+    {type:'citadel_mage', tx:135, tz:193},
+    {type:'citadel_mage', tx:133, tz:191},
+    {type:'citadel_mage', tx:47, tz:111},
+    {type:'citadel_mage', tx:47, tz:113},
+    {type:'citadel_mage', tx:125, tz:196},
+    {type:'citadel_mage', tx:125, tz:194},
+    {type:'citadel_mage', tx:153, tz:192},
+    {type:'citadel_mage', tx:151, tz:189},
+    {type:'citadel_mage', tx:175, tz:175},
+    {type:'citadel_mage', tx:176, tz:175},
+    {type:'citadel_mage', tx:77, tz:57},
+    {type:'citadel_mage', tx:77, tz:56},
+    {type:'citadel_mage', tx:145, tz:47},
+    {type:'citadel_mage', tx:48, tz:92},
+    {type:'citadel_mage', tx:103, tz:42},
+    {type:'citadel_mage', tx:198, tz:121},
+    {type:'citadel_mage', tx:118, tz:42},
+    {type:'citadel_mage', tx:195, tz:146},
+    {type:'citadel_mage', tx:176, tz:62},
+    {type:'citadel_mage', tx:61, tz:66},
+    {type:'iron_guard', tx:43, tz:148},
+    {type:'iron_guard', tx:191, tz:77},
+    {type:'iron_guard', tx:82, tz:192},
+    {type:'iron_guard', tx:105, tz:203},
+    {type:'iron_guard', tx:170, tz:48},
+    {type:'iron_guard', tx:159, tz:43},
+    {type:'iron_guard', tx:196, tz:162},
+    {type:'iron_guard', tx:205, tz:98},
+    {type:'iron_guard', tx:74, tz:43},
+    {type:'iron_guard', tx:212, tz:124},
+    {type:'iron_guard', tx:174, tz:196},
+    {type:'iron_guard', tx:149, tz:209},
+    {type:'iron_guard', tx:35, tz:76},
+    {type:'iron_guard', tx:124, tz:215},
+    {type:'iron_guard', tx:98, tz:27},
+    {type:'iron_guard', tx:199, tz:172},
+    {type:'iron_guard', tx:71, tz:39},
+    {type:'iron_guard', tx:46, tz:62},
+    {type:'iron_guard', tx:28, tz:145},
+    {type:'iron_guard', tx:216, tz:97},
+    {type:'iron_guard', tx:36, tz:171},
+    {type:'iron_guard', tx:150, tz:25},
+    {type:'iron_guard', tx:85, tz:212},
+    {type:'iron_guard', tx:166, tz:212},
+    {type:'iron_guard', tx:62, tz:202},
+    {type:'iron_guard', tx:20, tz:114},
+    {type:'iron_guard', tx:70, tz:30},
+    {type:'iron_guard', tx:190, tz:47},
+    {type:'iron_guard', tx:42, tz:187},
+    {type:'iron_guard', tx:172, tz:206},
+    {type:'iron_guard', tx:138, tz:20},
+    {type:'iron_guard', tx:19, tz:104},
+    {type:'iron_guard', tx:208, tz:174},
+    {type:'iron_guard', tx:29, tz:69},
+    {type:'iron_guard', tx:225, tz:138},
+    {type:'iron_guard', tx:101, tz:223},
+    {type:'iron_guard', tx:204, tz:56},
+    {type:'iron_guard', tx:89, tz:16},
+    {type:'iron_guard', tx:217, tz:73},
+    {type:'iron_guard', tx:226, tz:159},
+    {type:'iron_guard', tx:18, tz:160},
+    {type:'iron_guard', tx:16, tz:81},
+    {type:'iron_guard', tx:67, tz:220},
+    {type:'iron_guard', tx:205, tz:197},
+    {type:'iron_guard', tx:180, tz:25},
+    {type:'iron_guard', tx:193, tz:209},
+    {type:'iron_guard', tx:216, tz:54},
+    {type:'iron_guard', tx:22, tz:183},
+    {type:'iron_guard', tx:32, tz:38},
+    {type:'iron_guard', tx:51, tz:20},
+    {type:'iron_guard', tx:211, tz:203},
+    {type:'iron_guard', tx:198, tz:25},
+    {type:'iron_guard', tx:20, tz:39},
+    {type:'iron_guard', tx:24, tz:204},
+    {type:'iron_guard', tx:39, tz:223},
+    {type:'iron_guard', tx:222, tz:37},
+    {type:'iron_guard', tx:214, tz:27},
+    {type:'iron_guard', tx:32, tz:20},
+    {type:'iron_guard', tx:17, tz:208},
+    {type:'iron_guard', tx:224, tz:215}
+  ],
   // a540 — MULTIPLAYER MIGRATION: Caves of Despair is now server-authoritative.
   caves_of_despair: [
     {type:'xu_miner', tx:8, tz:8},
@@ -1639,7 +1797,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -2047,7 +2205,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -2899,6 +3057,129 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a541: XU CITADEL Dominion-tech AI (zone-gated to 'citadel'). Repulsor knockback,
+      //   singularity pull, phase swap, orbital lock, tesla tether, drone swarm, time dilation,
+      //   overclock rally. Player-displacement effects ride sv_player_fx (push / swap / pull).
+      //   Re-timed 60->10Hz.
+      if (zoneName === 'citadel' && e.aggroed && CT_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _CTC=0x33e6ff, _CTB=0x2a6bff, _CTM=0xff3cf0, _CTP=0x9a4cff, _CTW=0xeaffff, _CTV=0x6a2cff, _CTG=0xffd24a;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        if(e._ovr>0) e._ovr--;                          // OVERCLOCK RALLY speed buff
+        const OVR = (e._ovr>0) ? 1.22 : 1.0;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp*OVR; e.z+=vz*sp*OVR; _moved=true; };
+        const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+        const shoot=(baseAng,col,mult,kind,spread,count)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_ctDmgS(e,mult),kind,null,0); } };
+        const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+        // REPULSOR SLAM — damage + physical knockback AWAY from the mob
+        const ctRepulsor=(force,mult)=>{ _pmShock(game,zoneName,e,e.x,e.z,4.5,0,_CTC,players,send);
+          if(dd<5.0){ hit(_ctDmgS(e,mult||1.0)); toPlayer({ eff:'push', px:+e.x.toFixed(2), pz:+e.z.toFixed(2), push:(force||5.5), shake:3 }); } };
+        // ORBITAL LOCK — tracking reticle, re-locks late, then a top-down strike
+        const ctOrbital=(fuse,radius,mult)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          game._sdGeyser.push({ zone:zoneName, x:nearestPlayer.x, z:nearestPlayer.z, fuse:fuse, dmg:_ctDmgS(e,mult), eid:e.id, col:_CTM, radius:radius, shake:4, relock:Math.max(1,Math.floor(fuse*0.3)), orbital:1 });
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_CTM}); };
+
+        if(e.type==='iron_guard'){
+          // DOMINION HEAVY — plasma cannon + REPULSOR SLAM
+          const MS=0.156;
+          if(dd>3.4) mv(sin,cos,MS);
+          if(dd<3.8 && e.attackTimer%12===0){ hit(_ctDmgS(e,1.0)); }
+          if(dd>3 && dd<22 && e.attackTimer%11===0){ shoot(ang,_CTB,0.5,'bolt',0.1,2); }
+          if(dd<5 && e._ab>=20){ e._ab=0; ctRepulsor(5.5,1.2); }
+        }
+        else if(e.type==='citadel_mage'){
+          // DATA-MAGE — data bolts, SINGULARITY (drags you in, then collapses), PHASE SWAP
+          const MS=0.192;
+          if(dd<7) mv(-sin*0.8+pr*strafe*0.6,-cos*0.8+pq*strafe*0.6,MS);
+          else if(dd>16) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+          if(dd>2.5 && dd<22 && e.attackTimer%9===0){ shoot(ang,_CTM,0.55,'plasma',0.12,3); }
+          if(dd<20 && e._ab>=30){ e._ab=0;
+            // singularity: a well spawns midway, drags for 4 beats, then detonates
+            const sx=e.x+(nearestPlayer.x-e.x)*0.5, sz=e.z+(nearestPlayer.z-e.z)*0.5;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+sx.toFixed(2),ez:+sz.toFixed(2),col:_CTV});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+sx.toFixed(2),ez:+sz.toFixed(2),col:_CTV});
+            for(let k=0;k<4;k++) game._sdGeyser.push({ zone:zoneName, x:sx, z:sz, fuse:2+k*2, dmg:0, eid:e.id, col:_CTP, radius:6.0, soft:1, pull:0.9 });
+            game._sdGeyser.push({ zone:zoneName, x:sx, z:sz, fuse:10, dmg:_ctDmgS(e,1.6), eid:e.id, col:_CTP, radius:4.0, shake:3 }); }
+          e._swap=(e._swap||10)+1;
+          if(dd<6 && e._swap>=40){ e._swap=0;
+            // PHASE SWAP — the mage and the player trade places
+            const ex=e.x, ez=e.z;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+ex.toFixed(2),ez:+ez.toFixed(2),col:_CTP});
+            e.x=nearestPlayer.x; e.z=nearestPlayer.z; _moved=true;
+            toPlayer({ eff:'swap', px:+ex.toFixed(2), pz:+ez.toFixed(2), flash:'rgba(120,80,255,0.18)' });
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CTC}); }
+        }
+        else if(e.type==='xu_sniper_elite'){
+          // RAIL SNIPER — kites, charged railshot, ORBITAL LOCK
+          const MS=0.18;
+          if(dd<10) mv(-sin*0.8+pr*strafe*0.5,-cos*0.8+pq*strafe*0.5,MS);
+          else if(dd>22) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe*0.5,pq*strafe*0.5,MS*0.6);
+          if(e._rail==='aim'){
+            if(e._ab%2===0) broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_CTC,w:0.04});
+            if(e._ab>=6){ e._rail='fire'; e._ab=0; }
+          } else if(e._rail==='fire'){
+            shoot(ang,_CTW,1.4,'bolt',0,1);
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.4,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_CTW,w:0.18});
+            e._rail=0; e._ab=0;
+          } else if(dd>6 && dd<26 && e._ab>=20){ e._rail='aim'; e._ab=0; }
+          e._orb=(e._orb||7)+1; if(dd<26 && e._orb>=33){ e._orb=0; ctOrbital(11,3.0,1.7); }
+        }
+        else if(e.type==='xu_shieldbot'){
+          // DEPLOYER DRONE — DRONE SWARM (6 converging orbs), TESLA TETHER, close repulsor
+          const MS=0.204;
+          if(dd>6) mv(sin*0.7+pr*strafe*0.5, cos*0.7+pq*strafe*0.5, MS);
+          else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+          if(dd<3.6 && e.attackTimer%11===0){ hit(_ctDmgS(e,1.0)); }
+          if(dd<20 && e._ab>=22){ e._ab=0;
+            const N=6; for(let i=0;i<N;i++){ const oa=(i/N)*Math.PI*2; const ox=e.x+Math.cos(oa)*1.6, oz=e.z+Math.sin(oa)*1.6;
+              const ddx=nearestPlayer.x-ox, ddz=nearestPlayer.z-oz, dl=Math.hypot(ddx,ddz)||0.001;
+              _sdSpawnProj(game,zoneName,{id:e.id,x:ox,z:oz,type:e.type,atk:e.atk}, Math.atan2(ddx/dl,ddz/dl), _CTC, _ctDmgS(e,0.4), 'plasma', null, 0); } }
+          e._tesla=(e._tesla||5)+1;
+          if(dd<14 && e._tesla>=25){ e._tesla=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.3,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_CTC,w:0.12});
+            hit(_ctDmgS(e,1.0)); }
+          e._rep=(e._rep||0)+1; if(dd<3.2 && e._rep>=15){ e._rep=0; ctRepulsor(4.0,0.6); }
+        }
+        else { // xu_commander_elite — TIME-DILATION FIELD, ORBITAL BARRAGE, OVERCLOCK RALLY, blink
+          const MS=0.228;
+          if(dd>3.0) mv(sin*0.7+pr*strafe*0.6, cos*0.7+pq*strafe*0.6, MS); else mv(pr*strafe,pq*strafe,MS);
+          if(dd<3.4 && e.attackTimer%10===0){ hit(_ctDmgS(e,1.0)); }
+          if(dd>3 && dd<22 && e.attackTimer%10===0){ shoot(ang,_CTG,0.55,'plasma',0.14,3); }
+          e._rally=(e._rally||0)+1;
+          if(e._rally>=43){ e._rally=0;
+            _pmShock(game,zoneName,e,e.x,e.z,6.0,0,_CTG,players,send);
+            for(let ri=0;ri<zone.enemies.length;ri++){ const o=zone.enemies[ri];
+              if(!o||!o.active||o===e||!CT_BESPOKE[o.type]) continue;
+              const odx=o.x-e.x, odz=o.z-e.z; if(odx*odx+odz*odz>196) continue;
+              o._ovr=100;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.3,ez:+e.z.toFixed(2),tx:+o.x.toFixed(2),tz:+o.z.toFixed(2),col:_CTG,w:0.06}); } }
+          // TIME-DILATION FIELD — a lingering zone that slows you while you stand in it
+          e._tdf=(e._tdf||13)+1;
+          if(dd<16 && e._tdf>=50){ e._tdf=0;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            const fx=e.x, fz=e.z;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+fx.toFixed(2),ez:+fz.toFixed(2),col:_CTG});
+            for(let k=0;k<10;k++) game._sdGeyser.push({ zone:zoneName, x:fx, z:fz, fuse:2+k*3, dmg:0, eid:e.id, col:_CTG, radius:7.0, soft:1, slow:0.4, slowDur:420 }); }
+          e._barr=(e._barr||20)+1;
+          if(dd<24 && e._barr>=47){ e._barr=0; for(let k=0;k<3;k++) ctOrbital(9+k*4, 2.6, 1.2); }
+          if(dd<5 && (e._blk=(e._blk||0)+1)>=33){ e._blk=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CTC});
+            const a=ang+(Math.random()<0.5?1:-1)*1.2, r=7;
+            e.x=nearestPlayer.x-Math.sin(a)*r; e.z=nearestPlayer.z-Math.cos(a)*r; _moved=true;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CTC}); }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -2939,6 +3220,15 @@ function tickGame(game) {
     const keepG = [];
     for (const gy of game._sdGeyser) {
       gy.fuse--;
+      // a541 — ORBITAL LOCK re-target: the reticle tracks the player, then commits for good.
+      if (gy.relock && gy.fuse === gy.relock) {
+        let _rp = null, _rbd = 1e9;
+        players.forEach((p) => { if (!p || p.gameId !== game.id || p.zone !== gy.zone || p.x === undefined) return;
+          const rdx=p.x-gy.x, rdz=p.z-gy.z, r2=rdx*rdx+rdz*rdz; if (r2 < _rbd) { _rbd = r2; _rp = p; } });
+        if (_rp) { gy.x = _rp.x; gy.z = _rp.z;
+          broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_geyser_warn', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0xff3cf0) }); }
+        gy.relock = 0;
+      }
       if (gy.fuse <= 0) {
         const _gr = gy.radius || 2.3;
         if (gy.soft) broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_motes', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0x88ff44), n:5 });
@@ -2947,7 +3237,7 @@ function tickGame(game) {
           if (p.gameId !== game.id || p.zone !== gy.zone || p.x === undefined) return;
           const ddx=p.x-gy.x, ddz=p.z-gy.z;
           if (ddx*ddx + ddz*ddz < _gr*_gr) {
-            send(ws, { type:'sv_enemy_attack', eid:gy.eid, dmg:gy.dmg, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), zone:gy.zone });
+            if (gy.dmg > 0) send(ws, { type:'sv_enemy_attack', eid:gy.eid, dmg:gy.dmg, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), zone:gy.zone });   // a541 — pure-effect ticks (singularity drag, time field) carry dmg 0
             if (gy.slow) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'slow', slow:gy.slow, root:(gy.slowDur||1000) });
             if (gy.pull) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'pull', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), pull:gy.pull });
             if (gy.status) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'status', status:gy.status, statusDur:(gy.statusDur||120) });
@@ -2989,6 +3279,15 @@ const AL_BESPOKE = { ash_wraith:1, berserker:1, lava_golem:1, magma_crab:1 };
 //   UNCHANGED here (the client kit applies no bump). Same flat-PWR damage mirror as the
 //   cemetery/ashlands: the client's _cdDmg adds player-maxHP/DEF terms the server can't see.
 const CD_BESPOKE = { xu_miner:1, xu_overseer:1, blast_sapper:1, crystal_lurker:1 };
+// a541 — XU CITADEL Dominion-tech AI (zone-gated to 'citadel' — iron_guard/citadel_mage/
+//   xu_sniper_elite also appear in dragonlair/mirrored, so the gate is mandatory).
+//   The client kit bumps HP x1.6 AND ATK x1.5 zone-locally; HP goes through ZONE_HP_MULT and
+//   the ATK bump is folded into CT_PWR below (these PWR values are already the x1.5 figures'
+//   base — the client's _ctDmg uses the same flat floor plus player-maxHP/DEF terms the
+//   server can't see, so we mirror the floor and apply the 1.5 multiplier explicitly).
+const CT_BESPOKE = { iron_guard:1, citadel_mage:1, xu_sniper_elite:1, xu_shieldbot:1, xu_commander_elite:1 };
+const CT_PWR = { iron_guard:80, citadel_mage:78, xu_sniper_elite:85, xu_shieldbot:72, xu_commander_elite:95 };
+function _ctDmgS(e, mult){ return Math.floor((CT_PWR[e.type] || e.atk || 60) * 1.5 * mult); }
 const CD_PWR = { xu_miner:78, xu_overseer:92, blast_sapper:88, crystal_lurker:105 };
 function _cdDmgS(e, mult){ return Math.floor((CD_PWR[e.type] || e.atk || 85) * mult); }
 const AL_PWR = { ash_wraith:46, berserker:54, lava_golem:58, magma_crab:60 };
