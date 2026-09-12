@@ -606,7 +606,225 @@ const ZONE_SPAWNS = {
     {type:'bandit', tx:156, tz:20},
     {type:'bandit', tx:154, tz:103}
   ],
-  cemetery: [],   // a467 — client-authoritative (bespoke necro AI client-side); server no longer spawns/owns these mobs.
+  // a538 — MULTIPLAYER MIGRATION: Xu Cemetery is now server-authoritative.
+  cemetery: [
+    {type:'death_knight', tx:160, tz:144},
+    {type:'death_knight', tx:157, tz:144},
+    {type:'death_knight', tx:157, tz:145},
+    {type:'death_knight', tx:158, tz:144},
+    {type:'death_knight', tx:158, tz:146},
+    {type:'death_knight', tx:157, tz:147},
+    {type:'death_knight', tx:147, tz:79},
+    {type:'death_knight', tx:143, tz:81},
+    {type:'death_knight', tx:141, tz:80},
+    {type:'death_knight', tx:146, tz:83},
+    {type:'death_knight', tx:146, tz:79},
+    {type:'death_knight', tx:144, tz:81},
+    {type:'death_knight', tx:175, tz:113},
+    {type:'death_knight', tx:175, tz:115},
+    {type:'death_knight', tx:176, tz:112},
+    {type:'death_knight', tx:172, tz:112},
+    {type:'death_knight', tx:174, tz:115},
+    {type:'death_knight', tx:171, tz:111},
+    {type:'death_knight', tx:123, tz:173},
+    {type:'death_knight', tx:121, tz:178},
+    {type:'death_knight', tx:124, tz:179},
+    {type:'death_knight', tx:124, tz:174},
+    {type:'death_knight', tx:123, tz:174},
+    {type:'death_knight', tx:123, tz:180},
+    {type:'death_knight', tx:121, tz:62},
+    {type:'death_knight', tx:118, tz:61},
+    {type:'death_knight', tx:119, tz:64},
+    {type:'bone_mage', tx:120, tz:63},
+    {type:'bone_mage', tx:119, tz:62},
+    {type:'bone_mage', tx:120, tz:62},
+    {type:'bone_mage', tx:144, tz:68},
+    {type:'bone_mage', tx:148, tz:67},
+    {type:'bone_mage', tx:146, tz:68},
+    {type:'bone_mage', tx:148, tz:68},
+    {type:'bone_mage', tx:142, tz:67},
+    {type:'bone_mage', tx:146, tz:66},
+    {type:'bone_mage', tx:177, tz:146},
+    {type:'bone_mage', tx:179, tz:145},
+    {type:'bone_mage', tx:179, tz:143},
+    {type:'bone_mage', tx:180, tz:145},
+    {type:'bone_mage', tx:177, tz:142},
+    {type:'bone_mage', tx:176, tz:144},
+    {type:'bone_mage', tx:176, tz:98},
+    {type:'bone_mage', tx:182, tz:97},
+    {type:'bone_mage', tx:177, tz:96},
+    {type:'bone_mage', tx:178, tz:95},
+    {type:'bone_mage', tx:180, tz:96},
+    {type:'bone_mage', tx:178, tz:96},
+    {type:'bone_mage', tx:55, tz:127},
+    {type:'bone_mage', tx:54, tz:129},
+    {type:'bone_mage', tx:55, tz:131},
+    {type:'bone_mage', tx:58, tz:129},
+    {type:'bone_mage', tx:52, tz:129},
+    {type:'bone_mage', tx:55, tz:132},
+    {type:'bone_mage', tx:87, tz:177},
+    {type:'bone_mage', tx:86, tz:180},
+    {type:'bone_mage', tx:85, tz:174},
+    {type:'bone_mage', tx:87, tz:178},
+    {type:'bone_mage', tx:84, tz:175},
+    {type:'bone_mage', tx:86, tz:178},
+    {type:'bone_mage', tx:59, tz:83},
+    {type:'bone_mage', tx:58, tz:84},
+    {type:'bone_mage', tx:60, tz:81},
+    {type:'bone_mage', tx:64, tz:83},
+    {type:'bone_mage', tx:60, tz:85},
+    {type:'bone_mage', tx:59, tz:80},
+    {type:'bone_mage', tx:96, tz:55},
+    {type:'bone_mage', tx:98, tz:55},
+    {type:'bone_mage', tx:99, tz:52},
+    {type:'bone_mage', tx:97, tz:56},
+    {type:'bone_mage', tx:100, tz:51},
+    {type:'bone_mage', tx:54, tz:142},
+    {type:'wraith', tx:52, tz:142},
+    {type:'wraith', tx:53, tz:143},
+    {type:'wraith', tx:49, tz:140},
+    {type:'wraith', tx:50, tz:141},
+    {type:'wraith', tx:159, tz:185},
+    {type:'wraith', tx:155, tz:191},
+    {type:'wraith', tx:155, tz:187},
+    {type:'wraith', tx:158, tz:190},
+    {type:'wraith', tx:155, tz:188},
+    {type:'wraith', tx:176, tz:179},
+    {type:'wraith', tx:175, tz:184},
+    {type:'wraith', tx:174, tz:180},
+    {type:'wraith', tx:175, tz:181},
+    {type:'wraith', tx:177, tz:182},
+    {type:'wraith', tx:120, tz:31},
+    {type:'wraith', tx:117, tz:35},
+    {type:'wraith', tx:120, tz:33},
+    {type:'wraith', tx:122, tz:34},
+    {type:'wraith', tx:117, tz:33},
+    {type:'wraith', tx:54, tz:67},
+    {type:'wraith', tx:54, tz:65},
+    {type:'wraith', tx:56, tz:66},
+    {type:'wraith', tx:55, tz:69},
+    {type:'wraith', tx:54, tz:66},
+    {type:'wraith', tx:31, tz:101},
+    {type:'wraith', tx:33, tz:99},
+    {type:'wraith', tx:34, tz:97},
+    {type:'wraith', tx:33, tz:97},
+    {type:'wraith', tx:35, tz:99},
+    {type:'wraith', tx:210, tz:123},
+    {type:'wraith', tx:213, tz:120},
+    {type:'wraith', tx:211, tz:119},
+    {type:'wraith', tx:214, tz:119},
+    {type:'wraith', tx:209, tz:121},
+    {type:'wraith', tx:57, tz:186},
+    {type:'wraith', tx:54, tz:190},
+    {type:'wraith', tx:56, tz:189},
+    {type:'wraith', tx:58, tz:190},
+    {type:'wraith', tx:56, tz:190},
+    {type:'wraith', tx:142, tz:209},
+    {type:'wraith', tx:140, tz:215},
+    {type:'wraith', tx:142, tz:210},
+    {type:'grave_crawler', tx:143, tz:213},
+    {type:'grave_crawler', tx:142, tz:213},
+    {type:'grave_crawler', tx:28, tz:117},
+    {type:'grave_crawler', tx:24, tz:116},
+    {type:'grave_crawler', tx:23, tz:119},
+    {type:'grave_crawler', tx:25, tz:118},
+    {type:'grave_crawler', tx:24, tz:118},
+    {type:'grave_crawler', tx:189, tz:51},
+    {type:'grave_crawler', tx:191, tz:53},
+    {type:'grave_crawler', tx:188, tz:52},
+    {type:'grave_crawler', tx:188, tz:54},
+    {type:'grave_crawler', tx:186, tz:54},
+    {type:'grave_crawler', tx:26, tz:143},
+    {type:'grave_crawler', tx:26, tz:141},
+    {type:'grave_crawler', tx:26, tz:142},
+    {type:'grave_crawler', tx:24, tz:140},
+    {type:'grave_crawler', tx:25, tz:144},
+    {type:'grave_crawler', tx:80, tz:29},
+    {type:'grave_crawler', tx:83, tz:29},
+    {type:'grave_crawler', tx:82, tz:31},
+    {type:'grave_crawler', tx:84, tz:30},
+    {type:'grave_crawler', tx:81, tz:31},
+    {type:'grave_crawler', tx:216, tz:149},
+    {type:'grave_crawler', tx:216, tz:148},
+    {type:'grave_crawler', tx:213, tz:149},
+    {type:'grave_crawler', tx:212, tz:149},
+    {type:'grave_crawler', tx:216, tz:151},
+    {type:'grave_crawler', tx:213, tz:84},
+    {type:'grave_crawler', tx:217, tz:84},
+    {type:'grave_crawler', tx:214, tz:80},
+    {type:'grave_crawler', tx:214, tz:81},
+    {type:'grave_crawler', tx:215, tz:80},
+    {type:'grave_crawler', tx:91, tz:218},
+    {type:'grave_crawler', tx:94, tz:219},
+    {type:'grave_crawler', tx:88, tz:222},
+    {type:'grave_crawler', tx:91, tz:219},
+    {type:'grave_crawler', tx:91, tz:223},
+    {type:'grave_crawler', tx:155, tz:23},
+    {type:'grave_crawler', tx:154, tz:23},
+    {type:'grave_crawler', tx:155, tz:18},
+    {type:'grave_crawler', tx:157, tz:20},
+    {type:'grave_crawler', tx:154, tz:18},
+    {type:'skeleton_warrior', tx:66, tz:30},
+    {type:'skeleton_warrior', tx:66, tz:28},
+    {type:'skeleton_warrior', tx:62, tz:28},
+    {type:'skeleton_warrior', tx:66, tz:31},
+    {type:'skeleton_warrior', tx:64, tz:32},
+    {type:'skeleton_warrior', tx:27, tz:170},
+    {type:'skeleton_warrior', tx:28, tz:169},
+    {type:'skeleton_warrior', tx:25, tz:173},
+    {type:'skeleton_warrior', tx:27, tz:174},
+    {type:'skeleton_warrior', tx:26, tz:171},
+    {type:'skeleton_warrior', tx:33, tz:63},
+    {type:'skeleton_warrior', tx:28, tz:64},
+    {type:'skeleton_warrior', tx:32, tz:62},
+    {type:'skeleton_warrior', tx:33, tz:61},
+    {type:'skeleton_warrior', tx:29, tz:61},
+    {type:'skeleton_warrior', tx:184, tz:207},
+    {type:'skeleton_warrior', tx:183, tz:206},
+    {type:'skeleton_warrior', tx:184, tz:208},
+    {type:'skeleton_warrior', tx:185, tz:207},
+    {type:'skeleton_warrior', tx:184, tz:204},
+    {type:'skeleton_warrior', tx:55, tz:204},
+    {type:'skeleton_warrior', tx:55, tz:205},
+    {type:'skeleton_warrior', tx:54, tz:207},
+    {type:'skeleton_warrior', tx:58, tz:207},
+    {type:'skeleton_warrior', tx:55, tz:210},
+    {type:'skeleton_warrior', tx:185, tz:30},
+    {type:'skeleton_warrior', tx:182, tz:33},
+    {type:'skeleton_warrior', tx:182, tz:32},
+    {type:'skeleton_warrior', tx:183, tz:34},
+    {type:'skeleton_warrior', tx:183, tz:31},
+    {type:'skeleton_warrior', tx:210, tz:56},
+    {type:'skeleton_warrior', tx:209, tz:60},
+    {type:'skeleton_warrior', tx:207, tz:58},
+    {type:'skeleton_warrior', tx:212, tz:60},
+    {type:'skeleton_warrior', tx:207, tz:56},
+    {type:'skeleton_warrior', tx:210, tz:185},
+    {type:'skeleton_warrior', tx:209, tz:182},
+    {type:'skeleton_warrior', tx:211, tz:187},
+    {type:'skeleton_warrior', tx:211, tz:182},
+    {type:'skeleton_warrior', tx:208, tz:184},
+    {type:'skeleton_warrior', tx:211, tz:26},
+    {type:'skeleton_warrior', tx:205, tz:27},
+    {type:'skeleton_warrior', tx:210, tz:29},
+    {type:'skeleton_warrior', tx:206, tz:27},
+    {type:'skeleton_warrior', tx:209, tz:26},
+    {type:'skeleton_warrior', tx:219, tz:203},
+    {type:'skeleton_warrior', tx:220, tz:204},
+    {type:'skeleton_warrior', tx:220, tz:206},
+    {type:'skeleton_warrior', tx:221, tz:205},
+    {type:'skeleton_warrior', tx:218, tz:202},
+    {type:'skeleton_warrior', tx:22, tz:29},
+    {type:'skeleton_warrior', tx:27, tz:26},
+    {type:'skeleton_warrior', tx:25, tz:27},
+    {type:'skeleton_warrior', tx:26, tz:26},
+    {type:'skeleton_warrior', tx:26, tz:30},
+    {type:'skeleton_warrior', tx:20, tz:221},
+    {type:'skeleton_warrior', tx:18, tz:219},
+    {type:'skeleton_warrior', tx:19, tz:219},
+    {type:'skeleton_warrior', tx:22, tz:220},
+    {type:'skeleton_warrior', tx:21, tz:221}
+  ],
   // a531 — MULTIPLAYER MIGRATION: Void Wastes is now server-authoritative.
   void: [
     {type:'void_stalker', tx:14, tz:25},
@@ -1159,7 +1377,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2 };
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -1567,7 +1785,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -2163,6 +2381,92 @@ function tickGame(game) {
         }
         if(_moved) changed.push(e);
       }
+
+      // ── a538: XU CEMETERY necro AI (zone-gated to 'cemetery'). Full undead kit ported to
+      //   the shared projectile / beam / telegraph / cloud / shock / rift spine. Re-timed 60->10Hz.
+      if (zoneName === 'cemetery' && e.aggroed && CM_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _CMB=0xe8e0c8, _CMN=0x55dd55, _CMT=0x9aff5a, _CMS=0x88ffe0, _CMD=0x7a3a9a;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+        const shoot=(baseAng,col,mult,kind,spread,count,status,sdur)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_cmDmgS(e,mult),kind,(status||null),(sdur||0)); } };
+        const tele=(tx,tz,fuse,radius,mult,col,slow,slowDur)=>{ if(!game._sdGeyser) game._sdGeyser=[]; game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:fuse, dmg:_cmDmgS(e,mult), eid:e.id, col:col, radius:radius, slow:(slow||0), slowDur:(slowDur||1000) }); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+        // CURSED GROUND — lingering necro DoT + slow (soft cloud, like the wilds spore clouds)
+        const cmCloud=(tx,tz,ticks,mult,col)=>{ if(!game._sdGeyser) game._sdGeyser=[]; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); for(let i=0;i<ticks;i++){ game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:3+i*3, dmg:_cmDmgS(e,mult), eid:e.id, col:col, radius:3.4, soft:1, slow:0.6, slowDur:400 }); } };
+        // GRAVE GRASP — skeletal hands erupt under the player: telegraphed root + damage
+        const cmGrab=()=>{ if(!game._sdGeyser) game._sdGeyser=[]; game._sdGeyser.push({ zone:zoneName, x:nearestPlayer.x, z:nearestPlayer.z, fuse:5, dmg:_cmDmgS(e,1.0), eid:e.id, col:_CMN, radius:2.2, slow:0.0, slowDur:700 }); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_CMN}); };
+        // BLINK — soul-burst teleport to a flank
+        const cmBlink=()=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CMS}); const a=ang+(Math.random()<0.5?1:-1)*1.3, r=4+Math.random()*3; e.x=nearestPlayer.x-Math.sin(a)*r; e.z=nearestPlayer.z-Math.cos(a)*r; _moved=true; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CMS}); };
+
+        if(e.type==='skeleton_warrior'){
+          // BONE-SLASH · BONE TOSS · RATTLING CHARGE
+          const MS=0.24;
+          if(e._charge){ e._cst=(e._cst||0)+1;
+            if(e._charge==='wind'){ if(e._cst>=3){ e._charge='go'; e._cst=0; e._cdir=ang; e._chit=0; } }
+            else { mv(Math.sin(e._cdir),Math.cos(e._cdir),MS*2.6);
+              if(dd<2.4 && !e._chit){ hit(_cmDmgS(e,1.3)); e._chit=1; _pmShock(game,zoneName,e,e.x,e.z,2.2,0,_CMB,players,send); }
+              if(e._cst>=3){ e._charge=0; e._cst=0; } }
+          } else {
+            if(dd>2.6) mv(sin*0.7+pr*strafe*0.5, cos*0.7+pq*strafe*0.5, MS); else mv(pr*strafe,pq*strafe,MS);
+            if(dd<2.8 && e.attackTimer%8===0){ hit(_cmDmgS(e,1.0)); }
+            if(dd>3 && dd<16 && e.attackTimer%12===0){ shoot(ang,_CMB,0.55,'bolt',0.08,2); }
+            e._rc=(e._rc||0)+1; if(dd>5 && dd<14 && e._rc>=27){ e._rc=0; e._charge='wind'; e._cst=0; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CMB,n:6}); }
+          }
+        }
+        else if(e.type==='bone_mage'){
+          // NECROTIC BOLTS · BONE SPIKE FIELD (3 staggered) · SOUL DRAIN (beam + slow)
+          const MS=0.18;
+          if(dd<7) mv(-sin*0.8+pr*strafe*0.6,-cos*0.8+pq*strafe*0.6,MS);
+          else if(dd>15) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+          if(dd>2.5 && dd<20 && e.attackTimer%9===0){ shoot(ang,_CMN,0.6,'plasma',0.12,2); }
+          if(dd<24 && e._ab>=25){ e._ab=0;
+            for(let k=0;k<3;k++){ const tx=nearestPlayer.x+(Math.random()-0.5)*7, tz=nearestPlayer.z+(Math.random()-0.5)*7; tele(tx,tz,5+k*2,2.6,1.0,_CMB,0,0); } }
+          e._drain=(e._drain||10)+1; if(dd<12 && e._drain>=35){ e._drain=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.3,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_CMS,w:0.14});
+            players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_cmDmgS(e,1.1),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); send(ws,{type:'sv_player_fx',zone:zoneName,eff:'slow',slow:0.6,root:1100}); } }); }
+        }
+        else if(e.type==='grave_crawler'){
+          // FAST ERRATIC · ICHOR SPIT (poison) · GRAVE GRASP (root)
+          const MS=0.40;
+          if(dd>2.6) mv(sin*0.7+pr*strafe*0.8+(Math.random()-0.5)*0.2, cos*0.7+pq*strafe*0.8+(Math.random()-0.5)*0.2, MS);
+          else mv(pr*strafe,pq*strafe,MS);
+          if(dd<2.8 && e.attackTimer%7===0){ hit(_cmDmgS(e,1.0)); }
+          if(dd>3 && dd<14 && e.attackTimer%13===0){ shoot(ang,_CMT,0.55,'plasma',0,1,'poison',150); }
+          e._grasp=(e._grasp||5)+1; if(dd>3 && dd<12 && e._grasp>=23){ e._grasp=0; cmGrab(); }
+        }
+        else if(e.type==='death_knight'){
+          // DEATH-CLEAVE · CURSED GROUND · DARK PULSE · UNHOLY CHARGE
+          const MS=0.204;
+          if(e._charge){ e._cst=(e._cst||0)+1;
+            if(e._charge==='wind'){ if(e._cst>=3){ e._charge='go'; e._cst=0; e._cdir=ang; e._chit=0; } }
+            else { mv(Math.sin(e._cdir),Math.cos(e._cdir),MS*3.0);
+              if(dd<2.6 && !e._chit){ hit(_cmDmgS(e,1.5)); e._chit=1; _pmShock(game,zoneName,e,e.x,e.z,2.4,0,_CMD,players,send); }
+              if(e._cst>=3){ e._charge=0; e._cst=0; } }
+          } else {
+            if(dd>3.0) mv(sin*0.7+pr*strafe*0.4, cos*0.7+pq*strafe*0.4, MS); else mv(pr*strafe,pq*strafe,MS);
+            if(dd<3.6 && e.attackTimer%10===0){ hit(_cmDmgS(e,1.0)); }
+            if(dd<20 && e._ab>=25){ e._ab=0; cmCloud(nearestPlayer.x, nearestPlayer.z, 7, 0.4, _CMN); }
+            e._pulse=(e._pulse||10)+1; if(dd<8 && e._pulse>=33){ e._pulse=0; tele(e.x,e.z,6,5.0,1.3,_CMD,0,0); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:3}); }); }
+            e._uc=(e._uc||0)+1; if(dd>5 && dd<16 && e._uc>=30){ e._uc=0; e._charge='wind'; e._cst=0; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CMD,n:6}); }
+          }
+        }
+        else { // wraith — GRAVE WRAITH: blink + SOUL WAIL (slow)
+          const MS=0.336;
+          if(dd>2.4) mv(sin*0.7+pr*strafe*0.8, cos*0.7+pq*strafe*0.8, MS); else mv(pr*strafe,pq*strafe,MS);
+          if(dd<2.8 && e.attackTimer%7===0){ hit(_cmDmgS(e,1.0)); }
+          if(e._ab>=23){ e._ab=0; cmBlink(); }
+          e._wail=(e._wail||8)+1; if(dd<8 && e._wail>=35){ e._wail=0; _pmShock(game,zoneName,e,e.x,e.z,4.5,_cmDmgS(e,1.1),_CMS,players,send,0.55,1400); }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -2238,6 +2542,13 @@ const BW_PWR = { bloom_sprite:36, glimmer_fairy:38, mushroom_brute:50, pollen_wr
 // a537 — AVIA CANYON cyber-birds (zone-gated to 'aviacanyon'). They scale straight off
 //   e.atk like the client kit (no player-HP term), so the server can mirror the damage 1:1.
 const AV_BESPOKE = { skyscout:1, beakdrone:1, wingguard:1, spiraldive:1 };
+// a538 — XU CEMETERY necro AI (zone-gated to 'cemetery' — wraith/skeleton_warrior/bone_mage/
+//   grave_crawler also live in patrol, void and mirrored, so the gate is mandatory).
+//   The client's _cmDmg adds player-maxHP and player-DEF terms the server can't see; we use
+//   the same flat _CM_PWR floor it falls back to, so damage stays faithful and level-correct.
+const CM_BESPOKE = { skeleton_warrior:1, bone_mage:1, grave_crawler:1, death_knight:1, wraith:1 };
+const CM_PWR = { skeleton_warrior:48, bone_mage:46, grave_crawler:44, death_knight:62, wraith:40 };
+function _cmDmgS(e, mult){ return Math.floor((CM_PWR[e.type] || e.atk || 36) * mult); }
 function _avDmg(e, mult){ return Math.floor((e.atk || 100) * mult); }
 function _bwDmg(e, mult){ return Math.floor((BW_PWR[e.type] || e.atk || 32) * mult); }
 const VW_PWR = { void_stalker:42, void_eye:40, void_phantom:48, void_sentinel:60, void_construct:54, void_spike_horror:56, wraith:38 };
