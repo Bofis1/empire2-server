@@ -1566,7 +1566,209 @@ const ZONE_SPAWNS = {
     {type:'frost_specter', tx:15, tz:19},
     {type:'frost_specter', tx:15, tz:16}
   ],
-  ancient: [],   // a475 — client-authoritative (bespoke arcane AI client-side); server no longer spawns/owns these mobs.
+  // a543 — MULTIPLAYER MIGRATION: Ancient Realm is now server-authoritative.
+  ancient: [
+    {type:'ancient_guardian', tx:33, tz:67},
+    {type:'ancient_guardian', tx:31, tz:81},
+    {type:'stone_sentinel', tx:42, tz:64},
+    {type:'stone_sentinel', tx:45, tz:63},
+    {type:'vine_horror', tx:40, tz:77},
+    {type:'vine_horror', tx:36, tz:65},
+    {type:'ancient_guardian', tx:31, tz:71},
+    {type:'ancient_guardian', tx:32, tz:64},
+    {type:'void_stalker', tx:35, tz:79},
+    {type:'void_stalker', tx:41, tz:75},
+    {type:'ancient_guardian', tx:69, tz:36},
+    {type:'ancient_guardian', tx:81, tz:32},
+    {type:'stone_sentinel', tx:80, tz:47},
+    {type:'stone_sentinel', tx:69, tz:46},
+    {type:'vine_horror', tx:71, tz:38},
+    {type:'vine_horror', tx:79, tz:48},
+    {type:'ancient_guardian', tx:69, tz:42},
+    {type:'ancient_guardian', tx:81, tz:39},
+    {type:'void_stalker', tx:70, tz:40},
+    {type:'void_stalker', tx:74, tz:42},
+    {type:'ancient_guardian', tx:63, tz:74},
+    {type:'ancient_guardian', tx:81, tz:73},
+    {type:'stone_sentinel', tx:78, tz:63},
+    {type:'stone_sentinel', tx:67, tz:72},
+    {type:'vine_horror', tx:73, tz:66},
+    {type:'vine_horror', tx:77, tz:70},
+    {type:'ancient_guardian', tx:63, tz:71},
+    {type:'ancient_guardian', tx:77, tz:78},
+    {type:'void_stalker', tx:67, tz:71},
+    {type:'void_stalker', tx:79, tz:78},
+    {type:'ancient_guardian', tx:192, tz:64},
+    {type:'ancient_guardian', tx:203, tz:67},
+    {type:'stone_sentinel', tx:191, tz:66},
+    {type:'stone_sentinel', tx:209, tz:75},
+    {type:'vine_horror', tx:204, tz:80},
+    {type:'vine_horror', tx:191, tz:64},
+    {type:'ancient_guardian', tx:206, tz:74},
+    {type:'ancient_guardian', tx:197, tz:71},
+    {type:'void_stalker', tx:193, tz:69},
+    {type:'void_stalker', tx:193, tz:80},
+    {type:'ancient_guardian', tx:165, tz:48},
+    {type:'ancient_guardian', tx:165, tz:34},
+    {type:'stone_sentinel', tx:168, tz:42},
+    {type:'stone_sentinel', tx:167, tz:40},
+    {type:'vine_horror', tx:161, tz:48},
+    {type:'vine_horror', tx:173, tz:45},
+    {type:'ancient_guardian', tx:176, tz:38},
+    {type:'ancient_guardian', tx:169, tz:47},
+    {type:'void_stalker', tx:159, tz:35},
+    {type:'void_stalker', tx:177, tz:45},
+    {type:'ancient_guardian', tx:165, tz:63},
+    {type:'ancient_guardian', tx:162, tz:63},
+    {type:'stone_sentinel', tx:160, tz:78},
+    {type:'stone_sentinel', tx:177, tz:68},
+    {type:'vine_horror', tx:163, tz:76},
+    {type:'vine_horror', tx:159, tz:68},
+    {type:'ancient_guardian', tx:173, tz:75},
+    {type:'ancient_guardian', tx:167, tz:78},
+    {type:'void_stalker', tx:168, tz:72},
+    {type:'void_stalker', tx:177, tz:67},
+    {type:'ancient_guardian', tx:41, tz:162},
+    {type:'ancient_guardian', tx:39, tz:170},
+    {type:'stone_sentinel', tx:45, tz:164},
+    {type:'stone_sentinel', tx:35, tz:173},
+    {type:'vine_horror', tx:47, tz:175},
+    {type:'vine_horror', tx:36, tz:164},
+    {type:'ancient_guardian', tx:31, tz:173},
+    {type:'ancient_guardian', tx:33, tz:160},
+    {type:'void_stalker', tx:42, tz:160},
+    {type:'void_stalker', tx:47, tz:162},
+    {type:'ancient_guardian', tx:74, tz:205},
+    {type:'ancient_guardian', tx:80, tz:200},
+    {type:'stone_sentinel', tx:74, tz:206},
+    {type:'stone_sentinel', tx:70, tz:200},
+    {type:'vine_horror', tx:79, tz:193},
+    {type:'vine_horror', tx:69, tz:191},
+    {type:'ancient_guardian', tx:64, tz:208},
+    {type:'ancient_guardian', tx:71, tz:200},
+    {type:'void_stalker', tx:75, tz:192},
+    {type:'void_stalker', tx:66, tz:206},
+    {type:'ancient_guardian', tx:75, tz:171},
+    {type:'ancient_guardian', tx:70, tz:162},
+    {type:'stone_sentinel', tx:74, tz:163},
+    {type:'stone_sentinel', tx:76, tz:172},
+    {type:'vine_horror', tx:76, tz:176},
+    {type:'vine_horror', tx:68, tz:169},
+    {type:'ancient_guardian', tx:78, tz:166},
+    {type:'ancient_guardian', tx:78, tz:168},
+    {type:'void_stalker', tx:68, tz:166},
+    {type:'void_stalker', tx:81, tz:160},
+    {type:'ancient_guardian', tx:201, tz:175},
+    {type:'ancient_guardian', tx:197, tz:176},
+    {type:'stone_sentinel', tx:206, tz:167},
+    {type:'stone_sentinel', tx:205, tz:161},
+    {type:'vine_horror', tx:203, tz:160},
+    {type:'vine_horror', tx:205, tz:176},
+    {type:'ancient_guardian', tx:191, tz:160},
+    {type:'ancient_guardian', tx:196, tz:177},
+    {type:'void_stalker', tx:194, tz:175},
+    {type:'void_stalker', tx:201, tz:167},
+    {type:'ancient_guardian', tx:166, tz:201},
+    {type:'ancient_guardian', tx:176, tz:198},
+    {type:'stone_sentinel', tx:167, tz:201},
+    {type:'stone_sentinel', tx:168, tz:191},
+    {type:'vine_horror', tx:174, tz:196},
+    {type:'vine_horror', tx:165, tz:202},
+    {type:'ancient_guardian', tx:169, tz:193},
+    {type:'ancient_guardian', tx:168, tz:207},
+    {type:'void_stalker', tx:171, tz:209},
+    {type:'void_stalker', tx:173, tz:206},
+    {type:'ancient_guardian', tx:176, tz:159},
+    {type:'ancient_guardian', tx:163, tz:177},
+    {type:'stone_sentinel', tx:165, tz:164},
+    {type:'stone_sentinel', tx:163, tz:168},
+    {type:'vine_horror', tx:172, tz:163},
+    {type:'vine_horror', tx:164, tz:172},
+    {type:'ancient_guardian', tx:172, tz:161},
+    {type:'ancient_guardian', tx:164, tz:169},
+    {type:'void_stalker', tx:169, tz:160},
+    {type:'void_stalker', tx:171, tz:175},
+    {type:'ancient_guardian', tx:87, tz:97},
+    {type:'ancient_guardian', tx:94, tz:103},
+    {type:'stone_sentinel', tx:102, tz:91},
+    {type:'stone_sentinel', tx:87, tz:89},
+    {type:'vine_horror', tx:101, tz:101},
+    {type:'vine_horror', tx:97, tz:100},
+    {type:'ancient_guardian', tx:94, tz:90},
+    {type:'ancient_guardian', tx:104, tz:92},
+    {type:'void_stalker', tx:95, tz:88},
+    {type:'void_stalker', tx:91, tz:104},
+    {type:'ancient_guardian', tx:140, tz:101},
+    {type:'ancient_guardian', tx:135, tz:98},
+    {type:'stone_sentinel', tx:143, tz:92},
+    {type:'stone_sentinel', tx:137, tz:96},
+    {type:'vine_horror', tx:142, tz:104},
+    {type:'vine_horror', tx:137, tz:89},
+    {type:'ancient_guardian', tx:146, tz:91},
+    {type:'ancient_guardian', tx:144, tz:94},
+    {type:'void_stalker', tx:148, tz:105},
+    {type:'void_stalker', tx:148, tz:92},
+    {type:'ancient_guardian', tx:90, tz:137},
+    {type:'ancient_guardian', tx:98, tz:143},
+    {type:'stone_sentinel', tx:98, tz:145},
+    {type:'stone_sentinel', tx:94, tz:142},
+    {type:'vine_horror', tx:97, tz:140},
+    {type:'vine_horror', tx:100, tz:137},
+    {type:'ancient_guardian', tx:97, tz:145},
+    {type:'ancient_guardian', tx:88, tz:142},
+    {type:'void_stalker', tx:90, tz:153},
+    {type:'void_stalker', tx:92, tz:144},
+    {type:'stone_sentinel', tx:147, tz:150},
+    {type:'stone_sentinel', tx:151, tz:148},
+    {type:'vine_horror', tx:147, tz:138},
+    {type:'vine_horror', tx:142, tz:143},
+    {type:'void_stalker', tx:141, tz:152},
+    {type:'void_stalker', tx:143, tz:141},
+    {type:'stone_sentinel', tx:157, tz:115},
+    {type:'void_stalker', tx:103, tz:223},
+    {type:'vine_horror', tx:114, tz:178},
+    {type:'stone_sentinel', tx:28, tz:163},
+    {type:'void_stalker', tx:40, tz:205},
+    {type:'vine_horror', tx:144, tz:159},
+    {type:'stone_sentinel', tx:176, tz:80},
+    {type:'void_stalker', tx:55, tz:117},
+    {type:'vine_horror', tx:132, tz:155},
+    {type:'void_stalker', tx:132, tz:144},
+    {type:'vine_horror', tx:98, tz:20},
+    {type:'stone_sentinel', tx:155, tz:24},
+    {type:'vine_horror', tx:37, tz:156},
+    {type:'stone_sentinel', tx:161, tz:36},
+    {type:'vine_horror', tx:201, tz:53},
+    {type:'stone_sentinel', tx:113, tz:56},
+    {type:'vine_horror', tx:96, tz:101},
+    {type:'stone_sentinel', tx:35, tz:67},
+    {type:'vine_horror', tx:26, tz:72},
+    {type:'stone_sentinel', tx:84, tz:175},
+    {type:'vine_horror', tx:20, tz:35},
+    {type:'stone_sentinel', tx:80, tz:144},
+    {type:'vine_horror', tx:218, tz:115},
+    {type:'stone_sentinel', tx:87, tz:67},
+    {type:'vine_horror', tx:65, tz:42},
+    {type:'stone_sentinel', tx:178, tz:38},
+    {type:'vine_horror', tx:43, tz:171},
+    {type:'stone_sentinel', tx:208, tz:43},
+    {type:'vine_horror', tx:68, tz:80},
+    {type:'stone_sentinel', tx:36, tz:188},
+    {type:'vine_horror', tx:204, tz:81},
+    {type:'stone_sentinel', tx:24, tz:223},
+    {type:'vine_horror', tx:55, tz:218},
+    {type:'stone_sentinel', tx:215, tz:193},
+    {type:'vine_horror', tx:133, tz:80},
+    {type:'stone_sentinel', tx:101, tz:158},
+    {type:'vine_horror', tx:114, tz:37},
+    {type:'stone_sentinel', tx:207, tz:112},
+    {type:'vine_horror', tx:54, tz:65},
+    {type:'stone_sentinel', tx:22, tz:116},
+    {type:'stone_sentinel', tx:189, tz:222},
+    {type:'stone_sentinel', tx:73, tz:205},
+    {type:'stone_sentinel', tx:208, tz:130},
+    {type:'stone_sentinel', tx:67, tz:103}
+  ],
   dragonlair: [],   // a506 — client-authoritative now (bespoke volcanic AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   riftvale: [],   // a477 — client-authoritative (bespoke void/rift AI client-side); server no longer spawns/owns these mobs.
   wyvernwastes: [],   // a488 — client-authoritative now (bespoke pack AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
@@ -1939,7 +2141,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -2347,7 +2549,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -3417,6 +3619,104 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a543: ANCIENT REALM arcane AI (zone-gated to 'ancient'). Runic slams, sweeping ritual
+      //   beams, arcane wards, orbiting stone shards, seismic stomps, the petrify gaze, entangling
+      //   roots, verdant novas with regrowth, mirages, spectral lunges. Re-timed 60->10Hz.
+      if (zoneName === 'ancient' && e.aggroed && ELD_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _EG=0xffd24a, _EA=0xffa030, _ET=0x40e0d0, _EJ=0x66dd88, _EC=0xc088ff, _ES=0xc9b98a, _EW=0xfff4d0;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        if(e._eldHealCD>0) e._eldHealCD--;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+        const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+        const shoot=(baseAng,col,mult,count,spread)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_eldDmgS(e,mult),'plasma',null,0); } };
+        const tele=(tx,tz,fuse,radius,mult,col,slow,slowDur,shake)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:fuse, dmg:_eldDmgS(e,mult), eid:e.id, col:col, radius:radius, slow:(slow===undefined?0:slow), slowDur:(slowDur||0), shake:(shake||0) });
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+        const eldBlink=(distB)=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_EC});
+          e.x-=Math.sin(ang)*distB; e.z-=Math.cos(ang)*distB; _moved=true;
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_EG}); };
+
+        if(e.type==='ancient_guardian'){
+          // COLOSSUS — RUNIC SLAM, sweeping RITUAL BEAM, ARCANE WARD
+          const MS=0.096;
+          if(dd>3.8) mv(sin,cos,MS);
+          if(dd<4.4 && e.attackTimer%13===0){ hit(_eldDmgS(e,1.0)); toPlayer({ eff:'shake', shake:2 }); }
+          if(dd>3 && dd<16 && e._ab>=27){ e._ab=0; tele(nearestPlayer.x,nearestPlayer.z,6,3.6,1.2,_EG,0.5,900,0); }
+          // RITUAL BEAM — tracks, then fires; still clips you for a reduced hit if you slip it
+          e._beam=(e._beam||13)+1;
+          if(dd<22 && e._beam>=38){ e._beam=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_ET});
+            e._beamFire=6; e._beamMult=1.1; }
+          if(e._beamFire>0){ e._beamFire--;
+            if(e._beamFire===0){
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.5,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_ET,w:0.6});
+              hit(_eldDmgS(e, dd<22 ? 1.1 : 0.66)); } }
+          e._ward=(e._ward||0)+1;
+          if(e._ward>=50){ e._ward=0;
+            if(e._eldWardBase===undefined) e._eldWardBase=e.dmgReduction||0;
+            e.dmgReduction=Math.min(0.6,(e.dmgReduction||0)+0.15); e._wardT=40;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_EG}); }
+          if(e._wardT>0){ e._wardT--; if(e._wardT===0 && e._eldWardBase!==undefined) e.dmgReduction=e._eldWardBase; }
+        }
+        else if(e.type==='stone_sentinel'){
+          // SENTINEL — orbiting STONE SHARDS, SEISMIC STOMP (hard root), PETRIFY GAZE
+          const MS=0.096;
+          if(dd>3.6) mv(sin,cos,MS);
+          if(dd>2.5 && dd<18 && e.attackTimer%9===0){ shoot(ang,_ES,0.55,3,0.15); }
+          if(dd<8 && e._ab>=28){ e._ab=0;
+            _pmShock(game,zoneName,e,e.x,e.z,5.5,0,_EA,players,send);
+            if(dd<5.5){ hit(_eldDmgS(e,1.1)); toPlayer({ eff:'slow', slow:0.0, root:700, shake:3 }); } }
+          // PETRIFY GAZE — the screen turns to stone + hard root
+          e._gaze=(e._gaze||15)+1;
+          if(dd<16 && e._gaze>=47){ e._gaze=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.5,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_ES,w:0.5});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'eld_petrify',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:2400,r:16});
+            if(dd<16){ hit(_eldDmgS(e,0.9)); toPlayer({ eff:'slow', slow:0.0, root:1000 }); } }
+        }
+        else if(e.type==='vine_horror'){
+          // ANCIENT OVERGROWTH — thorn lash, ENTANGLE (hard root), VERDANT NOVA + regrowth
+          const MS=0.156;
+          if(dd>3.0) mv(sin*0.85+pr*strafe*0.4, cos*0.85+pq*strafe*0.4, MS); else mv(pr*strafe,pq*strafe,MS);
+          if(dd>2.5 && dd<16 && e.attackTimer%8===0){ shoot(ang,_EJ,0.55,2,0.12); }
+          if(dd<3.0 && e.attackTimer%8===0){ hit(_eldDmgS(e,1.0)); }
+          if(dd>2 && dd<13 && e._ab>=25){ e._ab=0; tele(nearestPlayer.x,nearestPlayer.z,6,2.6,1.0,_EJ,0.0,800,0); }
+          // VERDANT NOVA + regrowth. The self-heal is capped and on its own cooldown so a
+          //   cluster of these can't out-heal a party (cf. the a535 glimmer fairies).
+          e._verd=(e._verd||0)+1;
+          if(e._verd>=43){ e._verd=0;
+            _pmShock(game,zoneName,e,e.x,e.z,4.0,(dd<4.5?_eldDmgS(e,0.9):0),_EJ,players,send);
+            if(!(e._eldHealCD>0) && e.hp<e.maxHp){ e.hp=Math.min(e.maxHp, e.hp+Math.floor(e.maxHp*0.06)); e._eldHealCD=40; changed.push(e); } }
+        }
+        else { // void_stalker (ANCIENT PHANTOM — a different kit from the Void Wastes stalker)
+          const MS=0.27;
+          if(e._lunge){ e._lst=(e._lst||0)+1;
+            mv(Math.sin(e._ldir),Math.cos(e._ldir),MS*2.4);
+            if(dd<2.3 && !e._lhit){ hit(_eldDmgS(e,1.2)); e._lhit=1; }
+            if(e._lst>=3){ e._lunge=0; e._lst=0; }
+          } else {
+            if(dd<6) mv(-sin*0.6+pr*strafe*0.7,-cos*0.6+pq*strafe*0.7,MS);
+            else if(dd>15) mv(sin*0.7,cos*0.7,MS);
+            else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+            if(dd>2.5 && dd<19 && e.attackTimer%8===0){ shoot(ang,_EC,0.55,1,0); }
+            // MIRAGE — arcane after-images ring
+            if(dd<14 && e._ab>=33){ e._ab=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'eld_mirage',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_EC}); }
+            if(dd>4 && dd<13 && (e._lg=(e._lg||0)+1)>=22){ e._lg=0; e._lunge=1; e._lst=0; e._ldir=ang; e._lhit=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_EC,n:5}); }
+            if(dd<3.5 && (e._blk=(e._blk||0)+1)>=24){ e._blk=0; eldBlink(7); }
+          }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -3529,6 +3829,12 @@ const CT_BESPOKE = { iron_guard:1, citadel_mage:1, xu_sniper_elite:1, xu_shieldb
 //   it from 3.0) AND ATK x2.2 zone-locally: HP rides ZONE_HP_MULT, the ATK bump is folded in
 //   below. Same flat-PWR mirror as the other zones (client _fzDmg adds maxHP/DEF terms).
 const FZ_BESPOKE = { ice_golem:1, polar_bear:1, frost_wraith:1, frost_specter:1 };
+// a543 — ANCIENT REALM arcane AI (zone-gated to 'ancient'). NOTE void_stalker also lives in
+//   the (already migrated) Void Wastes with a completely different kit — the zone gate is what
+//   keeps the two apart, so never drop it. Client bumps HP x7.0 AND ATK x2.2 zone-locally.
+const ELD_BESPOKE = { ancient_guardian:1, stone_sentinel:1, vine_horror:1, void_stalker:1 };
+const ELD_PWR = { ancient_guardian:170, stone_sentinel:160, vine_horror:130, void_stalker:120 };
+function _eldDmgS(e, mult){ return Math.floor((ELD_PWR[e.type] || e.atk || 120) * 2.2 * mult); }
 const FZ_PWR = { ice_golem:140, polar_bear:120, frost_wraith:100, frost_specter:95 };
 function _fzDmgS(e, mult){ return Math.floor((FZ_PWR[e.type] || e.atk || 90) * 2.2 * mult); }
 const CT_PWR = { iron_guard:80, citadel_mage:78, xu_sniper_elite:85, xu_shieldbot:72, xu_commander_elite:95 };
