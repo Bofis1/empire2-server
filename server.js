@@ -1773,7 +1773,201 @@ const ZONE_SPAWNS = {
   riftvale: [],   // a477 — client-authoritative (bespoke void/rift AI client-side); server no longer spawns/owns these mobs.
   wyvernwastes: [],   // a488 — client-authoritative now (bespoke pack AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   xumen: [],   // a489 — client-authoritative now (bespoke capital-guard AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
-  necropolis: [],   // a478 — client-authoritative (bespoke plague/death AI client-side); server no longer spawns/owns these mobs.
+  // a544 — MULTIPLAYER MIGRATION: Necropolis is now server-authoritative.
+  necropolis: [
+    {type:'necro_wight', tx:40, tz:32},
+    {type:'necro_wight', tx:24, tz:33},
+    {type:'necro_abomination', tx:24, tz:31},
+    {type:'necro_abomination', tx:28, tz:41},
+    {type:'necro_lich_mage', tx:25, tz:30},
+    {type:'necro_lich_mage', tx:29, tz:33},
+    {type:'necro_specter', tx:28, tz:23},
+    {type:'necro_specter', tx:24, tz:38},
+    {type:'necro_wight', tx:34, tz:29},
+    {type:'necro_wight', tx:30, tz:34},
+    {type:'necro_wight', tx:56, tz:48},
+    {type:'necro_wight', tx:58, tz:46},
+    {type:'necro_abomination', tx:72, tz:35},
+    {type:'necro_abomination', tx:60, tz:32},
+    {type:'necro_lich_mage', tx:66, tz:47},
+    {type:'necro_lich_mage', tx:64, tz:44},
+    {type:'necro_specter', tx:67, tz:35},
+    {type:'necro_specter', tx:71, tz:40},
+    {type:'necro_wight', tx:63, tz:32},
+    {type:'necro_wight', tx:61, tz:49},
+    {type:'necro_wight', tx:38, tz:73},
+    {type:'necro_wight', tx:38, tz:67},
+    {type:'necro_abomination', tx:46, tz:62},
+    {type:'necro_abomination', tx:45, tz:67},
+    {type:'necro_lich_mage', tx:48, tz:65},
+    {type:'necro_lich_mage', tx:32, tz:75},
+    {type:'necro_specter', tx:45, tz:64},
+    {type:'necro_specter', tx:40, tz:73},
+    {type:'necro_wight', tx:45, tz:63},
+    {type:'necro_wight', tx:37, tz:64},
+    {type:'necro_wight', tx:202, tz:24},
+    {type:'necro_wight', tx:199, tz:25},
+    {type:'necro_abomination', tx:203, tz:40},
+    {type:'necro_abomination', tx:199, tz:38},
+    {type:'necro_lich_mage', tx:213, tz:37},
+    {type:'necro_lich_mage', tx:210, tz:25},
+    {type:'necro_specter', tx:216, tz:24},
+    {type:'necro_specter', tx:209, tz:40},
+    {type:'necro_wight', tx:214, tz:27},
+    {type:'necro_wight', tx:214, tz:39},
+    {type:'necro_wight', tx:177, tz:62},
+    {type:'necro_wight', tx:186, tz:49},
+    {type:'necro_abomination', tx:189, tz:49},
+    {type:'necro_abomination', tx:181, tz:53},
+    {type:'necro_lich_mage', tx:177, tz:56},
+    {type:'necro_lich_mage', tx:181, tz:52},
+    {type:'necro_specter', tx:193, tz:64},
+    {type:'necro_specter', tx:183, tz:58},
+    {type:'necro_wight', tx:189, tz:47},
+    {type:'necro_wight', tx:189, tz:62},
+    {type:'necro_wight', tx:219, tz:78},
+    {type:'necro_wight', tx:209, tz:73},
+    {type:'necro_abomination', tx:202, tz:69},
+    {type:'necro_abomination', tx:211, tz:72},
+    {type:'necro_lich_mage', tx:215, tz:72},
+    {type:'necro_lich_mage', tx:213, tz:80},
+    {type:'necro_specter', tx:213, tz:69},
+    {type:'necro_specter', tx:205, tz:83},
+    {type:'necro_wight', tx:201, tz:83},
+    {type:'necro_wight', tx:201, tz:72},
+    {type:'necro_wight', tx:29, tz:209},
+    {type:'necro_wight', tx:37, tz:208},
+    {type:'necro_abomination', tx:25, tz:211},
+    {type:'necro_abomination', tx:35, tz:203},
+    {type:'necro_lich_mage', tx:40, tz:214},
+    {type:'necro_lich_mage', tx:33, tz:204},
+    {type:'necro_specter', tx:25, tz:207},
+    {type:'necro_specter', tx:24, tz:201},
+    {type:'necro_wight', tx:39, tz:208},
+    {type:'necro_wight', tx:36, tz:204},
+    {type:'necro_wight', tx:55, tz:185},
+    {type:'necro_wight', tx:60, tz:187},
+    {type:'necro_abomination', tx:59, tz:181},
+    {type:'necro_abomination', tx:59, tz:176},
+    {type:'necro_lich_mage', tx:61, tz:180},
+    {type:'necro_lich_mage', tx:50, tz:176},
+    {type:'necro_specter', tx:57, tz:178},
+    {type:'necro_specter', tx:63, tz:187},
+    {type:'necro_wight', tx:55, tz:177},
+    {type:'necro_wight', tx:50, tz:177},
+    {type:'necro_wight', tx:35, tz:210},
+    {type:'necro_wight', tx:37, tz:219},
+    {type:'necro_abomination', tx:44, tz:212},
+    {type:'necro_abomination', tx:48, tz:205},
+    {type:'necro_lich_mage', tx:40, tz:202},
+    {type:'necro_lich_mage', tx:43, tz:217},
+    {type:'necro_specter', tx:34, tz:209},
+    {type:'necro_specter', tx:43, tz:208},
+    {type:'necro_wight', tx:49, tz:208},
+    {type:'necro_wight', tx:46, tz:212},
+    {type:'necro_wight', tx:209, tz:205},
+    {type:'necro_wight', tx:200, tz:199},
+    {type:'necro_abomination', tx:215, tz:211},
+    {type:'necro_abomination', tx:209, tz:216},
+    {type:'necro_lich_mage', tx:206, tz:212},
+    {type:'necro_lich_mage', tx:205, tz:217},
+    {type:'necro_specter', tx:217, tz:201},
+    {type:'necro_specter', tx:215, tz:213},
+    {type:'necro_wight', tx:202, tz:206},
+    {type:'necro_wight', tx:207, tz:214},
+    {type:'necro_wight', tx:182, tz:189},
+    {type:'necro_wight', tx:171, tz:195},
+    {type:'necro_abomination', tx:167, tz:191},
+    {type:'necro_abomination', tx:184, tz:193},
+    {type:'necro_lich_mage', tx:174, tz:192},
+    {type:'necro_lich_mage', tx:183, tz:195},
+    {type:'necro_specter', tx:171, tz:181},
+    {type:'necro_specter', tx:167, tz:185},
+    {type:'necro_wight', tx:173, tz:195},
+    {type:'necro_wight', tx:178, tz:177},
+    {type:'necro_wight', tx:218, tz:176},
+    {type:'necro_wight', tx:201, tz:171},
+    {type:'necro_abomination', tx:207, tz:170},
+    {type:'necro_abomination', tx:201, tz:173},
+    {type:'necro_lich_mage', tx:208, tz:166},
+    {type:'necro_lich_mage', tx:205, tz:169},
+    {type:'necro_specter', tx:219, tz:177},
+    {type:'necro_specter', tx:203, tz:174},
+    {type:'necro_wight', tx:204, tz:178},
+    {type:'necro_wight', tx:207, tz:174},
+    {type:'necro_wight', tx:124, tz:41},
+    {type:'necro_wight', tx:112, tz:45},
+    {type:'necro_abomination', tx:122, tz:39},
+    {type:'necro_abomination', tx:122, tz:43},
+    {type:'necro_lich_mage', tx:127, tz:39},
+    {type:'necro_lich_mage', tx:120, tz:38},
+    {type:'necro_specter', tx:118, tz:42},
+    {type:'necro_specter', tx:116, tz:48},
+    {type:'necro_wight', tx:115, tz:51},
+    {type:'necro_wight', tx:115, tz:44},
+    {type:'necro_wight', tx:127, tz:200},
+    {type:'necro_wight', tx:125, tz:202},
+    {type:'necro_abomination', tx:120, tz:197},
+    {type:'necro_abomination', tx:120, tz:195},
+    {type:'necro_lich_mage', tx:117, tz:199},
+    {type:'necro_lich_mage', tx:115, tz:190},
+    {type:'necro_specter', tx:129, tz:195},
+    {type:'necro_specter', tx:113, tz:196},
+    {type:'necro_wight', tx:112, tz:203},
+    {type:'necro_wight', tx:123, tz:201},
+    {type:'necro_abomination', tx:79, tz:124},
+    {type:'necro_abomination', tx:80, tz:124},
+    {type:'necro_lich_mage', tx:77, tz:126},
+    {type:'necro_lich_mage', tx:63, tz:125},
+    {type:'necro_specter', tx:65, tz:121},
+    {type:'necro_specter', tx:80, tz:127},
+    {type:'necro_abomination', tx:164, tz:123},
+    {type:'necro_abomination', tx:166, tz:119},
+    {type:'necro_lich_mage', tx:159, tz:116},
+    {type:'necro_lich_mage', tx:172, tz:125},
+    {type:'necro_specter', tx:168, tz:128},
+    {type:'necro_specter', tx:159, tz:111},
+    {type:'necro_specter', tx:91, tz:180},
+    {type:'necro_lich_mage', tx:72, tz:42},
+    {type:'necro_abomination', tx:117, tz:88},
+    {type:'necro_specter', tx:219, tz:52},
+    {type:'necro_lich_mage', tx:132, tz:148},
+    {type:'necro_abomination', tx:168, tz:52},
+    {type:'necro_specter', tx:21, tz:169},
+    {type:'necro_lich_mage', tx:105, tz:86},
+    {type:'necro_abomination', tx:133, tz:89},
+    {type:'necro_specter', tx:92, tz:134},
+    {type:'necro_lich_mage', tx:21, tz:36},
+    {type:'necro_abomination', tx:152, tz:100},
+    {type:'necro_specter', tx:204, tz:87},
+    {type:'necro_lich_mage', tx:43, tz:123},
+    {type:'necro_abomination', tx:182, tz:42},
+    {type:'necro_specter', tx:212, tz:70},
+    {type:'necro_lich_mage', tx:181, tz:212},
+    {type:'necro_abomination', tx:215, tz:166},
+    {type:'necro_specter', tx:169, tz:136},
+    {type:'necro_lich_mage', tx:73, tz:60},
+    {type:'necro_abomination', tx:118, tz:40},
+    {type:'necro_specter', tx:180, tz:105},
+    {type:'necro_lich_mage', tx:69, tz:164},
+    {type:'necro_abomination', tx:135, tz:164},
+    {type:'necro_specter', tx:84, tz:54},
+    {type:'necro_lich_mage', tx:180, tz:166},
+    {type:'necro_abomination', tx:75, tz:186},
+    {type:'necro_specter', tx:57, tz:104},
+    {type:'necro_lich_mage', tx:196, tz:27},
+    {type:'necro_abomination', tx:58, tz:165},
+    {type:'necro_specter', tx:41, tz:59},
+    {type:'necro_lich_mage', tx:167, tz:183},
+    {type:'necro_abomination', tx:105, tz:201},
+    {type:'necro_specter', tx:71, tz:72},
+    {type:'necro_lich_mage', tx:155, tz:150},
+    {type:'necro_abomination', tx:165, tz:36},
+    {type:'necro_abomination', tx:108, tz:40},
+    {type:'necro_abomination', tx:137, tz:70},
+    {type:'necro_abomination', tx:188, tz:22},
+    {type:'necro_abomination', tx:138, tz:140}
+  ],
   xumen_fortress: [],   // a490 — client-authoritative now (bespoke garrison AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   fungal: [],   // a471 — client-authoritative (bespoke spore AI client-side); server no longer spawns/owns these mobs.
   void_citadel: [],   // a492 — client-authoritative now (bespoke unreality AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
@@ -2549,7 +2743,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -3717,6 +3911,98 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a544: NECROPOLIS plague/death AI (zone-gated to 'necropolis'). Plague vomit + pools,
+      //   disease aura, pestilent slam, skull barrage, corpse explosion, DEATH MARK (a doom
+      //   timer that re-targets you before it detonates), spectral wail, bone storm, cadaver
+      //   toss. Every hit applies poison/disease. Re-timed 60->10Hz.
+      if (zoneName === 'necropolis' && e.aggroed && NP_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _NB=0xe8e0c8, _NPL=0x9aca34, _NTX=0xb6ff3a, _NRT=0x6b8e23, _NNC=0x8a2be2, _NSK=0x88ff66;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        // every necropolis hit carries the plague
+        const plagueHit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer){
+          send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_npDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName});
+          send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'poison',statusDur:150}); } }); };
+        const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+        const shoot=(baseAng,col,mult,count,spread)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_npDmgS(e,mult),'plasma','poison',150); } };
+        // lingering PLAGUE POOL — poison DoT patch
+        const plagueCloud=(tx,tz,ticks,mult)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:_NPL});
+          for(let i=0;i<ticks;i++) game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:3+i*3, dmg:_npDmgS(e,mult), eid:e.id, col:_NPL, radius:3.4, soft:1, status:'poison', statusDur:150 }); };
+        const npBlink=(distB)=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NNC});
+          e.x-=Math.sin(ang)*distB; e.z-=Math.cos(ang)*distB; _moved=true;
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NPL}); };
+
+        if(e.type==='necro_abomination'){
+          // PLAGUE TITAN — plague vomit -> cloud, DISEASE AURA, PESTILENT SLAM
+          const MS=0.132;
+          if(dd>4.0) mv(sin,cos,MS);
+          if(dd<4.6 && e.attackTimer%12===0){ plagueHit(1.0); toPlayer({ eff:'shake', shake:2 }); }
+          if(dd<3.4 && e.attackTimer%7===0){ plagueHit(0.35); }                       // festering aura
+          if(dd>3 && dd<15 && e._ab>=25){ e._ab=0; shoot(ang,_NTX,0.6,5,0.22); plagueCloud(nearestPlayer.x,nearestPlayer.z,7,0.5); }
+          e._slam=(e._slam||23)+1;
+          if(dd<10 && e._slam>=33){ e._slam=0;
+            _pmShock(game,zoneName,e,e.x,e.z,6.0,0,_NRT,players,send);
+            for(let i=0;i<3;i++){ const a=Math.random()*6.283, r=2+Math.random()*4; plagueCloud(e.x+Math.cos(a)*r, e.z+Math.sin(a)*r, 6, 0.4); }
+            if(dd<6){ plagueHit(1.1); toPlayer({ eff:'shake', shake:3 });
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'np_plague',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:2200,r:6}); } }
+        }
+        else if(e.type==='necro_lich_mage'){
+          // PLAGUE CASTER — plague bolts, SKULL BARRAGE, CORPSE EXPLOSION
+          const MS=0.18;
+          if(dd<7) mv(-sin*0.6+pr*strafe*0.7,-cos*0.6+pq*strafe*0.7,MS);
+          else if(dd>17) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+          if(dd>2.5 && dd<20 && e.attackTimer%9===0){ shoot(ang,_NPL,0.55,2,0.16); }
+          if(dd<20 && e._ab>=28){ e._ab=0; shoot(ang,_NSK,0.6,5,0.16);                 // flaming skulls
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_poof',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NB,n:6}); }
+          e._corpse=(e._corpse||13)+1;
+          if(dd<18 && e._corpse>=40){ e._corpse=0;
+            const cx=nearestPlayer.x, cz=nearestPlayer.z;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'np_crossbones',zone:zoneName,ex:+cx.toFixed(2),ez:+cz.toFixed(2),col:_NSK,ms:640});
+            game._sdGeyser.push({ zone:zoneName, x:cx, z:cz, fuse:7, dmg:_npDmgS(e,1.2), eid:e.id, col:_NSK, radius:4.0, status:'poison', statusDur:150 }); }
+        }
+        else if(e.type==='necro_specter'){
+          // DEATH SPECTER — DEATH MARK, SPECTRAL WAIL, plague touch, phase blink
+          const MS=0.372;
+          if(dd<6) mv(-sin*0.6+pr*strafe*0.7,-cos*0.6+pq*strafe*0.7,MS);
+          else if(dd>16) mv(sin*0.65,cos*0.65,MS);
+          else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+          if(dd>2.5 && dd<18 && e.attackTimer%8===0){ shoot(ang,_NNC,0.5,1,0); }
+          if(dd<3.0 && e.attackTimer%8===0){ plagueHit(0.8); }
+          // DEATH MARK — the crossbones brand follows you, then detonates (relock late)
+          if(dd<16 && e._ab>=38){ e._ab=0;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'np_deathmark',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_NNC,ms:900});
+            game._sdGeyser.push({ zone:zoneName, x:nearestPlayer.x, z:nearestPlayer.z, fuse:9, dmg:_npDmgS(e,1.3), eid:e.id, col:_NSK, radius:4.0, shake:3, relock:3, status:'poison', statusDur:150, deathmark:1 }); }
+          e._wail=(e._wail||18)+1;
+          if(dd<8 && e._wail>=32){ e._wail=0;
+            _pmShock(game,zoneName,e,e.x,e.z,6.0,0,_NNC,players,send);
+            if(dd<6){ plagueHit(0.7); toPlayer({ eff:'slow', slow:0.5, root:1300 }); } }
+          if(dd<3.5 && (e._ph=(e._ph||0)+1)>=25){ e._ph=0; npBlink(8); }
+        }
+        else { // necro_wight — BONE BRUISER
+          const MS=0.228;
+          if(dd>2.8) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS); else mv(pr*strafe,pq*strafe,MS);
+          if(dd<3.4 && e.attackTimer%6===0){ plagueHit(1.0); toPlayer({ eff:'slow', slow:0.55, root:900 }); }   // crippling strike
+          if(dd<3.8 && e._ab>=20){ e._ab=0;                                                                      // BONE STORM burst
+            _pmShock(game,zoneName,e,e.x,e.z,4.0,0,_NB,players,send); plagueHit(1.0); }
+          e._toss=(e._toss||18)+1;
+          if(dd>4 && dd<15 && e._toss>=32){ e._toss=0;                                                            // CADAVER TOSS
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NRT,n:6});
+            plagueCloud(nearestPlayer.x, nearestPlayer.z, 6, 0.5); }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -3763,7 +4049,9 @@ function tickGame(game) {
         players.forEach((p) => { if (!p || p.gameId !== game.id || p.zone !== gy.zone || p.x === undefined) return;
           const rdx=p.x-gy.x, rdz=p.z-gy.z, r2=rdx*rdx+rdz*rdz; if (r2 < _rbd) { _rbd = r2; _rp = p; } });
         if (_rp) { gy.x = _rp.x; gy.z = _rp.z;
-          broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'sd_geyser_warn', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0xff3cf0) }); }
+          broadcastToZone(game.id, gy.zone, gy.deathmark
+            ? { type:'sv_fx', vt:'np_crossbones', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0x88ff66), ms:300 }   // a544 — the brand follows you
+            : { type:'sv_fx', vt:'sd_geyser_warn', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0xff3cf0) }); }
         gy.relock = 0;
       }
       if (gy.fuse <= 0) {
@@ -3833,6 +4121,12 @@ const FZ_BESPOKE = { ice_golem:1, polar_bear:1, frost_wraith:1, frost_specter:1 
 //   the (already migrated) Void Wastes with a completely different kit — the zone gate is what
 //   keeps the two apart, so never drop it. Client bumps HP x7.0 AND ATK x2.2 zone-locally.
 const ELD_BESPOKE = { ancient_guardian:1, stone_sentinel:1, vine_horror:1, void_stalker:1 };
+// a544 — NECROPOLIS plague/death AI (zone-gated to 'necropolis'). NO HP or ATK multiplier here:
+//   these four are already E13-huge in ENEMY_STATS with baked dmgReduction (0.28-0.45), which
+//   the client kit deliberately leaves alone. Damage mirrors the client's flat _NP_PWR floor.
+const NP_BESPOKE = { necro_abomination:1, necro_lich_mage:1, necro_specter:1, necro_wight:1 };
+const NP_PWR = { necro_abomination:240, necro_wight:190, necro_lich_mage:200, necro_specter:170 };
+function _npDmgS(e, mult){ return Math.floor((NP_PWR[e.type] || e.atk || 180) * mult); }
 const ELD_PWR = { ancient_guardian:170, stone_sentinel:160, vine_horror:130, void_stalker:120 };
 function _eldDmgS(e, mult){ return Math.floor((ELD_PWR[e.type] || e.atk || 120) * 2.2 * mult); }
 const FZ_PWR = { ice_golem:140, polar_bear:120, frost_wraith:100, frost_specter:95 };
