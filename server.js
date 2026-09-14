@@ -1769,7 +1769,33 @@ const ZONE_SPAWNS = {
     {type:'stone_sentinel', tx:208, tz:130},
     {type:'stone_sentinel', tx:67, tz:103}
   ],
-  dragonlair: [],   // a506 — client-authoritative now (bespoke volcanic AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a546 — MULTIPLAYER MIGRATION: Vaeltharax's Lair is now server-authoritative.
+  dragonlair: [
+    {type:'ancient_guardian', tx:12, tz:8},
+    {type:'citadel_mage', tx:16, tz:6},
+    {type:'ancient_guardian', tx:8, tz:20},
+    {type:'iron_guard', tx:20, tz:8},
+    {type:'fire_demon', tx:30, tz:15},
+    {type:'fire_demon', tx:45, tz:20},
+    {type:'fire_demon', tx:35, tz:40},
+    {type:'fire_demon', tx:55, tz:30},
+    {type:'fire_demon', tx:25, tz:55},
+    {type:'fire_demon', tx:50, tz:55},
+    {type:'wyvern', tx:38, tz:12},
+    {type:'wyvern', tx:55, tz:18},
+    {type:'wyvern', tx:22, tz:35},
+    {type:'wyvern', tx:60, tz:45},
+    {type:'wyvern', tx:40, tz:65},
+    {type:'void_spider', tx:8, tz:35},
+    {type:'void_spider', tx:15, tz:50},
+    {type:'void_spider', tx:65, tz:25},
+    {type:'void_spider', tx:70, tz:50},
+    {type:'void_spider', tx:30, tz:68},
+    {type:'void_spider', tx:55, tz:68},
+    {type:'inferno_golem', tx:45, tz:40},
+    {type:'inferno_golem', tx:60, tz:60},
+    {type:'inferno_golem', tx:30, tz:50}
+  ],
   riftvale: [],   // a477 — client-authoritative (bespoke void/rift AI client-side); server no longer spawns/owns these mobs.
   wyvernwastes: [],   // a488 — client-authoritative now (bespoke pack AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   xumen: [],   // a489 — client-authoritative now (bespoke capital-guard AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
@@ -2776,7 +2802,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -4230,6 +4256,117 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a546: VAELTHARAX'S LAIR volcanic AI (zone-gated to 'dragonlair'). Fissure eruptions,
+      //   aerial firebomb strafing runs, magma webs, lingering lava pools, the golem's
+      //   damage-triggered eruption, and the ceiling meteor storm. Re-timed 60->10Hz.
+      //   NOTE: only the four DL_BESPOKE types run this; the lair's generic guardians/mages
+      //   fall through to the ordinary server move/attack path, matching the client.
+      if (zoneName === 'dragonlair' && e.aggroed && DL_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _DLV=0xff5410, _DEM=0xff8a30, _DCO=0xffd040, _DVE=0x9ad040, _DDK=0x2a0e04;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(mult,burnDur)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer){
+          send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_dlDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName});
+          if(burnDur) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'burn',statusDur:burnDur}); } }); };
+        const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+        const shoot=(baseAng,col,mult,count,spread)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_dlDmgS(e,mult),'plasma','burn',90); } };
+        // FIRE COLUMN — a pillar of flame erupts from marked ground
+        const fireCol=(tx,tz,fuse,mult)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:fuse, dmg:_dlDmgS(e,mult), eid:e.id, col:_DLV, radius:2.2, status:'burn', statusDur:120 });
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'dl_firecol',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:_DLV,fuse:fuse*100}); };
+        // LAVA POOL — a glowing molten patch that lingers and burns
+        const lavaPool=(tx,tz,ticks)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'dl_lavapool',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),ms:ticks*300});
+          for(let i=0;i<ticks;i++) game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:2+i*3, dmg:_dlDmgS(e,0.30), eid:e.id, col:_DLV, radius:1.9, soft:1, status:(i%3===0?'burn':null), statusDur:80 }); };
+
+        if(e.type==='fire_demon'){
+          // BRIMSTONE FIEND — flame lash, cinder bolts, FISSURE ERUPTION
+          const MS=0.264;
+          if(dd>2.8) mv(sin*0.9+pr*strafe*0.35, cos*0.9+pq*strafe*0.35, MS); else mv(pr*strafe,pq*strafe,MS);
+          if(dd<3.0 && e.attackTimer%10===0){ hit(1.0,90); }
+          if(dd>2.6 && dd<14 && e.attackTimer%12===0){ shoot(ang,_DEM,0.55,2,0.16); }
+          e._fs=(e._fs||Math.floor(Math.random()*25))+1;
+          if(dd>2 && dd<15 && e._fs>=47){ e._fs=0;                                   // cracks race out toward you
+            for(let fi=0;fi<5;fi++){ const d2=3+fi*2.2;
+              fireCol(e.x+Math.sin(ang)*d2, e.z+Math.cos(ang)*d2, 3+fi*2, 0.75); } }
+        }
+        else if(e.type==='wyvern'){
+          // ASH WYVERN — aerial; STRAFING FIREBOMB RUN, wing-buffet knockback
+          const MS=0.36;
+          if(e._run==='strafe'){
+            e._rt=(e._rt||0)+1;
+            mv(Math.sin(e._runDir), Math.cos(e._runDir), MS*2.4);
+            if(e._rt%1===0){ fireCol(e.x, e.z, 2, 0.6); }                            // craters along the run
+            if(e._rt>=3){ e._run=0; e._rt=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'dl_wyvern_land',zone:zoneName,eid:e.id}); }
+            if(_moved) changed.push(e);
+          } else {
+            if(dd>3.0) mv(sin*0.85+pr*strafe*0.5, cos*0.85+pq*strafe*0.5, MS);
+            else mv(pr*strafe*1.1, pq*strafe*1.1, MS);
+            if(dd<3.4 && e.attackTimer%10===0){ hit(1.05,0);
+              toPlayer({ eff:'push', px:+e.x.toFixed(2), pz:+e.z.toFixed(2), push:1.6 }); }   // wing buffet
+            if(dd>2.8 && dd<13 && e.attackTimer%13===0){ shoot(ang,_DLV,0.55,1,0); }
+            e._fr=(e._fr||Math.floor(Math.random()*28))+1;
+            if(dd>4 && dd<18 && e._fr>=50){ e._fr=0; e._run='strafe'; e._rt=0;
+              e._runDir=Math.atan2(nearestPlayer.x-e.x, nearestPlayer.z-e.z);
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'dl_wyvern_climb',zone:zoneName,eid:e.id,dir:+e._runDir.toFixed(3),dur:900}); }
+          }
+        }
+        else if(e.type==='void_spider'){
+          // CINDER BROODLING — flanking lunges, venomous magma spit, MAGMA WEB
+          const MS=0.396;
+          if(dd<3.0 && !(e._lunge>0) && e._ab>=15){ e._ab=0; e._lunge=2; e._ldir=ang; }
+          if(e._lunge>0){ e._lunge--; mv(Math.sin(e._ldir),Math.cos(e._ldir),MS*2.0);
+            if(dd<2.0){ hit(0.9,0); e._lunge=0; }
+          } else {
+            if(dd>2.4) mv(sin*0.8+pr*strafe*0.7, cos*0.8+pq*strafe*0.7, MS); else mv(pr*strafe,pq*strafe,MS);
+          }
+          if(dd<2.6 && e.attackTimer%9===0){ hit(0.85,0); }
+          if(dd>2.4 && dd<12 && e.attackTimer%12===0){ shoot(ang,_DVE,0.5,1,0); }
+          e._wb=(e._wb||Math.floor(Math.random()*27))+1;
+          if(dd>3 && dd<12 && e._wb>=43){ e._wb=0;                                    // MAGMA WEB — snare + burning patch
+            const wx=nearestPlayer.x, wz=nearestPlayer.z;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({ zone:zoneName, x:wx, z:wz, fuse:4, dmg:_dlDmgS(e,0.7), eid:e.id, col:_DVE, radius:2.2, slow:0.12, slowDur:1100, status:'burn', statusDur:150 });
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+wx.toFixed(2),ez:+wz.toFixed(2),col:_DVE});
+            lavaPool(wx, wz, 5); }
+        }
+        else { // inferno_golem — MOLTEN COLOSSUS
+          const MS=0.12;
+          if(dd>3.4) mv(sin,cos,MS);
+          if(dd<3.8 && e.attackTimer%13===0){ hit(1.25,110); toPlayer({ eff:'shake', shake:2 }); }
+          e._st2=(e._st2||0)+1;
+          if(dd>2 && dd<12 && e._st2>=25){ e._st2=0;                                   // molten stomp -> lingering pool
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_DLV});
+            lavaPool(nearestPlayer.x, nearestPlayer.z, 9); }
+          // ERUPTION — it blasts everything nearby when it takes heavy damage
+          if(e._lastHp===undefined) e._lastHp=e.hp;
+          if(e.hp < e._lastHp - e.maxHp*0.08){ e._lastHp=e.hp;
+            if(!(e._eruptCd>0)){ e._eruptCd=40;
+              _pmShock(game,zoneName,e,e.x,e.z,4.4,0,_DLV,players,send);
+              if(dd<4.5){ hit(0.9,0); toPlayer({ eff:'shake', shake:3 }); } } }
+          if(e._lastHp>e.hp) e._lastHp=e.hp;
+          if(e._eruptCd>0) e._eruptCd--;
+          // METEOR STORM — rocks fall from the lair ceiling onto marked ground
+          e._ms3=(e._ms3||Math.floor(Math.random()*33))+1;
+          if(dd<16 && e._ms3>=60){ e._ms3=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'dl_ashfall',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:2600,r:16});
+            for(let mi=0;mi<5;mi++){
+              const tx=nearestPlayer.x+(Math.random()-0.5)*8, tz=nearestPlayer.z+(Math.random()-0.5)*8;
+              if(!game._sdGeyser) game._sdGeyser=[];
+              game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:5+mi*3, dmg:_dlDmgS(e,0.9), eid:e.id, col:_DLV, radius:2.4, status:'burn', statusDur:120, shake:2 });
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'dl_meteor',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),fall:(5+mi*3)*100}); } }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -4358,6 +4495,12 @@ const NP_BESPOKE = { necro_abomination:1, necro_lich_mage:1, necro_specter:1, ne
 //   largest roster yet, two of them elites. NO HP/ATK multiplier: like the necropolis these are
 //   already huge in ENEMY_STATS with baked dmgReduction, and the client kit leaves them alone.
 const VS_BESPOKE = { veiled_acolyte:1, censer_bearer:1, penitent_striker:1, choir_wraith:1, stone_inquisitor:1, ritual_guardian:1, veiled_cardinal:1, forsaken_abbot:1 };
+// a546 — VAELTHARAX'S LAIR volcanic AI (zone-gated to 'dragonlair'). Only these FOUR types get
+//   the bespoke kit — the lair also spawns generic guardians/mages/iron guards which keep their
+//   existing generic AI, exactly as the client kit does. HP unchanged (already E-raid scale).
+const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
+const DL_PWR = { void_spider:250, wyvern:270, fire_demon:295, inferno_golem:330 };
+function _dlDmgS(e, mult){ return Math.floor((DL_PWR[e.type] || e.atk || 275) * mult); }
 const VS_PWR = { veiled_acolyte:185, censer_bearer:205, penitent_striker:215, choir_wraith:195, stone_inquisitor:235, ritual_guardian:220, veiled_cardinal:290, forsaken_abbot:320 };
 function _vsDmgS(e, mult){ return Math.floor((VS_PWR[e.type] || e.atk || 200) * mult); }
 const NP_PWR = { necro_abomination:240, necro_wight:190, necro_lich_mage:200, necro_specter:170 };
