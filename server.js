@@ -1796,7 +1796,189 @@ const ZONE_SPAWNS = {
     {type:'inferno_golem', tx:60, tz:60},
     {type:'inferno_golem', tx:30, tz:50}
   ],
-  riftvale: [],   // a477 — client-authoritative (bespoke void/rift AI client-side); server no longer spawns/owns these mobs.
+  // a547 — MULTIPLAYER MIGRATION: Rift Vale is now server-authoritative.
+  riftvale: [
+    {type:'rift_stalker', tx:41, tz:47},
+    {type:'rift_stalker', tx:44, tz:40},
+    {type:'rift_weaver', tx:49, tz:49},
+    {type:'rift_weaver', tx:32, tz:45},
+    {type:'psyche_horror', tx:35, tz:44},
+    {type:'psyche_horror', tx:43, tz:46},
+    {type:'rift_stalker', tx:44, tz:32},
+    {type:'rift_stalker', tx:42, tz:41},
+    {type:'void_colossus', tx:42, tz:42},
+    {type:'void_colossus', tx:39, tz:42},
+    {type:'rift_stalker', tx:75, tz:49},
+    {type:'rift_stalker', tx:78, tz:35},
+    {type:'rift_weaver', tx:68, tz:44},
+    {type:'rift_weaver', tx:73, tz:49},
+    {type:'psyche_horror', tx:72, tz:48},
+    {type:'psyche_horror', tx:67, tz:41},
+    {type:'rift_stalker', tx:76, tz:44},
+    {type:'rift_stalker', tx:71, tz:44},
+    {type:'void_colossus', tx:76, tz:47},
+    {type:'void_colossus', tx:69, tz:41},
+    {type:'rift_stalker', tx:42, tz:63},
+    {type:'rift_stalker', tx:48, tz:65},
+    {type:'rift_weaver', tx:49, tz:80},
+    {type:'rift_weaver', tx:41, tz:79},
+    {type:'psyche_horror', tx:39, tz:65},
+    {type:'psyche_horror', tx:47, tz:72},
+    {type:'rift_stalker', tx:36, tz:65},
+    {type:'rift_stalker', tx:47, tz:80},
+    {type:'void_colossus', tx:31, tz:70},
+    {type:'void_colossus', tx:33, tz:66},
+    {type:'rift_stalker', tx:209, tz:43},
+    {type:'rift_stalker', tx:195, tz:49},
+    {type:'rift_weaver', tx:197, tz:46},
+    {type:'rift_weaver', tx:197, tz:41},
+    {type:'psyche_horror', tx:204, tz:37},
+    {type:'psyche_horror', tx:192, tz:45},
+    {type:'rift_stalker', tx:193, tz:34},
+    {type:'rift_stalker', tx:194, tz:44},
+    {type:'void_colossus', tx:195, tz:43},
+    {type:'void_colossus', tx:199, tz:45},
+    {type:'rift_stalker', tx:167, tz:36},
+    {type:'rift_stalker', tx:164, tz:38},
+    {type:'rift_weaver', tx:177, tz:49},
+    {type:'rift_weaver', tx:164, tz:36},
+    {type:'psyche_horror', tx:173, tz:43},
+    {type:'psyche_horror', tx:161, tz:38},
+    {type:'rift_stalker', tx:172, tz:36},
+    {type:'rift_stalker', tx:163, tz:39},
+    {type:'void_colossus', tx:169, tz:45},
+    {type:'void_colossus', tx:168, tz:36},
+    {type:'rift_stalker', tx:207, tz:70},
+    {type:'rift_stalker', tx:205, tz:69},
+    {type:'rift_weaver', tx:194, tz:71},
+    {type:'rift_weaver', tx:197, tz:69},
+    {type:'psyche_horror', tx:191, tz:79},
+    {type:'psyche_horror', tx:206, tz:70},
+    {type:'rift_stalker', tx:208, tz:80},
+    {type:'rift_stalker', tx:193, tz:67},
+    {type:'void_colossus', tx:204, tz:73},
+    {type:'void_colossus', tx:198, tz:73},
+    {type:'rift_stalker', tx:44, tz:205},
+    {type:'rift_stalker', tx:32, tz:202},
+    {type:'rift_weaver', tx:46, tz:193},
+    {type:'rift_weaver', tx:33, tz:194},
+    {type:'psyche_horror', tx:33, tz:205},
+    {type:'psyche_horror', tx:38, tz:203},
+    {type:'rift_stalker', tx:36, tz:192},
+    {type:'rift_stalker', tx:43, tz:191},
+    {type:'void_colossus', tx:46, tz:208},
+    {type:'void_colossus', tx:42, tz:197},
+    {type:'rift_stalker', tx:64, tz:199},
+    {type:'rift_stalker', tx:81, tz:192},
+    {type:'rift_weaver', tx:81, tz:202},
+    {type:'rift_weaver', tx:81, tz:201},
+    {type:'psyche_horror', tx:74, tz:193},
+    {type:'psyche_horror', tx:69, tz:192},
+    {type:'rift_stalker', tx:76, tz:201},
+    {type:'rift_stalker', tx:78, tz:198},
+    {type:'void_colossus', tx:73, tz:201},
+    {type:'void_colossus', tx:75, tz:196},
+    {type:'rift_stalker', tx:38, tz:174},
+    {type:'rift_stalker', tx:49, tz:177},
+    {type:'rift_weaver', tx:31, tz:176},
+    {type:'rift_weaver', tx:46, tz:169},
+    {type:'psyche_horror', tx:42, tz:164},
+    {type:'psyche_horror', tx:40, tz:166},
+    {type:'rift_stalker', tx:33, tz:167},
+    {type:'rift_stalker', tx:33, tz:174},
+    {type:'void_colossus', tx:35, tz:172},
+    {type:'void_colossus', tx:46, tz:165},
+    {type:'rift_stalker', tx:207, tz:194},
+    {type:'rift_stalker', tx:196, tz:194},
+    {type:'rift_weaver', tx:193, tz:204},
+    {type:'rift_weaver', tx:202, tz:203},
+    {type:'psyche_horror', tx:196, tz:196},
+    {type:'psyche_horror', tx:199, tz:209},
+    {type:'rift_stalker', tx:196, tz:201},
+    {type:'rift_stalker', tx:197, tz:208},
+    {type:'void_colossus', tx:198, tz:200},
+    {type:'void_colossus', tx:195, tz:205},
+    {type:'rift_stalker', tx:174, tz:193},
+    {type:'rift_stalker', tx:175, tz:205},
+    {type:'rift_weaver', tx:162, tz:194},
+    {type:'rift_weaver', tx:163, tz:205},
+    {type:'psyche_horror', tx:176, tz:195},
+    {type:'psyche_horror', tx:161, tz:191},
+    {type:'rift_stalker', tx:172, tz:200},
+    {type:'rift_stalker', tx:177, tz:209},
+    {type:'void_colossus', tx:160, tz:201},
+    {type:'void_colossus', tx:159, tz:206},
+    {type:'rift_stalker', tx:198, tz:162},
+    {type:'rift_stalker', tx:209, tz:164},
+    {type:'rift_weaver', tx:197, tz:166},
+    {type:'rift_weaver', tx:191, tz:171},
+    {type:'psyche_horror', tx:204, tz:171},
+    {type:'psyche_horror', tx:204, tz:164},
+    {type:'rift_stalker', tx:194, tz:169},
+    {type:'rift_stalker', tx:192, tz:160},
+    {type:'void_colossus', tx:192, tz:161},
+    {type:'void_colossus', tx:196, tz:159},
+    {type:'rift_stalker', tx:128, tz:61},
+    {type:'rift_stalker', tx:120, tz:53},
+    {type:'rift_weaver', tx:121, tz:43},
+    {type:'rift_weaver', tx:113, tz:56},
+    {type:'psyche_horror', tx:112, tz:45},
+    {type:'psyche_horror', tx:128, tz:59},
+    {type:'rift_stalker', tx:118, tz:51},
+    {type:'rift_stalker', tx:120, tz:49},
+    {type:'rift_stalker', tx:123, tz:187},
+    {type:'rift_stalker', tx:129, tz:195},
+    {type:'rift_weaver', tx:116, tz:186},
+    {type:'rift_weaver', tx:126, tz:194},
+    {type:'psyche_horror', tx:113, tz:188},
+    {type:'psyche_horror', tx:122, tz:189},
+    {type:'rift_stalker', tx:128, tz:180},
+    {type:'rift_stalker', tx:128, tz:191},
+    {type:'rift_stalker', tx:57, tz:118},
+    {type:'rift_stalker', tx:48, tz:116},
+    {type:'rift_weaver', tx:63, tz:127},
+    {type:'rift_weaver', tx:53, tz:121},
+    {type:'psyche_horror', tx:53, tz:115},
+    {type:'psyche_horror', tx:58, tz:114},
+    {type:'rift_stalker', tx:64, tz:118},
+    {type:'rift_stalker', tx:51, tz:112},
+    {type:'rift_stalker', tx:193, tz:121},
+    {type:'rift_stalker', tx:180, tz:124},
+    {type:'rift_weaver', tx:189, tz:129},
+    {type:'rift_weaver', tx:175, tz:111},
+    {type:'psyche_horror', tx:188, tz:124},
+    {type:'psyche_horror', tx:182, tz:124},
+    {type:'rift_stalker', tx:191, tz:128},
+    {type:'rift_stalker', tx:189, tz:122},
+    {type:'psyche_horror', tx:121, tz:217},
+    {type:'rift_weaver', tx:132, tz:23},
+    {type:'psyche_horror', tx:188, tz:40},
+    {type:'rift_weaver', tx:184, tz:203},
+    {type:'psyche_horror', tx:90, tz:187},
+    {type:'rift_weaver', tx:213, tz:151},
+    {type:'psyche_horror', tx:117, tz:155},
+    {type:'rift_weaver', tx:58, tz:74},
+    {type:'psyche_horror', tx:153, tz:44},
+    {type:'rift_weaver', tx:167, tz:37},
+    {type:'psyche_horror', tx:71, tz:138},
+    {type:'rift_weaver', tx:36, tz:100},
+    {type:'psyche_horror', tx:86, tz:216},
+    {type:'rift_weaver', tx:150, tz:26},
+    {type:'psyche_horror', tx:137, tz:198},
+    {type:'rift_weaver', tx:43, tz:215},
+    {type:'psyche_horror', tx:104, tz:217},
+    {type:'rift_weaver', tx:215, tz:73},
+    {type:'psyche_horror', tx:38, tz:140},
+    {type:'rift_weaver', tx:170, tz:214},
+    {type:'psyche_horror', tx:164, tz:166},
+    {type:'rift_weaver', tx:92, tz:20},
+    {type:'psyche_horror', tx:119, tz:59},
+    {type:'rift_weaver', tx:54, tz:140},
+    {type:'rift_weaver', tx:75, tz:200},
+    {type:'rift_weaver', tx:182, tz:89},
+    {type:'rift_weaver', tx:167, tz:183},
+    {type:'rift_weaver', tx:148, tz:138}
+  ],
   wyvernwastes: [],   // a488 — client-authoritative now (bespoke pack AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   xumen: [],   // a489 — client-authoritative now (bespoke capital-guard AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   // a544 — MULTIPLAYER MIGRATION: Necropolis is now server-authoritative.
@@ -2394,7 +2576,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0, riftvale: 1.5 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -2802,7 +2984,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -4367,6 +4549,111 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a547: RIFT VALE void/rift AI (zone-gated to 'riftvale'). Gravity singularities that
+      //   drag you in then collapse, rift tears, reality crush, rift dashes, phase strikes,
+      //   MIND SHATTER (breaks your controls), terror-scream knockback, void weave, entangling
+      //   void. Re-timed 60->10Hz.
+      if (zoneName === 'riftvale' && e.aggroed && RV_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _RP=0x9b30ff, _RM=0xd040ff, _RD=0x4b0082, _RC=0x30ffe0;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_rvDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+        const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+        const shoot=(baseAng,mult,count,spread)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,_RP,_rvDmgS(e,mult),'plasma',null,0); } };
+        // RIFT TEAR — telegraphed void eruption
+        const riftTear=(tx,tz,mult)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:6, dmg:_rvDmgS(e,mult), eid:e.id, col:_RP, radius:3.6, slow:0.4, slowDur:700 });
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'rv_tear',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:_RP,ms:540}); };
+
+        if(e.type==='void_colossus'){
+          // WORLD-ENDER — GRAVITY SINGULARITY, VOID SLAM, REALITY CRUSH
+          const MS=0.108;
+          if(dd>4.0) mv(sin,cos,MS);
+          if(dd<4.6 && e.attackTimer%13===0){ hit(1.0); toPlayer({ eff:'shake', shake:3 }); }
+          // GRAVITY SINGULARITY — a black hole that drags for ~18 ticks then collapses
+          if(dd>4 && dd<26 && e._ab>=37){ e._ab=0;
+            const cx=nearestPlayer.x + (e.x-nearestPlayer.x)*0.22, cz=nearestPlayer.z + (e.z-nearestPlayer.z)*0.22;
+            if(!game._sdGeyser) game._sdGeyser=[];
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'rv_singularity',zone:zoneName,ex:+cx.toFixed(2),ez:+cz.toFixed(2),col:_RP,ms:1900});
+            for(let k=0;k<9;k++) game._sdGeyser.push({ zone:zoneName, x:cx, z:cz, fuse:2+k*2, dmg:0, eid:e.id, col:_RP, radius:9.0, soft:1, pull:1.1 });
+            game._sdGeyser.push({ zone:zoneName, x:cx, z:cz, fuse:19, dmg:_rvDmgS(e,1.4), eid:e.id, col:_RP, radius:6.5, shake:4 }); }
+          e._slam=(e._slam||10)+1;
+          if(dd>3 && dd<16 && e._slam>=25){ e._slam=0; riftTear(nearestPlayer.x, nearestPlayer.z, 1.2); }
+          e._crush=(e._crush||20)+1;
+          if(dd<18 && e._crush>=57){ e._crush=0;                                        // REALITY CRUSH
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'rv_crush',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:2600,r:18});
+            _pmShock(game,zoneName,e,e.x,e.z,7.0,0,_RP,players,send);
+            if(dd<7){ hit(1.3); toPlayer({ eff:'shake', shake:2 }); } }
+        }
+        else if(e.type==='rift_stalker'){
+          // RELENTLESS HUNTER — RIFT DASH, PHASE STRIKE, dimensional rake
+          const MS=0.33;
+          if(e._phase){ e._pst=(e._pst||0)+1;
+            mv(Math.sin(e._pdir),Math.cos(e._pdir),MS*2.6);
+            if(dd<2.4 && !e._phit){ hit(1.3); e._phit=1; }
+            if(e._pst>=3){ e._phase=0; e._pst=0; }
+          } else {
+            if(dd>2.6) mv(sin*0.9+pr*strafe*0.35, cos*0.9+pq*strafe*0.35, MS); else mv(pr*strafe,pq*strafe,MS);
+            if(dd<3.0 && e.attackTimer%7===0){ hit(1.0); }
+            // RIFT DASH — blink through a tear to close a long gap
+            if(dd>10 && dd<40 && e._ab>=20){ e._ab=0;
+              const dstep=Math.min(dd-3,14);
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'rv_blink',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_RP});
+              e.x+=Math.sin(ang)*dstep; e.z+=Math.cos(ang)*dstep; _moved=true;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'rv_blink',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_RM}); }
+            if(dd>4 && dd<12 && (e._pg=(e._pg||0)+1)>=18){ e._pg=0; e._phase=1; e._pst=0; e._pdir=ang; e._phit=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_RP,n:6}); }
+          }
+        }
+        else if(e.type==='psyche_horror'){
+          // PSYCHIC TERROR — psychic lances, MIND SHATTER, TERROR SCREAM
+          const MS=0.27;
+          if(dd<7) mv(-sin*0.6+pr*strafe*0.7,-cos*0.6+pq*strafe*0.7,MS);
+          else if(dd>16) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+          if(dd>2.5 && dd<20 && e.attackTimer%9===0){ shoot(ang,0.55,2,0.18); }
+          // MIND SHATTER — reality warps AND the player's controls break
+          if(dd<15 && e._ab>=42){ e._ab=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'rv_mindshatter',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:2200,r:15});
+            if(dd<15){ hit(0.7); toPlayer({ eff:'confuse', dur:150 }); toPlayer({ eff:'slow', slow:0.55, root:2000 }); } }
+          e._scream=(e._scream||12)+1;
+          if(dd<9 && e._scream>=34){ e._scream=0;                                        // TERROR SCREAM — fear knockback
+            _pmShock(game,zoneName,e,e.x,e.z,7.0,0,_RM,players,send);
+            if(dd<7){ hit(0.9);
+              toPlayer({ eff:'push', px:+e.x.toFixed(2), pz:+e.z.toFixed(2), push:3.2, shake:2 });
+              toPlayer({ eff:'slow', slow:0.5, root:1200 }); } }
+        }
+        else { // rift_weaver — WEAVER OF THE BREACH
+          const MS=0.36;
+          if(dd<7) mv(-sin*0.6+pr*strafe*0.7,-cos*0.6+pq*strafe*0.7,MS);
+          else if(dd>17) mv(sin*0.7,cos*0.7,MS);
+          else mv(pr*strafe*0.7,pq*strafe*0.7,MS);
+          if(dd>2.5 && dd<20 && e.attackTimer%8===0){ shoot(ang,0.5,3,0.14); }
+          // RIFT TEARS — several void eruptions around the player
+          if(dd<18 && e._ab>=32){ e._ab=0;
+            for(let i=0;i<3;i++){ const a=Math.random()*6.283, r=2+Math.random()*4;
+              riftTear(nearestPlayer.x+Math.cos(a)*r, nearestPlayer.z+Math.sin(a)*r, 0.9); } }
+          e._weave=(e._weave||7)+1;
+          if(dd<20 && e._weave>=35){ e._weave=0;                                          // VOID WEAVE — radiating beams
+            for(let i=0;i<6;i++){ const a=i*1.047;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.3,ez:+e.z.toFixed(2),tx:+(e.x+Math.sin(a)*10).toFixed(2),tz:+(e.z+Math.cos(a)*10).toFixed(2),col:_RC,w:0.35}); }
+            if(dd<10) hit(1.0); }
+          e._ent=(e._ent||15)+1;
+          if(dd>2 && dd<13 && e._ent>=40){ e._ent=0;                                      // ENTANGLING VOID — hard root
+            if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({ zone:zoneName, x:nearestPlayer.x, z:nearestPlayer.z, fuse:6, dmg:_rvDmgS(e,1.0), eid:e.id, col:_RD, radius:2.6, slow:0.0, slowDur:900 });
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'rv_tear',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_RD,ms:520}); }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -4499,6 +4786,12 @@ const VS_BESPOKE = { veiled_acolyte:1, censer_bearer:1, penitent_striker:1, choi
 //   the bespoke kit — the lair also spawns generic guardians/mages/iron guards which keep their
 //   existing generic AI, exactly as the client kit does. HP unchanged (already E-raid scale).
 const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
+// a547 — RIFT VALE void/rift AI (zone-gated to 'riftvale'). CRITICAL: rift_stalker and
+//   rift_weaver ALSO live in void_citadel (not yet migrated) — the zone gate is what keeps
+//   this kit out of that zone. Client bumps HP x1.5 AND ATK x1.5 zone-locally.
+const RV_BESPOKE = { void_colossus:1, rift_stalker:1, psyche_horror:1, rift_weaver:1 };
+const RV_PWR = { void_colossus:220, rift_stalker:170, psyche_horror:160, rift_weaver:150 };
+function _rvDmgS(e, mult){ return Math.floor((RV_PWR[e.type] || e.atk || 150) * 1.5 * mult); }
 const DL_PWR = { void_spider:250, wyvern:270, fire_demon:295, inferno_golem:330 };
 function _dlDmgS(e, mult){ return Math.floor((DL_PWR[e.type] || e.atk || 275) * mult); }
 const VS_PWR = { veiled_acolyte:185, censer_bearer:205, penitent_striker:215, choir_wraith:195, stone_inquisitor:235, ritual_guardian:220, veiled_cardinal:290, forsaken_abbot:320 };
