@@ -1974,7 +1974,40 @@ const ZONE_SPAWNS = {
   // ── NEON HOLLOW — POST-CAP AA-GATED (matches client ZONE_DEFS.neon_hollow) ──
   neon_hollow: [],   // a487 — client-authoritative now (bespoke machine AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   // ── VEILED SANCTUARY (v92.41) — matches client ZONE_DEFS.veiled_sanctuary ──
-  veiled_sanctuary: [],   // a484 — client-authoritative now (bespoke ritual AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a545 — MULTIPLAYER MIGRATION: The Veiled Sanctuary is now server-authoritative.
+  veiled_sanctuary: [
+    {type:'veiled_acolyte', tx:14, tz:36},
+    {type:'veiled_acolyte', tx:16, tz:42},
+    {type:'censer_bearer', tx:18, tz:38},
+    {type:'penitent_striker', tx:20, tz:44},
+    {type:'veiled_acolyte', tx:22, tz:36},
+    {type:'choir_wraith', tx:24, tz:42},
+    {type:'stone_inquisitor', tx:28, tz:30},
+    {type:'censer_bearer', tx:30, tz:36},
+    {type:'choir_wraith', tx:32, tz:42},
+    {type:'penitent_striker', tx:34, tz:48},
+    {type:'ritual_guardian', tx:36, tz:30},
+    {type:'veiled_acolyte', tx:38, tz:42},
+    {type:'stone_inquisitor', tx:40, tz:36},
+    {type:'censer_bearer', tx:42, tz:48},
+    {type:'choir_wraith', tx:44, tz:30},
+    {type:'penitent_striker', tx:46, tz:42},
+    {type:'veiled_cardinal', tx:50, tz:40},
+    {type:'veiled_acolyte', tx:52, tz:34},
+    {type:'veiled_acolyte', tx:52, tz:46},
+    {type:'ritual_guardian', tx:54, tz:38},
+    {type:'ritual_guardian', tx:54, tz:42},
+    {type:'choir_wraith', tx:60, tz:34},
+    {type:'choir_wraith', tx:60, tz:46},
+    {type:'forsaken_abbot', tx:62, tz:40},
+    {type:'stone_inquisitor', tx:64, tz:36},
+    {type:'stone_inquisitor', tx:64, tz:44},
+    {type:'penitent_striker', tx:66, tz:38},
+    {type:'penitent_striker', tx:66, tz:42},
+    {type:'ritual_guardian', tx:70, tz:38},
+    {type:'ritual_guardian', tx:70, tz:42},
+    {type:'censer_bearer', tx:72, tz:40}
+  ],
   // ── BLOOMING WILDS (v92.49+v92.50) — matches client ZONE_DEFS.blooming_wilds ──
   // a535 — MULTIPLAYER MIGRATION: The Blooming Wilds is now server-authoritative.
   blooming_wilds: [
@@ -2743,7 +2776,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -4003,6 +4036,200 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+      // ── a545: VEILED SANCTUARY ritual AI (zone-gated to 'veiled_sanctuary'). Eight types:
+      //   liturgists, censer processionals, flagellants, dissonant choirs, lithic judges,
+      //   seal-wardens, and the two elites (Cardinal / Forsaken Abbot). Re-timed 60->10Hz.
+      if (zoneName === 'veiled_sanctuary' && e.aggroed && VS_BESPOKE[e.type]) {
+        const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+        const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+        const _VG=0xffd76a, _VV=0x8a4cff, _VE=0xff8844, _VGH=0xbfe8ff, _VST=0xc9b98a, _VAS=0xb8a888, _VBL=0xcc2244, _VDI=0x6a3aa0;
+        if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if(Math.random()<0.03) e._strafe=-e._strafe;
+        const strafe=e._strafe;
+        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        if(e._vsHealCD>0) e._vsHealCD--;
+        let _moved=false;
+        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const hit=(mult,status,sdur)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer){
+          send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_vsDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName});
+          if(status) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:status,statusDur:(sdur||120)}); } }); };
+        const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+        const shoot=(baseAng,col,mult,count,spread)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_vsDmgS(e,mult),'plasma',null,0); } };
+        // telegraphed ground eruption
+        const tele=(tx,tz,fuse,radius,mult,col,slow,slowDur,shake,status)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:fuse, dmg:_vsDmgS(e,mult), eid:e.id, col:col, radius:radius, slow:(slow===undefined?0:slow), slowDur:(slowDur||0), shake:(shake||0), status:(status||null), statusDur:120 });
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'vs_halo',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col,ms:fuse*100}); };
+        // incense / void cloud
+        const cloud=(tx,tz,ticks,mult,col,burn,slowF)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_geyser_warn',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col});
+          for(let i=0;i<ticks;i++) game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:3+i*3, dmg:_vsDmgS(e,mult), eid:e.id, col:col, radius:3.4, soft:1, status:(burn&&i%3===0?'burn':null), statusDur:120, slow:(slowF||0), slowDur:(slowF?420:0) }); };
+        // sustained channel beam that re-aims each tick
+        const channel=(ticks,mult,col)=>{ e._chan=ticks; e._chanMult=mult; e._chanCol=col; };
+        const vsBlink=(distB,toward)=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_VV});
+          const s=toward?1:-1; e.x+=s*Math.sin(ang)*distB; e.z+=s*Math.cos(ang)*distB; _moved=true;
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_VV}); };
+
+        // resolve any active channel beam (choir verse / seal beam) — re-aims every tick
+        if(e._chan>0){ e._chan--;
+          broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:(e._chanCol||_VGH),w:0.16});
+          if(dd<18) hit(e._chanMult||0.4); }
+
+        if(e.type==='veiled_acolyte'){
+          // FROZEN LITURGIST — crystal bolts, LITANY OF THE SEAL, CENSURE brand, panic blink
+          const MS=0.288;
+          if(dd<5) mv(-sin*0.7+pr*strafe*0.6,-cos*0.7+pq*strafe*0.6,MS);
+          else if(dd>14) mv(sin*0.7,cos*0.7,MS);
+          else mv(pr*strafe,pq*strafe,MS);
+          if(dd<2.4 && e.attackTimer%10===0){ hit(0.75); }
+          if(dd>2.2 && dd<16 && e.attackTimer%9===0){ shoot(ang,_VG,0.55,1,0); }
+          if(dd>3 && dd<16 && e._ab>=27){ e._ab=0; shoot(ang,_VV,0.5,3,0.2); }                  // LITANY
+          e._cen=(e._cen||13)+1;
+          if(dd<18 && e._cen>=43){ e._cen=0; tele(nearestPlayer.x,nearestPlayer.z,7,3.2,1.15,_VG,0,0,0,null); }   // CENSURE
+          e._bl=(e._bl||0)+1;
+          if(dd<3 && e._bl>=23){ e._bl=0; vsBlink(5+Math.random()*2,false); }
+        }
+        else if(e.type==='censer_bearer'){
+          // EMBERWARD PROCESSIONAL — burning censer, SMOTHERING INCENSE, CENSER WHIRL
+          const MS=0.204;
+          if(dd>2.8) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS);
+          if(dd<3.2 && e.attackTimer%11===0){ hit(1.0,'burn',120); }
+          if(dd<15 && e._ab>=31){ e._ab=0; cloud(nearestPlayer.x,nearestPlayer.z,7,0.45,_VE,true,0.7); }
+          e._wh=(e._wh||17)+1;
+          if(dd<5 && e._wh>=33){ e._wh=0; tele(e.x,e.z,6,4.2,1.3,_VE,0,0,2,'burn'); }
+          if(dd>4 && dd<18 && e.attackTimer%17===0){ shoot(ang,_VE,0.65,1,0); }
+        }
+        else if(e.type==='penitent_striker'){
+          // FLAGELLANT — chain-mace, PENITENT RUSH, CHAIN LASH (pull), SELF-SCOURGE frenzy
+          if(e._frz>0) e._frz--;
+          const _fr=e._frz>0;
+          const MS=0.348*(_fr?1.3:1);
+          if(e._charge){ e._cst=(e._cst||0)+1;
+            if(e._charge==='wind'){ if(e._cst>=3){ e._charge='go'; e._cst=0; e._cdir=ang; e._chit=0; } }
+            else { mv(Math.sin(e._cdir),Math.cos(e._cdir),MS*3.1);
+              if(dd<2.6 && !e._chit){ hit(1.5); e._chit=1; _pmShock(game,zoneName,e,e.x,e.z,2.2,0,_VAS,players,send); }
+              if(e._cst>=3){ e._charge=0; e._cst=0; } }
+          } else {
+            if(dd>2.6) mv(sin*0.8+pr*strafe*0.5, cos*0.8+pq*strafe*0.5, MS); else mv(pr*strafe,pq*strafe,MS);
+            if(dd<3.0 && e.attackTimer%(_fr?6:9)===0){ hit(0.95); }
+            e._tc=(e._tc||0)+1; if(dd>5 && dd<15 && e._tc>=32){ e._tc=0; e._charge='wind'; e._cst=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_VAS,n:6}); }
+            // CHAIN LASH — yanks you in on the censer chain
+            e._vw=(e._vw||0)+1;
+            if(dd>3 && dd<9 && e._vw>=28){ e._vw=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.0,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_VAS,w:0.18});
+              toPlayer({ eff:'pull', px:+e.x.toFixed(2), pz:+e.z.toFixed(2), pull:1.8 });
+              toPlayer({ eff:'slow', slow:0.15, root:500 });
+              if(dd<5) hit(0.85); }
+            // SELF-SCOURGE — bleeds itself into a frenzy
+            e._sc=(e._sc||0)+1;
+            if(dd<20 && e._sc>=70 && !_fr){ e._sc=0; e._frz=50;
+              e.hp=Math.max(1, e.hp-Math.floor(e.maxHp*0.015)); changed.push(e);
+              _pmShock(game,zoneName,e,e.x,e.z,2.4,0,_VBL,players,send); }
+          }
+        }
+        else if(e.type==='choir_wraith'){
+          // DISSONANT CHOIR — sound-wave bolts, VERSE OF UNMAKING (channel), REQUIEM, drift-blink
+          const MS=0.312;
+          if(dd<7) mv(-sin*0.7+pr*strafe*0.7,-cos*0.7+pq*strafe*0.7,MS);
+          else if(dd>13) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe,pq*strafe,MS);
+          if(dd>2.5 && dd<17 && e.attackTimer%10===0){ shoot(ang,_VGH,0.55,2,0.14); }
+          if(dd>3 && dd<16 && e._ab>=32 && !(e._chan>0)){ e._ab=0; channel(3,0.4,_VGH); }        // VERSE OF UNMAKING
+          e._rq=(e._rq||12)+1;
+          if(dd<9 && e._rq>=40){ e._rq=0;
+            _pmShock(game,zoneName,e,e.x,e.z,4.6,0,_VDI,players,send);
+            hit(0.9); toPlayer({ eff:'slow', slow:0.45, root:1200, shake:2 }); }                  // REQUIEM
+          e._drift=(e._drift||10)+1; if(e._drift>=37){ e._drift=0; vsBlink(4+Math.random()*3,true); }
+        }
+        else if(e.type==='stone_inquisitor'){
+          // LITHIC JUDGE — crushing blows, GAZE OF STONE (petrify), VERDICT, JUDGMENT SLAM
+          const MS=0.12;
+          if(dd>2.8) mv(sin,cos,MS);
+          if(dd<3.4 && e.attackTimer%13===0){ hit(1.15); toPlayer({ eff:'shake', shake:2 }); }
+          e._gz=(e._gz||10)+1;
+          if(dd>3 && dd<14 && e._gz>=38){ e._gz=0;
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:2.6,ez:+e.z.toFixed(2),tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2),col:_VST,w:0.30});
+            if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({ zone:zoneName, x:nearestPlayer.x, z:nearestPlayer.z, fuse:6, dmg:_vsDmgS(e,1.0), eid:e.id, col:_VST, radius:3.4, slow:0.0, slowDur:900, petrify:1 });
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'vs_halo',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_VST,ms:520}); }
+          e._vd=(e._vd||8)+1;
+          if(dd<12 && e._vd>=43){ e._vd=0;                                                        // VERDICT — 3 marching eruptions
+            for(let vi=0;vi<3;vi++){ const fr2=(vi+1)/3;
+              tele(e.x+(nearestPlayer.x-e.x)*fr2, e.z+(nearestPlayer.z-e.z)*fr2, 5+vi*3, 3.0, 0.8, _VG, 0,0,0,null); } }
+          e._slam=(e._slam||7)+1;
+          if(dd<5 && e._slam>=32){ e._slam=0; tele(e.x,e.z,6,4.6,1.5,_VST,0,0,4,null); }
+        }
+        else if(e.type==='ritual_guardian'){
+          // WARDEN OF THE SEAL — rune bolts, RUNE PRISON, SEAL BEAM (channel), WARD PULSE
+          const MS=0.156;
+          if(dd>3.0) mv(sin*0.8+pr*strafe*0.3, cos*0.8+pq*strafe*0.3, MS);
+          if(dd<3.4 && e.attackTimer%12===0){ hit(1.0); }
+          if(dd>2.6 && dd<16 && e.attackTimer%11===0){ shoot(ang,_VV,0.6,2,0.16); }
+          if(dd<14 && e._ab>=35){ e._ab=0;                                                        // RUNE PRISON
+            if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({ zone:zoneName, x:nearestPlayer.x, z:nearestPlayer.z, fuse:7, dmg:_vsDmgS(e,1.1), eid:e.id, col:_VV, radius:2.8, slow:0.0, slowDur:700 });
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'vs_halo',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_VV,ms:700}); }
+          e._sb=(e._sb||10)+1;
+          if(dd>3 && dd<15 && e._sb>=37 && !(e._chan>0)){ e._sb=0; channel(3,0.45,_VV); }          // SEAL BEAM
+          // WARD PULSE — mend the single most-wounded brother (per-target cooldown; no chain-healing)
+          if(e._wd===undefined) e._wd=Math.floor(Math.random()*70);
+          e._wd++;
+          if(e._wd>=70){ e._wd=0;
+            let best=null, bestFrac=0.6;
+            for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i];
+              if(!o||!o.active||o===e||!VS_BESPOKE[o.type]) continue;
+              if((o._vsHealCD||0)>0) continue;
+              if(Math.hypot(o.x-e.x,o.z-e.z)>12) continue;
+              const fr3=o.hp/o.maxHp; if(fr3<bestFrac){ bestFrac=fr3; best=o; } }
+            if(best){ best.hp=Math.min(best.maxHp, best.hp+Math.floor(best.maxHp*0.03)); best._vsHealCD=20; changed.push(best);
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_beam',zone:zoneName,eid:e.id,ex:+e.x.toFixed(2),ey:1.6,ez:+e.z.toFixed(2),tx:+best.x.toFixed(2),tz:+best.z.toFixed(2),col:_VG,w:0.14});
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'vs_halo',zone:zoneName,ex:+best.x.toFixed(2),ez:+best.z.toFixed(2),col:_VG,ms:320}); } }
+        }
+        else if(e.type==='veiled_cardinal'){
+          // HERALD OF THE HALO (elite) — BENEDICTION OF RUIN, HALO FLARE, EXCOMMUNICATION
+          const MS=0.216;
+          if(dd<6) mv(-sin*0.6+pr*strafe*0.7,-cos*0.6+pq*strafe*0.7,MS);
+          else if(dd>13) mv(sin*0.6,cos*0.6,MS);
+          else mv(pr*strafe,pq*strafe,MS);
+          if(dd>2.5 && dd<18 && e.attackTimer%8===0){ shoot(ang,_VG,0.6,1,0); }
+          if(dd>3 && dd<20 && e._ab>=35){ e._ab=0; e._bene=4; }                                    // BENEDICTION — 4 stones in sequence
+          if(e._bene>0){ e._bene--;
+            const oa2=e._bene*1.5708 + e.attackTimer*0.02;
+            const sx=e.x+Math.cos(oa2)*1.6, sz=e.z+Math.sin(oa2)*1.6;
+            const ddx=nearestPlayer.x-sx, ddz=nearestPlayer.z-sz, dl=Math.hypot(ddx,ddz)||0.001;
+            _sdSpawnProj(game,zoneName,{id:e.id,x:sx,z:sz,type:e.type,atk:e.atk}, Math.atan2(ddx/dl,ddz/dl), _VG, _vsDmgS(e,0.55), 'plasma', null, 0); }
+          e._hf=(e._hf||10)+1;
+          if(dd<7 && e._hf>=33){ e._hf=0; tele(e.x,e.z,6,5.0,1.3,_VG,0,0,2,null); }                // HALO FLARE
+          e._ex=(e._ex||20)+1;
+          if(dd<22 && e._ex>=63){ e._ex=0;                                                          // EXCOMMUNICATION — brand then judgment
+            if(!game._sdGeyser) game._sdGeyser=[];
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'vs_excom',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_VV,ms:900});
+            game._sdGeyser.push({ zone:zoneName, x:nearestPlayer.x, z:nearestPlayer.z, fuse:9, dmg:_vsDmgS(e,1.6), eid:e.id, col:_VG, radius:4.2, shake:3, relock:3, excom:1 }); }
+        }
+        else { // forsaken_abbot (elite) — TWIN INCENSE, MISERERE, THE SEAL FAILS
+          const MS=0.18;
+          if(dd>3.4) mv(sin*0.8+pr*strafe*0.4, cos*0.8+pq*strafe*0.4, MS); else mv(pr*strafe,pq*strafe,MS);
+          if(dd<4.0 && e.attackTimer%10===0){ e._side=!e._side;
+            if(e._side) hit(1.05,'burn',120); else hit(1.05); }                                     // alternating fire/void censers
+          if(dd>3 && dd<18 && e.attackTimer%12===0){ shoot(ang,_VE,0.55,1,0); shoot(ang+0.12,_VV,0.55,1,0); }
+          if(dd<16 && e._ab>=33){ e._ab=0;                                                          // TWIN INCENSE
+            cloud(nearestPlayer.x,nearestPlayer.z,7,0.45,_VE,true,0);
+            const oa3=Math.random()*6.283;
+            cloud(nearestPlayer.x+Math.cos(oa3)*3, nearestPlayer.z+Math.sin(oa3)*3, 7, 0.45, _VV, false, 0.7); }
+          e._mi=(e._mi||25)+1;
+          if(dd<14 && e._mi>=70){ e._mi=0;                                                          // MISERERE — the dirge of despair
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'vs_dirge',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:2400,r:14});
+            _pmShock(game,zoneName,e,e.x,e.z,6.0,0,_VDI,players,send);
+            if(dd<12){ hit(1.2); toPlayer({ eff:'slow', slow:0.55, root:1600, shake:3 }); } }
+          e._sf=(e._sf||13)+1;
+          if(dd<14 && e._sf>=50){ e._sf=0;                                                          // THE SEAL FAILS
+            for(let si=0;si<5;si++){ const sa=Math.random()*6.283, sr=3+Math.random()*4;
+              tele(e.x+Math.cos(sa)*sr, e.z+Math.sin(sa)*sr, 6, 3.0, 0.9, _VV, 0,0,0,null); } }
+        }
+
+        if(_moved) changed.push(e);
+      }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -4049,7 +4276,8 @@ function tickGame(game) {
         players.forEach((p) => { if (!p || p.gameId !== game.id || p.zone !== gy.zone || p.x === undefined) return;
           const rdx=p.x-gy.x, rdz=p.z-gy.z, r2=rdx*rdx+rdz*rdz; if (r2 < _rbd) { _rbd = r2; _rp = p; } });
         if (_rp) { gy.x = _rp.x; gy.z = _rp.z;
-          broadcastToZone(game.id, gy.zone, gy.deathmark
+          if (gy.excom) broadcastToZone(game.id, gy.zone, { type:'sv_fx', vt:'vs_halo', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0xffd76a), ms:300 });   // a545 — the brand follows you
+          else broadcastToZone(game.id, gy.zone, gy.deathmark
             ? { type:'sv_fx', vt:'np_crossbones', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0x88ff66), ms:300 }   // a544 — the brand follows you
             : { type:'sv_fx', vt:'sd_geyser_warn', zone:gy.zone, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), col:(gy.col||0xff3cf0) }); }
         gy.relock = 0;
@@ -4068,6 +4296,7 @@ function tickGame(game) {
             if (gy.status) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'status', status:gy.status, statusDur:(gy.statusDur||120) });
             if (gy.shake) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'shake', shake:gy.shake });   // a540 — blasting charge
             if (gy.freeze) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'freeze', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), col:(gy.col||0xbfe8ff) });   // a542 — hard freeze VFX cue
+            if (gy.petrify) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'petrify' });   // a545 — Inquisitor's gaze of stone
           }
         });
       } else keepG.push(gy);
@@ -4125,6 +4354,12 @@ const ELD_BESPOKE = { ancient_guardian:1, stone_sentinel:1, vine_horror:1, void_
 //   these four are already E13-huge in ENEMY_STATS with baked dmgReduction (0.28-0.45), which
 //   the client kit deliberately leaves alone. Damage mirrors the client's flat _NP_PWR floor.
 const NP_BESPOKE = { necro_abomination:1, necro_lich_mage:1, necro_specter:1, necro_wight:1 };
+// a545 — VEILED SANCTUARY ritual AI (zone-gated to 'veiled_sanctuary'). Eight types, the
+//   largest roster yet, two of them elites. NO HP/ATK multiplier: like the necropolis these are
+//   already huge in ENEMY_STATS with baked dmgReduction, and the client kit leaves them alone.
+const VS_BESPOKE = { veiled_acolyte:1, censer_bearer:1, penitent_striker:1, choir_wraith:1, stone_inquisitor:1, ritual_guardian:1, veiled_cardinal:1, forsaken_abbot:1 };
+const VS_PWR = { veiled_acolyte:185, censer_bearer:205, penitent_striker:215, choir_wraith:195, stone_inquisitor:235, ritual_guardian:220, veiled_cardinal:290, forsaken_abbot:320 };
+function _vsDmgS(e, mult){ return Math.floor((VS_PWR[e.type] || e.atk || 200) * mult); }
 const NP_PWR = { necro_abomination:240, necro_wight:190, necro_lich_mage:200, necro_specter:170 };
 function _npDmgS(e, mult){ return Math.floor((NP_PWR[e.type] || e.atk || 180) * mult); }
 const ELD_PWR = { ancient_guardian:170, stone_sentinel:160, vine_horror:130, void_stalker:120 };
