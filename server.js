@@ -2375,7 +2375,210 @@ const ZONE_SPAWNS = {
   fungal: [],   // a471 — client-authoritative (bespoke spore AI client-side); server no longer spawns/owns these mobs.
   void_citadel: [],   // a492 — client-authoritative now (bespoke unreality AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   // ── NEON HOLLOW — POST-CAP AA-GATED (matches client ZONE_DEFS.neon_hollow) ──
-  neon_hollow: [],   // a487 — client-authoritative now (bespoke machine AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a549 — NEON HOLLOW is now SERVER-AUTHORITATIVE (was client-side since a487).
+  //   196 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
+  //   HP intentionally UNCHANGED (no ZONE_HP_MULT entry) — ENEMY_STATS already carries
+  //   the E12 values and the client kit applies no bump. Altitude needs no sync here:
+  //   the drone/wraith/crash-car hover heights are STATIC py values applied by the
+  //   client at mesh creation, and nothing in the kit animates Y.
+  neon_hollow: [
+    {type:'hollow_enforcer', tx:33, tz:34},
+    {type:'hollow_enforcer', tx:34, tz:37},
+    {type:'maintenance_striker', tx:45, tz:46},
+    {type:'maintenance_striker', tx:37, tz:36},
+    {type:'sentinel_drone', tx:47, tz:41},
+    {type:'sentinel_drone', tx:41, tz:33},
+    {type:'neon_wraith', tx:31, tz:36},
+    {type:'neon_wraith', tx:49, tz:41},
+    {type:'skybridge_sniper', tx:44, tz:46},
+    {type:'skybridge_sniper', tx:37, tz:39},
+    {type:'hollow_enforcer', tx:73, tz:47},
+    {type:'hollow_enforcer', tx:76, tz:38},
+    {type:'maintenance_striker', tx:66, tz:37},
+    {type:'maintenance_striker', tx:63, tz:44},
+    {type:'sentinel_drone', tx:67, tz:47},
+    {type:'sentinel_drone', tx:68, tz:42},
+    {type:'neon_wraith', tx:74, tz:49},
+    {type:'neon_wraith', tx:76, tz:42},
+    {type:'skybridge_sniper', tx:78, tz:37},
+    {type:'skybridge_sniper', tx:67, tz:43},
+    {type:'hollow_enforcer', tx:41, tz:76},
+    {type:'hollow_enforcer', tx:49, tz:72},
+    {type:'maintenance_striker', tx:40, tz:76},
+    {type:'maintenance_striker', tx:34, tz:81},
+    {type:'sentinel_drone', tx:38, tz:77},
+    {type:'sentinel_drone', tx:33, tz:81},
+    {type:'neon_wraith', tx:33, tz:63},
+    {type:'neon_wraith', tx:38, tz:73},
+    {type:'skybridge_sniper', tx:44, tz:63},
+    {type:'skybridge_sniper', tx:37, tz:67},
+    {type:'hollow_enforcer', tx:196, tz:33},
+    {type:'hollow_enforcer', tx:206, tz:35},
+    {type:'maintenance_striker', tx:193, tz:38},
+    {type:'maintenance_striker', tx:194, tz:37},
+    {type:'sentinel_drone', tx:191, tz:35},
+    {type:'sentinel_drone', tx:199, tz:35},
+    {type:'neon_wraith', tx:208, tz:36},
+    {type:'neon_wraith', tx:208, tz:42},
+    {type:'skybridge_sniper', tx:203, tz:32},
+    {type:'skybridge_sniper', tx:207, tz:45},
+    {type:'hollow_enforcer', tx:169, tz:45},
+    {type:'hollow_enforcer', tx:173, tz:38},
+    {type:'maintenance_striker', tx:169, tz:34},
+    {type:'maintenance_striker', tx:171, tz:42},
+    {type:'sentinel_drone', tx:171, tz:44},
+    {type:'sentinel_drone', tx:173, tz:37},
+    {type:'neon_wraith', tx:167, tz:44},
+    {type:'neon_wraith', tx:176, tz:45},
+    {type:'skybridge_sniper', tx:177, tz:44},
+    {type:'skybridge_sniper', tx:160, tz:31},
+    {type:'hollow_enforcer', tx:202, tz:79},
+    {type:'hollow_enforcer', tx:203, tz:78},
+    {type:'maintenance_striker', tx:205, tz:70},
+    {type:'maintenance_striker', tx:194, tz:74},
+    {type:'sentinel_drone', tx:193, tz:74},
+    {type:'sentinel_drone', tx:208, tz:75},
+    {type:'neon_wraith', tx:207, tz:69},
+    {type:'neon_wraith', tx:200, tz:71},
+    {type:'skybridge_sniper', tx:196, tz:67},
+    {type:'skybridge_sniper', tx:196, tz:65},
+    {type:'hollow_enforcer', tx:37, tz:201},
+    {type:'hollow_enforcer', tx:40, tz:192},
+    {type:'maintenance_striker', tx:39, tz:198},
+    {type:'maintenance_striker', tx:44, tz:206},
+    {type:'sentinel_drone', tx:43, tz:194},
+    {type:'sentinel_drone', tx:49, tz:208},
+    {type:'neon_wraith', tx:40, tz:199},
+    {type:'neon_wraith', tx:44, tz:205},
+    {type:'skybridge_sniper', tx:48, tz:201},
+    {type:'skybridge_sniper', tx:48, tz:206},
+    {type:'hollow_enforcer', tx:74, tz:200},
+    {type:'hollow_enforcer', tx:71, tz:203},
+    {type:'maintenance_striker', tx:81, tz:202},
+    {type:'maintenance_striker', tx:70, tz:205},
+    {type:'sentinel_drone', tx:69, tz:206},
+    {type:'sentinel_drone', tx:78, tz:204},
+    {type:'neon_wraith', tx:74, tz:201},
+    {type:'neon_wraith', tx:65, tz:209},
+    {type:'skybridge_sniper', tx:64, tz:200},
+    {type:'skybridge_sniper', tx:72, tz:203},
+    {type:'hollow_enforcer', tx:49, tz:164},
+    {type:'hollow_enforcer', tx:40, tz:165},
+    {type:'maintenance_striker', tx:48, tz:168},
+    {type:'maintenance_striker', tx:41, tz:162},
+    {type:'sentinel_drone', tx:32, tz:167},
+    {type:'sentinel_drone', tx:40, tz:168},
+    {type:'neon_wraith', tx:44, tz:163},
+    {type:'neon_wraith', tx:35, tz:172},
+    {type:'skybridge_sniper', tx:45, tz:177},
+    {type:'skybridge_sniper', tx:41, tz:176},
+    {type:'hollow_enforcer', tx:203, tz:194},
+    {type:'hollow_enforcer', tx:199, tz:201},
+    {type:'maintenance_striker', tx:199, tz:203},
+    {type:'maintenance_striker', tx:199, tz:199},
+    {type:'sentinel_drone', tx:200, tz:200},
+    {type:'sentinel_drone', tx:194, tz:202},
+    {type:'neon_wraith', tx:202, tz:199},
+    {type:'neon_wraith', tx:202, tz:201},
+    {type:'skybridge_sniper', tx:201, tz:192},
+    {type:'skybridge_sniper', tx:206, tz:194},
+    {type:'hollow_enforcer', tx:159, tz:209},
+    {type:'hollow_enforcer', tx:175, tz:199},
+    {type:'maintenance_striker', tx:169, tz:209},
+    {type:'maintenance_striker', tx:166, tz:196},
+    {type:'sentinel_drone', tx:172, tz:198},
+    {type:'sentinel_drone', tx:173, tz:209},
+    {type:'neon_wraith', tx:171, tz:201},
+    {type:'neon_wraith', tx:165, tz:196},
+    {type:'skybridge_sniper', tx:162, tz:203},
+    {type:'skybridge_sniper', tx:170, tz:205},
+    {type:'hollow_enforcer', tx:209, tz:163},
+    {type:'hollow_enforcer', tx:207, tz:164},
+    {type:'maintenance_striker', tx:192, tz:162},
+    {type:'maintenance_striker', tx:205, tz:168},
+    {type:'sentinel_drone', tx:198, tz:168},
+    {type:'sentinel_drone', tx:196, tz:177},
+    {type:'neon_wraith', tx:197, tz:177},
+    {type:'neon_wraith', tx:203, tz:161},
+    {type:'skybridge_sniper', tx:202, tz:167},
+    {type:'skybridge_sniper', tx:209, tz:159},
+    {type:'hollow_enforcer', tx:117, tz:58},
+    {type:'hollow_enforcer', tx:129, tz:54},
+    {type:'maintenance_striker', tx:126, tz:59},
+    {type:'maintenance_striker', tx:125, tz:49},
+    {type:'sentinel_drone', tx:121, tz:56},
+    {type:'sentinel_drone', tx:114, tz:47},
+    {type:'neon_wraith', tx:125, tz:51},
+    {type:'neon_wraith', tx:115, tz:59},
+    {type:'skybridge_sniper', tx:124, tz:56},
+    {type:'skybridge_sniper', tx:124, tz:45},
+    {type:'hollow_enforcer', tx:121, tz:181},
+    {type:'hollow_enforcer', tx:129, tz:194},
+    {type:'maintenance_striker', tx:123, tz:192},
+    {type:'maintenance_striker', tx:115, tz:196},
+    {type:'sentinel_drone', tx:129, tz:182},
+    {type:'sentinel_drone', tx:114, tz:196},
+    {type:'neon_wraith', tx:121, tz:186},
+    {type:'neon_wraith', tx:115, tz:184},
+    {type:'skybridge_sniper', tx:114, tz:189},
+    {type:'skybridge_sniper', tx:125, tz:196},
+    {type:'hollow_enforcer', tx:65, tz:115},
+    {type:'hollow_enforcer', tx:47, tz:114},
+    {type:'maintenance_striker', tx:65, tz:128},
+    {type:'maintenance_striker', tx:61, tz:112},
+    {type:'sentinel_drone', tx:51, tz:111},
+    {type:'sentinel_drone', tx:65, tz:116},
+    {type:'neon_wraith', tx:64, tz:117},
+    {type:'neon_wraith', tx:58, tz:118},
+    {type:'hollow_enforcer', tx:191, tz:118},
+    {type:'hollow_enforcer', tx:183, tz:112},
+    {type:'maintenance_striker', tx:189, tz:117},
+    {type:'maintenance_striker', tx:192, tz:121},
+    {type:'sentinel_drone', tx:190, tz:121},
+    {type:'sentinel_drone', tx:175, tz:128},
+    {type:'neon_wraith', tx:177, tz:129},
+    {type:'neon_wraith', tx:180, tz:123},
+    {type:'sentinel_drone', tx:155, tz:170},
+    {type:'neon_wraith', tx:56, tz:117},
+    {type:'hollow_enforcer', tx:52, tz:169},
+    {type:'crash_car', tx:148, tz:199},
+    {type:'sentinel_drone', tx:103, tz:213},
+    {type:'neon_wraith', tx:42, tz:52},
+    {type:'hollow_enforcer', tx:181, tz:169},
+    {type:'crash_car', tx:213, tz:54},
+    {type:'sentinel_drone', tx:135, tz:20},
+    {type:'neon_wraith', tx:138, tz:165},
+    {type:'hollow_enforcer', tx:204, tz:220},
+    {type:'crash_car', tx:41, tz:101},
+    {type:'sentinel_drone', tx:107, tz:149},
+    {type:'neon_wraith', tx:24, tz:59},
+    {type:'hollow_enforcer', tx:58, tz:184},
+    {type:'crash_car', tx:181, tz:26},
+    {type:'sentinel_drone', tx:218, tz:124},
+    {type:'neon_wraith', tx:169, tz:186},
+    {type:'crash_car', tx:70, tz:184},
+    {type:'sentinel_drone', tx:68, tz:153},
+    {type:'neon_wraith', tx:182, tz:90},
+    {type:'crash_car', tx:204, tz:166},
+    {type:'sentinel_drone', tx:218, tz:101},
+    {type:'neon_wraith', tx:181, tz:70},
+    {type:'crash_car', tx:151, tz:100},
+    {type:'sentinel_drone', tx:119, tz:91},
+    {type:'neon_wraith', tx:187, tz:58},
+    {type:'crash_car', tx:108, tz:187},
+    {type:'sentinel_drone', tx:86, tz:133},
+    {type:'crash_car', tx:87, tz:154},
+    {type:'sentinel_drone', tx:153, tz:75},
+    {type:'crash_car', tx:168, tz:36},
+    {type:'sentinel_drone', tx:219, tz:180},
+    {type:'crash_car', tx:204, tz:40},
+    {type:'sentinel_drone', tx:84, tz:100},
+    {type:'crash_car', tx:183, tz:105},
+    {type:'sentinel_drone', tx:20, tz:103},
+    {type:'sentinel_drone', tx:57, tz:26},
+    {type:'sentinel_drone', tx:69, tz:102},
+    {type:'sentinel_drone', tx:149, tz:155}
+  ],
   // ── VEILED SANCTUARY (v92.41) — matches client ZONE_DEFS.veiled_sanctuary ──
   // a545 — MULTIPLAYER MIGRATION: The Veiled Sanctuary is now server-authoritative.
   veiled_sanctuary: [
@@ -3030,25 +3233,118 @@ function despawnWorldBoss(game, killed, killerName, bx, bz) {
 
 // Per-tick AI + broadcast for the current world boss in a game (called from tickGame)
 // ════════════════════════════════════════════════════════════════════════════
-// a548 — SERVER-AUTHORITATIVE ZONE BOSS (first one: CRYOTHAR, Wyvern Wastes).
-//   Until now zone bosses shared only HP and phase (sv_hit_boss / sv_boss_hp /
-//   sv_boss_phase). Position, attack SELECTION and damage were client-local, and
-//   the selector was `Math.floor(gameTime/bACD)%5` off each client's own clock —
-//   so in co-op every player saw CRYOTHAR standing somewhere different, doing a
-//   different attack. HP was the only thing the party agreed on.
-//   Now the server owns position, cadence, attack choice, phase and damage, and
-//   the client renders what it's told. Damage rides the SAME battle-tested spine
-//   the migrated mobs use (_sdGeyser / _sdSpawnProj / sv_enemy_attack), so no new
-//   damage path was invented — sv_enemy_attack ignores eid for damage, so the
-//   sentinel id -1 is safe.
+// a548/a549 — SERVER-AUTHORITATIVE ZONE BOSSES.
+//   Before a548, zone bosses shared only HP and phase (sv_hit_boss / sv_boss_hp /
+//   sv_boss_phase). Position, attack SELECTION and damage were client-local, so in
+//   co-op every player saw the boss standing somewhere different doing something
+//   different. HP was the only thing the party agreed on.
+//   a549 generalises the a548 spine: the common parts (nearest target, phase ladder,
+//   march, telegraph, cadence, broadcast) live in tickZoneBoss, and each boss supplies
+//   a config with its own ladder, cadences, attack picker and handlers. Adding the next
+//   boss is now a config entry, not a new subsystem.
+//   Damage rides the SAME battle-tested spine the migrated mobs use (_sdGeyser /
+//   _sdSpawnProj / sv_enemy_attack); sv_enemy_attack ignores eid for damage, so the
+//   sentinel id -1 is safe. AoE hits EVERY player in radius — the whole point of co-op.
 //   Timings converted 60fps -> 10Hz (frame counters /6, per-frame speeds *6).
-//   AoE now hits EVERY player in radius, not just the local one — that's the
-//   whole point of a co-op boss.
 const ZBOSS_SERVER = {
+
+  // ── CRYOTHAR (a548). Sequential 5-attack rotation.
+  //    NOTE: 20_enemy_factory.part carries a SECOND, conflicting CRYOTHAR ladder
+  //    (3 phases at .75/.50/.25). Both ran client-side and fought each other; the
+  //    server settles it on the AI block's ladder. See the a548 changelog note.
   wyvernwastes: {
-    x: 180, z: 180,                                        // tile (120,120) * TILE 1.5 — the central ice arena
-    spd:  [0, 0.016, 0.022, 0.028, 0.036, 0.044],          // per-frame, x6 for tick rate
-    dmg:  [0, 1.0,   1.5,   2.0,   2.8,   3.8],            // wDmgMult
+    x: 180, z: 180,                                   // tile (120,120) * TILE 1.5 — central ice arena
+    spd:    [0, 0.016, 0.022, 0.028, 0.036, 0.044],
+    dmg:    [0, 1.0,   1.5,   2.0,   2.8,   3.8],
+    phases: [0.75, 0.50, 0.25, 0.10],
+    acd:    [0, 20, 22, 19, 17, 15],                  // max(90,160-ph*15)/6
+    tele:   11,                                       // 65 frames
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 5; },
+    attack: (c) => {
+      const { atk, b, mult, ang, nd, aoe, fx, proj, geyser } = c;
+      if (atk === 0) { fx('cr_slam'); aoe(8.0, Math.floor(320 * mult)); }
+      else if (atk === 1) { fx('cr_bite');
+        if (nd < 4.5) aoe(4.5, Math.floor(240 * mult));
+        else for (let i = 0; i < 3; i++) proj(ang + (i-1)*0.4, 0xcc4400, Math.floor(180 * mult), 'plasma'); }
+      else if (atk === 2) { fx('cr_coil');
+        // NOTE: the client scaled Coil Crush's PARTICLES by the phase multiplier but the
+        // actual hit was (200 - r*15) UNSCALED. Preserved verbatim — see a548 changelog.
+        [2,4,6].forEach((r,i) => geyser(b.x, b.z, 2 + i*2, r*1.5, Math.floor(200 - r*15), 0xff4400, { shake:3 })); }
+      else if (atk === 3) { fx('cr_burst');
+        for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0x88cc00, Math.floor(160 * mult), 'plasma'); }
+      else { fx('cr_tremor'); aoe(10.0, Math.floor(260 * mult)); }
+    },
+    passive: (c) => {
+      const { b, ph, mult, aoe, fx } = c;
+      if (ph >= 2 && b._vt % 4 === 0)  { fx('cr_venom_cloud'); aoe(5.0, Math.floor(45 * mult)); }
+      if (ph >= 4 && b._vt % 20 === 0) { fx('cr_tail');        aoe(7.0, Math.floor(200 * mult)); }
+    },
+  },
+
+  // ── THE CURATOR (a549). The city's last citizen: hovers, processes, does not chase.
+  //    Attack choice is RANDOM and phase-gated (the client rolled Math.random() per
+  //    client, so no two players ever saw the same attack — worse than CRYOTHAR's
+  //    clock-derived rotation). The server now rolls once, authoritatively.
+  neon_hollow: {
+    x: 180, z: 180,                                   // tile (120,120) — central laser arena
+    spd:    [0, 0.012, 0.018, 0.024, 0.028, 0.032],
+    dmg:    [0, 1.0,   1.4,   1.9,   2.5,   3.4],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 14, 11, 8, 6],                    // 120/85/65/50/38 frames / 6
+    tele:   9,                                        // 55 frames
+    pick:   (b, ph) => Math.floor(Math.random() * Math.min(5, ph + 1)),
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
+      if (atk === 1) {
+        // DISINTEGRATION BEAM — 1.5s painted line, then an 18-long lance along it.
+        // Rendered on the spine as overlapping segments (same trick as the marching
+        // flamebreath) so it reuses the geyser resolver instead of a bespoke line test.
+        fx('cu_beam_charge', { dir:+ang.toFixed(3), len:18 });
+        for (let i = 1; i <= 9; i++)
+          geyser(b.x + Math.sin(ang)*i*2, b.z + Math.cos(ang)*i*2, 15, 1.0, Math.floor(320 * mult), 0x00e0ff);
+      } else if (atk === 2 && ph >= 3) {
+        // HOVER-TELEPORT — vanish, reappear in the arena corner furthest from the target.
+        const corners = [[159,159],[201,159],[159,201],[201,201]];
+        let best = corners[0], bestD = -1;
+        corners.forEach(cn => { const dx=cn[0]-np.x, dz=cn[1]-np.z, d=dx*dx+dz*dz; if (d > bestD) { bestD=d; best=cn; } });
+        fx('cu_blink_out');
+        b.x = best[0]; b.z = best[1];
+        fx('cu_blink_in', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+        const na = Math.atan2(np.x - b.x, np.z - b.z);
+        for (let vi = 0; vi < 5; vi++) proj(na + (vi-2)*0.25, 0xff3cff, Math.floor(140 * mult), 'plasma');
+      } else if (atk === 3 && ph >= 4) {
+        // CRASH CAR SUMMON — the traffic grid weaponises itself, two cars onto the target
+        fx('cu_traffic', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+        geyser(np.x, np.z, 15, 4.5, Math.floor(250 * mult), 0xffa000, { shake:12 });
+        geyser(np.x, np.z, 21, 4.5, Math.floor(250 * mult), 0xffa000, { shake:12 });
+      } else if (atk === 4 && ph >= 5) {
+        // "THE CITY PROTECTS" — ten beams rain across the arena over ~4s
+        fx('cu_city_protects');
+        for (let bi = 0; bi < 10; bi++)
+          geyser(b.x + (Math.random()-0.5)*21, b.z + (Math.random()-0.5)*21,
+                 4 + bi*4, 3.0, Math.floor(200 * mult), 0xff2040);
+      } else {
+        // DRONE SWARM VOLLEY (also the fallback when the roll outruns the phase)
+        fx('cu_drones');
+        const n = (atk === 0) ? (4 + ph*2) : 4;
+        for (let di = 0; di < n; di++) proj(di/n*Math.PI*2, 0x00e0ff, Math.floor(95 * mult), 'plasma');
+      }
+    },
+    passive: (c) => {
+      const { b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
+      // P1 — Hardlight Field: the security field reads you as an anomaly (all phases)
+      if (b._vt % 5 === 0) { fx('cu_hardlight'); aoe(5.0, Math.floor(55 * mult)); }
+      // P2 — hatch drones
+      if (ph >= 2 && b._vt % 15 === 0) { for (let i = 0; i < 2; i++) proj(ang, 0x00e0ff, Math.floor(85 * mult), 'plasma'); }
+      // P3 — City Beam Grid: towers rain telegraphed beams around the arena
+      if (ph >= 3 && b._vt % 8 === 0)
+        geyser(b.x + (Math.random()-0.5)*16.5, b.z + (Math.random()-0.5)*16.5, 9, 3.3, Math.floor(140 * mult), 0xff2040);
+      // P4 — autonomous paired plasma cannons
+      if (ph >= 4 && b._vt % 7 === 0) { proj(ang - 0.12, 0xff3cff, Math.floor(130 * mult), 'plasma');
+                                        proj(ang + 0.12, 0xff3cff, Math.floor(130 * mult), 'plasma'); }
+      // P5 — zone-wide grid pulse
+      if (ph >= 5 && b._vt % 10 === 0) { fx('cu_pulse'); aoe(8.0, Math.floor(160 * mult)); }
+    },
   },
 };
 
@@ -3069,23 +3365,23 @@ function tickZoneBoss(game, zoneName, zone) {
   });
   if (!np) return;
 
-  // ── Phase escalation. Mirrors the client AI block's ladder (.75/.50/.25/.10).
-  //    NOTE: 20_enemy_factory.part carries a SECOND, conflicting CRYOTHAR ladder
-  //    (3 phases at .75/.50/.25 with different cadences). Both ran client-side and
-  //    fought each other. The server now settles it — see the a548 changelog note.
-  const nph = b.hp > b.maxHp*0.75 ? 1 : b.hp > b.maxHp*0.50 ? 2 : b.hp > b.maxHp*0.25 ? 3 : b.hp > b.maxHp*0.10 ? 4 : 5;
+  // ── Phase escalation from the config's HP ladder
+  const th = cfg.phases;
+  let nph = 1;
+  for (let i = 0; i < th.length; i++) if (b.hp <= b.maxHp * th[i]) nph = i + 2;
   if (nph > (b.phase || 1)) {
     b.phase = nph;
-    b.acd = Math.max(15, Math.round(Math.max(90, 160 - nph*15) / 6));
+    b.acd = cfg.acd[Math.min(nph, cfg.acd.length - 1)] || 15;
     broadcastToZone(game.id, zoneName, { type:'sv_boss_phase', zone:zoneName, phase:nph });
-    broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'cr_phase', zone:zoneName, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), phase:nph });
+    broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'zb_phase', zone:zoneName,
+                                         ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), phase:nph });
   }
   const ph = Math.min(b.phase || 1, 5);
-  if (!b.acd) b.acd = 20;                                   // 120 frames / 6
+  if (!b.acd) b.acd = cfg.acd[1] || 20;
   const mult = cfg.dmg[ph];
   const ang = Math.atan2(np.x - b.x, np.z - b.z);
 
-  // AoE damage to EVERY player in radius (co-op correct; the client only ever hit itself)
+  // ── Shared helpers handed to the config's attack/passive handlers
   const aoe = (radius, dmg) => {
     players.forEach((p, ws) => {
       if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
@@ -3094,78 +3390,42 @@ function tickZoneBoss(game, zoneName, zone) {
         send(ws, { type:'sv_enemy_attack', eid:-1, dmg:dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
     });
   };
-  const fx = (vt, extra) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt:vt, zone:zoneName }, extra || {}));
-  const shim = { id:-1, x:b.x, z:b.z };
+  const fx = (vt, extra) => broadcastToZone(game.id, zoneName,
+    Object.assign({ type:'sv_fx', vt:vt, zone:zoneName, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) }, extra || {}));
+  const proj = (a, col, dmg, kind) => _sdSpawnProj(game, zoneName, { id:-1, x:b.x, z:b.z }, a, col, dmg, kind, null, 0);
+  const geyser = (gx, gz, fuse, radius, dmg, col, extra) => {
+    if (!game._sdGeyser) game._sdGeyser = [];
+    game._sdGeyser.push(Object.assign({ zone:zoneName, x:gx, z:gz, fuse:fuse, dmg:dmg,
+                                        eid:-1, col:col, radius:radius }, extra || {}));
+    broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_geyser_warn', zone:zoneName,
+                                         ex:+gx.toFixed(2), ez:+gz.toFixed(2), col:col });
+  };
+  const ctx = { game, zoneName, zone, b, np, nd, ang, ph, mult, aoe, fx, proj, geyser, atk:0 };
 
-  // ── March. The client clamped to walkableR; the arena floor is clear, and the
-  //    server has no nav grid for this zone, so we clamp to the 240x240 bounds.
+  // ── March. The server has no nav grid for these arenas; clamp to world bounds.
   const spd = cfg.spd[ph] * 6;
   const nx = b.x + Math.sin(ang)*spd, nz = b.z + Math.cos(ang)*spd;
   if (nx > 2 && nx < 358 && nz > 2 && nz < 358) { b.x = nx; b.z = nz; }
 
-  // ── Passive: venom cloud (phase 2+), every 25 frames -> 4 ticks
+  // ── Passive layer
   b._vt = (b._vt || 0) + 1;
-  if (ph >= 2 && b._vt % 4 === 0) {
-    fx('cr_venom_cloud', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-    aoe(5.0, Math.floor(45 * mult));
-  }
-  // ── Passive: tail whip (phase 4+), every 120 frames -> 20 ticks
-  if (ph >= 4 && b._vt % 20 === 0) {
-    fx('cr_tail', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-    aoe(7.0, Math.floor(200 * mult));
-  }
+  if (cfg.passive) cfg.passive(ctx);
 
-  // ── Attack cadence + telegraph (65 frames -> 11 ticks before the hit)
+  // ── Telegraph + attack cadence
   b.atkT = (b.atkT || 0) + 1;
-  if (b.atkT === Math.max(1, b.acd - 11)) {
+  if (b.atkT === Math.max(1, b.acd - (cfg.tele || 10))) {
     const alt = ((b.atkIdx || 0) % 2 === 0);
-    fx('cr_telegraph', { ex:+(alt ? b.x : np.x).toFixed(2), ez:+(alt ? b.z : np.z).toFixed(2) });
+    broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'zb_telegraph', zone:zoneName,
+      ex:+(alt ? b.x : np.x).toFixed(2), ez:+(alt ? b.z : np.z).toFixed(2) });
   }
-
   if (b.atkT >= b.acd) {
     b.atkT = 0;
-    b.atkIdx = (b.atkIdx || 0) + 1;
-    const atk = b.atkIdx % 5;
-
-    if (atk === 0) {
-      // BODY SLAM — rears and crashes down
-      fx('cr_slam', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-      aoe(8.0, Math.floor(320 * mult));
-
-    } else if (atk === 1) {
-      // HEAD SMASH — lunge and bite, or a 3-bolt spread if out of reach
-      fx('cr_bite', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-      if (nd < 4.5) aoe(4.5, Math.floor(240 * mult));
-      else for (let i = 0; i < 3; i++)
-        _sdSpawnProj(game, zoneName, shim, ang + (i-1)*0.4, 0xcc4400, Math.floor(180 * mult), 'plasma', null, 0);
-
-    } else if (atk === 2) {
-      // COIL CRUSH — expanding shockwave rings, 150ms apart -> fuse 2/3/5.
-      //   NOTE: the client scaled the PARTICLES by wDmgMult but the actual hit was
-      //   (200 - r*15) UNSCALED. Preserved verbatim — see the a548 changelog note.
-      if (!game._sdGeyser) game._sdGeyser = [];
-      [2, 4, 6].forEach((r, i) => {
-        game._sdGeyser.push({ zone:zoneName, x:b.x, z:b.z, fuse:2 + i*2, dmg:Math.floor(200 - r*15),
-                              eid:-1, col:0xff4400, radius:r*1.5, shake:3 });
-      });
-      fx('cr_coil', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-
-    } else if (atk === 3) {
-      // VENOM BURST — 8 bolts, radial
-      fx('cr_burst', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-      for (let i = 0; i < 8; i++)
-        _sdSpawnProj(game, zoneName, shim, i/8*Math.PI*2, 0x88cc00, Math.floor(160 * mult), 'plasma', null, 0);
-
-    } else {
-      // EARTH TREMOR — seismic slam
-      fx('cr_tremor', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-      aoe(10.0, Math.floor(260 * mult));
-    }
+    ctx.atk = cfg.pick(b, ph);
+    cfg.attack(ctx);
   }
 
-  // ── Position + phase broadcast. Deliberately NOT sv_boss_state: that message
-  //    carries hp and runs through the client's heal-jump watchdog, which has a
-  //    long bug history. This one is position/phase only.
+  // ── Position + phase broadcast. Deliberately NOT sv_boss_state: that message carries
+  //    hp and runs through the client's heal-jump watchdog, which has a long bug history.
   broadcastToZone(game.id, zoneName, {
     type:'sv_zboss', zone:zoneName,
     x:+b.x.toFixed(2), z:+b.z.toFixed(2), phase:ph,
@@ -3323,12 +3583,13 @@ function tickGame(game) {
       //   aggro the pack noticeably later than the client ever did, and ALPHA'S CALL
       //   (which force-aggros packmates within 20u) could pull mobs that then immediately
       //   fall back out of range. Mirror the client's floor for this zone only.
-      const _aggroR = (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) ? Math.max(e.aggroRange || 12, 24) : e.aggroRange;
+      const _aggroR = ((zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]))
+        ? Math.max(e.aggroRange || 12, 24) : e.aggroRange;   // a548/a549 — both kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -5147,6 +5408,226 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a549: NEON HOLLOW dead-city machine AI (zone-gated to 'neon_hollow'; every type
+        //    also appears in 'mirrored', which is NOT migrated). The city classifies you as
+        //    an anomaly and hunts accordingly. Re-timed 60fps -> 10Hz (counters /6, speeds *6).
+        //    HP intentionally UNCHANGED. Altitude needs no sync — hover heights are static py.
+        if (zoneName === 'neon_hollow' && e.aggroed && NH_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+          if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+          if(Math.random()<0.036) e._strafe=-e._strafe;
+          const strafe=e._strafe;
+          const _tg=_nhIsTagged(nearestPlayer);
+          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          if(e._nhHealCD>0) e._nhHealCD--;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_nhDmgS(e,mult,nearestPlayer),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const shoot=(baseAng,col,mult,count,spread,kind)=>{ for(let i=0;i<count;i++){
+            const a=baseAng+(count>1?(i-(count-1)/2)*spread:0);
+            _sdSpawnProj(game,zoneName,e,a,col,_nhDmgS(e,mult,nearestPlayer),kind||'magic',null,0); } };
+          const tele=(tx,tz,fuse,radius,mult,col,push,slow,slowDur)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({zone:zoneName,x:tx,z:tz,fuse:fuse,dmg:_nhDmgS(e,mult,nearestPlayer),eid:e.id,col:col,
+                                 radius:radius,push:(push||0),slow:(slow||0),slowDur:(slowDur||0)});
+            fx('sd_geyser_warn',{ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+          // Blink/teleport: the client lerps toward the server position, so a blink has to be
+          // broadcast as a SNAP cue or the machine visibly slides instead of glitching.
+          const blink=(a,dist,toward)=>{ const sg=toward?1:-1;
+            const nx=e.x+sg*Math.sin(a)*dist, nz=e.z+sg*Math.cos(a)*dist;
+            if(nx>2 && nx<358 && nz>2 && nz<358){ e.x=nx; e.z=nz; _moved=true; }
+            fx('nh_blink',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); };
+
+          if(e.type==='sentinel_drone'){
+            // SURVEILLANCE UNIT — hovering eye of the city. Tags anomalies.
+            const MS=0.336;
+            if(dd<5) mv(-sin*0.7+pr*strafe*0.7, -cos*0.7+pq*strafe*0.7, MS);
+            else if(dd>12) mv(sin*0.7, cos*0.7, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            // twin ion bolts — faster against a tagged anomaly
+            if(dd>2.4 && dd<16 && e.attackTimer%(_tg?6:9)===0) shoot(ang,_NH_CYN,0.5,2,0.14,'magic');
+            // ANOMALY SCAN — magenta lock beam; completing the lock BRANDS you for 6s
+            if(e._scOn){
+              e._scT=(e._scT||0)+1;
+              fx('nh_scan_beam',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                 tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2)});
+              if(e._scT>=7){ e._scOn=0; e._scT=0;
+                const sdx=nearestPlayer.x-e.x, sdz=nearestPlayer.z-e.z;
+                if(Math.sqrt(sdx*sdx+sdz*sdz)<17){
+                  hit(0.5); _nhTag(game, zoneName, nearestPlayer);
+                  fx('nh_tagged',{ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2)}); } }
+            } else {
+              e._scan=(e._scan||Math.floor(Math.random()*27))+1;
+              if(dd<15 && e._scan>=40){ e._scan=0; e._scOn=1; e._scT=0; }
+            }
+            // evasive thruster burst when cornered
+            e._ev=(e._ev||0)+1;
+            if(dd<3 && e._ev>=25){ e._ev=0; blink(ang+1.5708*(Math.random()<0.5?1:-1), 4.5, true); }
+          }
+          else if(e.type==='maintenance_striker'){
+            // SERVICE UNIT — welding torch, arc beam, thruster lunge, ally repair
+            const MS=0.30;
+            if(e._charge){
+              e._cst=(e._cst||0)+1;
+              if(e._charge==='wind'){ if(e._cst>=2){ e._charge='go'; e._cst=0; e._cdir=ang; e._chit=0;
+                fx('nh_lunge',{eid:e.id,dir:+ang.toFixed(3)}); } }
+              else { mv(Math.sin(e._cdir),Math.cos(e._cdir),MS*3.0);
+                if(dd<2.6 && !e._chit){ e._chit=1; hit(1.2);
+                  fx('sd_shock',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NH_AMBER,r:2.0}); }
+                if(e._cst>=2){ e._charge=0; e._cst=0; } }
+            } else {
+              if(dd>2.6) mv(sin*0.85+pr*strafe*0.4, cos*0.85+pq*strafe*0.4, MS);
+              else mv(pr*strafe, pq*strafe, MS);
+              if(dd<3.0 && e.attackTimer%10===0){ hit(1.0);
+                toPlayer({eff:'status',status:'burn',statusDur:120});
+                fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NH_AMBER,n:5}); }
+              e._tl=(e._tl||0)+1;
+              if(dd>4 && dd<11 && e._tl>=37){ e._tl=0; e._charge='wind'; e._cst=0; }
+            }
+            // ARC WELDER — sustained cyan weld beam, re-aims each tick
+            if(e._awOn){
+              e._awT=(e._awT||0)+1;
+              if(e._awT%3===0){
+                fx('nh_weld_beam',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                   tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2)});
+                if(dd<14) hit(0.4); }
+              if(e._awT>=9){ e._awOn=0; e._awT=0; }
+            } else {
+              e._aw=(e._aw||0)+1;
+              if(dd>2 && dd<10 && e._aw>=33){ e._aw=0; e._awOn=1; e._awT=0; }
+            }
+            // REPAIR PROTOCOL — mend the single most-damaged nearby machine.
+            //   Client discipline preserved verbatim: desynced start, <60% HP only, 12u range,
+            //   +3% maxHp, and a per-TARGET cooldown. That per-target cooldown is what keeps
+            //   32 strikers from out-healing a party — it caps any one machine's intake.
+            if(e._wd==null) e._wd=Math.floor(Math.random()*70);
+            e._wd++;
+            if(e._wd>=70){ e._wd=0;
+              let best=null, bestFrac=0.6;
+              for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i];
+                if(!o||!o.active||o===e||!NH_BESPOKE[o.type]) continue;
+                if((o._nhHealCD||0)>0) continue;
+                const odx=o.x-e.x, odz=o.z-e.z;
+                if(odx*odx+odz*odz>144) continue;
+                const fr2=o.hp/o.maxHp; if(fr2<bestFrac){ bestFrac=fr2; best=o; }
+              }
+              if(best){ best.hp=Math.min(best.maxHp, best.hp+Math.floor(best.maxHp*0.03));
+                best._nhHealCD=20;
+                changed.push(best);
+                fx('nh_repair',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                tx:+best.x.toFixed(2),tz:+best.z.toFixed(2)}); }
+            }
+          }
+          else if(e.type==='hollow_enforcer'){
+            // LOCKDOWN WALKER — shield arm, plasma cannon, containment protocol
+            const MS=0.18;
+            if(dd>3.0) mv(sin,cos,MS);
+            if(dd<3.6 && e.attackTimer%13===0){ hit(1.2); toPlayer({eff:'shake',shake:2});
+              fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NH_CHROME,n:4}); }
+            // SHIELD RAM — telegraphed plate slam that launches you back
+            e._sr=(e._sr||0)+1;
+            if(dd<4.5 && e._sr>=35){ e._sr=0; tele(e.x, e.z, 5, 3.6, 1.3, _NH_CYN, 3.0); }
+            // PLASMA BARRAGE — 4 aimed cannon shots, ~1 tick apart
+            if(dd>3 && dd<16 && e._ab>=30){ e._ab=0; e._pb=4; }
+            if(e._pb>0){ e._pb--; shoot(ang,_NH_MAG,0.55,1,0,'plasma'); }
+            // SUPPRESSION LOCKDOWN — amber containment ring clamps you where you stand
+            e._ld=(e._ld||10)+1;
+            if(dd<13 && e._ld>=48){ e._ld=0;
+              tele(nearestPlayer.x, nearestPlayer.z, 7, 2.8, 1.1, _NH_AMBER, 0, 0.0, 800); }
+          }
+          else if(e.type==='neon_wraith'){
+            // RESIDENT.ECHO — corrupted hologram of an old citizen
+            const MS=0.33;
+            if(dd<6) mv(-sin*0.7+pr*strafe*0.7, -cos*0.7+pq*strafe*0.7, MS);
+            else if(dd>12) mv(sin*0.6, cos*0.6, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            if(dd>2.4 && dd<16 && e.attackTimer%10===0) shoot(ang,_NH_MAG,0.55,2,0.16,'magic');
+            // GLITCH STEP — teleports with a double afterimage
+            e._gs=(e._gs||Math.floor(Math.random()*15))+1;
+            if(e._gs>=30){ e._gs=0; blink(ang+(Math.random()<0.5?1.2:-1.2), 3.5+Math.random()*3, true); }
+            // STATIC SCREAM — chromatic burst + snare
+            e._ss=(e._ss||12)+1;
+            if(dd<8 && e._ss>=42){ e._ss=0;
+              fx('nh_scream',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              hit(0.9); toPlayer({eff:'slow',slow:0.5,root:1200}); }
+            // DATA CORRUPTION — the zone's signature scanline glitch
+            e._dc=(e._dc||20)+1;
+            if(dd<14 && e._dc>=60){ e._dc=0;
+              fx('nh_corrupt',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:1600});
+              shoot(ang,_NH_MAG,0.5,3,0.22,'void');
+              if(dd<10) hit(1.1); }
+          }
+          else if(e.type==='skybridge_sniper'){
+            // RAILGUN PERCH — a laser sight paints you; then the slug arrives
+            const MS=0.168;
+            if(dd>24) mv(sin,cos,MS);   // shuffle into range only — otherwise HOLD the perch
+            // SCUTTLE HOP — relocate when the anomaly closes in
+            e._sh=(e._sh||0)+1;
+            if(dd<4 && e._sh>=33){ e._sh=0;
+              blink(ang+(Math.random()<0.5?2.4:-2.4), 6+Math.random()*2, false);
+              shoot(ang,_NH_CYN,0.6,1,0,'bolt'); }
+            // sidearm — keeps pressure between railgun cycles
+            if(dd>3 && dd<14 && e.attackTimer%15===0) shoot(ang,_NH_CYN,0.5,1,0,'bolt');
+            // RAILGUN CYCLE — laser sight paints a SPOT, then the slug hits that spot.
+            //   a549 FIX: the client captured the aim point in the same instant it resolved the
+            //   hit (fx2 = playerPos, then measured playerPos against fx2 — distance always 0),
+            //   so the railgun could never be dodged despite the 750ms sight and the kit header
+            //   calling it dodgeable. The paint point is now locked when the sight comes ON and
+            //   the slug resolves against THAT spot, so stepping off the mark actually works.
+            if(e._rgOn){
+              e._rgT=(e._rgT||0)+1;
+              fx('nh_laser_sight',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                   tx:+e._rgX.toFixed(2),tz:+e._rgZ.toFixed(2)});
+              if(e._rgT>=8){ e._rgOn=0; e._rgT=0;
+                const fa=Math.atan2(e._rgX-e.x, e._rgZ-e.z);
+                _sdSpawnProj(game,zoneName,e,fa,_NH_WHITE,_nhDmgS(e,0.9,nearestPlayer),'lightning',null,0);
+                fx('nh_railgun',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                 tx:+e._rgX.toFixed(2),tz:+e._rgZ.toFixed(2)});
+                const rdx=nearestPlayer.x-e._rgX, rdz=nearestPlayer.z-e._rgZ;
+                if(Math.sqrt(rdx*rdx+rdz*rdz)<2.0){
+                  hit(1.8); toPlayer({eff:'shake',shake:3});
+                  _nhTag(game, zoneName, nearestPlayer);
+                  fx('nh_tagged',{ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2)}); } }
+            } else {
+              e._rg=(e._rg||Math.floor(Math.random()*20))+1;
+              if(dd>5 && dd<24 && e._rg>=38){ e._rg=0; e._rgOn=1; e._rgT=0;
+                e._rgX=nearestPlayer.x; e._rgZ=nearestPlayer.z; }
+            }
+          }
+          else {
+            // crash_car — KAMIKAZE UNIT. Circles the block, strobes, then RAMS.
+            const MS=0.48;
+            if(e._kmode==='strobe'){
+              e._kt=(e._kt||0)+1;
+              fx('nh_strobe',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                              tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2)});
+              if(e._kt>=6){ e._kmode='run'; e._kt=0; e._kdir=ang; e._khit=0;
+                fx('nh_ram',{eid:e.id,dir:+ang.toFixed(3)}); }
+            } else if(e._kmode==='run'){
+              e._kt=(e._kt||0)+1;
+              mv(Math.sin(e._kdir),Math.cos(e._kdir),MS*3.4);
+              if(dd<2.8 && !e._khit){ e._khit=1; hit(1.5); toPlayer({eff:'shake',shake:3});
+                fx('sd_shock',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NH_AMBER,r:3.0}); }
+              if(e._kt>=4){ e._kmode=0; e._kt=0;
+                fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NH_CHROME,n:6}); }
+            } else {
+              if(dd<8) mv(-sin*0.5+pr*strafe*1.0, -cos*0.5+pq*strafe*1.0, MS);
+              else if(dd>14) mv(sin*0.8+pr*strafe*0.5, cos*0.8+pq*strafe*0.5, MS);
+              else mv(pr*strafe, pq*strafe, MS);
+              if(dd<3.0 && e.attackTimer%12===0){ hit(0.9);
+                fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NH_CHROME,n:4}); }
+              e._kr=(e._kr||Math.floor(Math.random()*23))+1;
+              if(dd>5 && dd<18 && e._kr>=42){ e._kr=0; e._kmode='strobe'; e._kt=0; }
+            }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -5290,6 +5771,32 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //   adds player-maxHP and player-DEF terms the server can't see, so we mirror the flat
 //   _WW_PWR floor it falls back to. No zone-local ATK multiplier in this kit (the pack
 //   surge _pk scales SPEED only, never damage) — so no extra factor is folded in here.
+// a549 — NEON HOLLOW dead-city machine AI (zone-gated to 'neon_hollow'; every type also
+//   appears in 'mirrored', which is NOT migrated, so the gate is mandatory). Same flat-PWR
+//   mirror as the other migrated zones: the client's _nhDmg adds player-maxHP and DEF
+//   terms the server can't see, so we use the _NH_PWR floor it falls back to.
+//   ANOMALY TAG is the zone mechanic and it lives on the PLAYER, not the mob: a completed
+//   scan or a railgun hit brands that player for 6s, during which every machine deals +15%
+//   and sentinel drones fire faster. The client tracked this in a single global; the server
+//   tracks it per player, so branding one party member no longer buffs the city against
+//   everyone standing next to them.
+const NH_BESPOKE = { sentinel_drone:1, maintenance_striker:1, hollow_enforcer:1, neon_wraith:1, skybridge_sniper:1, crash_car:1 };
+const NH_PWR = { sentinel_drone:240, maintenance_striker:260, hollow_enforcer:280, neon_wraith:250, skybridge_sniper:300, crash_car:270 };
+const NH_TAG_MS = 6000;
+function _nhIsTagged(p){ return !!(p && p._nhTagUntil && Date.now() < p._nhTagUntil); }
+function _nhDmgS(e, mult, tgt){
+  let base = (NH_PWR[e.type] || e.atk || 250);
+  if (_nhIsTagged(tgt)) base *= 1.15;   // the city hits harder while it can see you
+  return Math.floor(base * mult);
+}
+// Brand a player as an anomaly and tell their client, so the local HUD//damage model agrees.
+function _nhTag(game, zoneName, tgt){
+  if (!tgt) return;
+  tgt._nhTagUntil = Date.now() + NH_TAG_MS;
+  players.forEach((p, ws) => { if (p === tgt)
+    send(ws, { type:'sv_player_fx', zone:zoneName, eff:'nh_tag', ms:NH_TAG_MS }); });
+}
+const _NH_MAG=0xff3cff, _NH_CYN=0x00e0ff, _NH_CHROME=0xdfe8f0, _NH_AMBER=0xffa000, _NH_WHITE=0xffffff;
 const WW_BESPOKE = { wyvern_warlord:1, deep_wyrm:1, elder_dragon:1 };
 const WW_PWR = { wyvern_warlord:250, deep_wyrm:240, elder_dragon:265 };
 function _wwDmgS(e, mult){ return Math.floor((WW_PWR[e.type] || e.atk || 240) * mult); }
