@@ -357,9 +357,16 @@ const ENEMY_STATS = {
   cyber_ogre:          {hp:180000, atk:720, spd:0.030, aggroRange:11, reward:5500, expR:4400, dmgReduction:0.25},
   shard_assassin:      {hp:55000,  atk:620, spd:0.085, aggroRange:14, reward:3000, expR:2400, dmgReduction:0.05},
   // ── LUCIDWILDE (a297) — Lv 100+ uberzone, on par with The Reach ──
-  prismaraptor:        {hp:85000,  atk:460, spd:0.082, aggroRange:14, reward:1600, expR:1300, dmgReduction:0.05},
-  sporegon:            {hp:220000, atk:400, spd:0.022, aggroRange:9,  reward:2600, expR:2000, dmgReduction:0.30},
-  vortexwisp:          {hp:60000,  atk:520, spd:0.070, aggroRange:15, reward:1500, expR:1200, dmgReduction:0},
+  // a554 — RESYNCED to the client stat table (80_zone_defs.part). The server has never
+  //   spawned Lucidwilde (no ZONE_SPAWNS entry existed until now), so these three
+  //   entries were never kept in step and had drifted badly: HP was exactly a third of
+  //   the client's, dmgReduction was 0.05/0.30/0 against the client's 0.25/0.45/0.20,
+  //   and expR was roughly a quarter. Migrating against the stale values would have put
+  //   paper mobs in a Lv100+ uberzone. All three types are EXCLUSIVE to Lucidwilde, so
+  //   correcting the globals is safe — nothing else spawns them.
+  prismaraptor:        {hp:255000, atk:460, spd:0.082, aggroRange:14, reward:1600, expR:5000, dmgReduction:0.25},
+  sporegon:            {hp:660000, atk:400, spd:0.022, aggroRange:9,  reward:2600, expR:7500, dmgReduction:0.45},
+  vortexwisp:          {hp:180000, atk:520, spd:0.070, aggroRange:15, reward:1500, expR:4500, dmgReduction:0.20},
   // ── AVIA CANYON (a347) — Lv30 cybernetic birds (client-authoritative; here for parity) ──
   skyscout:            {hp:2800,   atk:95,  spd:0.052, aggroRange:17, reward:240,  expR:200,  dmgReduction:0},
   beakdrone:           {hp:4200,   atk:120, spd:0.070, aggroRange:14, reward:280,  expR:230,  dmgReduction:0.10},
@@ -3650,10 +3657,64 @@ const ZONE_SPAWNS = {
     {tx:95,tz:140, type:'sphere_disruptor'},  {tx:160,tz:135,type:'cubic_annihilator'},
     {tx:70,tz:75,  type:'void_cube_warden'},
   ],
-  // a299 — LUCIDWILDE mobs are CLIENT-AUTHORITATIVE (bespoke psychedelic AI + abilities
-  //   run client-side). The server intentionally does NOT spawn them, so it sends an
-  //   empty Lucidwilde snapshot and the client owns movement + ability damage. The
-  //   PIXIELORD boss stays server-authoritative (see ZONE_BOSS_HP.lucidwilde).
+  // a554 — LUCIDWILDE is now SERVER-AUTHORITATIVE (was deliberately client-side since
+  //   a299, which is why this zone had no ZONE_SPAWNS entry at all until now).
+  //   52 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
+  //   ENEMY_STATS for all three types was resynced in the same patch — see the note there.
+  lucidwilde: [
+    {type:'prismaraptor', tx:108, tz:204},
+    {type:'prismaraptor', tx:132, tz:204},
+    {type:'vortexwisp', tx:120, tz:200},
+    {type:'sporegon', tx:96, tz:198},
+    {type:'sporegon', tx:144, tz:198},
+    {type:'prismaraptor', tx:120, tz:194},
+    {type:'prismaraptor', tx:82, tz:190},
+    {type:'vortexwisp', tx:158, tz:190},
+    {type:'vortexwisp', tx:104, tz:188},
+    {type:'prismaraptor', tx:136, tz:188},
+    {type:'sporegon', tx:66, tz:182},
+    {type:'sporegon', tx:174, tz:182},
+    {type:'prismaraptor', tx:120, tz:178},
+    {type:'prismaraptor', tx:90, tz:174},
+    {type:'vortexwisp', tx:150, tz:174},
+    {type:'sporegon', tx:108, tz:170},
+    {type:'prismaraptor', tx:132, tz:170},
+    {type:'vortexwisp', tx:72, tz:164},
+    {type:'prismaraptor', tx:168, tz:164},
+    {type:'vortexwisp', tx:120, tz:162},
+    {type:'prismaraptor', tx:88, tz:158},
+    {type:'sporegon', tx:152, tz:158},
+    {type:'prismaraptor', tx:104, tz:156},
+    {type:'vortexwisp', tx:136, tz:156},
+    {type:'sporegon', tx:70, tz:140},
+    {type:'sporegon', tx:170, tz:140},
+    {type:'prismaraptor', tx:120, tz:142},
+    {type:'prismaraptor', tx:92, tz:136},
+    {type:'vortexwisp', tx:148, tz:136},
+    {type:'vortexwisp', tx:108, tz:134},
+    {type:'prismaraptor', tx:132, tz:134},
+    {type:'prismaraptor', tx:78, tz:128},
+    {type:'prismaraptor', tx:162, tz:128},
+    {type:'sporegon', tx:120, tz:130},
+    {type:'vortexwisp', tx:96, tz:124},
+    {type:'vortexwisp', tx:144, tz:124},
+    {type:'prismaraptor', tx:108, tz:122},
+    {type:'prismaraptor', tx:132, tz:122},
+    {type:'sporegon', tx:84, tz:118},
+    {type:'sporegon', tx:156, tz:118},
+    {type:'prismaraptor', tx:100, tz:128},
+    {type:'vortexwisp', tx:140, tz:128},
+    {type:'prismaraptor', tx:36, tz:120},
+    {type:'prismaraptor', tx:204, tz:120},
+    {type:'vortexwisp', tx:36, tz:170},
+    {type:'vortexwisp', tx:204, tz:170},
+    {type:'sporegon', tx:200, tz:200},
+    {type:'prismaraptor', tx:60, tz:210},
+    {type:'prismaraptor', tx:180, tz:210},
+    {type:'sporegon', tx:120, tz:150},
+    {type:'vortexwisp', tx:110, tz:160},
+    {type:'vortexwisp', tx:130, tz:160}
+  ],
   // a332 — XULCAN PRIME mobs are likewise CLIENT-AUTHORITATIVE (bespoke Xu Dominion AI
   //   + abilities run client-side). No ZONE_SPAWNS entry on purpose: the server sends an
   //   empty xulcan snapshot and the client spawns + owns the five Xu units. (The boss
@@ -4068,6 +4129,135 @@ const ZBOSS_SERVER = {
 
 
 
+
+
+  // ── THE PIXIELORD (a554). 5M HP, the largest health pool in the game, across five
+  //    themed phases. She does not chase: she hovers, backs off if you crowd her, and
+  //    BLINKS to a flanking spot on a wall-clock cadence that tightens with phase.
+  //    Her ability is drawn at random from a pool that GROWS with phase — the client
+  //    rolled that pool on each machine independently, so no two players in a party
+  //    ever saw the same ability. The server rolls once.
+  //    Her damage numbers are absolute and already fold the phase in (280 + P*80 etc.),
+  //    so `dmg` stays flat at 1 and each handler computes from ph directly.
+  lucidwilde: {
+    x: 180, z: 144,                                    // tile (120,96) — the Dreaming Canopy heart
+    spd:    [0,0,0,0,0,0],
+    dmg:    [0, 1, 1, 1, 1, 1],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 16, 14, 11, 9],                    // 120 then max(56,120-P*13), / 6
+    tele:   0,                                         // she has her own cast tell
+    move:   'hold',
+    pick:   (b, ph) => {
+      // pool grows with phase, exactly as the client built it
+      const pool = ['lance', 'bloom'];
+      if (ph >= 2) pool.push('nova');
+      if (ph >= 3) { pool.push('break'); pool.push('lance'); }
+      if (ph >= 5) { pool.push('break'); pool.push('nova'); }
+      b._pixPick = pool[Math.floor(Math.random() * pool.length)];
+      return 0;
+    },
+    attack: (c) => {
+      const { b, ph, np, fx, geyser } = c;
+      const kind = b._pixPick || 'lance';
+      if (kind === 'lance') {
+        // PRISM LANCE — three sweeping fans, each re-aimed live at the target
+        b._lanceW = 3; b._lanceT = 0; b._lanceDmg = 280 + ph*80;
+        fx('px_lance');
+      } else if (kind === 'bloom') {
+        // KALEIDO BLOOM — four rotating petals of orbs
+        b._bloomW = 4; b._bloomT = 0; b._bloomDmg = 300 + ph*80;
+        fx('px_bloom');
+      } else if (kind === 'nova') {
+        // CHROMATIC NOVA — a vast expanding rainbow ring. Hits once, as it passes you.
+        b._novaR = 1.0; b._novaHit = 0; b._novaDmg = 650 + ph*130;
+        fx('px_nova');
+      } else {
+        // REALITY BREAK — the ground fractures into a hex grid, then SHATTERS
+        b._rbT = 12; b._rbX = np.x; b._rbZ = np.z; b._rbDmg = 850 + ph*180;
+        fx('px_break', { cx:+np.x.toFixed(2), cz:+np.z.toFixed(2) });
+      }
+    },
+    passive: (c) => {
+      const { b, ph, np, nd, ang, zoneName, game, aoe, fx, proj } = c;
+
+      // She backs away if you crowd her, and otherwise holds station.
+      if (nd < 4) {
+        const bx = b.x - Math.sin(ang)*0.24, bz = b.z - Math.cos(ang)*0.24;
+        if (bx > 2 && bx < 358 && bz > 2 && bz < 358) { b.x = bx; b.z = bz; }
+      }
+
+      // BLINK — wall-clock cadence so it holds regardless of tick jitter, tightening
+      //   with phase, to a flanking spot 8-14 units off the target.
+      if (!b._tpAt) b._tpAt = Date.now() + 3500;
+      if (Date.now() >= b._tpAt) {
+        b._tpAt = Date.now() + Math.max(3000, 6000 - ph*600);
+        const a = Math.random()*6.283, r = 8 + Math.random()*6;
+        const tx = np.x + Math.sin(a)*r, tz = np.z + Math.cos(a)*r;
+        if (tx > 2 && tx < 358 && tz > 2 && tz < 358) { b.x = tx; b.z = tz; }
+        fx('px_blink', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+      }
+
+      // PRISM LANCE waves — 9 oversized bolts per wave, re-aimed each time
+      if (b._lanceW > 0) {
+        b._lanceT--;
+        if (b._lanceT <= 0) {
+          b._lanceT = 2;
+          const w = 3 - b._lanceW;
+          const aim = Math.atan2(np.x - b.x, np.z - b.z), sweep = (w-1)*0.14;
+          for (let i = -4; i <= 4; i++) proj(aim + i*0.16 + sweep, _lwCol(i+4+w), b._lanceDmg, 'magic');
+          fx('px_lance_wave', { w:w });
+          b._lanceW--;
+        }
+      }
+
+      // KALEIDO BLOOM petals — 12 orbs per wave, rotating between waves
+      if (b._bloomW > 0) {
+        b._bloomT--;
+        if (b._bloomT <= 0) {
+          b._bloomT = 2;
+          const w = 4 - b._bloomW, N = 12, rot = w*0.26;
+          for (let i = 0; i < N; i++) proj((i/N)*6.283 + rot, _LW_PRISM[(i+w)%_LW_PRISM.length], b._bloomDmg, 'magic');
+          fx('px_bloom_wave', { w:w });
+          b._bloomW--;
+        }
+      }
+
+      // CHROMATIC NOVA ring — expands outward and hits once as it crosses you.
+      //   The client tested a 1.5-wide band each frame; at 10Hz the ring advances 3.7
+      //   units a tick and would step straight over that band, so this tests whether the
+      //   ring CROSSED the target between ticks instead. Same feel, no skipped hits.
+      if (b._novaR > 0) {
+        const prevR = b._novaR;
+        b._novaR += 0.62 * 6;
+        if (!b._novaHit) {
+          players.forEach((p, ws) => {
+            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+            const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
+            if (pd >= prevR - 1.5 && pd <= b._novaR + 1.5) {
+              send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._novaDmg,
+                         ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
+            }
+          });
+        }
+        fx('px_nova_ring', { r:+b._novaR.toFixed(2) });
+        if (b._novaR >= 19) { b._novaR = 0; b._novaHit = 0; }
+      }
+
+      // REALITY BREAK — the grid holds, then shatters
+      if (b._rbT > 0) {
+        b._rbT--;
+        if (b._rbT === 0) {
+          fx('px_break_shatter', { cx:+b._rbX.toFixed(2), cz:+b._rbZ.toFixed(2) });
+          players.forEach((p, ws) => {
+            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+            const qx = p.x - b._rbX, qz = p.z - b._rbZ;
+            if (qx*qx + qz*qz < 121) send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._rbDmg,
+              ex:+b._rbX.toFixed(2), ez:+b._rbZ.toFixed(2), zone:zoneName });
+          });
+        }
+      }
+    },
+  },
 
   // ── COMMANDANT XERATH (a553). Five phases, a SIX-attack rotation picked from each
   //    client's own clock (Math.floor(gameTime/bACD)%6) — the same divergence CRYOTHAR
@@ -4788,12 +4978,14 @@ function tickGame(game) {
                     || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type])
                     || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type])
                     || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]))
-        ? Math.max(e.aggroRange || 12, 24) : e.aggroRange;   // a548/a549/a550 — these kits force a 24u floor client-side
+        ? Math.max(e.aggroRange || 12, 24)
+        : (zoneName === 'lucidwilde' && LW_BESPOKE[e.type])   // a554 — canopy uses a wider 28u floor
+        ? Math.max(e.aggroRange || 14, 28) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -7620,6 +7812,81 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a554: LUCIDWILDE dreaming canopy (zone-gated to 'lucidwilde'). A Lv100+
+        //    uberzone: sticky pursuit, a STOP distance so they halt IN FRONT of you rather
+        //    than on top, and psychedelic prism abilities. Re-timed 60fps -> 10Hz.
+        //    Damage is e.atk-based, so it's exact rather than the usual flat-PWR mirror.
+        if (zoneName === 'lucidwilde' && e.aggroed && LW_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, ang=Math.atan2(dxp,dzp);
+          const SP=(e.spd||0.05)*6;
+          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor((e.atk||300)*mult),
+                     ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const shoot=(baseAng,col,mult,count,spread)=>{ for(let i=0;i<count;i++){
+            const a=baseAng+(count>1?(i-(count-1)/2)*spread:0);
+            _sdSpawnProj(game,zoneName,e,a,col,Math.floor((e.atk||300)*mult),'magic',null,0); } };
+
+          if(e.type==='prismaraptor'){
+            // FAST melee raptor — chases hard, slashes, and PRISM-DASHES through you
+            const STOP=2.3;
+            if(e._dash==='wind'){
+              e._dt=(e._dt||0)+1;
+              if(e._dt>=3){ e._dash='go'; e._dt=0; e._ddir=ang; e._dhit=0;
+                fx('lw_dash',{eid:e.id,dir:+ang.toFixed(3)}); }
+            } else if(e._dash==='go'){
+              e._dt=(e._dt||0)+1;
+              mv(Math.sin(e._ddir),Math.cos(e._ddir),SP*3.4);
+              if(dd<2.0 && !e._dhit){ e._dhit=1; hit(1.5);
+                fx('lw_dash_hit',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+              if(e._dt>=3){ e._dash=null; e._dt=0; }
+            } else {
+              if(dd>STOP) mv(sin,cos,SP);
+              if(dd<2.9 && e.attackTimer%10===0){ hit(1.0);
+                fx('lw_slash',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+              e._dc=(e._dc||0)+1;
+              if(dd<14 && e._dc>=33){ e._dc=0; e._dash='wind'; e._dt=0;
+                fx('lw_dash_wind',{eid:e.id}); }
+            }
+          }
+          else if(e.type==='sporegon'){
+            // TANKY bruiser — lumbers in while lobbing SPORE BLOOM from well out
+            const STOP=2.6;
+            if(dd>STOP) mv(sin,cos,SP*1.7);
+            if(dd<3.0 && e.attackTimer%15===0){ hit(1.0);
+              fx('lw_maul',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // SPORE BLOOM — telegraph ring on the ground, then a dodgeable burst
+            if(dd<24 && e._ab>=25){ e._ab=0;
+              const tx=nearestPlayer.x, tz=nearestPlayer.z;
+              if(!game._sdGeyser) game._sdGeyser=[];
+              game._sdGeyser.push({zone:zoneName,x:tx,z:tz,fuse:9,dmg:Math.floor((e.atk||400)*1.5),
+                                   eid:e.id,col:_lwCol(),radius:2.5});
+              fx('lw_bloom',{eid:e.id,ex:+tx.toFixed(2),ez:+tz.toFixed(2)}); }
+          }
+          else {
+            // vortexwisp — floating prism caster that kites and fires rainbow spells
+            if(dd<6) mv(-sin,-cos,SP*0.9);
+            else if(dd>10) mv(sin,cos,SP*0.7);
+            // PRISM BEAM — a fan of 5 rainbow orbs
+            if(dd>2.5 && dd<18 && e._ab>=20){ e._ab=0;
+              shoot(ang,_lwCol(),0.8,5,0.17);
+              fx('lw_beam',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // RAINBOW NOVA — a radiating ring of 14 prism orbs
+            e._nova=(e._nova||Math.floor(Math.random()*42))+1;
+            if(dd<22 && e._nova>=60){ e._nova=0;
+              for(let i=0;i<14;i++)
+                _sdSpawnProj(game,zoneName,e,(i/14)*6.283,_LW_PRISM[i%_LW_PRISM.length],
+                             Math.floor((e.atk||520)*0.55),'magic',null,0);
+              fx('lw_nova',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -7805,6 +8072,16 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //   void_sentinel with Void Wastes, rift_stalker and rift_weaver with Rift Vale, where
 //   the latter two are already in RV_BESPOKE). The zone gate is not a formality here —
 //   without it this block would fight riftvale's for the same two types.
+// a554 — LUCIDWILDE dreaming canopy (zone-gated to 'lucidwilde'; all three types are
+//   exclusive to it, but the gate stays for consistency).
+//   Unlike every other migrated zone, this kit computes damage straight from e.atk
+//   rather than a bespoke PWR table with a player-maxHP term — so there is no flat-PWR
+//   approximation here. Server damage matches what the client dealt, exactly.
+//   Aggro floor is 28 (not the 24 the Xu zones use) with a 46-unit leash: the canopy is
+//   meant to engage you from across the clearing and not let go.
+const LW_BESPOKE = { prismaraptor:1, sporegon:1, vortexwisp:1 };
+const _LW_PRISM = [0xff3cf0,0xc94dff,0x6b7bff,0x39e6ff,0x4dffb0,0xfff04d,0xff8a3c];
+function _lwCol(off){ const L=_LW_PRISM.length; return _LW_PRISM[((Math.floor(Date.now()*0.006)+(off|0))%L+L)%L]; }
 const VC_BESPOKE = { void_construct:1, void_sentinel:1, rift_stalker:1, rift_weaver:1 };
 const VC_PWR = { void_construct:230, void_sentinel:240, rift_stalker:245, rift_weaver:250 };
 function _vcDmgS(e, mult){ return Math.floor((VC_PWR[e.type] || e.atk || 235) * mult); }
