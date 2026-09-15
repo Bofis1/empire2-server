@@ -2845,7 +2845,212 @@ const ZONE_SPAWNS = {
     {type:'skyscout', tx:120, tz:60},
     {type:'beakdrone', tx:120, tz:28}
   ],
-  xeron: [],   // a491 — client-authoritative now (bespoke spacetime AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a550 — XERON is now SERVER-AUTHORITATIVE (was client-side since a491).
+  //   200 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
+  //   HP intentionally UNCHANGED (no ZONE_HP_MULT entry). No altitude sync needed:
+  //   the hover heights are static py values applied at mesh creation.
+  xeron: [
+    {type:'laser_turret', tx:96, tz:108},
+    {type:'laser_turret', tx:96, tz:132},
+    {type:'laser_turret', tx:144, tz:108},
+    {type:'laser_turret', tx:144, tz:132},
+    {type:'laser_turret', tx:108, tz:96},
+    {type:'laser_turret', tx:132, tz:96},
+    {type:'laser_turret', tx:108, tz:144},
+    {type:'laser_turret', tx:132, tz:144},
+    {type:'laser_turret', tx:40, tz:40},
+    {type:'laser_turret', tx:200, tz:40},
+    {type:'laser_turret', tx:40, tz:200},
+    {type:'laser_turret', tx:200, tz:200},
+    {type:'laser_turret', tx:80, tz:120},
+    {type:'laser_turret', tx:160, tz:120},
+    {type:'laser_turret', tx:120, tz:80},
+    {type:'laser_turret', tx:120, tz:160},
+    {type:'laser_turret', tx:60, tz:60},
+    {type:'laser_turret', tx:180, tz:60},
+    {type:'laser_turret', tx:60, tz:180},
+    {type:'laser_turret', tx:180, tz:180},
+    {type:'laser_turret', tx:40, tz:160},
+    {type:'laser_turret', tx:200, tz:80},
+    {type:'laser_turret', tx:80, tz:200},
+    {type:'laser_turret', tx:160, tz:40},
+    {type:'void_marine', tx:53, tz:55},
+    {type:'void_marine', tx:54, tz:41},
+    {type:'corrupted_xu', tx:40, tz:41},
+    {type:'corrupted_xu', tx:50, tz:44},
+    {type:'cyber_ogre', tx:54, tz:52},
+    {type:'cyber_ogre', tx:46, tz:43},
+    {type:'void_marine', tx:48, tz:46},
+    {type:'void_marine', tx:55, tz:47},
+    {type:'corrupted_xu', tx:53, tz:51},
+    {type:'corrupted_xu', tx:42, tz:54},
+    {type:'void_marine', tx:78, tz:47},
+    {type:'void_marine', tx:71, tz:47},
+    {type:'corrupted_xu', tx:79, tz:47},
+    {type:'corrupted_xu', tx:72, tz:35},
+    {type:'cyber_ogre', tx:64, tz:46},
+    {type:'cyber_ogre', tx:65, tz:39},
+    {type:'void_marine', tx:78, tz:39},
+    {type:'void_marine', tx:73, tz:46},
+    {type:'corrupted_xu', tx:69, tz:35},
+    {type:'corrupted_xu', tx:80, tz:40},
+    {type:'void_marine', tx:43, tz:71},
+    {type:'void_marine', tx:35, tz:70},
+    {type:'corrupted_xu', tx:43, tz:77},
+    {type:'corrupted_xu', tx:37, tz:75},
+    {type:'cyber_ogre', tx:39, tz:80},
+    {type:'cyber_ogre', tx:32, tz:65},
+    {type:'void_marine', tx:44, tz:74},
+    {type:'void_marine', tx:40, tz:65},
+    {type:'corrupted_xu', tx:35, tz:77},
+    {type:'corrupted_xu', tx:46, tz:67},
+    {type:'void_marine', tx:189, tz:48},
+    {type:'void_marine', tx:195, tz:47},
+    {type:'corrupted_xu', tx:187, tz:55},
+    {type:'corrupted_xu', tx:195, tz:52},
+    {type:'cyber_ogre', tx:185, tz:41},
+    {type:'cyber_ogre', tx:187, tz:43},
+    {type:'void_marine', tx:195, tz:45},
+    {type:'void_marine', tx:184, tz:42},
+    {type:'corrupted_xu', tx:195, tz:50},
+    {type:'corrupted_xu', tx:189, tz:45},
+    {type:'void_marine', tx:173, tz:35},
+    {type:'void_marine', tx:169, tz:47},
+    {type:'corrupted_xu', tx:164, tz:35},
+    {type:'corrupted_xu', tx:166, tz:36},
+    {type:'cyber_ogre', tx:176, tz:34},
+    {type:'cyber_ogre', tx:165, tz:43},
+    {type:'void_marine', tx:164, tz:40},
+    {type:'void_marine', tx:174, tz:40},
+    {type:'corrupted_xu', tx:171, tz:46},
+    {type:'corrupted_xu', tx:174, tz:41},
+    {type:'void_marine', tx:192, tz:64},
+    {type:'void_marine', tx:208, tz:65},
+    {type:'corrupted_xu', tx:194, tz:66},
+    {type:'corrupted_xu', tx:195, tz:72},
+    {type:'cyber_ogre', tx:197, tz:80},
+    {type:'cyber_ogre', tx:206, tz:71},
+    {type:'void_marine', tx:203, tz:70},
+    {type:'void_marine', tx:207, tz:66},
+    {type:'corrupted_xu', tx:192, tz:76},
+    {type:'corrupted_xu', tx:204, tz:67},
+    {type:'void_marine', tx:44, tz:186},
+    {type:'void_marine', tx:40, tz:190},
+    {type:'corrupted_xu', tx:56, tz:187},
+    {type:'corrupted_xu', tx:56, tz:186},
+    {type:'cyber_ogre', tx:56, tz:196},
+    {type:'cyber_ogre', tx:50, tz:196},
+    {type:'void_marine', tx:56, tz:188},
+    {type:'void_marine', tx:55, tz:198},
+    {type:'corrupted_xu', tx:50, tz:194},
+    {type:'corrupted_xu', tx:44, tz:187},
+    {type:'void_marine', tx:79, tz:200},
+    {type:'void_marine', tx:69, tz:194},
+    {type:'corrupted_xu', tx:77, tz:197},
+    {type:'corrupted_xu', tx:77, tz:204},
+    {type:'void_marine', tx:75, tz:207},
+    {type:'void_marine', tx:79, tz:207},
+    {type:'corrupted_xu', tx:66, tz:207},
+    {type:'corrupted_xu', tx:73, tz:196},
+    {type:'void_marine', tx:48, tz:170},
+    {type:'void_marine', tx:48, tz:160},
+    {type:'corrupted_xu', tx:38, tz:163},
+    {type:'corrupted_xu', tx:41, tz:163},
+    {type:'void_marine', tx:35, tz:163},
+    {type:'void_marine', tx:42, tz:163},
+    {type:'corrupted_xu', tx:47, tz:168},
+    {type:'corrupted_xu', tx:41, tz:175},
+    {type:'void_marine', tx:193, tz:186},
+    {type:'void_marine', tx:190, tz:192},
+    {type:'corrupted_xu', tx:197, tz:198},
+    {type:'corrupted_xu', tx:194, tz:196},
+    {type:'void_marine', tx:188, tz:184},
+    {type:'void_marine', tx:188, tz:194},
+    {type:'corrupted_xu', tx:186, tz:198},
+    {type:'corrupted_xu', tx:184, tz:193},
+    {type:'void_marine', tx:168, tz:203},
+    {type:'void_marine', tx:161, tz:202},
+    {type:'corrupted_xu', tx:176, tz:205},
+    {type:'corrupted_xu', tx:161, tz:199},
+    {type:'void_marine', tx:169, tz:195},
+    {type:'void_marine', tx:168, tz:205},
+    {type:'corrupted_xu', tx:176, tz:206},
+    {type:'corrupted_xu', tx:168, tz:208},
+    {type:'corrupted_xu', tx:204, tz:163},
+    {type:'corrupted_xu', tx:202, tz:165},
+    {type:'corrupted_xu', tx:204, tz:164},
+    {type:'corrupted_xu', tx:207, tz:163},
+    {type:'corrupted_xu', tx:120, tz:46},
+    {type:'corrupted_xu', tx:116, tz:48},
+    {type:'corrupted_xu', tx:112, tz:59},
+    {type:'corrupted_xu', tx:118, tz:55},
+    {type:'corrupted_xu', tx:124, tz:186},
+    {type:'corrupted_xu', tx:113, tz:191},
+    {type:'corrupted_xu', tx:122, tz:187},
+    {type:'corrupted_xu', tx:112, tz:185},
+    {type:'corrupted_xu', tx:61, tz:124},
+    {type:'corrupted_xu', tx:53, tz:127},
+    {type:'corrupted_xu', tx:62, tz:128},
+    {type:'corrupted_xu', tx:59, tz:118},
+    {type:'corrupted_xu', tx:179, tz:124},
+    {type:'corrupted_xu', tx:183, tz:120},
+    {type:'corrupted_xu', tx:192, tz:125},
+    {type:'corrupted_xu', tx:180, tz:128},
+    {type:'holo_wraith', tx:136, tz:153},
+    {type:'shard_assassin', tx:134, tz:41},
+    {type:'holo_wraith', tx:135, tz:203},
+    {type:'holo_wraith', tx:138, tz:166},
+    {type:'shard_assassin', tx:41, tz:70},
+    {type:'holo_wraith', tx:58, tz:171},
+    {type:'holo_wraith', tx:200, tz:106},
+    {type:'shard_assassin', tx:217, tz:149},
+    {type:'holo_wraith', tx:100, tz:212},
+    {type:'holo_wraith', tx:122, tz:149},
+    {type:'shard_assassin', tx:185, tz:140},
+    {type:'holo_wraith', tx:28, tz:26},
+    {type:'holo_wraith', tx:218, tz:74},
+    {type:'shard_assassin', tx:156, tz:215},
+    {type:'holo_wraith', tx:215, tz:204},
+    {type:'holo_wraith', tx:150, tz:70},
+    {type:'shard_assassin', tx:28, tz:153},
+    {type:'holo_wraith', tx:170, tz:212},
+    {type:'holo_wraith', tx:219, tz:92},
+    {type:'shard_assassin', tx:92, tz:84},
+    {type:'holo_wraith', tx:21, tz:58},
+    {type:'holo_wraith', tx:220, tz:212},
+    {type:'shard_assassin', tx:88, tz:42},
+    {type:'holo_wraith', tx:58, tz:25},
+    {type:'holo_wraith', tx:23, tz:168},
+    {type:'shard_assassin', tx:92, tz:20},
+    {type:'holo_wraith', tx:43, tz:100},
+    {type:'holo_wraith', tx:89, tz:68},
+    {type:'shard_assassin', tx:84, tz:168},
+    {type:'holo_wraith', tx:187, tz:217},
+    {type:'holo_wraith', tx:216, tz:24},
+    {type:'shard_assassin', tx:154, tz:107},
+    {type:'holo_wraith', tx:214, tz:54},
+    {type:'holo_wraith', tx:72, tz:172},
+    {type:'shard_assassin', tx:91, tz:122},
+    {type:'holo_wraith', tx:154, tz:88},
+    {type:'holo_wraith', tx:196, tz:216},
+    {type:'shard_assassin', tx:20, tz:88},
+    {type:'holo_wraith', tx:171, tz:90},
+    {type:'holo_wraith', tx:213, tz:104},
+    {type:'shard_assassin', tx:151, tz:139},
+    {type:'holo_wraith', tx:187, tz:53},
+    {type:'holo_wraith', tx:213, tz:118},
+    {type:'shard_assassin', tx:57, tz:200},
+    {type:'holo_wraith', tx:196, tz:138},
+    {type:'holo_wraith', tx:132, tz:90},
+    {type:'shard_assassin', tx:104, tz:87},
+    {type:'holo_wraith', tx:202, tz:186},
+    {type:'holo_wraith', tx:152, tz:149},
+    {type:'shard_assassin', tx:152, tz:187},
+    {type:'holo_wraith', tx:88, tz:215},
+    {type:'holo_wraith', tx:71, tz:119},
+    {type:'shard_assassin', tx:218, tz:171},
+    {type:'holo_wraith', tx:59, tz:54}
+  ],
   // ── v93.0 phase 3 — THE CONVERGENCE ──
   // Empty array marker. createZoneEnemies() special-cases 'convergence' and
   // generates ~100 procedural spawns at game-create time via generateConvergenceSpawns().
@@ -3281,6 +3486,108 @@ const ZBOSS_SERVER = {
     },
   },
 
+
+  // ── OVERSEER ZERO (a550). The dominion's last AI: 3M HP across EIGHT phases, the
+  //    longest fight in the game. She holds the throne and rains fire rather than
+  //    chasing, so she uses 'drift' rather than the marching spine.
+  //    _ozHit(flat, pct) = flat*(1+(p-1)*0.22) + maxHP*pct*(1+(p-1)*0.16). The server
+  //    can't see player maxHP, so `dmg` below IS the flat scalar (1+(p-1)*0.22) and we
+  //    mirror the flat term only — same discipline as every migrated zone.
+  xeron: {
+    x: 180, z: 180,                                    // tile (120,120) — central command arena
+    spd:    [0,0,0,0,0,0,0,0,0],                       // unused under 'drift'
+    dmg:    [0, 1.00, 1.22, 1.44, 1.66, 1.88, 2.10, 2.32, 2.54],
+    phases: [0.87, 0.75, 0.62, 0.50, 0.37, 0.25, 0.12],
+    acd:    [0, 20, 13, 12, 10, 8, 7, 6, 5],           // 120/80/70/60/50/42/35/28 frames / 6
+    tele:   0,                                         // she charges her own rails
+    move:   'drift', driftR: 1.6, driftPer: 0.18, driftSpd: 0.05,
+    range:  39,                                        // 26 * TILE
+    pick:   () => 0,                                   // not a rotation — a phase-scaling combo
+    attack: (c) => {
+      const { b, ph, mult, np, fx, geyser } = c;
+      // TWIN RAILGUN — always. Aim locks now, lance lands 360ms later, so it is dodgeable.
+      fx('oz_railgun_charge', { tx:+np.x.toFixed(2), tz:+np.z.toFixed(2) });
+      geyser(np.x, np.z, 6, 4.5, Math.floor(160 * mult), 0x00ffff, { shake:12 });
+      // P5+: THE PROTOCOL — orbital bombardment scattered around the target
+      if (ph >= 5) {
+        fx('oz_protocol');
+        const shots = 5 + ph;
+        for (let i = 0; i < shots; i++) {
+          const a = (i/shots)*Math.PI*2 + Math.random()*0.4, r = 2 + Math.random()*5;
+          geyser(np.x + Math.cos(a)*r, np.z + Math.sin(a)*r, 6 + i, 4.2, Math.floor(170 * mult), i%2?0xff44ff:0x00ffff);
+        }
+      }
+      // P7+: PHOTON CONVERGENCE — a screen-clearing lance down your line
+      if (ph >= 7) {
+        const pa = Math.atan2(np.x - b.x, np.z - b.z);
+        fx('oz_photon', { dir:+pa.toFixed(3), len:34 });
+        for (let i = 1; i <= 10; i++)
+          geyser(b.x + Math.sin(pa)*i*3.4, b.z + Math.cos(pa)*i*3.4, 14, 4.8, Math.floor(460 * mult), 0xffffff);
+      }
+    },
+    passive: (c) => {
+      const { b, ph, mult, np, aoe, fx, proj, geyser } = c;
+      const pang = Math.atan2(np.x - b.x, np.z - b.z);
+      // constant aimed bolt stream from the eye, ramping with phase
+      const rate = Math.max(2, Math.round(Math.max(10, 30 - ph*2) / 6));
+      if (b._vt % rate === 0) proj(pang, 0x00ffff, Math.floor(55 * mult), 'plasma');
+      // P2+: lead micro-missile pair
+      if (ph >= 2 && b._vt % Math.max(4, Math.round(Math.max(26, 60 - ph*4) / 6)) === 0) {
+        proj(pang - 0.10, 0x00ffff, Math.floor(48 * mult), 'plasma');
+        proj(pang + 0.10, 0xff44ff, Math.floor(48 * mult), 'plasma');
+      }
+      // P3+: rotating bullet-ring from the core (the bullet-hell layer)
+      if (ph >= 3 && b._vt % Math.max(7, Math.round(Math.max(40, 90 - ph*6) / 6)) === 0) {
+        b._ozSpin = (b._ozSpin || 0) + 0.35;
+        const n = 8 + ph;
+        for (let r = 0; r < n; r++) proj(b._ozSpin + (r/n)*Math.PI*2, r%2?0xff44ff:0x00ffff, Math.floor(42 * mult), 'plasma');
+      }
+      // P6+: searing aura punishes facetanking
+      if (ph >= 6 && b._vt % 3 === 0) aoe(10.5, Math.floor(35 * mult));
+      // P3+: SATELLITE SALVO on its own cooldown, so the sky stays busy
+      if (ph >= 3) {
+        b._salvoCd = (b._salvoCd || 0) - 1;
+        if (b._salvoCd <= 0) {
+          b._salvoCd = Math.max(15, Math.round(Math.max(90, 200 - ph*12) / 6));
+          fx('oz_salvo');
+          for (let i = 0; i < 6; i++) proj(pang + (i-2.5)*0.14, i%2?0x00ffff:0xff44ff, Math.floor(85 * mult), 'plasma');
+        }
+      }
+      // P4+: HOLOGRAPHIC KILL-GRID on its own cooldown. Lethal on the LINES, not the
+      //   cells — so the lattice hit test is done exactly, not approximated by circles.
+      if (ph >= 4) {
+        if (b._kgOn) {
+          b._kgT = (b._kgT || 0) + 1;
+          if (b._kgT >= 8) {
+            b._kgOn = 0; b._kgT = 0;
+            fx('oz_killgrid_fire', { cx:+b._kgX.toFixed(2), cz:+b._kgZ.toFixed(2) });
+            const span = 13.5, n = 5, step = span / n;
+            players.forEach((p, ws) => {
+              if (p.gameId !== c.game.id || p.zone !== c.zoneName || p.x === undefined) return;
+              if (Math.abs(p.x - b._kgX) >= span/2 || Math.abs(p.z - b._kgZ) >= span/2) return;
+              let nearZ = 99, nearX = 99;
+              for (let i = 0; i < n; i++) {
+                const o = (i - (n-1)/2) * step;
+                nearZ = Math.min(nearZ, Math.abs((p.z - b._kgZ) - o));
+                nearX = Math.min(nearX, Math.abs((p.x - b._kgX) - o));
+              }
+              if (nearZ < 1.35 || nearX < 1.35)
+                send(ws, { type:'sv_enemy_attack', eid:-1, dmg:Math.floor(180 * mult),
+                           ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:c.zoneName });
+            });
+          }
+        } else {
+          b._kgCd = (b._kgCd || 0) - 1;
+          if (b._kgCd <= 0) {
+            b._kgCd = Math.max(25, Math.round(Math.max(150, 300 - ph*14) / 6));
+            b._kgOn = 1; b._kgT = 0; b._kgX = np.x; b._kgZ = np.z;
+            fx('oz_killgrid', { cx:+np.x.toFixed(2), cz:+np.z.toFixed(2), span:13.5, n:5 });
+          }
+        }
+      }
+    },
+  },
+
   // ── THE CURATOR (a549). The city's last citizen: hovers, processes, does not chase.
   //    Attack choice is RANDOM and phase-gated (the client rolled Math.random() per
   //    client, so no two players ever saw the same attack — worse than CRYOTHAR's
@@ -3376,7 +3683,7 @@ function tickZoneBoss(game, zoneName, zone) {
     broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'zb_phase', zone:zoneName,
                                          ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), phase:nph });
   }
-  const ph = Math.min(b.phase || 1, 5);
+  const ph = Math.min(b.phase || 1, cfg.dmg.length - 1);   // a550 — was hardcoded 5; OVERSEER ZERO runs 8
   if (!b.acd) b.acd = cfg.acd[1] || 20;
   const mult = cfg.dmg[ph];
   const ang = Math.atan2(np.x - b.x, np.z - b.z);
@@ -3402,26 +3709,45 @@ function tickZoneBoss(game, zoneName, zone) {
   };
   const ctx = { game, zoneName, zone, b, np, nd, ang, ph, mult, aoe, fx, proj, geyser, atk:0 };
 
-  // ── March. The server has no nav grid for these arenas; clamp to world bounds.
-  const spd = cfg.spd[ph] * 6;
-  const nx = b.x + Math.sin(ang)*spd, nz = b.z + Math.cos(ang)*spd;
+  // ── Movement. The server has no nav grid for these arenas; clamp to world bounds.
+  //    a550 — 'drift' added for OVERSEER ZERO, who holds the throne and rains fire
+  //    rather than chasing: a slow Lissajous wander around the spawn anchor, widening
+  //    with phase. Marching her at the player would be wrong for the fight.
+  let nx, nz;
+  if (cfg.move === 'drift') {
+    if (b._anchorX === undefined) { b._anchorX = b.x; b._anchorZ = b.z; }
+    b._drift = (b._drift || 0) + (cfg.driftSpd || 0.05);
+    const dr = (cfg.driftR || 1.6) + ph * (cfg.driftPer || 0.18);
+    nx = b._anchorX + Math.cos(b._drift) * dr;
+    nz = b._anchorZ + Math.sin(b._drift * 0.8) * dr;
+  } else {
+    const spd = cfg.spd[ph] * 6;
+    nx = b.x + Math.sin(ang)*spd; nz = b.z + Math.cos(ang)*spd;
+  }
   if (nx > 2 && nx < 358 && nz > 2 && nz < 358) { b.x = nx; b.z = nz; }
+
+  // ── Range gate. a550 — OVERSEER ZERO only engages inside her citadel's firing
+  //    envelope; outside it she just drifts and the fight pauses, as client-side.
+  const inRange = (cfg.range === undefined) || (nd <= cfg.range);
 
   // ── Passive layer
   b._vt = (b._vt || 0) + 1;
-  if (cfg.passive) cfg.passive(ctx);
+  if (cfg.passive && inRange) cfg.passive(ctx);
 
-  // ── Telegraph + attack cadence
-  b.atkT = (b.atkT || 0) + 1;
-  if (b.atkT === Math.max(1, b.acd - (cfg.tele || 10))) {
-    const alt = ((b.atkIdx || 0) % 2 === 0);
-    broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'zb_telegraph', zone:zoneName,
-      ex:+(alt ? b.x : np.x).toFixed(2), ez:+(alt ? b.z : np.z).toFixed(2) });
-  }
-  if (b.atkT >= b.acd) {
-    b.atkT = 0;
-    ctx.atk = cfg.pick(b, ph);
-    cfg.attack(ctx);
+  // ── Telegraph + attack cadence. cfg.tele === 0 opts out of the generic telegraph
+  //    for bosses that stage their own (OVERSEER ZERO charges her rails instead).
+  if (inRange) {
+    b.atkT = (b.atkT || 0) + 1;
+    if (cfg.tele !== 0 && b.atkT === Math.max(1, b.acd - (cfg.tele || 10))) {
+      const alt = ((b.atkIdx || 0) % 2 === 0);
+      broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'zb_telegraph', zone:zoneName,
+        ex:+(alt ? b.x : np.x).toFixed(2), ez:+(alt ? b.z : np.z).toFixed(2) });
+    }
+    if (b.atkT >= b.acd) {
+      b.atkT = 0;
+      ctx.atk = cfg.pick(b, ph);
+      cfg.attack(ctx);
+    }
   }
 
   // ── Position + phase broadcast. Deliberately NOT sv_boss_state: that message carries
@@ -3583,13 +3909,14 @@ function tickGame(game) {
       //   aggro the pack noticeably later than the client ever did, and ALPHA'S CALL
       //   (which force-aggros packmates within 20u) could pull mobs that then immediately
       //   fall back out of range. Mirror the client's floor for this zone only.
-      const _aggroR = ((zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]))
-        ? Math.max(e.aggroRange || 12, 24) : e.aggroRange;   // a548/a549 — both kits force a 24u floor client-side
+      const _aggroR = ((zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type])
+                    || (zoneName === 'xeron' && XR_BESPOKE[e.type]))
+        ? Math.max(e.aggroRange || 12, 24) : e.aggroRange;   // a548/a549/a550 — these kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -5628,6 +5955,214 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a550: XERON orbital-citadel garrison (zone-gated to 'xeron'). The dominion's
+        //    last garrison bends time and space. Re-timed 60fps -> 10Hz (counters /6,
+        //    speeds *6). HP intentionally UNCHANGED.
+        //    Several abilities here are SUSTAINED rather than instant — singularity drag,
+        //    event-horizon pull, time-dilation fields, wormhole relays — so they run as
+        //    state machines on the mob and emit per-tick player effects, instead of the
+        //    fire-and-forget geyser the other zones lean on.
+        if (zoneName === 'xeron' && e.aggroed && XR_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+          if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+          if(Math.random()<0.036) e._strafe=-e._strafe;
+          const strafe=e._strafe;
+          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_xrDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const hitAt=(mult,hx,hz,radius)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=p.x-hx, qz=p.z-hz; if(qx*qx+qz*qz < radius*radius)
+              send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_xrDmgS(e,mult),ex:+hx.toFixed(2),ez:+hz.toFixed(2),zone:zoneName}); }); };
+          const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+          // Sustained gravity drag — every player inside the well, not just the tracked one
+          const dragAll=(gx,gz,amt,range)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=gx-p.x, qz=gz-p.z, q=Math.sqrt(qx*qx+qz*qz);
+            if(q<range && q>0.8) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'pull',
+              px:+gx.toFixed(2),pz:+gz.toFixed(2),pull:amt}); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const shoot=(baseAng,col,mult,count,spread,kind)=>{ for(let i=0;i<count;i++){
+            const a=baseAng+(count>1?(i-(count-1)/2)*spread:0);
+            _sdSpawnProj(game,zoneName,e,a,col,_xrDmgS(e,mult),kind||'magic',null,0); } };
+          const shootFrom=(sx,sz,baseAng,col,mult,kind)=>{
+            _sdSpawnProj(game,zoneName,{id:e.id,x:sx,z:sz},baseAng,col,_xrDmgS(e,mult),kind||'magic',null,0); };
+          const tele=(tx,tz,fuse,radius,mult,col)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({zone:zoneName,x:tx,z:tz,fuse:fuse,dmg:_xrDmgS(e,mult),eid:e.id,col:col,radius:radius});
+            fx('sd_geyser_warn',{ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+          const blink=(nx,nz)=>{ if(nx>2 && nx<358 && nz>2 && nz<358){ e.x=nx; e.z=nz; _moved=true; }
+            fx('xr_blink',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); };
+
+          if(e.type==='corrupted_xu'){
+            // GLITCHING REMNANT — records its own timeline and snaps back along it
+            if(e._rwSurge>0) e._rwSurge--;
+            const MS=0.288*(e._rwSurge>0?1.3:1);
+            if(dd>2.6) mv(sin*0.85+pr*strafe*0.45, cos*0.85+pq*strafe*0.45, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            // rolling timeline sample (~2.5s back)
+            if(e.attackTimer%25===0){ e._rwX=e.x; e._rwZ=e.z; }
+            if(dd<2.8 && e.attackTimer%10===0) hit(1.0);
+            if(dd>2.4 && dd<15 && e.attackTimer%9===0) shoot(ang,_XR_PURPLE,0.5,2,0.16,'void');
+            // TIME REWIND — snap back along the ghost trail, then surge
+            e._rw=(e._rw||Math.floor(Math.random()*23))+1;
+            if(dd<12 && e._rw>=47 && e._rwX!=null){ e._rw=0;
+              fx('xr_rewind',{eid:e.id,fx2:+e.x.toFixed(2),fz2:+e.z.toFixed(2),
+                              ex:+e._rwX.toFixed(2),ez:+e._rwZ.toFixed(2)});
+              blink(e._rwX, e._rwZ);
+              e._rwSurge=30; }
+          }
+          else if(e.type==='void_marine'){
+            // GRAVITY INFANTRY — rifle volleys and singularity grenades
+            const MS=0.24;
+            if(dd>3.0) mv(sin*0.8+pr*strafe*0.4, cos*0.8+pq*strafe*0.4, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            if(dd<3.2 && e.attackTimer%11===0) hit(1.1);
+            if(dd>2.6 && dd<15 && e.attackTimer%11===0){ e._rb=3; }
+            if(e._rb>0){ e._rb--; shoot(ang,_XR_CYAN,0.4,1,0,'bolt'); }
+            // SINGULARITY GRENADE — a black hole opens at your feet, drags, then collapses
+            if(e._sgOn){
+              e._sgT=(e._sgT||0)+1;
+              dragAll(e._sgX, e._sgZ, 0.13*6, 8);       // 0.13/frame -> per tick
+              fx('xr_singularity_tick',{ex:+e._sgX.toFixed(2),ez:+e._sgZ.toFixed(2),t:e._sgT});
+              if(e._sgT>=20){ e._sgOn=0; e._sgT=0;
+                fx('xr_singularity_collapse',{ex:+e._sgX.toFixed(2),ez:+e._sgZ.toFixed(2)});
+                hitAt(1.2, e._sgX, e._sgZ, 3.0); }
+            } else {
+              e._sg=(e._sg||Math.floor(Math.random()*27))+1;
+              if(dd>3 && dd<15 && e._sg>=50){ e._sg=0; e._sgOn=1; e._sgT=0;
+                e._sgX=nearestPlayer.x; e._sgZ=nearestPlayer.z;
+                fx('xr_singularity_open',{ex:+e._sgX.toFixed(2),ez:+e._sgZ.toFixed(2)}); }
+            }
+          }
+          else if(e.type==='holo_wraith'){
+            // PROJECTION GHOST — drifts, phases, and draws killing constellations
+            const MS=0.348;
+            if(dd<6) mv(-sin*0.7+pr*strafe*0.7, -cos*0.7+pq*strafe*0.7, MS);
+            else if(dd>12) mv(sin*0.6, cos*0.6, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            if(dd>2.4 && dd<16 && e.attackTimer%9===0) shoot(ang,_XR_STAR,0.5,2,0.15,'magic');
+            e._ph=(e._ph||10)+1;
+            if(e._ph>=33){ e._ph=0;
+              const pa2=ang+(Math.random()<0.5?1.3:-1.3);
+              blink(e.x+Math.sin(pa2)*4, e.z+Math.cos(pa2)*4); }
+            // CONSTELLATION VOLLEY — five stars ignite around you, the pentagram draws
+            // itself point to point, then every point of it detonates at once.
+            e._cv=(e._cv||Math.floor(Math.random()*30))+1;
+            if(dd>2 && dd<16 && e._cv>=57){ e._cv=0;
+              const cx=nearestPlayer.x, cz=nearestPlayer.z, R=3.2, pts=[];
+              for(let pi=0;pi<5;pi++){ const a2=pi*1.2566-1.5708;
+                pts.push([cx+Math.cos(a2)*R, cz+Math.sin(a2)*R]); }
+              fx('xr_constellation',{cx:+cx.toFixed(2),cz:+cz.toFixed(2),r:R,
+                                     pts:pts.map(p=>[+p[0].toFixed(2),+p[1].toFixed(2)])});
+              for(let pi=0;pi<5;pi++) tele(pts[pi][0],pts[pi][1],12,2.0,0.7,_XR_STAR);
+              tele(cx,cz,12,R*0.8,0.8,_XR_STAR); }
+          }
+          else if(e.type==='laser_turret'){
+            // FIXED EMPLACEMENT — it does not move. Space moves for it.
+            if(dd>2 && dd<19 && e.attackTimer%8===0)
+              shoot(ang+Math.sin(e.attackTimer*0.3)*0.25,_XR_CYAN,0.45,1,0,'bolt');
+            if(dd<2.8 && e.attackTimer%12===0) hit(0.9);
+            // WORMHOLE RELAY — a portal opens BESIDE you and the turret fires through it,
+            // so the shots arrive out of local space at point blank. The ring is the warning.
+            if(e._whOn){
+              e._whT=(e._whT||0)+1;
+              if(e._whT===5 || e._whT===10 || e._whT===15){
+                const da=Math.atan2(nearestPlayer.x-e._whX, nearestPlayer.z-e._whZ);
+                shootFrom(e._whX, e._whZ, da, _XR_CYAN, 0.65, 'plasma');
+                fx('xr_wormhole_shot',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                       bx:+e._whX.toFixed(2),bz:+e._whZ.toFixed(2)}); }
+              if(e._whT>=22){ e._whOn=0; e._whT=0; fx('xr_wormhole_close',{eid:e.id}); }
+            } else {
+              e._wh=(e._wh||Math.floor(Math.random()*27))+1;
+              if(dd>4 && dd<19 && e._wh>=47){ e._wh=0; e._whOn=1; e._whT=0;
+                const oa2=Math.random()*6.283;
+                e._whX=nearestPlayer.x+Math.cos(oa2)*3.4;
+                e._whZ=nearestPlayer.z+Math.sin(oa2)*3.4;
+                fx('xr_wormhole_open',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                       bx:+e._whX.toFixed(2),bz:+e._whZ.toFixed(2)}); } }
+          }
+          else if(e.type==='cyber_ogre'){
+            // MASS-DRIVER BRUTE — it doesn't chase you; it makes the universe smaller
+            const MS=0.168;
+            if(dd>3.2) mv(sin,cos,MS);
+            if(dd<3.8 && e.attackTimer%13===0){ hit(1.25); toPlayer({eff:'shake',shake:2}); }
+            // EVENT HORIZON SLAM — drag you in, then the ground answers
+            if(e._ehOn){
+              e._ehT=(e._ehT||0)+1;
+              if(e._ehT<=13) dragAll(e.x, e.z, 0.24*6, 12);
+              if(e._ehT===14) tele(e.x, e.z, 4, 4.0, 1.4, _XR_PURPLE);
+              if(e._ehT>=18){ e._ehOn=0; e._ehT=0; }
+            } else {
+              e._eh=(e._eh||Math.floor(Math.random()*23))+1;
+              if(dd>3 && dd<11 && e._eh>=43){ e._eh=0; e._ehOn=1; e._ehT=0;
+                fx('xr_event_horizon',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
+            // TIME DILATION DOME — inside the field, your seconds run slow (4s)
+            if(e._tdOn){
+              e._tdT=(e._tdT||0)+1;
+              players.forEach((p,ws)=>{
+                if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+                const qx=p.x-e._tdX, qz=p.z-e._tdZ;
+                const inside = (qx*qx+qz*qz) < 4.2*4.2;
+                if(inside) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'slow',slow:0.45,root:250});
+              });
+              if(e._tdT>=40){ e._tdOn=0; e._tdT=0; fx('xr_dilation_end',{eid:e.id}); }
+            } else {
+              e._td=(e._td||0)+1;
+              if(dd<9 && e._td>=63){ e._td=0; e._tdOn=1; e._tdT=0; e._tdX=e.x; e._tdZ=e.z;
+                fx('xr_dilation',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),r:4.2}); } }
+            // METEOR STOMP — debris falls from orbit onto marked ground
+            e._ms2=(e._ms2||10)+1;
+            if(dd<14 && e._ms2>=53){ e._ms2=0;
+              fx('xr_meteor',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              for(let mi2=0;mi2<3;mi2++){
+                const tx=nearestPlayer.x+(Math.random()-0.5)*5, tz=nearestPlayer.z+(Math.random()-0.5)*5;
+                tele(tx,tz,12+mi2*3,2.4,0.85,_XR_PINK); } }
+          }
+          else {
+            // shard_assassin — SPACETIME KNIFE: freezes your seconds, folds behind you, cuts
+            const MS=0.468;
+            if(e._bs==='strike'){
+              e._bt=(e._bt||0)+1;
+              if(e._bt>=2){ e._bs=0; e._bt=0; }
+            } else {
+              if(dd<3.2) mv(-sin*0.4+pr*strafe*1.0, -cos*0.4+pq*strafe*1.0, MS);
+              else if(dd>11) mv(sin*0.9, cos*0.9, MS);
+              else mv(sin*0.25+pr*strafe*0.9, cos*0.25+pq*strafe*0.9, MS);
+            }
+            if(dd<2.6 && e.attackTimer%9===0) hit(1.05);
+            if(dd>2.4 && dd<13 && e._ab>=23){ e._ab=0; shoot(ang,_XR_WHITE,0.45,3,0.22,'bolt'); }
+            // STASIS LOCK — your seconds freeze inside a contracting ring; it folds space
+            // to stand behind you mid-freeze, and then it cuts.
+            if(e._slOn){
+              e._slT=(e._slT||0)+1;
+              if(e._slT===10){
+                const qx=nearestPlayer.x-e._slX, qz=nearestPlayer.z-e._slZ;
+                if(Math.sqrt(qx*qx+qz*qz)<2.6){
+                  toPlayer({eff:'slow',slow:0,root:1000});
+                  fx('xr_stasis_lock',{ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2)});
+                  // the fold — it is already behind you
+                  const fa=Math.atan2(e.x-nearestPlayer.x, e.z-nearestPlayer.z);
+                  blink(nearestPlayer.x+Math.sin(fa+Math.PI)*1.6, nearestPlayer.z+Math.cos(fa+Math.PI)*1.6);
+                  e._bs='strike'; e._bt=0; e._slHit=1;
+                } else { e._slOn=0; e._slT=0; }
+              }
+              if(e._slHit && e._slT>=13){ e._slHit=0; e._slOn=0; e._slT=0;
+                if(dd<3.0){ hit(1.5); toPlayer({eff:'shake',shake:3}); } }
+              if(e._slT>=16){ e._slOn=0; e._slT=0; e._slHit=0; }
+            } else {
+              e._sl=(e._sl||Math.floor(Math.random()*30))+1;
+              if(dd>2 && dd<12 && e._sl>=50){ e._sl=0; e._slOn=1; e._slT=0;
+                e._slX=nearestPlayer.x; e._slZ=nearestPlayer.z;
+                fx('xr_stasis_ring',{ex:+e._slX.toFixed(2),ez:+e._slZ.toFixed(2)}); } }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -5780,6 +6315,18 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //   and sentinel drones fire faster. The client tracked this in a single global; the server
 //   tracks it per player, so branding one party member no longer buffs the city against
 //   everyone standing next to them.
+// a550 — XERON orbital-citadel garrison (zone-gated to 'xeron'; these six types are
+//   exclusive to this zone, but the gate stays for consistency and for pooled contexts).
+//   The garrison bends spacetime: time rewind, singularity grenades, constellation
+//   volleys, wormhole relays, event horizons, time dilation and stasis locks. Several
+//   of those are MULTI-TICK stateful effects rather than instant hits, so they're driven
+//   by state machines on the mob rather than the fire-and-forget geyser spine.
+//   Same flat-PWR mirror as every migrated zone (the client adds maxHP/DEF terms the
+//   server can't see). This is the hottest PWR table in the game (290-355, E-infinity).
+const XR_BESPOKE = { corrupted_xu:1, void_marine:1, holo_wraith:1, laser_turret:1, cyber_ogre:1, shard_assassin:1 };
+const XR_PWR = { corrupted_xu:300, holo_wraith:290, void_marine:320, laser_turret:330, shard_assassin:340, cyber_ogre:355 };
+function _xrDmgS(e, mult){ return Math.floor((XR_PWR[e.type] || e.atk || 310) * mult); }
+const _XR_STAR=0xfff6c8, _XR_CYAN=0x30e0ff, _XR_PURPLE=0x8a30ff, _XR_PINK=0xff40c8, _XR_WHITE=0xffffff;
 const NH_BESPOKE = { sentinel_drone:1, maintenance_striker:1, hollow_enforcer:1, neon_wraith:1, skybridge_sniper:1, crash_car:1 };
 const NH_PWR = { sentinel_drone:240, maintenance_striker:260, hollow_enforcer:280, neon_wraith:250, skybridge_sniper:300, crash_car:270 };
 const NH_TAG_MS = 6000;
