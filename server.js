@@ -2175,7 +2175,161 @@ const ZONE_SPAWNS = {
     {type:'elder_dragon', tx:214, tz:52},
     {type:'elder_dragon', tx:37, tz:200}
   ],
-  xumen: [],   // a489 — client-authoritative now (bespoke capital-guard AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a551 — XUMEN is now SERVER-AUTHORITATIVE (was client-side since a489).
+  //   150 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
+  //   HP intentionally UNCHANGED. All four types are py:0, so no altitude sync.
+  xumen: [
+    {type:'xu_supreme', tx:139, tz:98},
+    {type:'xu_supreme', tx:139, tz:97},
+    {type:'xu_supreme', tx:87, tz:115},
+    {type:'xu_supreme', tx:85, tz:118},
+    {type:'xu_supreme', tx:98, tz:143},
+    {type:'xu_supreme', tx:97, tz:146},
+    {type:'xu_supreme', tx:143, tz:146},
+    {type:'xu_supreme', tx:146, tz:145},
+    {type:'xu_supreme', tx:92, tz:98},
+    {type:'xu_supreme', tx:94, tz:99},
+    {type:'xu_supreme', tx:152, tz:138},
+    {type:'xu_supreme', tx:152, tz:137},
+    {type:'xu_supreme', tx:159, tz:127},
+    {type:'xu_supreme', tx:160, tz:123},
+    {type:'xu_supreme', tx:135, tz:159},
+    {type:'xu_supreme', tx:135, tz:158},
+    {type:'xu_supreme', tx:111, tz:78},
+    {type:'xu_supreme', tx:113, tz:80},
+    {type:'xu_supreme', tx:137, tz:82},
+    {type:'xu_supreme', tx:139, tz:83},
+    {type:'xu_supreme', tx:100, tz:161},
+    {type:'xu_supreme', tx:99, tz:162},
+    {type:'xu_supreme', tx:110, tz:164},
+    {type:'xu_supreme', tx:109, tz:165},
+    {type:'xu_supreme', tx:78, tz:142},
+    {type:'xu_supreme', tx:77, tz:141},
+    {type:'xu_supreme', tx:156, tz:90},
+    {type:'xu_supreme', tx:155, tz:93},
+    {type:'xu_supreme', tx:98, tz:79},
+    {type:'xu_supreme', tx:98, tz:81},
+    {type:'xu_titan', tx:156, tz:86},
+    {type:'xu_titan', tx:155, tz:89},
+    {type:'xu_titan', tx:81, tz:152},
+    {type:'xu_titan', tx:80, tz:153},
+    {type:'xu_titan', tx:72, tz:97},
+    {type:'xu_titan', tx:75, tz:97},
+    {type:'xu_titan', tx:115, tz:68},
+    {type:'xu_titan', tx:114, tz:67},
+    {type:'xu_titan', tx:103, tz:65},
+    {type:'xu_titan', tx:101, tz:64},
+    {type:'xu_titan', tx:65, tz:143},
+    {type:'xu_titan', tx:64, tz:142},
+    {type:'xu_titan', tx:82, tz:76},
+    {type:'xu_titan', tx:84, tz:75},
+    {type:'xu_titan', tx:59, tz:119},
+    {type:'xu_titan', tx:59, tz:121},
+    {type:'xu_titan', tx:164, tz:157},
+    {type:'xu_titan', tx:163, tz:159},
+    {type:'xu_titan', tx:180, tz:121},
+    {type:'xu_titan', tx:180, tz:120},
+    {type:'xu_titan', tx:147, tz:177},
+    {type:'xu_titan', tx:146, tz:177},
+    {type:'xu_titan', tx:140, tz:59},
+    {type:'xu_titan', tx:137, tz:61},
+    {type:'xu_titan', tx:62, tz:98},
+    {type:'xu_titan', tx:60, tz:98},
+    {type:'xu_titan', tx:155, tz:66},
+    {type:'xu_titan', tx:157, tz:68},
+    {type:'xu_titan', tx:172, tz:81},
+    {type:'xu_titan', tx:174, tz:81},
+    {type:'xu_titan', tx:98, tz:182},
+    {type:'xu_titan', tx:96, tz:178},
+    {type:'xu_titan', tx:122, tz:185},
+    {type:'xu_titan', tx:123, tz:186},
+    {type:'xu_titan', tx:186, tz:106},
+    {type:'xu_titan', tx:184, tz:108},
+    {type:'xu_titan', tx:186, tz:141},
+    {type:'xu_titan', tx:184, tz:140},
+    {type:'xu_titan', tx:79, tz:61},
+    {type:'xu_titan', tx:77, tz:63},
+    {type:'xu_titan', tx:65, tz:166},
+    {type:'xu_titan', tx:65, tz:167},
+    {type:'xu_annihilator', tx:158, tz:183},
+    {type:'xu_annihilator', tx:158, tz:184},
+    {type:'xu_annihilator', tx:83, tz:181},
+    {type:'xu_annihilator', tx:82, tz:184},
+    {type:'xu_annihilator', tx:48, tz:144},
+    {type:'xu_annihilator', tx:50, tz:145},
+    {type:'xu_annihilator', tx:45, tz:114},
+    {type:'xu_annihilator', tx:137, tz:47},
+    {type:'xu_annihilator', tx:185, tz:159},
+    {type:'xu_annihilator', tx:55, tz:82},
+    {type:'xu_annihilator', tx:195, tz:118},
+    {type:'xu_annihilator', tx:142, tz:194},
+    {type:'xu_annihilator', tx:119, tz:196},
+    {type:'xu_annihilator', tx:47, tz:102},
+    {type:'xu_annihilator', tx:107, tz:44},
+    {type:'xu_annihilator', tx:199, tz:105},
+    {type:'xu_annihilator', tx:176, tz:64},
+    {type:'xu_annihilator', tx:92, tz:195},
+    {type:'xu_annihilator', tx:121, tz:41},
+    {type:'xu_annihilator', tx:193, tz:151},
+    {type:'xu_annihilator', tx:191, tz:84},
+    {type:'xu_annihilator', tx:83, tz:194},
+    {type:'xu_annihilator', tx:202, tz:133},
+    {type:'xu_annihilator', tx:179, tz:177},
+    {type:'xu_annihilator', tx:59, tz:63},
+    {type:'xu_annihilator', tx:54, tz:174},
+    {type:'xu_annihilator', tx:80, tz:42},
+    {type:'xu_annihilator', tx:41, tz:82},
+    {type:'xu_annihilator', tx:172, tz:195},
+    {type:'xu_annihilator', tx:159, tz:40},
+    {type:'xu_annihilator', tx:35, tz:156},
+    {type:'xu_annihilator', tx:193, tz:176},
+    {type:'xu_annihilator', tx:99, tz:209},
+    {type:'xu_annihilator', tx:175, tz:41},
+    {type:'xu_annihilator', tx:29, tz:143},
+    {type:'xu_annihilator', tx:163, tz:205},
+    {type:'xu_annihilator', tx:23, tz:116},
+    {type:'xu_annihilator', tx:155, tz:211},
+    {type:'xu_annihilator', tx:69, tz:36},
+    {type:'xu_annihilator', tx:199, tz:61},
+    {type:'xu_annihilator', tx:219, tz:101},
+    {type:'xu_annihilator', tx:79, tz:213},
+    {type:'xu_annihilator', tx:33, tz:62},
+    {type:'xu_annihilator', tx:39, tz:185},
+    {type:'xu_annihilator', tx:52, tz:200},
+    {type:'xu_annihilator', tx:214, tz:160},
+    {type:'xu_enforcer', tx:223, tz:130},
+    {type:'xu_enforcer', tx:219, tz:87},
+    {type:'xu_enforcer', tx:142, tz:15},
+    {type:'xu_enforcer', tx:143, tz:223},
+    {type:'xu_enforcer', tx:104, tz:15},
+    {type:'xu_enforcer', tx:197, tz:192},
+    {type:'xu_enforcer', tx:160, tz:19},
+    {type:'xu_enforcer', tx:46, tz:44},
+    {type:'xu_enforcer', tx:75, tz:22},
+    {type:'xu_enforcer', tx:27, tz:64},
+    {type:'xu_enforcer', tx:203, tz:48},
+    {type:'xu_enforcer', tx:17, tz:160},
+    {type:'xu_enforcer', tx:42, tz:200},
+    {type:'xu_enforcer', tx:174, tz:222},
+    {type:'xu_enforcer', tx:176, tz:16},
+    {type:'xu_enforcer', tx:47, tz:31},
+    {type:'xu_enforcer', tx:224, tz:175},
+    {type:'xu_enforcer', tx:53, tz:217},
+    {type:'xu_enforcer', tx:21, tz:183},
+    {type:'xu_enforcer', tx:60, tz:19},
+    {type:'xu_enforcer', tx:225, tz:57},
+    {type:'xu_enforcer', tx:218, tz:48},
+    {type:'xu_enforcer', tx:195, tz:22},
+    {type:'xu_enforcer', tx:212, tz:202},
+    {type:'xu_enforcer', tx:25, tz:201},
+    {type:'xu_enforcer', tx:39, tz:220},
+    {type:'xu_enforcer', tx:205, tz:220},
+    {type:'xu_enforcer', tx:18, tz:34},
+    {type:'xu_enforcer', tx:25, tz:219},
+    {type:'xu_enforcer', tx:18, tz:31},
+    {type:'xu_enforcer', tx:212, tz:221},
+    {type:'xu_enforcer', tx:224, tz:24}
+  ],
   // a544 — MULTIPLAYER MIGRATION: Necropolis is now server-authoritative.
   necropolis: [
     {type:'necro_wight', tx:40, tz:32},
@@ -3487,6 +3641,112 @@ const ZBOSS_SERVER = {
   },
 
 
+
+  // ── THE XU SUPREME OVERLORD (a551). Top of the Xu command chain, 5 phases, a
+  //    SEVEN-attack rotation — the longest rotation of any zone boss so far. The client
+  //    picked it with Math.floor(gameTime/bACD)%7 off each client's own clock, the same
+  //    divergence CRYOTHAR had. Attack 3 summons real adds, which are now spawned into
+  //    the shared zone rather than privately on each client.
+  //    NOTE: like CRYOTHAR, this boss has TWO phase ladders in the client — the AI block's
+  //    (bACD = max(80,162-phase*16)) and a second in 20_enemy_factory.part with cadences
+  //    90/70/55/40. Same thresholds, different cadences. Ported the AI block's, as with
+  //    CRYOTHAR in a548 — see the changelog note.
+  xumen: {
+    x: 180, z: 180,                                    // tile (120,120) — central plaza
+    spd:    [0, 0.022, 0.030, 0.040, 0.052, 0.066],
+    dmg:    [0, 1.0,   1.5,   2.2,   3.0,   4.0],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 22, 19, 16, 14],                   // 120 then max(80,162-ph*16), / 6
+    tele:   10,                                        // 62 frames
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 7; },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, nd, zone, zoneName, game, aoe, fx, proj, geyser } = c;
+
+      if (atk === 0) {
+        // DOMINION STRIKE — a calculated two-handed cleave
+        fx('ov_strike'); aoe(6.0, Math.floor(520 * mult));
+
+      } else if (atk === 1) {
+        // COMMAND CANNON — a walking burst, heavier with phase
+        fx('ov_cannon');
+        const shots = ph >= 3 ? 8 : ph >= 2 ? 6 : 4;
+        for (let i = 0; i < shots; i++) proj(ang + (i - (shots-1)/2) * 0.16, 0xff8800, Math.floor(160 * mult), 'plasma');
+        aoe(6.0, Math.floor(280 * mult));
+
+      } else if (atk === 2) {
+        // STRATEGIC WITHDRAWAL — teleports, then flanks
+        fx('ov_withdraw');
+        b.x = np.x + (Math.random()-0.5) * 9;
+        b.z = np.z + (Math.random()-0.5) * 9;
+        fx('ov_flank', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+        aoe(6.75, Math.floor(280 * mult));
+
+      } else if (atk === 3) {
+        // CALL ENFORCERS — two real adds, spawned into the SHARED zone.
+        //   Client-side these were pushed straight into the local enemies array, so every
+        //   player fought their own private pair that nobody else could see or damage.
+        //   These are tagged _summoned so the respawn loop reaps them instead of
+        //   resurrecting them forever at their drop point.
+        fx('ov_summon');
+        for (let i = 0; i < 2; i++) {
+          const a = Math.random() * Math.PI * 2, r = 3.75 + Math.random() * 3.0;
+          const ex = b.x + Math.sin(a) * r, ez = b.z + Math.cos(a) * r;
+          if (ex < 2 || ex > 358 || ez < 2 || ez > 358) continue;
+          zone._nextEid = (zone._nextEid || 100000) + 1;
+          const add = {
+            id: zone._nextEid, type:'xu_enforcer',
+            x: ex, z: ez, spawnX: ex, spawnZ: ez,
+            hp: 3200, maxHp: 3200, atk: 160, spd: 0.090, aggroRange: 16,
+            reward: 300, expR: 100, dmgReduction: 0.32,
+            active: true, aggroed: true, respawnTimer: 0, attackTimer: 0,
+            _summoned: 1,
+          };
+          zone.enemies.push(add);
+          broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName,
+            ids:[add.id], xs:[+ex.toFixed(2)], zs:[+ez.toFixed(2)],
+            hps:[add.hp], acts:[1], types:[add.type] });
+          fx('ov_drop', { ex:+ex.toFixed(2), ez:+ez.toFixed(2) });
+        }
+
+      } else if (atk === 4) {
+        // ORBITAL BOMBARDMENT — four overlapping strikes
+        fx('ov_orbital');
+        for (let ob = 0; ob < 4; ob++)
+          geyser(np.x + (Math.random()-0.5) * 7.5, np.z + (Math.random()-0.5) * 7.5,
+                 6 + ob*6, 6.0, Math.floor(360 * mult), 0x00ffff, { shake:10 });
+
+      } else if (atk === 5) {
+        // VOID SUPPRESSION FIELD — a ring of plasma spirals outward
+        fx('ov_suppress');
+        const n = ph >= 3 ? 12 : 8;
+        for (let si = 0; si < n; si++) proj(si/n*Math.PI*2, 0x00ccff, Math.floor(120 * mult), 'plasma');
+        aoe(7.0, Math.floor(280 * mult));
+
+      } else {
+        if (ph >= 3) {
+          // ABSOLUTE AUTHORITY — reality-warping detonation
+          fx('ov_authority'); aoe(11.0, Math.floor(440 * mult));
+        } else {
+          // PRECISION BURST — phases 1-2
+          fx('ov_precision');
+          for (let i = 0; i < 3; i++) proj(ang, 0x00ffff, Math.floor(200 * mult), 'plasma');
+          aoe(8.0, Math.floor(300 * mult));
+        }
+      }
+    },
+    passive: (c) => {
+      const { b, ph, mult, ang, aoe, fx, proj } = c;
+      // Command aura — void energy radiates at all times
+      if (b._vt % 4 === 0) aoe(5.5, Math.floor(30 * mult));
+      // P2+: shoulder-cannon auto-fire
+      if (ph >= 2 && b._vt % 5 === 0) proj(ang, 0x00ccff, Math.floor(80 * mult), 'plasma');
+      // P4+: void field shrinks the arena
+      if (ph >= 4 && b._vt % 7 === 0) { fx('ov_field'); aoe(7.0, Math.floor(40 * mult)); }
+      // P5: continuous void suppression fire
+      if (ph >= 5 && b._vt % 3 === 0) proj(ang, 0x00ffff, Math.floor(55 * mult), 'plasma');
+    },
+  },
+
   // ── OVERSEER ZERO (a550). The dominion's last AI: 3M HP across EIGHT phases, the
   //    longest fight in the game. She holds the throne and rains fire rather than
   //    chasing, so she uses 'drift' rather than the marching spine.
@@ -3875,6 +4135,14 @@ function tickGame(game) {
 
     const changed = [];
 
+    // a551 — reap dead SUMMONED adds (boss CALL ENFORCERS). They were never in
+    //   ZONE_SPAWNS, so the respawn loop below would resurrect them at their drop
+    //   point forever and the plaza would slowly fill with enforcers.
+    for (let i = zone.enemies.length - 1; i >= 0; i--) {
+      const se = zone.enemies[i];
+      if (se && se._summoned && !se.active) zone.enemies.splice(i, 1);
+    }
+
     zone.enemies.forEach(e => {
       // Always tick respawns
       if (!e.active) {
@@ -3910,13 +4178,13 @@ function tickGame(game) {
       //   (which force-aggros packmates within 20u) could pull mobs that then immediately
       //   fall back out of range. Mirror the client's floor for this zone only.
       const _aggroR = ((zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type])
-                    || (zoneName === 'xeron' && XR_BESPOKE[e.type]))
+                    || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]))
         ? Math.max(e.aggroRange || 12, 24) : e.aggroRange;   // a548/a549/a550 — these kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -6163,6 +6431,220 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a551: XUMEN capital guard (zone-gated to 'xumen'). The empire's home guard:
+        //    jet-pack skirmishers, heavy mechs, tracked artillery and the commanders that
+        //    shield and surge them. Re-timed 60fps -> 10Hz. HP intentionally UNCHANGED.
+        //    This zone owns DEFENSIVE state server-side for the first time — ARMOR LOCK
+        //    and AEGIS PROJECTOR mutate e.dmgReduction, which is what the server uses to
+        //    resolve every player hit.
+        if (zoneName === 'xumen' && e.aggroed && XM_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+          if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+          if(Math.random()<0.036) e._strafe=-e._strafe;
+          const strafe=e._strafe;
+          if(e._pkT>0) e._pkT--;                       // COMMAND OVERRIDE surge timer
+          const _pk=(e._pkT>0)?1.22:1;                 // surge scales SPEED only, never damage
+          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_xmDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const hitAt=(mult,hx,hz,radius)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=p.x-hx, qz=p.z-hz; if(qx*qx+qz*qz < radius*radius)
+              send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_xmDmgS(e,mult),ex:+hx.toFixed(2),ez:+hz.toFixed(2),zone:zoneName}); }); };
+          const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+          const dragAll=(gx,gz,amt,range)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=gx-p.x, qz=gz-p.z, q=Math.sqrt(qx*qx+qz*qz);
+            if(q<range && q>2.2) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'pull',
+              px:+gx.toFixed(2),pz:+gz.toFixed(2),pull:amt}); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const shoot=(baseAng,col,mult,count,spread,kind,ox,oz)=>{ for(let i=0;i<count;i++){
+            const a=baseAng+(count>1?(i-(count-1)/2)*spread:0);
+            _sdSpawnProj(game,zoneName,{id:e.id,x:e.x+(ox||0),z:e.z+(oz||0)},a,col,_xmDmgS(e,mult),kind||'plasma',null,0); } };
+          const tele=(tx,tz,fuse,radius,mult,col)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({zone:zoneName,x:tx,z:tz,fuse:fuse,dmg:_xmDmgS(e,mult),eid:e.id,col:col,radius:radius});
+            fx('sd_geyser_warn',{ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+          const blink=(a,dist)=>{ const nx=e.x+Math.sin(a)*dist, nz=e.z+Math.cos(a)*dist;
+            if(nx>2 && nx<358 && nz>2 && nz<358){ e.x=nx; e.z=nz; _moved=true; }
+            fx('xm_blink',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); };
+
+          if(e.type==='xu_enforcer'){
+            // JET-PACK SKIRMISHER — the fastest thing in the empire
+            const _od=(e.hp/e.maxHp)<0.35;             // OVERDRIVE — safety governors off
+            if(_od && !e._odOn){ e._odOn=1; fx('xm_overdrive',{eid:e.id}); }
+            const MS=0.528*_pk*(_od?1.35:1);
+            if(e._jd==='go'){
+              e._jt=(e._jt||0)+1;
+              mv(Math.sin(e._jdir),Math.cos(e._jdir),MS*2.6);
+              if(e._jt>=2){ e._jd=0; e._jt=0; }
+            } else {
+              if(dd<3.5) mv(-sin*0.5+pr*strafe*0.9, -cos*0.5+pq*strafe*0.9, MS);
+              else if(dd>11) mv(sin*0.9, cos*0.9, MS);
+              else mv(sin*0.2+pr*strafe*0.9, cos*0.2+pq*strafe*0.9, MS);
+              // JET BURST — sudden vector change, hard to track
+              e._jb=(e._jb||0)+1;
+              if(e._jb>=(_od?15:23)){ e._jb=0; e._jd='go'; e._jt=0;
+                e._jdir=ang+(Math.random()<0.5?1.3:-1.3)+Math.random()*0.6;
+                fx('xm_jet',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            }
+            // TWIN BLASTERS — alternating left/right arm muzzles
+            if(dd>2.2 && dd<15 && e.attackTimer%(_od?4:6)===0){
+              e._arm=!e._arm; const mo=e._arm?0.45:-0.45;
+              shoot(ang,_XM_CYAN,0.45,1,0,'bolt', pr*mo, pq*mo); }
+            // SHOCK BATON — stun-flash
+            e._sb=(e._sb||0)+1;
+            if(dd<2.6 && e._sb>=22){ e._sb=0; hit(1.1);
+              toPlayer({eff:'slow',slow:0,root:450});
+              fx('xm_baton',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                             tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2)}); }
+          }
+          else if(e.type==='xu_titan'){
+            // HEAVY MECH — graviton singularity, sweeping chest laser, shoulder cannons
+            const MS=0.228*_pk;
+            // ARMOR LOCK — one-time plating clamp below 40%. Server-owned, so it actually
+            //   reduces the damage players deal rather than only drawing the flare.
+            if(!e._alDone && (e.hp/e.maxHp)<0.40){ e._alDone=1;
+              e.dmgReduction=Math.min(0.85,(e.dmgReduction||0)+0.18);
+              fx('xm_armorlock',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            if(dd>3.0) mv(sin,cos,MS);
+            if(dd<3.6 && e.attackTimer%13===0){ hit(1.2); toPlayer({eff:'shake',shake:2}); }
+            if(dd>3 && dd<15 && e.attackTimer%11===0){
+              shoot(ang,_XM_VIOLET,0.55,1,0,'plasma', pr*0.6, pq*0.6);
+              shoot(ang,_XM_VIOLET,0.55,1,0,'plasma', -pr*0.6, -pq*0.6); }
+            // GRAVITON WELL — a singularity drags you in, then the slam lands
+            if(e._gwOn){
+              e._gwT=(e._gwT||0)+1;
+              if(e._gwT<=13) dragAll(e.x, e.z, 0.22*6, 12);
+              if(e._gwT===14) tele(e.x, e.z, 4, 3.8, 1.4, _XM_VIOLET);
+              if(e._gwT>=18){ e._gwOn=0; e._gwT=0; }
+            } else {
+              e._gw=(e._gw||Math.floor(Math.random()*20))+1;
+              if(dd>3 && dd<11 && e._gw>=42){ e._gw=0; e._gwOn=1; e._gwT=0;
+                fx('xm_graviton',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
+            // LASER SWEEP — the chest core carves a 216° arc. Caught in it = hit, once.
+            //   Exact point-to-beam-segment test, same as the client: approximating a
+            //   sweeping beam with circles would leave gaps you could stand in.
+            if(e._lsOn){
+              e._lsT=(e._lsT||0)+1;
+              for(let sub=0; sub<2; sub++){
+                const step=(e._lsT-1)*2+sub+1; if(step>18) break;
+                const a2=e._lsA+step*(3.8/18);
+                if(!e._swHit){
+                  players.forEach((p,ws)=>{
+                    if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+                    const rx=p.x-e.x, rz=p.z-e.z;
+                    const dxn=Math.sin(a2), dzn=Math.cos(a2);
+                    const prj=rx*dxn+rz*dzn;
+                    if(prj>0 && prj<7 && Math.abs(rx*dzn - rz*dxn)<1.1){
+                      e._swHit=1;
+                      send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_xmDmgS(e,0.9),
+                               ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }
+                  }); }
+              }
+              fx('xm_sweep_tick',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                  a:+(e._lsA+e._lsT*2*(3.8/18)).toFixed(3)});
+              if(e._lsT>=9){ e._lsOn=0; e._lsT=0; }
+            } else {
+              e._ls=(e._ls||10)+1;
+              if(dd>2 && dd<9 && e._ls>=48){ e._ls=0; e._lsOn=1; e._lsT=0; e._swHit=0;
+                e._lsA=ang-1.9;
+                fx('xm_sweep',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),a0:+e._lsA.toFixed(3)}); } }
+          }
+          else if(e.type==='xu_annihilator'){
+            // TRACKED ARTILLERY — a living turret. Barely moves; the sky does the work.
+            const MS=0.072*_pk;
+            if(dd>8) mv(sin,cos,MS);
+            if(dd<3.4 && e.attackTimer%14===0){ hit(1.1); toPlayer({eff:'shake',shake:2}); }
+            // ORBITAL DESIGNATOR — the lock is on the GROUND, so moving off it works
+            e._ods=(e._ods||Math.floor(Math.random()*23))+1;
+            if(dd>3 && dd<20 && e._ods>=43){ e._ods=0;
+              const lx=nearestPlayer.x, lz=nearestPlayer.z;
+              fx('xm_designator',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                  tx:+lx.toFixed(2),tz:+lz.toFixed(2)});
+              tele(lx, lz, 9, 3.0, 1.7, _XM_GOLD); }
+            // SPIRAL BARRAGE — rotating bullet-hell from the dual cannons
+            if(dd>3 && dd<16 && e._ab>=32){ e._ab=0; e._spN=10; e._spA=ang; }
+            if(e._spN>0){ e._spN--; e._spA=(e._spA||0)+0.55*1.5;
+              shoot(e._spA,(e._spN%2?_XM_GOLD:_XM_VIOLET),0.45,1,0,'plasma'); }
+            // MORTAR RAIN — three lobbed impacts walk toward you
+            e._mr=(e._mr||8)+1;
+            if(dd>4 && dd<18 && e._mr>=38){ e._mr=0;
+              for(let mi2=0;mi2<3;mi2++){
+                const tx=nearestPlayer.x+(Math.random()-0.5)*3.5, tz=nearestPlayer.z+(Math.random()-0.5)*3.5;
+                tele(tx,tz,5+mi2*3,2.6,0.8,_XM_RED); } }
+          }
+          else {
+            // xu_supreme — SUPREME COMMANDER: drones, prism lance, aegis, command override
+            const MS=0.288*_pk;
+            if(dd<5) mv(-sin*0.6+pr*strafe*0.7, -cos*0.6+pq*strafe*0.7, MS);
+            else if(dd>12) mv(sin*0.7, cos*0.7, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            if(dd>2.4 && dd<15 && e.attackTimer%8===0) shoot(ang,_XM_GOLD,0.55,1,0,'magic');
+            if(dd<2.6 && e.attackTimer%10===0) hit(1.0);
+            // HARDLIGHT DRONES — two orbiting emitters open fire for 8s
+            if(e._ddOn){
+              e._ddT=(e._ddT||0)+1;
+              e._ddA=(e._ddA||0)+0.06*6;
+              if(e._ddT%4===0){
+                for(let i2=0;i2<2;i2++){
+                  const da2=e._ddA+i2*Math.PI;
+                  const dx2=e.x+Math.cos(da2)*1.7, dz2=e.z+Math.sin(da2)*1.7;
+                  const pd=Math.sqrt((nearestPlayer.x-dx2)**2+(nearestPlayer.z-dz2)**2);
+                  if(pd<16 && pd>1){
+                    const da3=Math.atan2(nearestPlayer.x-dx2, nearestPlayer.z-dz2);
+                    _sdSpawnProj(game,zoneName,{id:e.id,x:dx2,z:dz2},da3,_XM_CYAN,_xmDmgS(e,0.4),'bolt',null,0); } } }
+              fx('xm_drones_tick',{eid:e.id,a:+(e._ddA||0).toFixed(3),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              if(e._ddT>=80){ e._ddOn=0; e._ddT=0; fx('xm_drones_end',{eid:e.id}); }
+            } else {
+              e._dd=(e._dd||Math.floor(Math.random()*33))+1;
+              if(dd<16 && e._dd>=70){ e._dd=0; e._ddOn=1; e._ddT=0; e._ddA=0;
+                fx('xm_drones',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
+            // PRISM LANCE — three beams converge on you
+            e._pl=(e._pl||12)+1;
+            if(dd>3 && dd<16 && e._pl>=35){ e._pl=0;
+              fx('xm_prism',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                             tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2)});
+              if(dd<17) hit(1.2); }
+            // AEGIS PROJECTOR — visible bubble AND real damage reduction (3s)
+            if(e._agOn){
+              e._agT=(e._agT||0)+1;
+              if(e._agT>=30){ e._agOn=0; e._agT=0;
+                if(e._agBase!=null) e.dmgReduction=e._agBase;
+                fx('xm_aegis_end',{eid:e.id}); }
+            } else {
+              e._ag=(e._ag||0)+1;
+              if(dd<14 && e._ag>=63){ e._ag=0; e._agOn=1; e._agT=0;
+                if(e._agBase==null) e._agBase=e.dmgReduction||0;
+                e.dmgReduction=Math.min(0.85, e._agBase+0.45);
+                fx('xm_aegis',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
+            // COMMAND OVERRIDE — the garrison answers its commander.
+            //   a551: the client gated only the ANNOUNCE on an 8s cooldown while the surge
+            //   itself fired every time — the same defect ALPHA'S CALL had in a548, and worse
+            //   here with 30 commanders in the plaza. The SURGE now shares the cooldown.
+            e._co=(e._co||Math.floor(Math.random()*43))+1;
+            if(dd<14 && e._co>=77){ e._co=0;
+              const _now=Date.now();
+              if(!zone._xmCallCd || _now>zone._xmCallCd){
+                zone._xmCallCd=_now+8000;
+                fx('xm_override',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i];
+                  if(!o||!o.active||!XM_BESPOKE[o.type]) continue;
+                  const odx=o.x-e.x, odz=o.z-e.z;
+                  if(odx*odx+odz*odz>324) continue;          // 18u radius
+                  o.aggroed=true; o._pkT=50;                 // 300 frames -> 50 ticks
+                } } }
+            // BLINK TACTICS — never where you left him
+            e._bl=(e._bl||0)+1;
+            if(dd<3 && e._bl>=25){ e._bl=0; blink(ang+(Math.random()<0.5?1.6:-1.6), 5); }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -6323,6 +6805,17 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //   by state machines on the mob rather than the fire-and-forget geyser spine.
 //   Same flat-PWR mirror as every migrated zone (the client adds maxHP/DEF terms the
 //   server can't see). This is the hottest PWR table in the game (290-355, E-infinity).
+// a551 — XUMEN capital guard (zone-gated to 'xumen'; three of the four types also appear
+//   in 'mirrored', which is NOT migrated, so the gate is mandatory).
+//   This zone is the first with DEFENSIVE abilities that change dmgReduction: the titan's
+//   ARMOR LOCK below 40% HP and the supreme's AEGIS PROJECTOR. The server resolves every
+//   player hit through e.dmgReduction, and those buffs were previously applied only to the
+//   client's own copy of the mob — so in multiplayer the shield bubble appeared but the
+//   damage reduction never actually happened. Owning them here makes them real.
+const XM_BESPOKE = { xu_enforcer:1, xu_titan:1, xu_annihilator:1, xu_supreme:1 };
+const XM_PWR = { xu_enforcer:265, xu_titan:300, xu_annihilator:285, xu_supreme:330 };
+function _xmDmgS(e, mult){ return Math.floor((XM_PWR[e.type] || e.atk || 280) * mult); }
+const _XM_CYAN=0x22e8ff, _XM_GOLD=0xffd24a, _XM_VIOLET=0x9944ff, _XM_RED=0xff3355, _XM_WHITE=0xffffff;
 const XR_BESPOKE = { corrupted_xu:1, void_marine:1, holo_wraith:1, laser_turret:1, cyber_ogre:1, shard_assassin:1 };
 const XR_PWR = { corrupted_xu:300, holo_wraith:290, void_marine:320, laser_turret:330, shard_assassin:340, cyber_ogre:355 };
 function _xrDmgS(e, mult){ return Math.floor((XR_PWR[e.type] || e.atk || 310) * mult); }
