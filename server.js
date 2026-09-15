@@ -1979,7 +1979,202 @@ const ZONE_SPAWNS = {
     {type:'rift_weaver', tx:167, tz:183},
     {type:'rift_weaver', tx:148, tz:138}
   ],
-  wyvernwastes: [],   // a488 — client-authoritative now (bespoke pack AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a548 — WYVERN WASTES is now SERVER-AUTHORITATIVE (was client-side since a488).
+  //   190 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
+  //   HP is intentionally UNCHANGED (no ZONE_HP_MULT entry) — ENEMY_STATS already
+  //   carries the E11.5 values (55k/75k/90k) and the client kit applies no bump.
+  wyvernwastes: [
+    {type:'wyvern_warlord', tx:43, tz:49},
+    {type:'wyvern_warlord', tx:43, tz:36},
+    {type:'deep_wyrm', tx:37, tz:43},
+    {type:'deep_wyrm', tx:39, tz:39},
+    {type:'elder_dragon', tx:32, tz:35},
+    {type:'elder_dragon', tx:38, tz:41},
+    {type:'wyvern_warlord', tx:42, tz:48},
+    {type:'wyvern_warlord', tx:38, tz:32},
+    {type:'deep_wyrm', tx:36, tz:39},
+    {type:'deep_wyrm', tx:35, tz:36},
+    {type:'wyvern_warlord', tx:66, tz:38},
+    {type:'wyvern_warlord', tx:81, tz:46},
+    {type:'deep_wyrm', tx:73, tz:38},
+    {type:'deep_wyrm', tx:72, tz:43},
+    {type:'elder_dragon', tx:67, tz:31},
+    {type:'elder_dragon', tx:73, tz:43},
+    {type:'wyvern_warlord', tx:71, tz:37},
+    {type:'wyvern_warlord', tx:75, tz:45},
+    {type:'deep_wyrm', tx:74, tz:39},
+    {type:'deep_wyrm', tx:75, tz:46},
+    {type:'wyvern_warlord', tx:37, tz:73},
+    {type:'wyvern_warlord', tx:37, tz:81},
+    {type:'deep_wyrm', tx:41, tz:71},
+    {type:'deep_wyrm', tx:42, tz:65},
+    {type:'elder_dragon', tx:32, tz:65},
+    {type:'elder_dragon', tx:40, tz:79},
+    {type:'wyvern_warlord', tx:37, tz:78},
+    {type:'wyvern_warlord', tx:37, tz:67},
+    {type:'deep_wyrm', tx:47, tz:63},
+    {type:'deep_wyrm', tx:47, tz:79},
+    {type:'wyvern_warlord', tx:207, tz:35},
+    {type:'wyvern_warlord', tx:204, tz:39},
+    {type:'deep_wyrm', tx:194, tz:33},
+    {type:'deep_wyrm', tx:209, tz:43},
+    {type:'elder_dragon', tx:193, tz:39},
+    {type:'elder_dragon', tx:192, tz:48},
+    {type:'wyvern_warlord', tx:195, tz:45},
+    {type:'wyvern_warlord', tx:200, tz:39},
+    {type:'deep_wyrm', tx:198, tz:39},
+    {type:'deep_wyrm', tx:201, tz:32},
+    {type:'wyvern_warlord', tx:166, tz:40},
+    {type:'wyvern_warlord', tx:177, tz:34},
+    {type:'deep_wyrm', tx:168, tz:39},
+    {type:'deep_wyrm', tx:173, tz:42},
+    {type:'elder_dragon', tx:171, tz:39},
+    {type:'elder_dragon', tx:174, tz:48},
+    {type:'wyvern_warlord', tx:171, tz:49},
+    {type:'wyvern_warlord', tx:169, tz:44},
+    {type:'deep_wyrm', tx:159, tz:46},
+    {type:'deep_wyrm', tx:173, tz:36},
+    {type:'wyvern_warlord', tx:205, tz:73},
+    {type:'wyvern_warlord', tx:194, tz:76},
+    {type:'deep_wyrm', tx:192, tz:66},
+    {type:'deep_wyrm', tx:205, tz:78},
+    {type:'elder_dragon', tx:206, tz:73},
+    {type:'elder_dragon', tx:202, tz:66},
+    {type:'wyvern_warlord', tx:203, tz:70},
+    {type:'wyvern_warlord', tx:192, tz:70},
+    {type:'deep_wyrm', tx:204, tz:70},
+    {type:'deep_wyrm', tx:203, tz:68},
+    {type:'wyvern_warlord', tx:34, tz:204},
+    {type:'wyvern_warlord', tx:49, tz:206},
+    {type:'deep_wyrm', tx:47, tz:200},
+    {type:'deep_wyrm', tx:31, tz:201},
+    {type:'elder_dragon', tx:42, tz:204},
+    {type:'elder_dragon', tx:42, tz:199},
+    {type:'wyvern_warlord', tx:43, tz:191},
+    {type:'wyvern_warlord', tx:35, tz:208},
+    {type:'deep_wyrm', tx:49, tz:207},
+    {type:'deep_wyrm', tx:37, tz:198},
+    {type:'wyvern_warlord', tx:70, tz:202},
+    {type:'wyvern_warlord', tx:66, tz:203},
+    {type:'deep_wyrm', tx:63, tz:200},
+    {type:'deep_wyrm', tx:70, tz:207},
+    {type:'elder_dragon', tx:64, tz:209},
+    {type:'elder_dragon', tx:65, tz:202},
+    {type:'wyvern_warlord', tx:67, tz:206},
+    {type:'wyvern_warlord', tx:65, tz:192},
+    {type:'deep_wyrm', tx:75, tz:194},
+    {type:'deep_wyrm', tx:79, tz:193},
+    {type:'wyvern_warlord', tx:38, tz:171},
+    {type:'wyvern_warlord', tx:36, tz:165},
+    {type:'deep_wyrm', tx:46, tz:161},
+    {type:'deep_wyrm', tx:35, tz:166},
+    {type:'elder_dragon', tx:41, tz:170},
+    {type:'elder_dragon', tx:45, tz:176},
+    {type:'wyvern_warlord', tx:31, tz:172},
+    {type:'wyvern_warlord', tx:39, tz:168},
+    {type:'deep_wyrm', tx:31, tz:160},
+    {type:'deep_wyrm', tx:31, tz:171},
+    {type:'wyvern_warlord', tx:204, tz:203},
+    {type:'wyvern_warlord', tx:195, tz:205},
+    {type:'deep_wyrm', tx:194, tz:197},
+    {type:'deep_wyrm', tx:202, tz:203},
+    {type:'elder_dragon', tx:198, tz:205},
+    {type:'elder_dragon', tx:203, tz:203},
+    {type:'wyvern_warlord', tx:196, tz:199},
+    {type:'wyvern_warlord', tx:209, tz:204},
+    {type:'deep_wyrm', tx:202, tz:202},
+    {type:'deep_wyrm', tx:195, tz:207},
+    {type:'wyvern_warlord', tx:177, tz:207},
+    {type:'wyvern_warlord', tx:176, tz:201},
+    {type:'deep_wyrm', tx:169, tz:192},
+    {type:'deep_wyrm', tx:168, tz:208},
+    {type:'elder_dragon', tx:177, tz:194},
+    {type:'elder_dragon', tx:163, tz:194},
+    {type:'wyvern_warlord', tx:177, tz:193},
+    {type:'wyvern_warlord', tx:175, tz:209},
+    {type:'deep_wyrm', tx:160, tz:203},
+    {type:'deep_wyrm', tx:175, tz:192},
+    {type:'wyvern_warlord', tx:200, tz:162},
+    {type:'wyvern_warlord', tx:208, tz:161},
+    {type:'deep_wyrm', tx:205, tz:166},
+    {type:'deep_wyrm', tx:194, tz:172},
+    {type:'elder_dragon', tx:195, tz:162},
+    {type:'elder_dragon', tx:209, tz:177},
+    {type:'wyvern_warlord', tx:192, tz:174},
+    {type:'wyvern_warlord', tx:192, tz:177},
+    {type:'deep_wyrm', tx:208, tz:164},
+    {type:'deep_wyrm', tx:193, tz:159},
+    {type:'wyvern_warlord', tx:123, tz:54},
+    {type:'wyvern_warlord', tx:125, tz:51},
+    {type:'deep_wyrm', tx:113, tz:51},
+    {type:'deep_wyrm', tx:124, tz:52},
+    {type:'elder_dragon', tx:120, tz:58},
+    {type:'elder_dragon', tx:127, tz:45},
+    {type:'wyvern_warlord', tx:120, tz:51},
+    {type:'wyvern_warlord', tx:128, tz:54},
+    {type:'deep_wyrm', tx:111, tz:56},
+    {type:'deep_wyrm', tx:127, tz:44},
+    {type:'wyvern_warlord', tx:114, tz:179},
+    {type:'wyvern_warlord', tx:112, tz:188},
+    {type:'deep_wyrm', tx:115, tz:186},
+    {type:'deep_wyrm', tx:125, tz:186},
+    {type:'elder_dragon', tx:115, tz:180},
+    {type:'elder_dragon', tx:112, tz:194},
+    {type:'wyvern_warlord', tx:119, tz:193},
+    {type:'wyvern_warlord', tx:124, tz:192},
+    {type:'deep_wyrm', tx:125, tz:191},
+    {type:'deep_wyrm', tx:116, tz:187},
+    {type:'wyvern_warlord', tx:59, tz:122},
+    {type:'wyvern_warlord', tx:63, tz:117},
+    {type:'deep_wyrm', tx:64, tz:111},
+    {type:'deep_wyrm', tx:61, tz:115},
+    {type:'elder_dragon', tx:61, tz:113},
+    {type:'elder_dragon', tx:50, tz:127},
+    {type:'wyvern_warlord', tx:64, tz:116},
+    {type:'wyvern_warlord', tx:47, tz:111},
+    {type:'deep_wyrm', tx:54, tz:116},
+    {type:'deep_wyrm', tx:47, tz:117},
+    {type:'wyvern_warlord', tx:186, tz:118},
+    {type:'wyvern_warlord', tx:192, tz:116},
+    {type:'deep_wyrm', tx:183, tz:128},
+    {type:'deep_wyrm', tx:181, tz:129},
+    {type:'elder_dragon', tx:182, tz:114},
+    {type:'elder_dragon', tx:175, tz:111},
+    {type:'wyvern_warlord', tx:181, tz:120},
+    {type:'wyvern_warlord', tx:183, tz:119},
+    {type:'deep_wyrm', tx:185, tz:127},
+    {type:'deep_wyrm', tx:179, tz:115},
+    {type:'wyvern_warlord', tx:53, tz:197},
+    {type:'elder_dragon', tx:187, tz:86},
+    {type:'wyvern_warlord', tx:150, tz:43},
+    {type:'wyvern_warlord', tx:216, tz:21},
+    {type:'elder_dragon', tx:70, tz:212},
+    {type:'wyvern_warlord', tx:39, tz:101},
+    {type:'wyvern_warlord', tx:56, tz:28},
+    {type:'elder_dragon', tx:42, tz:152},
+    {type:'wyvern_warlord', tx:41, tz:58},
+    {type:'wyvern_warlord', tx:148, tz:59},
+    {type:'elder_dragon', tx:87, tz:119},
+    {type:'wyvern_warlord', tx:171, tz:200},
+    {type:'elder_dragon', tx:180, tz:56},
+    {type:'elder_dragon', tx:58, tz:87},
+    {type:'elder_dragon', tx:120, tz:151},
+    {type:'elder_dragon', tx:197, tz:135},
+    {type:'elder_dragon', tx:100, tz:40},
+    {type:'elder_dragon', tx:118, tz:184},
+    {type:'elder_dragon', tx:148, tz:27},
+    {type:'elder_dragon', tx:133, tz:53},
+    {type:'elder_dragon', tx:107, tz:54},
+    {type:'elder_dragon', tx:154, tz:172},
+    {type:'elder_dragon', tx:86, tz:22},
+    {type:'elder_dragon', tx:187, tz:138},
+    {type:'elder_dragon', tx:90, tz:105},
+    {type:'elder_dragon', tx:197, tz:24},
+    {type:'elder_dragon', tx:169, tz:148},
+    {type:'elder_dragon', tx:44, tz:72},
+    {type:'elder_dragon', tx:214, tz:52},
+    {type:'elder_dragon', tx:37, tz:200}
+  ],
   xumen: [],   // a489 — client-authoritative now (bespoke capital-guard AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
   // a544 — MULTIPLAYER MIGRATION: Necropolis is now server-authoritative.
   necropolis: [
@@ -2834,6 +3029,149 @@ function despawnWorldBoss(game, killed, killerName, bx, bz) {
 }
 
 // Per-tick AI + broadcast for the current world boss in a game (called from tickGame)
+// ════════════════════════════════════════════════════════════════════════════
+// a548 — SERVER-AUTHORITATIVE ZONE BOSS (first one: CRYOTHAR, Wyvern Wastes).
+//   Until now zone bosses shared only HP and phase (sv_hit_boss / sv_boss_hp /
+//   sv_boss_phase). Position, attack SELECTION and damage were client-local, and
+//   the selector was `Math.floor(gameTime/bACD)%5` off each client's own clock —
+//   so in co-op every player saw CRYOTHAR standing somewhere different, doing a
+//   different attack. HP was the only thing the party agreed on.
+//   Now the server owns position, cadence, attack choice, phase and damage, and
+//   the client renders what it's told. Damage rides the SAME battle-tested spine
+//   the migrated mobs use (_sdGeyser / _sdSpawnProj / sv_enemy_attack), so no new
+//   damage path was invented — sv_enemy_attack ignores eid for damage, so the
+//   sentinel id -1 is safe.
+//   Timings converted 60fps -> 10Hz (frame counters /6, per-frame speeds *6).
+//   AoE now hits EVERY player in radius, not just the local one — that's the
+//   whole point of a co-op boss.
+const ZBOSS_SERVER = {
+  wyvernwastes: {
+    x: 180, z: 180,                                        // tile (120,120) * TILE 1.5 — the central ice arena
+    spd:  [0, 0.016, 0.022, 0.028, 0.036, 0.044],          // per-frame, x6 for tick rate
+    dmg:  [0, 1.0,   1.5,   2.0,   2.8,   3.8],            // wDmgMult
+  },
+};
+
+function tickZoneBoss(game, zoneName, zone) {
+  const cfg = ZBOSS_SERVER[zoneName];
+  if (!cfg) return;
+  const b = zone.boss;
+  if (!b || !b.spawned || b.hp <= 0) return;
+  const zonePlayers = getPlayersInZone(game.id, zoneName);
+  if (zonePlayers.length === 0) return;
+  if (b.x === undefined) { b.x = cfg.x; b.z = cfg.z; }
+
+  let np = null, nd = Infinity;
+  zonePlayers.forEach(p => {
+    if (p.x === undefined) return;
+    const dx = p.x - b.x, dz = p.z - b.z, d = Math.sqrt(dx*dx + dz*dz);
+    if (d < nd) { nd = d; np = p; }
+  });
+  if (!np) return;
+
+  // ── Phase escalation. Mirrors the client AI block's ladder (.75/.50/.25/.10).
+  //    NOTE: 20_enemy_factory.part carries a SECOND, conflicting CRYOTHAR ladder
+  //    (3 phases at .75/.50/.25 with different cadences). Both ran client-side and
+  //    fought each other. The server now settles it — see the a548 changelog note.
+  const nph = b.hp > b.maxHp*0.75 ? 1 : b.hp > b.maxHp*0.50 ? 2 : b.hp > b.maxHp*0.25 ? 3 : b.hp > b.maxHp*0.10 ? 4 : 5;
+  if (nph > (b.phase || 1)) {
+    b.phase = nph;
+    b.acd = Math.max(15, Math.round(Math.max(90, 160 - nph*15) / 6));
+    broadcastToZone(game.id, zoneName, { type:'sv_boss_phase', zone:zoneName, phase:nph });
+    broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'cr_phase', zone:zoneName, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), phase:nph });
+  }
+  const ph = Math.min(b.phase || 1, 5);
+  if (!b.acd) b.acd = 20;                                   // 120 frames / 6
+  const mult = cfg.dmg[ph];
+  const ang = Math.atan2(np.x - b.x, np.z - b.z);
+
+  // AoE damage to EVERY player in radius (co-op correct; the client only ever hit itself)
+  const aoe = (radius, dmg) => {
+    players.forEach((p, ws) => {
+      if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+      const dx = p.x - b.x, dz = p.z - b.z;
+      if (dx*dx + dz*dz < radius*radius)
+        send(ws, { type:'sv_enemy_attack', eid:-1, dmg:dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
+    });
+  };
+  const fx = (vt, extra) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt:vt, zone:zoneName }, extra || {}));
+  const shim = { id:-1, x:b.x, z:b.z };
+
+  // ── March. The client clamped to walkableR; the arena floor is clear, and the
+  //    server has no nav grid for this zone, so we clamp to the 240x240 bounds.
+  const spd = cfg.spd[ph] * 6;
+  const nx = b.x + Math.sin(ang)*spd, nz = b.z + Math.cos(ang)*spd;
+  if (nx > 2 && nx < 358 && nz > 2 && nz < 358) { b.x = nx; b.z = nz; }
+
+  // ── Passive: venom cloud (phase 2+), every 25 frames -> 4 ticks
+  b._vt = (b._vt || 0) + 1;
+  if (ph >= 2 && b._vt % 4 === 0) {
+    fx('cr_venom_cloud', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+    aoe(5.0, Math.floor(45 * mult));
+  }
+  // ── Passive: tail whip (phase 4+), every 120 frames -> 20 ticks
+  if (ph >= 4 && b._vt % 20 === 0) {
+    fx('cr_tail', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+    aoe(7.0, Math.floor(200 * mult));
+  }
+
+  // ── Attack cadence + telegraph (65 frames -> 11 ticks before the hit)
+  b.atkT = (b.atkT || 0) + 1;
+  if (b.atkT === Math.max(1, b.acd - 11)) {
+    const alt = ((b.atkIdx || 0) % 2 === 0);
+    fx('cr_telegraph', { ex:+(alt ? b.x : np.x).toFixed(2), ez:+(alt ? b.z : np.z).toFixed(2) });
+  }
+
+  if (b.atkT >= b.acd) {
+    b.atkT = 0;
+    b.atkIdx = (b.atkIdx || 0) + 1;
+    const atk = b.atkIdx % 5;
+
+    if (atk === 0) {
+      // BODY SLAM — rears and crashes down
+      fx('cr_slam', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+      aoe(8.0, Math.floor(320 * mult));
+
+    } else if (atk === 1) {
+      // HEAD SMASH — lunge and bite, or a 3-bolt spread if out of reach
+      fx('cr_bite', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+      if (nd < 4.5) aoe(4.5, Math.floor(240 * mult));
+      else for (let i = 0; i < 3; i++)
+        _sdSpawnProj(game, zoneName, shim, ang + (i-1)*0.4, 0xcc4400, Math.floor(180 * mult), 'plasma', null, 0);
+
+    } else if (atk === 2) {
+      // COIL CRUSH — expanding shockwave rings, 150ms apart -> fuse 2/3/5.
+      //   NOTE: the client scaled the PARTICLES by wDmgMult but the actual hit was
+      //   (200 - r*15) UNSCALED. Preserved verbatim — see the a548 changelog note.
+      if (!game._sdGeyser) game._sdGeyser = [];
+      [2, 4, 6].forEach((r, i) => {
+        game._sdGeyser.push({ zone:zoneName, x:b.x, z:b.z, fuse:2 + i*2, dmg:Math.floor(200 - r*15),
+                              eid:-1, col:0xff4400, radius:r*1.5, shake:3 });
+      });
+      fx('cr_coil', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+
+    } else if (atk === 3) {
+      // VENOM BURST — 8 bolts, radial
+      fx('cr_burst', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+      for (let i = 0; i < 8; i++)
+        _sdSpawnProj(game, zoneName, shim, i/8*Math.PI*2, 0x88cc00, Math.floor(160 * mult), 'plasma', null, 0);
+
+    } else {
+      // EARTH TREMOR — seismic slam
+      fx('cr_tremor', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+      aoe(10.0, Math.floor(260 * mult));
+    }
+  }
+
+  // ── Position + phase broadcast. Deliberately NOT sv_boss_state: that message
+  //    carries hp and runs through the client's heal-jump watchdog, which has a
+  //    long bug history. This one is position/phase only.
+  broadcastToZone(game.id, zoneName, {
+    type:'sv_zboss', zone:zoneName,
+    x:+b.x.toFixed(2), z:+b.z.toFixed(2), phase:ph,
+  });
+}
+
 function tickWorldBoss(game) {
   const wb = game.worldBoss;
   if (!wb || !wb.spawned) return;
@@ -2980,11 +3318,17 @@ function tickGame(game) {
       if (!nearestPlayer) return;
 
       // Aggro check
-      if (nearestDist <= e.aggroRange) e.aggroed = true;
+      // a548 — the Wyvern Wastes kit forces AGG = max(aggroRange, 24) client-side, but
+      //   ENEMY_STATS carries 11-15 for these types. Without this floor the server would
+      //   aggro the pack noticeably later than the client ever did, and ALPHA'S CALL
+      //   (which force-aggros packmates within 20u) could pull mobs that then immediately
+      //   fall back out of range. Mirror the client's floor for this zone only.
+      const _aggroR = (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) ? Math.max(e.aggroRange || 12, 24) : e.aggroRange;
+      if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -4654,6 +4998,155 @@ function tickGame(game) {
 
         if(_moved) changed.push(e);
       }
+
+        // ── a548: WYVERN WASTES pack AI (zone-gated to 'wyvernwastes'; all three types also
+        //    appear in 'mirrored', which is NOT migrated). ALPHA'S CALL pack surge, talon
+        //    dives, deep-wyrm burrow ambush, glacial flamebreath, tail sweep, frostfire roar.
+        //    Re-timed 60fps -> 10Hz: frame counters /6, per-frame speeds *6.
+        //    HP intentionally UNCHANGED — the client kit applies no zone-local bump.
+        if (zoneName === 'wyvernwastes' && e.aggroed && WW_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+          if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+          if(Math.random()<0.036) e._strafe=-e._strafe;          // 0.006/frame -> ~0.036/tick
+          const strafe=e._strafe;
+          if(e._packT>0) e._packT--;                             // ALPHA'S CALL surge timer
+          const _pk=(e._packT>0)?1.2:1;                          // surge scales SPEED only, never damage
+          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_wwDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const shoot=(baseAng,col,mult,count,spread,st,sd)=>{ for(let i=0;i<count;i++){
+            const a=baseAng+(count>1?(i-(count-1)/2)*spread:0);
+            _sdSpawnProj(game,zoneName,e,a,col,_wwDmgS(e,mult),'plasma',st||null,sd||0); } };
+          const tele=(tx,tz,fuse,radius,mult,col,push)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({zone:zoneName,x:tx,z:tz,fuse:fuse,dmg:_wwDmgS(e,mult),eid:e.id,col:col,radius:radius,push:(push||0)});
+            fx('sd_geyser_warn',{ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+
+          if(e.type==='wyvern_warlord'){
+            // ALPHA WYVERN — strafing flight, fire fans, TALON DIVE, ALPHA'S CALL
+            const MS=0.36*_pk;
+            if(e._dv==='climb'){
+              e._dt=(e._dt||0)+1;
+              if(e._dt>=3){ e._dv='dive'; e._dt=0; e._ddir=ang; e._dhit=0;
+                fx('ww_dive',{eid:e.id,dir:+ang.toFixed(3)}); }
+            } else if(e._dv==='dive'){
+              e._dt=(e._dt||0)+1;
+              mv(Math.sin(e._ddir),Math.cos(e._ddir),MS*3.2);
+              if(dd<2.6 && !e._dhit){ e._dhit=1; hit(1.3);
+                toPlayer({eff:'shake',shake:2});
+                fx('sd_shock',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_FIRE,r:2.4}); }
+              if(e._dt>=3){ e._dv=0; e._dt=0; fx('ww_land',{eid:e.id}); }
+            } else {
+              // strafing orbit at rake range
+              if(dd<3.2) mv(-sin*0.4+pr*strafe*0.8, -cos*0.4+pq*strafe*0.8, MS);
+              else if(dd>10) mv(sin*0.9, cos*0.9, MS);
+              else mv(sin*0.3+pr*strafe*0.8, cos*0.3+pq*strafe*0.8, MS);
+              // talon rake (burn on contact)
+              if(dd<3.0 && e.attackTimer%11===0){ hit(0.95); toPlayer({eff:'status',status:'burn',statusDur:100});
+                fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_FIRE,n:5}); }
+              // fire spread fan
+              if(dd>2.5 && dd<15 && e._ab>=25){ e._ab=0; shoot(ang,_WW_FIRE,0.55,5,0.20); }
+              // TALON DIVE setup
+              e._dc2=(e._dc2||Math.floor(Math.random()*20))+1;
+              if(dd>4 && dd<13 && e._dc2>=35){ e._dc2=0; e._dv='climb'; e._dt=0; fx('ww_climb',{eid:e.id}); }
+              // ALPHA'S CALL — the pack answers.
+              // a548: the client gated only the ANNOUNCE on an 8s cooldown while the surge
+              //   itself fired every time. Solo that's invisible; with 72 warlords and a party
+              //   the surges would overlap and hold most of the zone at 1.2x speed permanently.
+              //   Here the SURGE shares the 8s zone cooldown, so it stays a burst, not a state.
+              e._ac=(e._ac||Math.floor(Math.random()*50))+1;
+              if(dd<14 && e._ac>=70){ e._ac=0;
+                const _now=Date.now();
+                if(!zone._wwCallCd || _now>zone._wwCallCd){
+                  zone._wwCallCd=_now+8000;
+                  fx('ww_call',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                  for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i];
+                    if(!o||!o.active||!WW_BESPOKE[o.type]||o===e) continue;
+                    const odx=o.x-e.x, odz=o.z-e.z;
+                    if(odx*odx+odz*odz>400) continue;            // 20u radius
+                    o.aggroed=true; o._packT=50;                 // 300 frames -> 50 ticks
+                  }
+                  e._packT=50;
+                }
+              }
+            }
+          }
+          else if(e.type==='deep_wyrm'){
+            // BURROW AMBUSH — submerge, tunnel under the player as a moving mound, erupt.
+            // The server owns x/z but carries no visibility, so the dig/erupt transitions are
+            // broadcast as cues and the client hides/reveals + snaps the mesh (see 40_enemy_ai).
+            const MS=0.204*_pk;
+            if(e._bw==='dig'){
+              e._bt=(e._bt||0)+1;
+              if(e._bt>=3){ e._bw='tunnel'; e._bt=0; e._wwHidden=1;
+                fx('ww_burrow',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_EARTH}); }
+            } else if(e._bw==='tunnel'){
+              e._bt=(e._bt||0)+1;
+              mv(sin,cos,0.84);                                   // 0.14/frame -> 0.84/tick
+              if(e._bt%1===0) fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_EARTH,n:2});
+              if(dd<1.8 || e._bt>=15){ e._bw='erupt'; e._bt=0;
+                e.x=nearestPlayer.x; e.z=nearestPlayer.z; _moved=true;   // surfaces beneath the target
+                fx('sd_geyser_warn',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_EARTH}); }
+            } else if(e._bw==='erupt'){
+              e._bt=(e._bt||0)+1;
+              if(e._bt>=6){ e._bw=0; e._bt=0; e._wwHidden=0;
+                fx('ww_erupt',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_EARTH});
+                const _edx=nearestPlayer.x-e.x, _edz=nearestPlayer.z-e.z;
+                if(Math.sqrt(_edx*_edx+_edz*_edz)<2.6){ hit(1.3); toPlayer({eff:'shake',shake:3}); }
+              }
+            } else {
+              // surface behavior
+              if(dd>1.8) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS);
+              if(dd<2.6 && e.attackTimer%12===0){ hit(1.0);
+                fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_EARTH,n:4}); }
+              // venom spit — twin bolts, poisons
+              if(dd>2.2 && dd<14 && e.attackTimer%14===0) shoot(ang,_WW_VENOM,0.55,2,0.14,'poison',150);
+              // CONSTRICT — lunging bite that snares
+              e._cl=(e._cl||0)+1;
+              if(dd>2 && dd<6 && e._cl>=32){ e._cl=0;
+                mv(sin,cos,1.6);                                  // one-shot lunge displacement
+                const _cdx=nearestPlayer.x-e.x, _cdz=nearestPlayer.z-e.z;
+                if(Math.sqrt(_cdx*_cdx+_cdz*_cdz)<3.0){ hit(1.1);
+                  toPlayer({eff:'status',status:'poison',statusDur:150});
+                  toPlayer({eff:'slow',slow:0.5,root:600}); }
+                fx('sd_shock',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_VENOM,r:1.8}); }
+              // BURROW cycle
+              e._bc=(e._bc||Math.floor(Math.random()*33))+1;
+              if(dd>4 && dd<18 && e._bc>=47){ e._bc=0; e._bw='dig'; e._bt=0;
+                fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_EARTH,n:3}); }
+            }
+          }
+          else {
+            // ELDER OF THE WASTES — stomps, GLACIAL FLAMEBREATH, TAIL SWEEP, FROSTFIRE ROAR
+            const MS=0.192*_pk;
+            if(dd>3.2) mv(sin,cos,MS);
+            if(dd<3.8 && e.attackTimer%14===0){ hit(1.2); toPlayer({eff:'shake',shake:2});
+              fx('sd_shock',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_FIRE,r:2.4}); }
+            // GLACIAL FLAMEBREATH — three eruptions march down the line at you.
+            //   Client staggered them 220ms apart with a 480ms telegraph each; at 10Hz that
+            //   is fuse 5, 7, 9.
+            if(dd>3 && dd<14 && e._ab>=38){ e._ab=0;
+              for(let fi=0;fi<3;fi++){ const fr2=(fi+1)/3;
+                tele(e.x+(nearestPlayer.x-e.x)*fr2, e.z+(nearestPlayer.z-e.z)*fr2, 5+fi*2, 2.8, 0.75, _WW_FIRE); } }
+            // TAIL SWEEP — telegraphed, then launches you (delayed push rides the geyser)
+            e._ts=(e._ts||0)+1;
+            if(dd<5 && e._ts>=37){ e._ts=0; tele(e.x, e.z, 6, 4.5, 1.2, _WW_EMBER, 2.4); }
+            // FROSTFIRE ROAR — twin ice/fire shockwaves + slow, the zone's signature
+            e._rr=(e._rr||17)+1;
+            if(dd<9 && e._rr>=57){ e._rr=0;
+              fx('sd_shock',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_ICE,r:6.0});
+              fx('sd_shock',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_FIRE,r:4.2});
+              fx('ww_roar',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              if(dd<6){ hit(1.0); toPlayer({eff:'slow',slow:0.55,root:1400}); toPlayer({eff:'shake',shake:3}); } }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -4669,6 +5162,8 @@ function tickGame(game) {
       });
       broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName, ids, xs, zs, hps, acts, types });
     }
+
+    tickZoneBoss(game, zoneName, zone);   // a548 — server-authoritative zone boss (CRYOTHAR)
   });
   // a527 — advance server-owned SD projectiles once per tick; resolve hits
   if (game._sdProj && game._sdProj.length) {
@@ -4717,6 +5212,7 @@ function tickGame(game) {
             if (gy.dmg > 0) send(ws, { type:'sv_enemy_attack', eid:gy.eid, dmg:gy.dmg, ex:+gy.x.toFixed(2), ez:+gy.z.toFixed(2), zone:gy.zone });   // a541 — pure-effect ticks (singularity drag, time field) carry dmg 0
             if (gy.slow) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'slow', slow:gy.slow, root:(gy.slowDur||1000) });
             if (gy.pull) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'pull', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), pull:gy.pull });
+            if (gy.push) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'push', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), push:gy.push });   // a548 — delayed knockback (elder dragon TAIL SWEEP)
             if (gy.status) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'status', status:gy.status, statusDur:(gy.statusDur||120) });
             if (gy.shake) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'shake', shake:gy.shake });   // a540 — blasting charge
             if (gy.freeze) send(ws, { type:'sv_player_fx', zone:gy.zone, eff:'freeze', px:+gy.x.toFixed(2), pz:+gy.z.toFixed(2), col:(gy.col||0xbfe8ff) });   // a542 — hard freeze VFX cue
@@ -4789,6 +5285,15 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 // a547 — RIFT VALE void/rift AI (zone-gated to 'riftvale'). CRITICAL: rift_stalker and
 //   rift_weaver ALSO live in void_citadel (not yet migrated) — the zone gate is what keeps
 //   this kit out of that zone. Client bumps HP x1.5 AND ATK x1.5 zone-locally.
+// a548 — WYVERN WASTES pack AI (zone-gated to 'wyvernwastes'; all three types also appear
+//   in 'mirrored', which is NOT migrated, so the gate is mandatory). The client's _wwDmg
+//   adds player-maxHP and player-DEF terms the server can't see, so we mirror the flat
+//   _WW_PWR floor it falls back to. No zone-local ATK multiplier in this kit (the pack
+//   surge _pk scales SPEED only, never damage) — so no extra factor is folded in here.
+const WW_BESPOKE = { wyvern_warlord:1, deep_wyrm:1, elder_dragon:1 };
+const WW_PWR = { wyvern_warlord:250, deep_wyrm:240, elder_dragon:265 };
+function _wwDmgS(e, mult){ return Math.floor((WW_PWR[e.type] || e.atk || 240) * mult); }
+const _WW_FIRE=0xff5500, _WW_EMBER=0xff8830, _WW_ICE=0x80c8ff, _WW_FROST=0xd8ecff, _WW_VENOM=0x88cc00, _WW_EARTH=0xaa6600;
 const RV_BESPOKE = { void_colossus:1, rift_stalker:1, psyche_horror:1, rift_weaver:1 };
 const RV_PWR = { void_colossus:220, rift_stalker:170, psyche_horror:160, rift_weaver:150 };
 function _rvDmgS(e, mult){ return Math.floor((RV_PWR[e.type] || e.atk || 150) * 1.5 * mult); }
