@@ -2731,7 +2731,217 @@ const ZONE_SPAWNS = {
     {type:'xf_warlord', tx:208, tz:192}
   ],
   fungal: [],   // a471 — client-authoritative (bespoke spore AI client-side); server no longer spawns/owns these mobs.
-  void_citadel: [],   // a492 — client-authoritative now (bespoke unreality AI client-side); server no longer spawns/owns these mobs. See client sv_zone_snapshot fallback.
+  // a553 — VOID CITADEL is now SERVER-AUTHORITATIVE (was client-side since a492).
+  //   204 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
+  //   HP is NOT unchanged here — this is the first migrated zone that needs it. See
+  //   ZONE_TYPE_HP above; without those entries these four would ship at a sixth to a
+  //   their intended health.
+  void_citadel: [
+    {type:'void_construct', tx:44, tz:31},
+    {type:'void_construct', tx:46, tz:35},
+    {type:'void_sentinel', tx:44, tz:39},
+    {type:'void_sentinel', tx:36, tz:44},
+    {type:'rift_stalker', tx:49, tz:42},
+    {type:'rift_stalker', tx:44, tz:46},
+    {type:'void_construct', tx:33, tz:48},
+    {type:'void_construct', tx:42, tz:41},
+    {type:'rift_weaver', tx:37, tz:36},
+    {type:'rift_weaver', tx:47, tz:48},
+    {type:'void_construct', tx:67, tz:37},
+    {type:'void_construct', tx:79, tz:38},
+    {type:'void_sentinel', tx:73, tz:39},
+    {type:'void_sentinel', tx:80, tz:44},
+    {type:'rift_stalker', tx:81, tz:43},
+    {type:'rift_stalker', tx:71, tz:33},
+    {type:'void_construct', tx:67, tz:48},
+    {type:'void_construct', tx:64, tz:49},
+    {type:'rift_weaver', tx:69, tz:40},
+    {type:'rift_weaver', tx:65, tz:44},
+    {type:'void_construct', tx:31, tz:66},
+    {type:'void_construct', tx:49, tz:78},
+    {type:'void_sentinel', tx:32, tz:69},
+    {type:'void_sentinel', tx:31, tz:75},
+    {type:'rift_stalker', tx:40, tz:74},
+    {type:'rift_stalker', tx:48, tz:72},
+    {type:'void_construct', tx:37, tz:75},
+    {type:'void_construct', tx:34, tz:64},
+    {type:'rift_weaver', tx:48, tz:68},
+    {type:'rift_weaver', tx:40, tz:76},
+    {type:'void_construct', tx:196, tz:44},
+    {type:'void_construct', tx:209, tz:42},
+    {type:'void_sentinel', tx:195, tz:49},
+    {type:'void_sentinel', tx:199, tz:41},
+    {type:'rift_stalker', tx:202, tz:41},
+    {type:'rift_stalker', tx:200, tz:43},
+    {type:'void_construct', tx:198, tz:48},
+    {type:'void_construct', tx:208, tz:36},
+    {type:'rift_weaver', tx:200, tz:41},
+    {type:'rift_weaver', tx:194, tz:46},
+    {type:'void_construct', tx:160, tz:37},
+    {type:'void_construct', tx:166, tz:32},
+    {type:'void_sentinel', tx:163, tz:48},
+    {type:'void_sentinel', tx:164, tz:44},
+    {type:'rift_stalker', tx:174, tz:31},
+    {type:'rift_stalker', tx:169, tz:46},
+    {type:'void_construct', tx:173, tz:38},
+    {type:'void_construct', tx:169, tz:39},
+    {type:'rift_weaver', tx:168, tz:42},
+    {type:'rift_weaver', tx:174, tz:49},
+    {type:'void_construct', tx:193, tz:68},
+    {type:'void_construct', tx:203, tz:64},
+    {type:'void_sentinel', tx:194, tz:80},
+    {type:'void_sentinel', tx:194, tz:76},
+    {type:'rift_stalker', tx:206, tz:77},
+    {type:'rift_stalker', tx:195, tz:79},
+    {type:'void_construct', tx:196, tz:65},
+    {type:'void_construct', tx:196, tz:73},
+    {type:'rift_weaver', tx:203, tz:80},
+    {type:'rift_weaver', tx:196, tz:69},
+    {type:'void_construct', tx:36, tz:201},
+    {type:'void_construct', tx:36, tz:203},
+    {type:'void_sentinel', tx:36, tz:204},
+    {type:'void_sentinel', tx:49, tz:200},
+    {type:'rift_stalker', tx:43, tz:204},
+    {type:'rift_stalker', tx:39, tz:205},
+    {type:'void_construct', tx:44, tz:203},
+    {type:'void_construct', tx:42, tz:201},
+    {type:'rift_weaver', tx:35, tz:209},
+    {type:'rift_weaver', tx:43, tz:194},
+    {type:'void_construct', tx:69, tz:205},
+    {type:'void_construct', tx:70, tz:205},
+    {type:'void_sentinel', tx:80, tz:196},
+    {type:'void_sentinel', tx:65, tz:192},
+    {type:'rift_stalker', tx:71, tz:205},
+    {type:'rift_stalker', tx:65, tz:193},
+    {type:'void_construct', tx:78, tz:201},
+    {type:'void_construct', tx:70, tz:202},
+    {type:'rift_weaver', tx:79, tz:207},
+    {type:'rift_weaver', tx:75, tz:205},
+    {type:'void_construct', tx:44, tz:177},
+    {type:'void_construct', tx:48, tz:159},
+    {type:'void_sentinel', tx:36, tz:174},
+    {type:'void_sentinel', tx:33, tz:171},
+    {type:'rift_stalker', tx:47, tz:169},
+    {type:'rift_stalker', tx:43, tz:161},
+    {type:'void_construct', tx:44, tz:163},
+    {type:'void_construct', tx:40, tz:167},
+    {type:'rift_weaver', tx:38, tz:176},
+    {type:'rift_weaver', tx:41, tz:166},
+    {type:'void_construct', tx:200, tz:202},
+    {type:'void_construct', tx:202, tz:209},
+    {type:'void_sentinel', tx:203, tz:197},
+    {type:'void_sentinel', tx:206, tz:198},
+    {type:'rift_stalker', tx:200, tz:195},
+    {type:'rift_stalker', tx:209, tz:193},
+    {type:'void_construct', tx:198, tz:208},
+    {type:'void_construct', tx:194, tz:192},
+    {type:'rift_weaver', tx:204, tz:192},
+    {type:'rift_weaver', tx:209, tz:206},
+    {type:'void_construct', tx:161, tz:209},
+    {type:'void_construct', tx:176, tz:201},
+    {type:'void_sentinel', tx:169, tz:196},
+    {type:'void_sentinel', tx:166, tz:204},
+    {type:'rift_stalker', tx:171, tz:205},
+    {type:'rift_stalker', tx:173, tz:205},
+    {type:'void_construct', tx:176, tz:209},
+    {type:'void_construct', tx:164, tz:207},
+    {type:'rift_weaver', tx:168, tz:193},
+    {type:'rift_weaver', tx:176, tz:193},
+    {type:'void_construct', tx:199, tz:170},
+    {type:'void_construct', tx:193, tz:165},
+    {type:'void_sentinel', tx:209, tz:171},
+    {type:'void_sentinel', tx:200, tz:177},
+    {type:'rift_stalker', tx:194, tz:159},
+    {type:'rift_stalker', tx:203, tz:168},
+    {type:'void_construct', tx:199, tz:161},
+    {type:'void_construct', tx:196, tz:174},
+    {type:'rift_weaver', tx:200, tz:162},
+    {type:'rift_weaver', tx:204, tz:166},
+    {type:'void_construct', tx:117, tz:50},
+    {type:'void_construct', tx:113, tz:58},
+    {type:'void_sentinel', tx:126, tz:53},
+    {type:'void_sentinel', tx:123, tz:57},
+    {type:'rift_stalker', tx:124, tz:54},
+    {type:'rift_stalker', tx:116, tz:52},
+    {type:'void_construct', tx:129, tz:56},
+    {type:'void_construct', tx:115, tz:48},
+    {type:'rift_weaver', tx:117, tz:43},
+    {type:'rift_weaver', tx:120, tz:44},
+    {type:'void_construct', tx:126, tz:189},
+    {type:'void_construct', tx:121, tz:182},
+    {type:'void_sentinel', tx:112, tz:191},
+    {type:'void_sentinel', tx:115, tz:196},
+    {type:'rift_stalker', tx:119, tz:185},
+    {type:'rift_stalker', tx:127, tz:185},
+    {type:'void_construct', tx:121, tz:197},
+    {type:'void_construct', tx:121, tz:192},
+    {type:'rift_weaver', tx:117, tz:184},
+    {type:'rift_weaver', tx:129, tz:191},
+    {type:'void_construct', tx:51, tz:118},
+    {type:'void_construct', tx:65, tz:123},
+    {type:'void_sentinel', tx:54, tz:124},
+    {type:'void_sentinel', tx:48, tz:124},
+    {type:'rift_stalker', tx:64, tz:123},
+    {type:'rift_stalker', tx:49, tz:115},
+    {type:'void_construct', tx:63, tz:121},
+    {type:'void_construct', tx:65, tz:115},
+    {type:'rift_weaver', tx:60, tz:111},
+    {type:'rift_weaver', tx:53, tz:113},
+    {type:'void_construct', tx:180, tz:121},
+    {type:'void_construct', tx:178, tz:116},
+    {type:'void_sentinel', tx:177, tz:120},
+    {type:'void_sentinel', tx:176, tz:111},
+    {type:'rift_stalker', tx:190, tz:115},
+    {type:'rift_stalker', tx:184, tz:116},
+    {type:'void_construct', tx:186, tz:124},
+    {type:'void_construct', tx:181, tz:114},
+    {type:'rift_weaver', tx:178, tz:127},
+    {type:'rift_weaver', tx:184, tz:118},
+    {type:'void_construct', tx:148, tz:160},
+    {type:'void_sentinel', tx:140, tz:98},
+    {type:'rift_stalker', tx:52, tz:118},
+    {type:'rift_weaver', tx:218, tz:224},
+    {type:'void_construct', tx:104, tz:166},
+    {type:'void_sentinel', tx:182, tz:208},
+    {type:'rift_stalker', tx:109, tz:67},
+    {type:'rift_weaver', tx:121, tz:70},
+    {type:'void_sentinel', tx:94, tz:148},
+    {type:'rift_stalker', tx:220, tz:39},
+    {type:'void_sentinel', tx:26, tz:218},
+    {type:'rift_stalker', tx:224, tz:49},
+    {type:'void_sentinel', tx:182, tz:217},
+    {type:'rift_stalker', tx:203, tz:149},
+    {type:'void_sentinel', tx:119, tz:161},
+    {type:'rift_stalker', tx:79, tz:150},
+    {type:'void_sentinel', tx:95, tz:39},
+    {type:'rift_stalker', tx:160, tz:79},
+    {type:'void_sentinel', tx:21, tz:55},
+    {type:'rift_stalker', tx:84, tz:67},
+    {type:'void_sentinel', tx:192, tz:153},
+    {type:'void_sentinel', tx:108, tz:193},
+    {type:'void_sentinel', tx:216, tz:160},
+    {type:'void_sentinel', tx:221, tz:27},
+    {type:'void_sentinel', tx:53, tz:206},
+    {type:'void_sentinel', tx:54, tz:56},
+    {type:'void_sentinel', tx:209, tz:133},
+    {type:'void_sentinel', tx:96, tz:51},
+    {type:'void_sentinel', tx:91, tz:94},
+    {type:'void_sentinel', tx:53, tz:134},
+    {type:'void_sentinel', tx:95, tz:82},
+    {type:'void_sentinel', tx:164, tz:138},
+    {type:'void_sentinel', tx:36, tz:34},
+    {type:'void_sentinel', tx:138, tz:178},
+    {type:'void_sentinel', tx:204, tz:162},
+    {type:'void_sentinel', tx:176, tz:65},
+    {type:'void_sentinel', tx:216, tz:65},
+    {type:'void_sentinel', tx:193, tz:49},
+    {type:'void_sentinel', tx:53, tz:181},
+    {type:'void_sentinel', tx:26, tz:146},
+    {type:'void_sentinel', tx:76, tz:91},
+    {type:'void_sentinel', tx:137, tz:68},
+    {type:'void_sentinel', tx:124, tz:217},
+    {type:'void_sentinel', tx:149, tz:177}
+  ],
   // ── NEON HOLLOW — POST-CAP AA-GATED (matches client ZONE_DEFS.neon_hollow) ──
   // a549 — NEON HOLLOW is now SERVER-AUTHORITATIVE (was client-side since a487).
   //   196 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
@@ -3555,7 +3765,18 @@ function _aviaWalkable(wx, wz, r){ r=r||0.3;
 //   that is correct for VOID CITADEL but far too tanky for the lvl15-28 VOID WASTES where
 //   they also spawn. Scope a zone-appropriate HP to Void Wastes only (base stats untouched,
 //   so the Citadel versions keep their heavy HP). Their damage already uses VW_PWR, not atk.
-const ZONE_TYPE_HP = { void: { void_sentinel: 4500, void_construct: 3600 } };
+// a553 — VOID CITADEL entries added. These four types share one stat table across three
+//   zones, and each zone needs a different tier of them: Void Wastes wants them weak
+//   (the entries above), Rift Vale takes the base stats via ZONE_HP_MULT, and the Citadel
+//   wants them heavy. The client kit applied the Citadel's own boost inside _tickVcMob —
+//   gated by _isVcMob precisely so the globals wouldn't inflate the other two zones — and
+//   the server has to honour the same scoping now that it owns the spawns. The figures
+//   below are the client kit's multipliers (7x/6x/8x/12x) resolved against base stats,
+//   and match its own stated results exactly.
+const ZONE_TYPE_HP = {
+  void:         { void_sentinel: 4500,   void_construct: 3600 },
+  void_citadel: { void_construct: 224000, void_sentinel: 264000, rift_stalker: 192000, rift_weaver: 180000 },
+};
 function createZoneEnemies(zoneName) {
   // v93.0 phase 3 — special-case convergence: generate spawns procedurally
   // per game-instance instead of using the static ZONE_SPAWNS entry.
@@ -3846,6 +4067,112 @@ const ZBOSS_SERVER = {
 
 
 
+
+
+  // ── COMMANDANT XERATH (a553). Five phases, a SIX-attack rotation picked from each
+  //    client's own clock (Math.floor(gameTime/bACD)%6) — the same divergence CRYOTHAR
+  //    and the Overlord had. Also summons, so it reuses the a551 shared-spawn path.
+  //    NOTE: a third boss with TWO phase ladders in the client — the AI block's
+  //    (bACD = max(75,150-phase*15)) and 20_enemy_factory.part's (85/65/50/38). Same
+  //    thresholds, different cadences. Ported the AI block's, as with CRYOTHAR (a548)
+  //    and THE XU SUPREME OVERLORD (a551).
+  void_citadel: {
+    x: 180, z: 180,                                    // tile (120,120) — central void arena
+    spd:    [0, 0.032, 0.042, 0.054, 0.068, 0.082],
+    dmg:    [0, 1.0,   1.5,   2.2,   3.0,   3.8],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 20, 18, 15, 13],                   // 120 then max(75,150-ph*15), / 6
+    tele:   10,                                        // 60 frames
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, nd, zone, zoneName, game, aoe, fx, proj, geyser } = c;
+
+      if (atk === 0) {
+        // VOID BLADE SLASH — a close cleave with a shockwave
+        fx('xe_blade'); aoe(6.0, Math.floor(460 * mult));
+
+      } else if (atk === 1) {
+        // COMMAND ORBS — a widening fan, more orbs each phase
+        fx('xe_orbs');
+        const n = [0, 3, 5, 7, 9, 11][ph];
+        for (let i = 0; i < n; i++) proj(ang + (i - (n-1)*0.5) * 0.20, 0xaa00ff, Math.floor(160 * mult), 'void');
+        aoe(6.0, Math.floor(220 * mult));
+
+      } else if (atk === 2) {
+        // VOID SURGE — reality bows outward
+        fx('xe_surge'); aoe(8.5, Math.floor(380 * mult));
+
+      } else if (atk === 3) {
+        // RIFT STRIKE — teleports BEHIND you, then backstabs. Phase 3+ strikes twice.
+        const btx = np.x - Math.sin(ang) * 1.6, btz = np.z - Math.cos(ang) * 1.6;
+        if (btx > 2 && btx < 358 && btz > 2 && btz < 358) { b.x = btx; b.z = btz; }
+        fx('xe_rift', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+        aoe(5.5, Math.floor(540 * mult));
+        if (ph >= 3) { b._rsFollow = 4; b._rsDmg = Math.floor(380 * mult); }
+
+      } else if (atk === 4) {
+        // SUMMON VOID LEGION — real adds in the SHARED zone (a551 pattern).
+        //   These carry their own small HP on purpose and are NOT touched by
+        //   ZONE_TYPE_HP, which only applies to ZONE_SPAWNS entries.
+        fx('xe_legion');
+        const n = ph >= 4 ? 4 : 3;
+        for (let si = 0; si < n; si++) {
+          const sa = Math.random() * Math.PI * 2, sr = 3.3 + Math.random() * 2.7;
+          const ssx = b.x + Math.sin(sa) * sr, ssz = b.z + Math.cos(sa) * sr;
+          if (ssx < 2 || ssx > 358 || ssz < 2 || ssz > 358) continue;
+          const useConstruct = si % 2 === 0;
+          zone._nextEid = (zone._nextEid || 100000) + 1;
+          const add = {
+            id: zone._nextEid,
+            type: useConstruct ? 'void_construct' : 'void_sentinel',
+            x: ssx, z: ssz, spawnX: ssx, spawnZ: ssz,
+            hp: useConstruct ? 1800 : 2200, maxHp: useConstruct ? 1800 : 2200,
+            atk: useConstruct ? 130 : 160, spd: 0.055, aggroRange: 14,
+            reward: 280, expR: 110, dmgReduction: useConstruct ? 0 : 0.10,
+            active: true, aggroed: true, respawnTimer: 0, attackTimer: 0,
+            _summoned: 1,
+          };
+          zone.enemies.push(add);
+          broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName,
+            ids:[add.id], xs:[+ssx.toFixed(2)], zs:[+ssz.toFixed(2)],
+            hps:[add.hp], acts:[1], types:[add.type] });
+          fx('xe_legion_drop', { ex:+ssx.toFixed(2), ez:+ssz.toFixed(2) });
+        }
+
+      } else {
+        // FULL VOID MERGE — the showpiece
+        fx('xe_merge');
+        const n = ph >= 4 ? 12 : 8;
+        for (let vi = 0; vi < n; vi++) proj(vi/n*Math.PI*2, 0xcc44ff, Math.floor(170 * mult), 'void');
+        aoe(10.0, Math.floor(460 * mult));
+      }
+    },
+    passive: (c) => {
+      const { b, ph, mult, ang, np, nd, zoneName, game, aoe, fx, proj, geyser } = c;
+
+      // RIFT STRIKE follow-up (phase 3+), scheduled by the attack above
+      if (b._rsFollow > 0) {
+        b._rsFollow--;
+        if (b._rsFollow === 0) {
+          fx('xe_rift_followup');
+          aoe(5.0, b._rsDmg || Math.floor(380 * mult));
+        }
+      }
+
+      // Void Commander Aura — always on
+      if (b._vt % 5 === 0) aoe(5.5, Math.floor(45 * mult));
+      // P2+ Rift Lightning — strikes scattered around the target
+      if (ph >= 2 && b._vt % 9 === 0)
+        geyser(np.x + (Math.random()-0.5)*10.5, np.z + (Math.random()-0.5)*10.5, 3, 3.3, Math.floor(95 * mult), 0xcc00ff);
+      // P3+ Void Rain — drops across the arena
+      if (ph >= 3 && b._vt % 7 === 0)
+        geyser(b.x + (Math.random()-0.5)*15, b.z + (Math.random()-0.5)*15, 3, 2.7, Math.floor(100 * mult), 0x8800ff);
+      // P4+ autoshot command orb
+      if (ph >= 4 && b._vt % 8 === 0 && nd < 16) proj(ang, 0xaa00ff, Math.floor(110 * mult), 'void');
+      // P5 Reality Collapse — continuous ring pulse
+      if (ph >= 5 && b._vt % 5 === 0) { fx('xe_collapse'); aoe(5.5, Math.floor(90 * mult)); }
+    },
+  },
 
   // ── THE APEX PYRAMID (a552). Structurally unlike every boss migrated so far: it has
   //    NO attack rotation. It hovers motionless over the fortress arena and runs five
@@ -4459,13 +4786,14 @@ function tickGame(game) {
       //   fall back out of range. Mirror the client's floor for this zone only.
       const _aggroR = ((zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type])
                     || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type])
-                    || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]))
+                    || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type])
+                    || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]))
         ? Math.max(e.aggroRange || 12, 24) : e.aggroRange;   // a548/a549/a550 — these kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -7131,6 +7459,167 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a553: VOID CITADEL unreality garrison (zone-gated to 'void_citadel'; every type
+        //    is shared with an already-migrated zone, so the gate is load-bearing).
+        //    Re-timed 60fps -> 10Hz. HP is set at spawn via ZONE_TYPE_HP.
+        if (zoneName === 'void_citadel' && e.aggroed && VC_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+          if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+          if(Math.random()<0.036) e._strafe=-e._strafe;
+          const strafe=e._strafe;
+          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_vcDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const hitAt=(mult,hx,hz,radius)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=p.x-hx, qz=p.z-hz; if(qx*qx+qz*qz < radius*radius)
+              send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_vcDmgS(e,mult),ex:+hx.toFixed(2),ez:+hz.toFixed(2),zone:zoneName}); }); };
+          const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const shoot=(baseAng,col,mult,count,spread)=>{ for(let i=0;i<count;i++){
+            const a=baseAng+(count>1?(i-(count-1)/2)*spread:0);
+            _sdSpawnProj(game,zoneName,e,a,col,_vcDmgS(e,mult),'void',null,0); } };
+          const shootFrom=(sx,sz,a,col,mult)=>{
+            _sdSpawnProj(game,zoneName,{id:e.id,x:sx,z:sz},a,col,_vcDmgS(e,mult),'void',null,0); };
+          const blink=(nx,nz)=>{ if(nx>2 && nx<358 && nz>2 && nz<358){ e.x=nx; e.z=nz; _moved=true; }
+            fx('vc_blink',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); };
+
+          if(e.type==='void_construct'){
+            // NULL GOLEM — your reflection is its weapon
+            const MS=0.228;
+            if(dd>2.8) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS);
+            if(dd<3.2 && e.attackTimer%12===0) hit(1.1);
+            if(dd>2.6 && dd<14 && e.attackTimer%13===0) shoot(ang,_VC_EDGE,0.55,1,0);
+            // VOID MIRROR — a dark orb copies you THROUGH the construct in real time
+            //   (M = 2*construct - you), locks crimson partway, and then both the orb AND
+            //   the spot you stood at the moment of the lock erupt.
+            if(e._vmOn){
+              e._vmT=(e._vmT||0)+1;
+              if(e._vmT<11){                       // still mirroring you live
+                e._vmX=2*e.x-nearestPlayer.x; e._vmZ=2*e.z-nearestPlayer.z;
+              } else if(e._vmT===11){              // the lock
+                e._vmLX=nearestPlayer.x; e._vmLZ=nearestPlayer.z;
+                fx('vc_mirror_lock',{eid:e.id,mx:+e._vmX.toFixed(2),mz:+e._vmZ.toFixed(2)});
+              }
+              fx('vc_mirror_tick',{eid:e.id,mx:+e._vmX.toFixed(2),mz:+e._vmZ.toFixed(2),
+                                   locked:(e._vmT>=11)?1:0,t:e._vmT});
+              if(e._vmT>=18){ e._vmOn=0; e._vmT=0;
+                fx('vc_mirror_erupt',{mx:+e._vmX.toFixed(2),mz:+e._vmZ.toFixed(2),
+                                      lx:+e._vmLX.toFixed(2),lz:+e._vmLZ.toFixed(2)});
+                hitAt(1.15, e._vmX, e._vmZ, 2.2);
+                hitAt(1.15, e._vmLX, e._vmLZ, 2.2);
+                toPlayer({eff:'shake',shake:2}); }
+            } else {
+              e._vm=(e._vm||Math.floor(Math.random()*30))+1;
+              if(dd>2 && dd<13 && e._vm>=50){ e._vm=0; e._vmOn=1; e._vmT=0;
+                e._vmX=2*e.x-nearestPlayer.x; e._vmZ=2*e.z-nearestPlayer.z;
+                e._vmLX=nearestPlayer.x; e._vmLZ=nearestPlayer.z;
+                fx('vc_mirror',{eid:e.id,mx:+e._vmX.toFixed(2),mz:+e._vmZ.toFixed(2)}); } }
+          }
+          else if(e.type==='void_sentinel'){
+            // THE WATCHING EYE — near-stationary; its gaze does the walking
+            const MS=0.09;
+            if(dd>14) mv(sin,cos,MS);
+            if(dd>2.4 && dd<17 && e.attackTimer%11===0 && !e._gzOn) shoot(ang,_VC_NULL,0.5,2,0.18);
+            // blink-guard when crowded
+            e._bg=(e._bg||0)+1;
+            if(dd<3 && e._bg>=23){ e._bg=0;
+              const ba2=ang+Math.PI+(Math.random()-0.5)*0.8;
+              blink(e.x+Math.sin(ba2)*5, e.z+Math.cos(ba2)*5); }
+            // GAZE OF THE VOID — a held stare that darkens the screen. BREAK RANGE to end
+            //   it: the channel drops the moment the target is past 16 units.
+            if(e._gzOn){
+              e._gzT=(e._gzT||0)+1;
+              if(dd>16){ e._gzOn=0; e._gzT=0; e._gzN=0; fx('vc_gaze_end',{eid:e.id}); }
+              else {
+                if(e._gzT%3===0){ e._gzN=(e._gzN||0)+1;
+                  fx('vc_gaze_tick',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
+                                     tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2)});
+                  hit(0.38); }
+                if((e._gzN||0)>=8){ e._gzOn=0; e._gzT=0; e._gzN=0; fx('vc_gaze_end',{eid:e.id}); } }
+            } else {
+              e._gz=(e._gz||Math.floor(Math.random()*27))+1;
+              if(dd>3 && dd<15 && e._gz>=53){ e._gz=0; e._gzOn=1; e._gzT=0; e._gzN=0;
+                fx('vc_gaze',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
+          }
+          else if(e.type==='rift_stalker'){
+            // THE STEP THAT SKIPS SPACE — it arrives mirrored through you
+            const MS=0.372;
+            if(dd>2.4) mv(sin*0.8+pr*strafe*0.6, cos*0.8+pq*strafe*0.6, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            if(dd<2.8 && e.attackTimer%9===0) hit(1.0);
+            // twin rend combo
+            if(e._trN>0){ e._trT=(e._trT||0)+1;
+              if(e._trT>=3){ e._trN=0; e._trT=0; if(dd<3.4) hit(0.7); } }
+            e._tr=(e._tr||0)+1;
+            if(dd<3.2 && e._tr>=28 && !e._trN){ e._tr=0; hit(0.7); e._trN=1; e._trT=0;
+              fx('vc_rend',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // NON-EUCLIDEAN STEP — front becomes behind without crossing the space
+            if(e._neN>0){ e._neT=(e._neT||0)+1;
+              if(e._neT>=3){ e._neN=0; e._neT=0;
+                const qx=nearestPlayer.x-e.x, qz=nearestPlayer.z-e.z;
+                if(Math.sqrt(qx*qx+qz*qz)<3.0){ hit(1.2);
+                  fx('vc_step_strike',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } } }
+            e._ne=(e._ne||Math.floor(Math.random()*25))+1;
+            if(dd>2.5 && dd<10 && e._ne>=40 && !e._neN){ e._ne=0;
+              blink(2*nearestPlayer.x-e.x, 2*nearestPlayer.z-e.z);
+              e._neN=1; e._neT=0; }
+          }
+          else {
+            // rift_weaver — SEAMSTRESS OF UNREALITY: tears reality open, trades places
+            const MS=0.252;
+            if(dd<5) mv(-sin*0.7+pr*strafe*0.6, -cos*0.7+pq*strafe*0.6, MS);
+            else if(dd>13) mv(sin*0.7, cos*0.7, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            // woven lattice — two crossing volleys
+            if(dd>2.6 && dd<15 && e._ab>=25){ e._ab=0; shoot(ang,_VC_EDGE,0.45,3,0.24); e._wl2=3; }
+            if(e._wl2>0){ e._wl2--; if(e._wl2===0) shoot(ang,_VC_PALE,0.45,3,0.24); }
+            // REALITY TEAR — a jagged seam perpendicular to you, firing out of both faces
+            if(e._rtN!==undefined && e._rtN<3){
+              e._rtT=(e._rtT||0)+1;
+              if(e._rtT>=2+e._rtN*2){
+                const k=e._rtN; e._rtN++;
+                const fr2=k/2;
+                const sx=e._rtAX+(e._rtBX-e._rtAX)*fr2, sz=e._rtAZ+(e._rtBZ-e._rtAZ)*fr2;
+                shootFrom(sx,sz,e._rtAng,_VC_CRIM,0.5);
+                shootFrom(sx,sz,e._rtAng+Math.PI,_VC_CRIM,0.5);
+                fx('vc_tear_face',{ex:+sx.toFixed(2),ez:+sz.toFixed(2)}); }
+              if(e._rtN>=3) e._rtN=undefined;
+            }
+            e._rt=(e._rt||Math.floor(Math.random()*27))+1;
+            if(dd>3 && dd<14 && e._rt>=47 && e._rtN===undefined){ e._rt=0;
+              const ta2=ang+1.5708;
+              e._rtAX=nearestPlayer.x+Math.sin(ta2)*2.4; e._rtAZ=nearestPlayer.z+Math.cos(ta2)*2.4;
+              e._rtBX=nearestPlayer.x-Math.sin(ta2)*2.4; e._rtBZ=nearestPlayer.z-Math.cos(ta2)*2.4;
+              e._rtAng=ang; e._rtN=0; e._rtT=0;
+              fx('vc_tear',{ax:+e._rtAX.toFixed(2),az:+e._rtAZ.toFixed(2),
+                            bx:+e._rtBX.toFixed(2),bz:+e._rtBZ.toFixed(2)}); }
+            // VOID SWAP — it trades places with you outright.
+            //   a553: the client put only the ANNOUNCE on a 10s cooldown while the swap
+            //   itself fired every time. Solo that's a rare shock; with 34 weavers in the
+            //   zone and a party it would yank people across the floor almost continuously,
+            //   and being teleported is far more disruptive than any speed surge. The SWAP
+            //   now shares the cooldown, so it stays the set piece it was written to be.
+            e._vs2=(e._vs2||Math.floor(Math.random()*37))+1;
+            if(dd>3 && dd<14 && e._vs2>=70){ e._vs2=0;
+              const _now=Date.now();
+              if(!zone._vcSwapCd || _now>zone._vcSwapCd){
+                zone._vcSwapCd=_now+10000;
+                const exX=e.x, exZ=e.z, plX=nearestPlayer.x, plZ=nearestPlayer.z;
+                e.x=plX; e.z=plZ; _moved=true;
+                toPlayer({eff:'swap',px:+exX.toFixed(2),pz:+exZ.toFixed(2)});
+                toPlayer({eff:'slow',slow:0.5,root:500});
+                fx('vc_swap',{eid:e.id,ax:+exX.toFixed(2),az:+exZ.toFixed(2),
+                              bx:+plX.toFixed(2),bz:+plZ.toFixed(2)}); } }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -7308,6 +7797,18 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //     is exactly what a single server tick can guarantee and two clients cannot.
 //     SENTRY PYLONS outlive the warlord that dropped them, so they can't live on the mob.
 //     They're held on the ZONE and ticked independently — see _xfTickPylons.
+// a553 — VOID CITADEL unreality garrison (zone-gated to 'void_citadel'). The citadel's
+//   tricks all use YOU as the raw material: reflections through the construct, a gaze
+//   that darkens the screen, a step that arrives mirrored through you, and a swap that
+//   simply puts you somewhere else.
+//   EVERY type here is shared with an ALREADY-MIGRATED zone (void_construct and
+//   void_sentinel with Void Wastes, rift_stalker and rift_weaver with Rift Vale, where
+//   the latter two are already in RV_BESPOKE). The zone gate is not a formality here —
+//   without it this block would fight riftvale's for the same two types.
+const VC_BESPOKE = { void_construct:1, void_sentinel:1, rift_stalker:1, rift_weaver:1 };
+const VC_PWR = { void_construct:230, void_sentinel:240, rift_stalker:245, rift_weaver:250 };
+function _vcDmgS(e, mult){ return Math.floor((VC_PWR[e.type] || e.atk || 235) * mult); }
+const _VC_NULL=0x0a0016, _VC_EDGE=0xb44dff, _VC_CRIM=0xff2050, _VC_PALE=0xcfc8ff;
 const XF_BESPOKE = { xf_fortress_drone:1, xf_siege_walker:1, xf_warlord:1, xf_titan_elite:1 };
 const XF_PWR = { xf_fortress_drone:285, xf_siege_walker:315, xf_warlord:320, xf_titan_elite:335 };
 function _xfDmgS(e, mult){ return Math.floor((XF_PWR[e.type] || e.atk || 300) * mult); }
