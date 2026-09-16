@@ -370,6 +370,16 @@ const ENEMY_STATS = {
   //   270 hp and 16 atk — so creating the spawn slot without these would have put
   //   level-1 grunts in a Lv95 foundry. Values taken from the client stat table
   //   (80_zone_defs.part); all four types are exclusive to 'forge'.
+  // a557 — XULCAN PRIME. Same situation as The Forge in a555: all five types were
+  //   MISSING from ENEMY_STATS entirely, because the server has never spawned this zone.
+  //   Unknown types fall back to ENEMY_STATS.soldier (270 hp / 16 atk), so creating the
+  //   spawn slot without these would have put level-1 grunts in a Lv90 metropolis.
+  //   Values taken from the client stat table; all five are exclusive to 'xulcan'.
+  xu_quantum_seeker:       {hp:150000, atk:520, spd:0.095, aggroRange:18, reward:2800, expR:4000, dmgReduction:0.10},
+  xu_graviton_manipulator: {hp:210000, atk:440, spd:0.050, aggroRange:20, reward:3000, expR:4300, dmgReduction:0.15},
+  xu_solar_lancer:         {hp:360000, atk:480, spd:0.060, aggroRange:16, reward:3400, expR:4500, dmgReduction:0.25},
+  xu_harmonic_warden:      {hp:480000, atk:380, spd:0.030, aggroRange:16, reward:3200, expR:4200, dmgReduction:0.42},
+  xu_data_construct:       {hp:240000, atk:320, spd:0.045, aggroRange:16, reward:3000, expR:4400, dmgReduction:0.20},
   molten_crawler:        {hp:95000,  atk:480, spd:0.078, aggroRange:12, reward:2000, expR:2800, dmgReduction:0.08},
   lava_forged_sentinel:  {hp:220000, atk:620, spd:0.030, aggroRange:18, reward:3000, expR:4300, dmgReduction:0.20},
   forge_technician:      {hp:140000, atk:380, spd:0.046, aggroRange:14, reward:2400, expR:3600, dmgReduction:0.10},
@@ -3727,8 +3737,46 @@ const ZONE_SPAWNS = {
   ],
   // a332 — XULCAN PRIME mobs are likewise CLIENT-AUTHORITATIVE (bespoke Xu Dominion AI
   //   + abilities run client-side). No ZONE_SPAWNS entry on purpose: the server sends an
-  //   empty xulcan snapshot and the client spawns + owns the five Xu units. (The boss
-  //   XU ZET-HORAK will become server-authoritative when added — ZONE_BOSS_HP.xulcan.)
+  // a557 — XULCAN PRIME is now SERVER-AUTHORITATIVE (client-side since a332, which is why
+  //   this zone had no ZONE_SPAWNS entry). 34 spawns lifted verbatim from the client's
+  //   enemySpawns. ENEMY_STATS for all five types was ADDED in the same patch — they did
+  //   not exist at all. XU ZET-HORAK is now server-authoritative too (ZBOSS_SERVER.xulcan).
+  xulcan: [
+    {type:'xu_quantum_seeker', tx:108, tz:200},
+    {type:'xu_quantum_seeker', tx:132, tz:200},
+    {type:'xu_solar_lancer', tx:120, tz:196},
+    {type:'xu_graviton_manipulator', tx:96, tz:186},
+    {type:'xu_graviton_manipulator', tx:144, tz:186},
+    {type:'xu_harmonic_warden', tx:120, tz:182},
+    {type:'xu_quantum_seeker', tx:80, tz:176},
+    {type:'xu_quantum_seeker', tx:160, tz:176},
+    {type:'xu_data_construct', tx:108, tz:172},
+    {type:'xu_solar_lancer', tx:132, tz:172},
+    {type:'xu_graviton_manipulator', tx:64, tz:150},
+    {type:'xu_graviton_manipulator', tx:176, tz:150},
+    {type:'xu_quantum_seeker', tx:90, tz:160},
+    {type:'xu_quantum_seeker', tx:150, tz:160},
+    {type:'xu_harmonic_warden', tx:120, tz:158},
+    {type:'xu_solar_lancer', tx:70, tz:130},
+    {type:'xu_solar_lancer', tx:170, tz:130},
+    {type:'xu_data_construct', tx:100, tz:138},
+    {type:'xu_quantum_seeker', tx:140, tz:138},
+    {type:'xu_solar_lancer', tx:88, tz:128},
+    {type:'xu_harmonic_warden', tx:152, tz:128},
+    {type:'xu_quantum_seeker', tx:104, tz:96},
+    {type:'xu_quantum_seeker', tx:136, tz:96},
+    {type:'xu_harmonic_warden', tx:96, tz:84},
+    {type:'xu_harmonic_warden', tx:144, tz:84},
+    {type:'xu_graviton_manipulator', tx:84, tz:70},
+    {type:'xu_graviton_manipulator', tx:156, tz:70},
+    {type:'xu_solar_lancer', tx:104, tz:56},
+    {type:'xu_solar_lancer', tx:136, tz:56},
+    {type:'xu_data_construct', tx:120, tz:52},
+    {type:'xu_quantum_seeker', tx:40, tz:120},
+    {type:'xu_quantum_seeker', tx:200, tz:120},
+    {type:'xu_graviton_manipulator', tx:40, tz:170},
+    {type:'xu_graviton_manipulator', tx:200, tz:170}
+  ],
   // a537 — AVIA CANYON birds are now SERVER-AUTHORITATIVE (ZONE_SPAWNS.aviacanyon + maze
   //   collision via _aviaWalkable). The XUBERRY boss remains server-authoritative (ZONE_BOSS_HP.aviacanyon).
   // a555 — THE FORGE is now SERVER-AUTHORITATIVE (was deliberately client-side since a361,
@@ -4176,6 +4224,161 @@ const ZBOSS_SERVER = {
 
 
 
+
+
+  // ── XU ZET-HORAK (a557). 2M HP across five themed phases. Like THE PIXIELORD she
+  //    does not chase — she holds the arena, backs off if crowded, and blinks. Her
+  //    ability is drawn from a pool that GROWS and re-weights with phase, rolled at
+  //    random; the client rolled it on each machine independently, so no two players
+  //    in a party ever saw the same one.
+  //    Damage numbers are absolute and already fold the phase in (280 + P*75 etc.),
+  //    so `dmg` stays flat at 1 and each handler computes from ph directly.
+  xulcan: {
+    x: 180, z: 165,                                    // tile (120,110) — the harmonic arena
+    spd:    [0,0,0,0,0,0],
+    dmg:    [0, 1, 1, 1, 1, 1],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 16, 14, 11, 9],                    // 120 then max(54,120-P*13), / 6
+    tele:   0,                                         // she has her own cast tell
+    move:   'hold',
+    pick:   (b, ph) => {
+      const pool = ['bolts', 'cataclysm'];
+      if (ph >= 2) pool.push('chrono');
+      if (ph >= 3) pool.push('fracture', 'bolts', 'overload');
+      if (ph >= 5) pool.push('fracture', 'cataclysm', 'chrono');
+      b._zhPick = pool[Math.floor(Math.random() * pool.length)];
+      return 0;
+    },
+    attack: (c) => {
+      const { b, ph, np, zoneName, game, fx, proj, geyser } = c;
+      const kind = b._zhPick || 'bolts';
+
+      if (kind === 'bolts') {
+        // HARMONIC BOLTS — three live-aimed fans
+        b._zhBoltW = 3; b._zhBoltT = 0; b._zhBoltDmg = 280 + ph*75;
+        fx('zh_bolts');
+
+      } else if (kind === 'cataclysm') {
+        // HARMONIC CATACLYSM — a vast expanding ring. Crossing-tested, as with the
+        //   PIXIELORD's nova: a fixed 1.6 band would be stepped over at 10Hz.
+        b._zhCatR = 1.0; b._zhCatDmg = 620 + ph*125;
+        fx('zh_cataclysm');
+
+      } else if (kind === 'chrono') {
+        // CHRONO DISPLACEMENT — time drags, then seven strikes walk the floor
+        b._zhChrN = 0; b._zhChrT = 0; b._zhChrDmg = 240 + ph*60;
+        fx('zh_chrono');
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:0.55, root:2200 });
+        });
+
+      } else if (kind === 'overload') {
+        // HARMONIC OVERLOAD — five orbs orbit her and fire on a cycle
+        b._zhOrbT = 50; b._zhOrbA = 0; b._zhOrbDmg = 200 + ph*55;
+        fx('zh_overload');
+
+      } else {
+        // REALITY FRACTURE — the arena floor breaks into a hex lattice, then shatters
+        b._zhFrT = 13; b._zhFrX = np.x; b._zhFrZ = np.z; b._zhFrDmg = 820 + ph*175;
+        fx('zh_fracture', { cx:+np.x.toFixed(2), cz:+np.z.toFixed(2) });
+        const aimRF = Math.atan2(np.x - b.x, np.z - b.z);
+        for (let i = 0; i < 6; i++) proj(aimRF, _XP_GOLD, 0, 'magic');   // visual lead-in, dmg 0 as client
+      }
+    },
+    passive: (c) => {
+      const { b, ph, np, nd, ang, zoneName, game, fx, proj } = c;
+
+      // She backs away if you crowd her, and otherwise holds the arena.
+      if (nd < 4.5) {
+        const bx = b.x - Math.sin(ang)*0.27, bz = b.z - Math.cos(ang)*0.27;
+        if (bx > 2 && bx < 358 && bz > 2 && bz < 358) { b.x = bx; b.z = bz; }
+      }
+
+      // BLINK — reposition 8-14 units off the target on a phase-tightening cadence
+      if (!b._zhTpAt) b._zhTpAt = Date.now() + 4000;
+      if (Date.now() >= b._zhTpAt) {
+        b._zhTpAt = Date.now() + Math.max(3200, 6500 - ph*650);
+        const a = Math.random()*6.283, r = 8 + Math.random()*6;
+        const tx = np.x + Math.sin(a)*r, tz = np.z + Math.cos(a)*r;
+        if (tx > 2 && tx < 358 && tz > 2 && tz < 358) { b.x = tx; b.z = tz; }
+        fx('zh_blink', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
+      }
+
+      // HARMONIC BOLTS waves — 9 bolts per wave, re-aimed each time
+      if (b._zhBoltW > 0) {
+        b._zhBoltT--;
+        if (b._zhBoltT <= 0) {
+          b._zhBoltT = 2;
+          const w = 3 - b._zhBoltW;
+          const aim = Math.atan2(np.x - b.x, np.z - b.z), sweep = (w-1)*0.12;
+          for (let i = -4; i <= 4; i++) proj(aim + i*0.15 + sweep, (i+w)%2 ? _XP_GOLD : _XP_CYAN, b._zhBoltDmg, 'magic');
+          fx('zh_bolts_wave', { w:w });
+          b._zhBoltW--;
+        }
+      }
+
+      // HARMONIC CATACLYSM ring — expands and hits once as it crosses
+      if (b._zhCatR > 0) {
+        const prevR = b._zhCatR;
+        b._zhCatR += 0.64 * 6;
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
+          if (pd >= prevR - 1.6 && pd <= b._zhCatR + 1.6) {
+            send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._zhCatDmg,
+                       ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
+          }
+        });
+        fx('zh_cataclysm_ring', { r:+b._zhCatR.toFixed(2) });
+        if (b._zhCatR >= 20) b._zhCatR = 0;
+      }
+
+      // CHRONO DISPLACEMENT — seven telegraphed strikes, 2 ticks apart
+      if (b._zhChrN !== undefined && b._zhChrN < 7) {
+        b._zhChrT++;
+        if (b._zhChrT >= 1 + b._zhChrN*2) {
+          const k = b._zhChrN; b._zhChrN++;
+          const tx = np.x + (Math.random()-0.5)*8, tz = np.z + (Math.random()-0.5)*8;
+          if (!game._sdGeyser) game._sdGeyser = [];
+          game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:5, dmg:b._zhChrDmg,
+                                eid:-1, col:_XP_VIOLET, radius:2.7 });
+          fx('zh_chrono_mark', { ex:+tx.toFixed(2), ez:+tz.toFixed(2), k:k });
+        }
+        if (b._zhChrN >= 7) b._zhChrN = undefined;
+      }
+
+      // HARMONIC OVERLOAD — five orbiting orbs firing every 8 ticks
+      if (b._zhOrbT > 0) {
+        b._zhOrbT--;
+        b._zhOrbA = (b._zhOrbA || 0) + 0.04*6;
+        fx('zh_overload_tick', { a:+b._zhOrbA.toFixed(3) });
+        if (b._zhOrbT % 8 === 0) {
+          for (let i = 0; i < 5; i++) {
+            const oa = b._zhOrbA + (i/5)*Math.PI*2;
+            const ox = b.x + Math.cos(oa)*4.5, oz = b.z + Math.sin(oa)*4.5;
+            const aim = Math.atan2(np.x - ox, np.z - oz);
+            _sdSpawnProj(game, zoneName, { id:-1, x:ox, z:oz }, aim,
+              i%2 ? _XP_CYAN : _XP_GOLD, b._zhOrbDmg, 'magic', null, 0);
+          }
+        }
+      }
+
+      // REALITY FRACTURE — the lattice holds, then shatters
+      if (b._zhFrT > 0) {
+        b._zhFrT--;
+        if (b._zhFrT === 0) {
+          fx('zh_fracture_shatter', { cx:+b._zhFrX.toFixed(2), cz:+b._zhFrZ.toFixed(2) });
+          players.forEach((p, ws) => {
+            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+            const qx = p.x - b._zhFrX, qz = p.z - b._zhFrZ;
+            if (qx*qx + qz*qz < 121) send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._zhFrDmg,
+              ex:+b._zhFrX.toFixed(2), ez:+b._zhFrZ.toFixed(2), zone:zoneName });
+          });
+        }
+      }
+    },
+  },
 
   // ── THE FURNACE CORE (a555). Three phases, no fixed rotation — a pool that grows and
   //    re-weights with phase, drawn at random. The client rolled that draw on each machine
@@ -5155,12 +5358,14 @@ function tickGame(game) {
         : (zoneName === 'lucidwilde' && LW_BESPOKE[e.type])   // a554 — canopy uses a wider 28u floor
         ? Math.max(e.aggroRange || 14, 28)
         : (zoneName === 'forge' && FG_BESPOKE[e.type])        // a555 — foundry floor is 22u
-        ? Math.max(e.aggroRange || 14, 22) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
+        ? Math.max(e.aggroRange || 14, 22)
+        : (zoneName === 'xulcan' && XU_BESPOKE[e.type])       // a557 — the metropolis sees you at 26u
+        ? Math.max(e.aggroRange || 16, 26) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -8263,6 +8468,154 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a557: XULCAN PRIME, the Golden Harmonic (zone-gated to 'xulcan'). A Lv90 Xu
+        //    metropolis: resonance wardens, phase-dashing seekers, graviton artillery,
+        //    solar lancers and self-repairing data constructs.
+        //    Re-timed 60fps -> 10Hz. Damage is e.atk-based, so it's exact.
+        if (zoneName === 'xulcan' && e.aggroed && XU_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, ang=Math.atan2(dxp,dzp);
+          const SP=(e.spd||0.05)*6;
+          e._ab=(e._ab||0)+1;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor((e.atk||400)*mult),
+                     ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const hitAt=(mult,hx,hz,radius)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=p.x-hx, qz=p.z-hz; if(qx*qx+qz*qz < radius*radius)
+              send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor((e.atk||400)*mult),
+                       ex:+hx.toFixed(2),ez:+hz.toFixed(2),zone:zoneName}); }); };
+          const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const tele=(tx,tz,fuse,radius,mult,col)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push({zone:zoneName,x:tx,z:tz,fuse:fuse,dmg:Math.floor((e.atk||400)*mult),
+                                 eid:e.id,col:col,radius:radius});
+            fx('sd_geyser_warn',{ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+          const blink=(nx,nz)=>{ if(nx>2 && nx<358 && nz>2 && nz<358){ e.x=nx; e.z=nz; _moved=true; }
+            fx('xp_blink',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); };
+
+          if(e.type==='xu_harmonic_warden'){
+            // RESONANCE BULWARK — the tankiest thing in the metropolis (42% reduction)
+            if(dd>2.6) mv(sin,cos,SP);
+            if(dd<3.2 && e.attackTimer%12===0){ hit(1.0);
+              fx('xp_warden_melee',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // HARMONIC PULSE — a resonant ring that slows whatever it catches
+            if(dd<16 && e._ab>=33){ e._ab=0;
+              fx('xp_pulse',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              if(dd<7){ hit(1.2); toPlayer({eff:'slow',slow:0.55,root:900}); } }
+            // GRAVITY ANCHOR — marks the ground, then pins you to it
+            if(e._gvN>0){ e._gvT=(e._gvT||0)+1;
+              if(e._gvT>=7){ e._gvN=0; e._gvT=0;
+                fx('xp_anchor_slam',{ex:+e._gvX.toFixed(2),ez:+e._gvZ.toFixed(2)});
+                const qx=nearestPlayer.x-e._gvX, qz=nearestPlayer.z-e._gvZ;
+                if(Math.sqrt(qx*qx+qz*qz)<3.4){ hitAt(1.6, e._gvX, e._gvZ, 3.4);
+                  toPlayer({eff:'slow',slow:0,root:400}); } } }
+            e._gv=(e._gv||13)+1;
+            if(dd<10 && e._gv>=53 && !e._gvN){ e._gv=0; e._gvN=1; e._gvT=0;
+              e._gvX=nearestPlayer.x; e._gvZ=nearestPlayer.z;
+              fx('xp_anchor',{eid:e.id,ex:+e._gvX.toFixed(2),ez:+e._gvZ.toFixed(2)}); }
+          }
+          else if(e.type==='xu_quantum_seeker'){
+            // PHASE HUNTER — the fastest unit here; dashes THROUGH you and cloaks away
+            if(e._dash==='wind'){
+              if(e._ab>=2){ e._dash='go'; e._ab=0; e._ddir=ang; e._dhit=0;
+                fx('xp_dash',{eid:e.id,dir:+ang.toFixed(3)}); }
+            } else if(e._dash==='go'){
+              mv(Math.sin(e._ddir),Math.cos(e._ddir),SP*3.2);
+              if(dd<2.2 && !e._dhit){ e._dhit=1; hit(1.8);
+                fx('xp_phase_strike',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+              if(e._ab>=2){ e._dash=0; e._ab=0; }
+            } else {
+              if(dd>2.2) mv(sin,cos,SP);
+              if(dd<2.8 && e.attackTimer%8===0) hit(1.0);
+              if(dd<16 && e._ab>=25){ e._dash='wind'; e._ab=0; fx('xp_dash_wind',{eid:e.id}); }
+              // QUANTUM CLOAK — vanishes and reappears flanking
+              e._cl=(e._cl||7)+1;
+              if(e._cl>=43){ e._cl=0;
+                const a2=ang+(Math.random()<0.5?1.3:-1.3), r2=4+Math.random()*3;
+                fx('xp_cloak',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                blink(nearestPlayer.x-Math.sin(a2)*r2, nearestPlayer.z-Math.cos(a2)*r2); } }
+          }
+          else if(e.type==='xu_graviton_manipulator'){
+            // GRAVITON ARTILLERY — kites and calls fire down from orbit
+            if(dd<7) mv(-sin,-cos,SP*0.9);
+            else if(dd>13) mv(sin,cos,SP*0.7);
+            if(dd>2.5 && dd<20 && e.attackTimer%13===0){
+              _sdSpawnProj(game,zoneName,e,ang,_XP_BLUE,Math.floor((e.atk||440)*0.8),'void',null,0);
+              fx('xp_graviton_bolt',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // ORBITAL BOMBARDMENT — five telegraphed strikes walk across your ground
+            if(dd<22 && e._ab>=33){ e._ab=0;
+              fx('xp_bombard',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              for(let k=0;k<5;k++){
+                const tx=nearestPlayer.x+(Math.random()-0.5)*7, tz=nearestPlayer.z+(Math.random()-0.5)*7;
+                tele(tx,tz,5+k*3,2.6,0.7,_XP_CYAN); } }
+            // GRAVITY WELL — a violet sink that pulses and drags for ~2.6s
+            if(e._gwN>0){
+              e._gwT=(e._gwT||0)+1;
+              if(e._gwT%3===0){
+                e._gwN--;
+                players.forEach((p,ws)=>{
+                  if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+                  const qx=p.x-e._gwX, qz=p.z-e._gwZ;
+                  if(qx*qx+qz*qz < 16){
+                    send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor((e.atk||440)*0.35),
+                             ex:+e._gwX.toFixed(2),ez:+e._gwZ.toFixed(2),zone:zoneName});
+                    send(ws,{type:'sv_player_fx',zone:zoneName,eff:'slow',slow:0.6,root:350}); } });
+                fx('xp_well_pulse',{ex:+e._gwX.toFixed(2),ez:+e._gwZ.toFixed(2)}); } }
+            e._gw=(e._gw||10)+1;
+            if(dd<20 && e._gw>=50 && !e._gwN){ e._gw=0; e._gwN=10; e._gwT=0;
+              e._gwX=nearestPlayer.x; e._gwZ=nearestPlayer.z;
+              fx('xp_well',{eid:e.id,ex:+e._gwX.toFixed(2),ez:+e._gwZ.toFixed(2),ms:2600}); }
+          }
+          else if(e.type==='xu_solar_lancer'){
+            // SOLAR LANCE — leaps to a marked spot and lands a sunburst
+            if(e._leap==='wind'){
+              if(e._ab>=3){ e._leap='go'; e._ab=0; e._lx=nearestPlayer.x; e._lz=nearestPlayer.z;
+                fx('xp_leap',{eid:e.id,tx:+e._lx.toFixed(2),tz:+e._lz.toFixed(2)}); }
+            } else if(e._leap==='go'){
+              const ld=Math.sqrt((e._lx-e.x)**2+(e._lz-e.z)**2)||0.001;
+              if(ld>1.2) mv((e._lx-e.x)/ld,(e._lz-e.z)/ld,SP*3.5);
+              else { e._leap=0; e._ab=0;
+                fx('xp_sunburst',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                hitAt(1.5, e.x, e.z, 5.0); }
+            } else {
+              if(dd>2.6) mv(sin,cos,SP);
+              if(dd<3.4 && e.attackTimer%10===0){ hit(1.0);
+                fx('xp_lancer_melee',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+              if(dd>4 && dd<18 && e._ab>=28){ e._leap='wind'; e._ab=0; fx('xp_leap_wind',{eid:e.id}); }
+              // SOLAR LANCE bolt — a long golden spear of light
+              e._sp=(e._sp||5)+1;
+              if(dd>3 && dd<22 && e._sp>=25){ e._sp=0;
+                _sdSpawnProj(game,zoneName,e,ang,_XP_GOLD,Math.floor((e.atk||480)*1.1),'plasma',null,0);
+                fx('xp_lance',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
+          }
+          else {
+            // xu_data_construct — SUPPORT NODE: needles and a repair matrix
+            if(dd<8) mv(-sin,-cos,SP*0.8);
+            else if(dd>14) mv(sin,cos,SP*0.6);
+            if(dd>2.5 && dd<20 && e.attackTimer%14===0){
+              _sdSpawnProj(game,zoneName,e,ang,_XP_CYAN,Math.floor((e.atk||320)*0.9),'bolt',null,0);
+              fx('xp_needle',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // REPAIR MATRIX — mends every Xu unit within 12u by 4%.
+            //   Client discipline preserved: only hurt units, capped at maxHp. The 27-tick
+            //   cadence is the cap that keeps three constructs from out-healing a party.
+            if(e._ab>=27){ e._ab=0;
+              let healed=0;
+              for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i];
+                if(!o||!o.active||o===e||!XU_BESPOKE[o.type]) continue;
+                const odx=o.x-e.x, odz=o.z-e.z;
+                if(odx*odx+odz*odz>144) continue;
+                if(o.hp<o.maxHp){ o.hp=Math.min(o.maxHp, o.hp+Math.floor(o.maxHp*0.04));
+                  changed.push(o); healed++; } }
+              if(healed) fx('xp_repair',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),n:healed}); }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -8463,6 +8816,13 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //   zone and tick independently — one list with a `kind` tag rather than four parallel
 //   arrays, since they share a lifetime/expiry shape.
 //   Damage is e.atk-based, as in Lucidwilde, so there's no flat-PWR approximation here.
+// a557 — XULCAN PRIME, the Golden Harmonic (zone-gated to 'xulcan'; all five types are
+//   exclusive to it). A Lv90 Xu metropolis: harmonic resonance, graviton control and
+//   solar weaponry. Damage is e.atk-based, as in Lucidwilde and The Forge, so there is
+//   no flat-PWR approximation — server damage matches the client exactly.
+//   Aggro floor is 26 with a 50-unit leash.
+const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1 };
+const _XP_GOLD=0xffd24a, _XP_CYAN=0x40d0ff, _XP_BLUE=0x6080ff, _XP_HOT=0xffe48a, _XP_VIOLET=0x8040ff;
 const FG_BESPOKE = { molten_crawler:1, lava_forged_sentinel:1, forge_technician:1, industrial_devastator:1 };
 const _FG_LAVA=0xff3200, _FG_HOT=0xff6a26, _FG_CYAN=0x32d8ff, _FG_EMBER=0xff7a1e;
 
