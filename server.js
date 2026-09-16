@@ -364,6 +364,16 @@ const ENEMY_STATS = {
   //   and expR was roughly a quarter. Migrating against the stale values would have put
   //   paper mobs in a Lv100+ uberzone. All three types are EXCLUSIVE to Lucidwilde, so
   //   correcting the globals is safe — nothing else spawns them.
+  // a555 — THE FORGE. These four were MISSING from ENEMY_STATS altogether, not merely
+  //   stale: the server has never spawned this zone, so nothing ever required them to
+  //   exist. createZoneEnemies falls back to ENEMY_STATS.soldier for an unknown type —
+  //   270 hp and 16 atk — so creating the spawn slot without these would have put
+  //   level-1 grunts in a Lv95 foundry. Values taken from the client stat table
+  //   (80_zone_defs.part); all four types are exclusive to 'forge'.
+  molten_crawler:        {hp:95000,  atk:480, spd:0.078, aggroRange:12, reward:2000, expR:2800, dmgReduction:0.08},
+  lava_forged_sentinel:  {hp:220000, atk:620, spd:0.030, aggroRange:18, reward:3000, expR:4300, dmgReduction:0.20},
+  forge_technician:      {hp:140000, atk:380, spd:0.046, aggroRange:14, reward:2400, expR:3600, dmgReduction:0.10},
+  industrial_devastator: {hp:280000, atk:720, spd:0.026, aggroRange:20, reward:3600, expR:4800, dmgReduction:0.22},
   prismaraptor:        {hp:255000, atk:460, spd:0.082, aggroRange:14, reward:1600, expR:5000, dmgReduction:0.25},
   sporegon:            {hp:660000, atk:400, spd:0.022, aggroRange:9,  reward:2600, expR:7500, dmgReduction:0.45},
   vortexwisp:          {hp:180000, atk:520, spd:0.070, aggroRange:15, reward:1500, expR:4500, dmgReduction:0.20},
@@ -3721,8 +3731,43 @@ const ZONE_SPAWNS = {
   //   XU ZET-HORAK will become server-authoritative when added — ZONE_BOSS_HP.xulcan.)
   // a537 — AVIA CANYON birds are now SERVER-AUTHORITATIVE (ZONE_SPAWNS.aviacanyon + maze
   //   collision via _aviaWalkable). The XUBERRY boss remains server-authoritative (ZONE_BOSS_HP.aviacanyon).
-  // a361 — THE FORGE foundry mobs are likewise CLIENT-AUTHORITATIVE (no ZONE_SPAWNS entry); the
-  //   FURNACE CORE boss is server-authoritative (ZONE_BOSS_HP.forge).
+  // a555 — THE FORGE is now SERVER-AUTHORITATIVE (was deliberately client-side since a361,
+  //   which is why this zone had no ZONE_SPAWNS entry). 31 spawns lifted verbatim from the
+  //   client's enemySpawns. ENEMY_STATS entries for all four types were ADDED in the same
+  //   patch — they did not exist at all. See the note there.
+  forge: [
+    {type:'molten_crawler', tx:108, tz:214},
+    {type:'molten_crawler', tx:132, tz:214},
+    {type:'molten_crawler', tx:70, tz:172},
+    {type:'molten_crawler', tx:90, tz:172},
+    {type:'molten_crawler', tx:150, tz:172},
+    {type:'molten_crawler', tx:170, tz:172},
+    {type:'lava_forged_sentinel', tx:60, tz:172},
+    {type:'forge_technician', tx:182, tz:172},
+    {type:'molten_crawler', tx:118, tz:190},
+    {type:'lava_forged_sentinel', tx:122, tz:184},
+    {type:'forge_technician', tx:60, tz:122},
+    {type:'molten_crawler', tx:92, tz:122},
+    {type:'molten_crawler', tx:150, tz:122},
+    {type:'industrial_devastator', tx:182, tz:122},
+    {type:'forge_technician', tx:118, tz:122},
+    {type:'industrial_devastator', tx:120, tz:150},
+    {type:'molten_crawler', tx:114, tz:144},
+    {type:'molten_crawler', tx:126, tz:144},
+    {type:'lava_forged_sentinel', tx:60, tz:88},
+    {type:'molten_crawler', tx:92, tz:88},
+    {type:'lava_forged_sentinel', tx:150, tz:88},
+    {type:'industrial_devastator', tx:182, tz:88},
+    {type:'forge_technician', tx:118, tz:88},
+    {type:'lava_forged_sentinel', tx:120, tz:78},
+    {type:'molten_crawler', tx:114, tz:72},
+    {type:'molten_crawler', tx:126, tz:72},
+    {type:'industrial_devastator', tx:106, tz:64},
+    {type:'industrial_devastator', tx:134, tz:64},
+    {type:'lava_forged_sentinel', tx:114, tz:63},
+    {type:'lava_forged_sentinel', tx:126, tz:63},
+    {type:'forge_technician', tx:120, tz:66}
+  ],
 };
 ;
 
@@ -4130,6 +4175,134 @@ const ZBOSS_SERVER = {
 
 
 
+
+
+  // ── THE FURNACE CORE (a555). Three phases, no fixed rotation — a pool that grows and
+  //    re-weights with phase, drawn at random. The client rolled that draw on each machine
+  //    independently, so no two players saw the same ability.
+  //    She is TETHERED to her socket: she tracks toward you but never leaves a 10-unit
+  //    leash around home, so 'drift' and 'chase' both fit badly and the movement is done
+  //    in passive() under 'hold'.
+  //    Her signature is the WEAK POINT WINDOW — the core exposes on its own cycle and
+  //    takes 1.6x damage, applied in sv_hit_boss above.
+  forge: {
+    x: 180, z: 60,                                     // tile (120,40) — the core-reactor arena
+    spd:    [0,0,0,0],
+    dmg:    [0, 1, 1, 1],
+    phases: [0.70, 0.30],
+    acd:    [0, 18, 14, 11],                           // 110 then max(54,130-P*22), / 6
+    tele:   0,
+    move:   'hold',
+    pick:   (b, ph) => {
+      const pool = ['meteor', 'drones', 'eruption'];
+      if (ph >= 2) pool.push('eruption', 'meteor', 'overclock');
+      if (ph >= 3) pool.push('eruption', 'meteor', 'eruption', 'meteor');
+      b._fcPick = pool[Math.floor(Math.random() * pool.length)];
+      return 0;
+    },
+    attack: (c) => {
+      const { b, ph, np, zone, zoneName, game, fx } = c;
+      const ATK = 360;                                  // _FC_ATK
+      let kind = b._fcPick || 'meteor';
+      if (kind === 'overclock' && b._fcRage > 0) kind = 'meteor';   // already raging
+
+      if (kind === 'eruption') {
+        // CORE ERUPTION — expanding rings from the socket. Crossing-tested, as with the
+        //   PIXIELORD's nova: a fixed band would be stepped over at 10Hz.
+        b._erR = 1.0; b._erDmg = Math.floor(ATK * (0.7 + ph*0.1)); b._erHit = 0;
+        fx('fc_eruption', { p:ph });
+
+      } else if (kind === 'meteor') {
+        // MOLTEN METEOR — a scatter of orbital strikes around the target
+        const n = 4 + ph*2;
+        fx('fc_meteor', { n:n });
+        for (let i = 0; i < n; i++) {
+          const tx = np.x + (Math.random()-0.5)*26, tz = np.z + (Math.random()-0.5)*26;
+          if (tx < 2 || tx > 358 || tz < 2 || tz > 358) continue;
+          const ent = _fgSpawnEnt(game, zoneName, zone,
+            { kind:'meteor', x:tx, z:tz, r:3.4, life:999, fall:6 + i, dmg:Math.floor(ATK*0.85) });
+          if (ent) broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fg_meteor', zone:zoneName,
+            did:ent.eid, ex:+tx.toFixed(2), ez:+tz.toFixed(2), r:3.4, fall:ent.fall });
+        }
+
+      } else if (kind === 'drones') {
+        // SALVAGE DRONES — homing charges that arm, close, and detonate
+        const n = 2 + ph;
+        fx('fc_drones', { n:n });
+        for (let i = 0; i < n; i++) {
+          const a = Math.random()*6.28, r = 6 + Math.random()*4;
+          const dx2 = b.x + Math.cos(a)*r, dz2 = b.z + Math.sin(a)*r;
+          const ent = _fgSpawnEnt(game, zoneName, zone,
+            { kind:'drone', x:dx2, z:dz2, life:100, armed:5, dmg:Math.floor(ATK*0.6) });
+          if (ent) broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fg_drone', zone:zoneName,
+            did:ent.eid, ex:+dx2.toFixed(2), ez:+dz2.toFixed(2) });
+        }
+
+      } else {
+        // OVERCLOCK — she runs hot: faster cadence for a while
+        b._fcRage = 70;                                 // 420 frames
+        fx('fc_overclock');
+      }
+    },
+    passive: (c) => {
+      const { b, ph, np, nd, ang, zoneName, game, fx } = c;
+      const ATK = 360;
+
+      // Tether: she tracks toward you but stays within 10 units of her socket.
+      if (b._homeX === undefined) { b._homeX = b.x; b._homeZ = b.z; }
+      const hdx = np.x - b._homeX, hdz = np.z - b._homeZ;
+      const hd = Math.sqrt(hdx*hdx + hdz*hdz);
+      if (hd > 6) {
+        const reach = Math.min(hd - 4, 10);
+        const tx = b._homeX + (hdx/hd)*reach, tz = b._homeZ + (hdz/hd)*reach;
+        b.x += (tx - b.x) * 0.06; b.z += (tz - b.z) * 0.06;
+      }
+
+      if (b._fcRage > 0) b._fcRage--;
+
+      // WEAK POINT WINDOW — the core opens on its own cycle, wider during meltdown.
+      if (b._fcWeak) {
+        b._fcWeakT--;
+        if (b._fcWeakT <= 0) { b._fcWeak = 0; fx('fc_weak_end'); }
+      } else {
+        b._fcWeakCD = (b._fcWeakCD != null ? b._fcWeakCD : 50) - 1;
+        if (b._fcWeakCD <= 0) {
+          b._fcWeak = 1;
+          b._fcWeakT  = (ph >= 3 ? 43 : 30);            // 260 / 180 frames
+          b._fcWeakCD = (ph >= 3 ? 43 : 77);            // 260 / 460 frames
+          fx('fc_weak', { ms:(ph >= 3 ? 4300 : 3000) });
+        }
+      }
+
+      // CORE ERUPTION rings — expand outward, hit once as they cross
+      if (b._erR > 0) {
+        const prevR = b._erR;
+        b._erR += 0.55 * 6;
+        if (!b._erHit) {
+          players.forEach((p, ws) => {
+            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+            const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
+            if (pd >= prevR - 2.0 && pd <= b._erR + 2.0) {
+              send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._erDmg,
+                         ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
+            }
+          });
+        }
+        fx('fc_eruption_ring', { r:+b._erR.toFixed(2) });
+        if (b._erR >= 22) { b._erR = 0; b._erHit = 0; }
+      }
+
+      // Meltdown aura — phase 3 cooks anything close to the socket
+      if (ph >= 3 && b._vt % 4 === 0) {
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const qx = p.x - b.x, qz = p.z - b.z;
+          if (qx*qx + qz*qz < 81) send(ws, { type:'sv_enemy_attack', eid:-1,
+            dmg:Math.floor(ATK*0.18), ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
+        });
+      }
+    },
+  },
 
   // ── THE PIXIELORD (a554). 5M HP, the largest health pool in the game, across five
   //    themed phases. She does not chase: she hovers, backs off if you crowd her, and
@@ -4980,12 +5153,14 @@ function tickGame(game) {
                     || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]))
         ? Math.max(e.aggroRange || 12, 24)
         : (zoneName === 'lucidwilde' && LW_BESPOKE[e.type])   // a554 — canopy uses a wider 28u floor
-        ? Math.max(e.aggroRange || 14, 28) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
+        ? Math.max(e.aggroRange || 14, 28)
+        : (zoneName === 'forge' && FG_BESPOKE[e.type])        // a555 — foundry floor is 22u
+        ? Math.max(e.aggroRange || 14, 22) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -7887,6 +8062,169 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a555: THE FORGE foundry (zone-gated to 'forge'). Lv95 industrial mobs that
+        //    reshape the floor: lava pools, turrets, shredder beams and a crawler that
+        //    kills itself to hurt you. Re-timed 60fps -> 10Hz. Damage is e.atk-based.
+        if (zoneName === 'forge' && e.aggroed && FG_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, ang=Math.atan2(dxp,dzp);
+          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+
+          // ── Foundry buffs. The technician's field and a crawler's overcharge both raise
+          //    outgoing damage, and overheat trades self-damage for it. All server-owned:
+          //    they change what players take, so they cannot stay client-local.
+          let atkMul=1, spdMul=1;
+          if(e._techBuff>0){ e._techBuff--; atkMul*=1.25; }
+          if(e._oc>0){ e._oc--; atkMul*=1.3; spdMul*=1.6; }
+          if(e._overheat>0){ e._overheat--; atkMul*=1.6;
+            if(e._overheat%5===0){ e.hp=Math.max(1, e.hp-Math.floor(e.maxHp*0.01)); changed.push(e); } }
+          const SP=(e.spd||0.05)*6*spdMul;
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor((e.atk||400)*mult*atkMul),
+                     ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const hitAt=(dmg,hx,hz,radius)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=p.x-hx, qz=p.z-hz; if(qx*qx+qz*qz < radius*radius)
+              send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+hx.toFixed(2),ez:+hz.toFixed(2),zone:zoneName}); }); };
+          const puddle=(px,pz,r,life,dmg)=>{
+            if(_fgSpawnEnt(game,zoneName,zone,{kind:'puddle',x:px,z:pz,r:r,life:life,dmg:dmg,cd:0}))
+              fx('fg_puddle',{ex:+px.toFixed(2),ez:+pz.toFixed(2),r:r,life:life}); };
+
+          if(e.type==='lava_forged_sentinel'){
+            // FOUNDRY GUARDIAN — hardens and then enrages as it's worn down
+            if(!e._shielded && e.hp < e.maxHp*0.5){ e._shielded=1;
+              e.dmgReduction=Math.min(0.4,(e.dmgReduction||0.2)+0.12);
+              fx('fg_harden',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            if(!e._enraged && e.hp < e.maxHp*0.3){ e._enraged=1;
+              fx('fg_enrage',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            const em=e._enraged?1.3:1;
+            if(dd>2.8) mv(sin,cos,SP*em);
+            if(dd<3.6 && e.attackTimer%Math.max(2,Math.floor(11/em))===0){ hit(1.0);
+              fx('fg_hammer',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // MOLTEN SLAM — a shockwave that leaves the floor burning
+            e._slam=(e._slam||20)+1;
+            if(dd<6 && e._slam>=Math.max(8,Math.floor(43/em))){ e._slam=0;
+              fx('fg_slam',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              hitAt(Math.floor((e.atk||620)*1.5*atkMul), e.x, e.z, 5.5); }
+          }
+          else if(e.type==='molten_crawler'){
+            // SKITTERING BOMB — below a fifth health it lights its own fuse and charges
+            if(e._fuse>0){
+              e._fuse--;
+              mv(sin,cos,SP*1.6);
+              if(e._fuse<=0){
+                fx('fg_detonate',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                hitAt(Math.floor((e.atk||480)*2.2*atkMul), e.x, e.z, 6.0);
+                e.hp=0; e.active=false; e.aggroed=false; e.respawnTimer=0;
+                changed.push(e);
+                // The crawler killed itself, but it died fighting — the client's local kit
+                //   ran it through killEnemy() and paid out, so credit the nearest player
+                //   rather than silently voiding the reward for a mechanic nobody chose.
+                broadcastToZone(game.id,zoneName,{ type:'sv_enemy_killed',
+                  id:e.id, etype:e.type, zone:zoneName,
+                  reward:e.reward, expR:e.expR,
+                  ex:+e.x.toFixed(2), ez:+e.z.toFixed(2),
+                  killer: nearestPlayer && nearestPlayer.name });
+                if(nearestPlayer && nearestPlayer.name)
+                  awardGuildXp(nearestPlayer.name, Math.max(1, Math.floor((e.expR||1)/2)));
+              }
+              if(_moved) changed.push(e);
+              return;
+            }
+            if(e.hp < e.maxHp*0.22 && !e._fuse){ e._fuse=8;     // 48 frames
+              fx('fg_overload',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // weaving approach
+            if(e._sf===undefined) e._sf=Math.random()*6.28;
+            const strafe=Math.sin((e._ab*6)*0.06+e._sf)*0.5;
+            if(dd>1.6) mv(sin-cos*strafe, cos+sin*strafe, SP);
+            if(dd<2.0 && e.attackTimer%6===0) hit(1.0);
+            // LAVA SPIT — lands a lingering pool
+            e._spit=(e._spit||5)+1;
+            if(dd>4 && dd<18 && e._spit>=23){ e._spit=0;
+              const tx=nearestPlayer.x, tz=nearestPlayer.z;
+              fx('fg_spit',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),tx:+tx.toFixed(2),tz:+tz.toFixed(2)});
+              puddle(tx,tz,1.8,35,Math.floor((e.atk||480)*0.15)); }
+            // OVERCHARGE — it cooks itself hotter
+            if(!e._oc && e._ab>=33 && Math.random()<0.04){ e._oc=40;
+              fx('fg_overcharge',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+          }
+          else if(e.type==='forge_technician'){
+            // SUPPORT UNIT — repairs, buffs, and bolts a turret to the floor
+            if(dd<10) mv(-sin,-cos,SP);
+            else if(dd>14) mv(sin,cos,SP*0.8);
+            if(dd>2.5 && dd<18 && e.attackTimer%12===0){
+              _sdSpawnProj(game,zoneName,e,ang,_FG_CYAN,Math.floor((e.atk||380)*atkMul),'bolt',null,0);
+              fx('fg_needle',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // REPAIR BEAM — mends every damaged foundry unit within 16u for 5% each.
+            //   Client discipline preserved: only hurt units, capped at maxHp. The 30-tick
+            //   cadence is what keeps five technicians from out-healing a party.
+            e._rep=(e._rep||7)+1;
+            if(e._rep>=30){ e._rep=0;
+              let healed=0;
+              for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i];
+                if(!o||!o.active||o===e||!FG_BESPOKE[o.type]) continue;
+                const odx=o.x-e.x, odz=o.z-e.z;
+                if(odx*odx+odz*odz>256) continue;
+                if(o.hp<o.maxHp){ o.hp=Math.min(o.maxHp, o.hp+Math.floor(o.maxHp*0.05));
+                  changed.push(o); healed++; } }
+              if(healed) fx('fg_repair',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),n:healed}); }
+            // DEPLOY TURRET — an autonomous emplacement that outlives its builder
+            e._tur=(e._tur||15)+1;
+            if(dd<22 && e._tur>=53){ e._tur=0;
+              const tx=e.x+(Math.random()-0.5)*6, tz=e.z+(Math.random()-0.5)*6;
+              if(tx>2 && tx<358 && tz>2 && tz<358){
+                const ent=_fgSpawnEnt(game,zoneName,zone,{kind:'turret',x:tx,z:tz,life:60,
+                                                          dmg:Math.floor((e.atk||380)*1.4),cd:0});
+                if(ent) fx('fg_turret',{did:ent.eid,ex:+tx.toFixed(2),ez:+tz.toFixed(2),life:60}); } }
+            // OVERCLOCK FIELD — +25% damage to every unit within 14u
+            e._buf=(e._buf||10)+1;
+            if(e._buf>=35){ e._buf=0;
+              for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i];
+                if(!o||!o.active||!FG_BESPOKE[o.type]) continue;
+                const odx=o.x-e.x, odz=o.z-e.z;
+                if(odx*odx+odz*odz<196) o._techBuff=25; }
+              fx('fg_buff',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+          }
+          else {
+            // industrial_devastator — SIEGE WALKER: barrages, shredder beams, overheat
+            if(!e._overheat && e.hp < e.maxHp*0.4 && e._ab>20 && Math.random()<0.02){
+              e._overheat=50;                                   // 300 frames
+              fx('fg_overheat',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            if(dd<14) mv(-sin,-cos,SP);
+            else if(dd>24) mv(sin,cos,SP*0.8);
+            if(dd<6 && e.attackTimer%8===0) hit(0.8);
+            // CANNON BARRAGE — five shells that leave burning craters
+            e._bar=(e._bar||7)+1;
+            if(dd<26 && e._bar>=25){ e._bar=0;
+              const reach=Math.min(22,Math.max(6,dd));
+              fx('fg_barrage',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              for(let i=0;i<5;i++){ const a=ang+(i-2)*0.18;
+                _sdSpawnProj(game,zoneName,e,a,_FG_HOT,Math.floor((e.atk||720)*0.7*atkMul),'plasma',null,0);
+                const tx=e.x+Math.sin(a)*reach, tz=e.z+Math.cos(a)*reach;
+                if(!e._barQ) e._barQ=[];
+                e._barQ.push({t:5,x:tx,z:tz,dmg:Math.floor((e.atk||720)*0.12)}); } }
+            if(e._barQ && e._barQ.length){
+              for(let i=e._barQ.length-1;i>=0;i--){ const q=e._barQ[i]; q.t--;
+                if(q.t<=0){ puddle(q.x,q.z,1.6,25,q.dmg); e._barQ.splice(i,1); } } }
+            // GROUND SHREDDER — a 30-unit lance down the floor. Exact segment test.
+            e._shr=(e._shr||15)+1;
+            if(dd<28 && e._shr>=50){ e._shr=0;
+              fx('fg_shredder',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),a:+ang.toFixed(3),len:30});
+              const ux=Math.sin(ang), uz=Math.cos(ang);
+              players.forEach((p,ws)=>{
+                if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+                const rx=p.x-e.x, rz=p.z-e.z, prj=rx*ux+rz*uz;
+                if(prj>-2 && prj<30 && Math.abs(rx*uz-rz*ux)<1.6)
+                  send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor((e.atk||720)*0.9*atkMul),
+                           ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -7905,6 +8243,7 @@ function tickGame(game) {
 
     tickZoneBoss(game, zoneName, zone);   // a548 — server-authoritative zone boss (CRYOTHAR)
     if (zoneName === 'xumen_fortress') _xfTickPylons(game, zoneName, zone);   // a552 — sentry pylons outlive their owner
+    if (zoneName === 'forge') _fgTickEntities(game, zoneName, zone);          // a555 — puddles / turrets / meteors / drones
   });
   // a527 — advance server-owned SD projectiles once per tick; resolve hits
   if (game._sdProj && game._sdProj.length) {
@@ -8079,6 +8418,102 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //   approximation here. Server damage matches what the client dealt, exactly.
 //   Aggro floor is 28 (not the 24 the Xu zones use) with a 46-unit leash: the canopy is
 //   meant to engage you from across the clearing and not let go.
+// a555 — THE FORGE foundry (zone-gated to 'forge'; all four types exclusive to it).
+//   This zone leans harder on PERSISTENT ZONE ENTITIES than any other: lava puddles that
+//   linger and burn, deployed turrets, falling meteors and homing salvage drones. Like the
+//   Fortress sentry pylons (a552) these outlive whoever made them, so they live on the
+//   zone and tick independently — one list with a `kind` tag rather than four parallel
+//   arrays, since they share a lifetime/expiry shape.
+//   Damage is e.atk-based, as in Lucidwilde, so there's no flat-PWR approximation here.
+const FG_BESPOKE = { molten_crawler:1, lava_forged_sentinel:1, forge_technician:1, industrial_devastator:1 };
+const _FG_LAVA=0xff3200, _FG_HOT=0xff6a26, _FG_CYAN=0x32d8ff, _FG_EMBER=0xff7a1e;
+
+function _fgSpawnEnt(game, zoneName, zone, ent){
+  if (!zone._fgEnt) zone._fgEnt = [];
+  if (zone._fgEnt.length >= 48) return null;          // sanity cap on a busy foundry floor
+  zone._fgEntId = (zone._fgEntId || 0) + 1;
+  ent.eid = zone._fgEntId; ent.t = 0;
+  zone._fgEnt.push(ent);
+  return ent;
+}
+
+function _fgTickEntities(game, zoneName, zone){
+  const list = zone._fgEnt;
+  if (!list || list.length === 0) return;
+  const zonePlayers = getPlayersInZone(game.id, zoneName);
+  const hitP = (ws, dmg, x, z) => send(ws, { type:'sv_enemy_attack', eid:-3, dmg:dmg,
+    ex:+x.toFixed(2), ez:+z.toFixed(2), zone:zoneName });
+
+  for (let i = list.length - 1; i >= 0; i--) {
+    const h = list[i];
+    h.t++; h.life--;
+    if (h.cd > 0) h.cd--;
+
+    if (h.kind === 'puddle') {
+      // molten pool — burns anything standing in it, on its own re-tick
+      if (h.cd <= 0) {
+        let struck = false;
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const dx = p.x - h.x, dz = p.z - h.z;
+          if (dx*dx + dz*dz < h.r*h.r) { hitP(ws, h.dmg, h.x, h.z); struck = true; }
+        });
+        if (struck) h.cd = 3;                          // 18 frames
+      }
+
+    } else if (h.kind === 'turret') {
+      if (h.cd <= 0 && zonePlayers.length) {
+        let np = null, nd = Infinity;
+        zonePlayers.forEach(p => { if (p.x === undefined) return;
+          const dx = p.x - h.x, dz = p.z - h.z, d = Math.sqrt(dx*dx + dz*dz);
+          if (d < nd) { nd = d; np = p; } });
+        if (np && nd < 22 && nd > 1) {
+          h.cd = 8;                                    // 46 frames
+          _sdSpawnProj(game, zoneName, { id:-3, x:h.x, z:h.z },
+            Math.atan2(np.x - h.x, np.z - h.z), _FG_CYAN, h.dmg, 'bolt', null, 0);
+        }
+      }
+
+    } else if (h.kind === 'meteor') {
+      if (h.t >= h.fall) {
+        broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fg_meteor_hit', zone:zoneName,
+          ex:+h.x.toFixed(2), ez:+h.z.toFixed(2), r:h.r });
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const dx = p.x - h.x, dz = p.z - h.z;
+          if (dx*dx + dz*dz < h.r*h.r) hitP(ws, h.dmg, h.x, h.z);
+        });
+        list.splice(i, 1); continue;
+      }
+
+    } else if (h.kind === 'drone') {
+      // salvage drone — homes in, then detonates on contact or when it runs dry
+      let np = null, nd = Infinity;
+      zonePlayers.forEach(p => { if (p.x === undefined) return;
+        const dx = p.x - h.x, dz = p.z - h.z, d = Math.sqrt(dx*dx + dz*dz);
+        if (d < nd) { nd = d; np = p; } });
+      if (np && nd > 0.1) { h.x += ((np.x - h.x)/nd) * 0.96; h.z += ((np.z - h.z)/nd) * 0.96; }
+      if (h.armed > 0) h.armed--;
+      broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fg_drone_move', zone:zoneName,
+        did:h.eid, ex:+h.x.toFixed(2), ez:+h.z.toFixed(2) });
+      if ((nd < 2.2 && h.armed <= 0) || h.life <= 0) {
+        broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fg_drone_boom', zone:zoneName,
+          did:h.eid, ex:+h.x.toFixed(2), ez:+h.z.toFixed(2) });
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const dx = p.x - h.x, dz = p.z - h.z;
+          if (dx*dx + dz*dz < 3.4*3.4) hitP(ws, h.dmg, h.x, h.z);
+        });
+        list.splice(i, 1); continue;
+      }
+    }
+
+    if (h.life <= 0) {
+      broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fg_ent_end', zone:zoneName, did:h.eid, kind:h.kind });
+      list.splice(i, 1);
+    }
+  }
+}
 const LW_BESPOKE = { prismaraptor:1, sporegon:1, vortexwisp:1 };
 const _LW_PRISM = [0xff3cf0,0xc94dff,0x6b7bff,0x39e6ff,0x4dffb0,0xfff04d,0xff8a3c];
 function _lwCol(off){ const L=_LW_PRISM.length; return _LW_PRISM[((Math.floor(Date.now()*0.006)+(off|0))%L+L)%L]; }
@@ -8672,6 +9107,12 @@ wss.on('connection', ws => {
         break;
       }
 
+      // a555 — THE FURNACE CORE's WEAK POINT WINDOW. The core periodically exposes and
+      //   takes 1.6x damage, but that multiplier lived only in the client's own hitBoss
+      //   path — so in multiplayer the core opened, the flare played, and your damage was
+      //   completely unchanged. The server resolves boss HP, so it has to own the window.
+      //   Same class of defect as the a551 armour lock, inverted: a vulnerability that
+      //   never actually made the boss vulnerable.
       case 'sv_hit_boss': {
         if (!player.gameId || !player.zone) break;
         const g = games.get(player.gameId);
@@ -8724,7 +9165,15 @@ wss.on('connection', ws => {
         if (b.hp <= 0) break;
 
         // Cap damage (anti-cheat)
-        const bdmg = Math.min(data.dmg || 1, 999999);
+        // a555 — THE FURNACE CORE's WEAK POINT WINDOW. The core periodically exposes and
+        //   takes 1.6x damage, but that multiplier lived only in the client's own hitBoss
+        //   path — so in multiplayer the core opened, the flare played, and the damage was
+        //   unchanged. The server resolves boss HP, so it has to own the window. Same class
+        //   of defect as the a551 armour lock, inverted: a vulnerability that never made
+        //   the boss vulnerable.
+        let _inDmg = data.dmg || 1;
+        if (player.zone === 'forge' && b._fcWeak) _inDmg = Math.floor(_inDmg * 1.6);
+        const bdmg = Math.min(_inDmg, 999999);
         b.hp = Math.max(0, b.hp - bdmg);
 
         // Broadcast HP update to all players in zone
@@ -8738,13 +9187,21 @@ wss.on('connection', ws => {
           hitter: player.name,
         });
 
-        // Phase transitions — broadcast to zone
+        // Phase transitions — broadcast to zone.
+        // a555 — SKIP for any zone with a ZBOSS_SERVER config: tickZoneBoss owns the phase
+        //   ladder there, and this generic .75/.50/.25/.10 one was running in ADDITION to it.
+        //   The two interleaved (each advancing b.phase past the other's guard), so a
+        //   migrated boss could skip a phase or overshoot its own maximum — THE FURNACE CORE
+        //   has three phases and this drove it to four. Every boss migrated since a548 was
+        //   sharing its ladder with this one; the config is the single source of truth now.
         const pct = b.hp / b.maxHp;
         const oldPhase = b.phase;
-        if (b.phase === 1 && pct <= 0.75) b.phase = 2;
-        else if (b.phase === 2 && pct <= 0.50) b.phase = 3;
-        else if (b.phase === 3 && pct <= 0.25) b.phase = 4;
-        else if (b.phase === 4 && pct <= 0.10) b.phase = 5;
+        if (!ZBOSS_SERVER[player.zone]) {
+          if (b.phase === 1 && pct <= 0.75) b.phase = 2;
+          else if (b.phase === 2 && pct <= 0.50) b.phase = 3;
+          else if (b.phase === 3 && pct <= 0.25) b.phase = 4;
+          else if (b.phase === 4 && pct <= 0.10) b.phase = 5;
+        }
         if (b.phase !== oldPhase) {
           broadcastToZone(g.id, player.zone, {
             type: 'sv_boss_phase',
