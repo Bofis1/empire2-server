@@ -5693,7 +5693,9 @@ function tickGame(game) {
         const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
         const sinp=dxp/dd, cosp=dzp/dd, ang=Math.atan2(dxp,dzp);
         const SP=e.spd*6;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mvA=(vx,vz,sp)=>{ const nx=e.x+vx*sp, nz=e.z+vz*sp; if(_aviaWalkable(nx,nz,0.3)){ e.x=nx; e.z=nz; _moved=true; } };
         const hitA=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
@@ -5766,7 +5768,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
         const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
@@ -5852,7 +5856,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
         // melee/ability hit that also applies BURN
@@ -5932,7 +5938,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
         const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
@@ -6026,7 +6034,9 @@ function tickGame(game) {
         const strafe=e._strafe;
         if(e._ovr>0) e._ovr--;                          // OVERCLOCK RALLY speed buff
         const OVR = (e._ovr>0) ? 1.22 : 1.0;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp*OVR; e.z+=vz*sp*OVR; _moved=true; };
         const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
@@ -6146,7 +6156,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
         const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
@@ -6241,7 +6253,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         if(e._eldHealCD>0) e._eldHealCD--;
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
@@ -6340,7 +6354,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
         // every necropolis hit carries the plague
@@ -6431,7 +6447,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         if(e._vsHealCD>0) e._vsHealCD--;
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
@@ -6627,7 +6645,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
         const hit=(mult,burnDur)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer){
@@ -6737,7 +6757,9 @@ function tickGame(game) {
         if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
         if(Math.random()<0.03) e._strafe=-e._strafe;
         const strafe=e._strafe;
-        e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+        e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
         const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
         const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_rvDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
@@ -6844,7 +6866,9 @@ function tickGame(game) {
           const strafe=e._strafe;
           if(e._packT>0) e._packT--;                             // ALPHA'S CALL surge timer
           const _pk=(e._packT>0)?1.2:1;                          // surge scales SPEED only, never damage
-          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
           let _moved=false;
           const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
           const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
@@ -6991,7 +7015,9 @@ function tickGame(game) {
           if(Math.random()<0.036) e._strafe=-e._strafe;
           const strafe=e._strafe;
           const _tg=_nhIsTagged(nearestPlayer);
-          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
           if(e._nhHealCD>0) e._nhHealCD--;
           let _moved=false;
           const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
@@ -7213,7 +7239,9 @@ function tickGame(game) {
           if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
           if(Math.random()<0.036) e._strafe=-e._strafe;
           const strafe=e._strafe;
-          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
           let _moved=false;
           const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
           const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
@@ -7422,7 +7450,9 @@ function tickGame(game) {
           const strafe=e._strafe;
           if(e._pkT>0) e._pkT--;                       // COMMAND OVERRIDE surge timer
           const _pk=(e._pkT>0)?1.22:1;                 // surge scales SPEED only, never damage
-          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
           let _moved=false;
           const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
           const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
@@ -7629,7 +7659,9 @@ function tickGame(game) {
           const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
           if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
           if(Math.random()<0.036) e._strafe=-e._strafe;
-          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
           let _moved=false;
           const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
           const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
@@ -7836,7 +7868,9 @@ function tickGame(game) {
           if(e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
           if(Math.random()<0.036) e._strafe=-e._strafe;
           const strafe=e._strafe;
-          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
           let _moved=false;
           const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
           const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
@@ -7996,7 +8030,9 @@ function tickGame(game) {
           const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
           const sin=dxp/dd, cos=dzp/dd, ang=Math.atan2(dxp,dzp);
           const SP=(e.spd||0.05)*6;
-          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
           let _moved=false;
           const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
           const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
@@ -8069,7 +8105,9 @@ function tickGame(game) {
         if (zoneName === 'forge' && e.aggroed && FG_BESPOKE[e.type]) {
           const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
           const sin=dxp/dd, cos=dzp/dd, ang=Math.atan2(dxp,dzp);
-          e._ab=(e._ab||0)+1; e.attackTimer=(e.attackTimer||0)+1;
+          e._ab=(e._ab||0)+1;   // a556 — attackTimer is incremented by the generic enemy loop
+          //   above (it runs for bespoke mobs too); incrementing it here as well ran every
+          //   %-based attack check in this zone off a counter advancing 2 per tick.
           let _moved=false;
           const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
           const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
