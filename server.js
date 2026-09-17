@@ -397,7 +397,13 @@ const ENEMY_STATS = {
 // Zone scale multipliers — matches client scaleMap
 const ZONE_SCALE = {
   outpost:1.0, patrol:1.0, void:1.6, citadel:2.2, ashlands:2.8,
-  sunken_sands:1.0, fungal:3.2, frostveil:3.6, ancient:4.0,
+  // a558 — fungal dropped 3.2 -> 1.0. The client spawns Fungal Depths mobs straight from
+  //   the raw stat table (hp:st.hp, atk:st.atk, reward/expR unscaled) and then applies a
+  //   zone-local x3 HP bump in _tickFungalMob. ZONE_SCALE never ran for this zone (there
+  //   was no ZONE_SPAWNS entry), so 3.2 was dead config; leaving it would have multiplied
+  //   HP to 3.2x AND inflated gold and XP by 3.2x against what the client intends.
+  //   The x3 now lives in ZONE_HP_MULT below, where it belongs.
+  sunken_sands:1.0, fungal:1.0, frostveil:3.6, ancient:4.0,
   sanctuary:1.0, dragonlair:1.0, riftvale:1.0, xumen:1.0,
   xumen_fortress:1.0, caves_of_despair:2.8, wyvernwastes:1.0, cemetery:1.4,
   necropolis:1.0, void_citadel:1.0, neon_hollow:1.0,
@@ -2757,7 +2763,161 @@ const ZONE_SPAWNS = {
     {type:'xf_warlord', tx:156, tz:56},
     {type:'xf_warlord', tx:208, tz:192}
   ],
-  fungal: [],   // a471 — client-authoritative (bespoke spore AI client-side); server no longer spawns/owns these mobs.
+  // a558 — FUNGAL DEPTHS is now SERVER-AUTHORITATIVE (client-side since a471).
+  //   150 spawns lifted verbatim from the client's enemySpawns. HP is NOT unchanged:
+  //   the kit applies a zone-local x3 at first tick, mirrored via ZONE_HP_MULT above.
+  fungal: [
+    {type:'mycelium_horror', tx:145, tz:142},
+    {type:'mycelium_horror', tx:146, tz:140},
+    {type:'mycelium_horror', tx:126, tz:88},
+    {type:'mycelium_horror', tx:125, tz:86},
+    {type:'mycelium_horror', tx:139, tz:150},
+    {type:'mycelium_horror', tx:136, tz:152},
+    {type:'mycelium_horror', tx:151, tz:98},
+    {type:'mycelium_horror', tx:150, tz:100},
+    {type:'mycelium_horror', tx:157, tz:126},
+    {type:'mycelium_horror', tx:158, tz:124},
+    {type:'mycelium_horror', tx:125, tz:159},
+    {type:'mycelium_horror', tx:125, tz:162},
+    {type:'mycelium_horror', tx:80, tz:108},
+    {type:'mycelium_horror', tx:82, tz:108},
+    {type:'mycelium_horror', tx:92, tz:86},
+    {type:'mycelium_horror', tx:95, tz:88},
+    {type:'mycelium_horror', tx:146, tz:88},
+    {type:'mycelium_horror', tx:145, tz:84},
+    {type:'mycelium_horror', tx:96, tz:155},
+    {type:'mycelium_horror', tx:95, tz:155},
+    {type:'mycelium_horror', tx:76, tz:123},
+    {type:'mycelium_horror', tx:76, tz:124},
+    {type:'mycelium_horror', tx:158, tz:139},
+    {type:'mycelium_horror', tx:161, tz:141},
+    {type:'mycelium_horror', tx:81, tz:144},
+    {type:'mycelium_horror', tx:77, tz:144},
+    {type:'mycelium_horror', tx:80, tz:88},
+    {type:'mycelium_horror', tx:83, tz:86},
+    {type:'mycelium_horror', tx:69, tz:120},
+    {type:'mycelium_horror', tx:70, tz:121},
+    {type:'mycelium_horror', tx:173, tz:106},
+    {type:'mycelium_horror', tx:171, tz:109},
+    {type:'mycelium_horror', tx:79, tz:154},
+    {type:'mycelium_horror', tx:80, tz:154},
+    {type:'mycelium_horror', tx:70, tz:102},
+    {type:'mycelium_horror', tx:68, tz:100},
+    {type:'fungal_shambler', tx:172, tz:137},
+    {type:'fungal_shambler', tx:171, tz:139},
+    {type:'fungal_shambler', tx:127, tz:177},
+    {type:'fungal_shambler', tx:126, tz:177},
+    {type:'fungal_shambler', tx:162, tz:83},
+    {type:'fungal_shambler', tx:164, tz:81},
+    {type:'fungal_shambler', tx:141, tz:63},
+    {type:'fungal_shambler', tx:143, tz:63},
+    {type:'fungal_shambler', tx:136, tz:179},
+    {type:'fungal_shambler', tx:139, tz:179},
+    {type:'fungal_shambler', tx:165, tz:163},
+    {type:'fungal_shambler', tx:166, tz:163},
+    {type:'fungal_shambler', tx:182, tz:120},
+    {type:'fungal_shambler', tx:183, tz:117},
+    {type:'fungal_shambler', tx:95, tz:61},
+    {type:'fungal_shambler', tx:95, tz:63},
+    {type:'fungal_shambler', tx:66, tz:85},
+    {type:'fungal_shambler', tx:66, tz:86},
+    {type:'fungal_shambler', tx:111, tz:55},
+    {type:'fungal_shambler', tx:112, tz:56},
+    {type:'fungal_shambler', tx:83, tz:175},
+    {type:'fungal_shambler', tx:84, tz:174},
+    {type:'fungal_shambler', tx:157, tz:174},
+    {type:'fungal_shambler', tx:159, tz:171},
+    {type:'fungal_shambler', tx:59, tz:142},
+    {type:'fungal_shambler', tx:58, tz:144},
+    {type:'fungal_shambler', tx:97, tz:182},
+    {type:'fungal_shambler', tx:99, tz:182},
+    {type:'fungal_shambler', tx:175, tz:80},
+    {type:'fungal_shambler', tx:174, tz:79},
+    {type:'fungal_shambler', tx:62, tz:156},
+    {type:'fungal_shambler', tx:61, tz:157},
+    {type:'fungal_shambler', tx:179, tz:161},
+    {type:'fungal_shambler', tx:178, tz:159},
+    {type:'fungal_shambler', tx:83, tz:60},
+    {type:'fungal_shambler', tx:81, tz:58},
+    {type:'fungal_shambler', tx:116, tz:193},
+    {type:'fungal_shambler', tx:118, tz:193},
+    {type:'fungal_shambler', tx:48, tz:100},
+    {type:'fungal_shambler', tx:47, tz:98},
+    {type:'fungal_shambler', tx:100, tz:49},
+    {type:'fungal_shambler', tx:100, tz:50},
+    {type:'fungal_shambler', tx:142, tz:51},
+    {type:'fungal_shambler', tx:171, tz:176},
+    {type:'mushroom_man', tx:163, tz:58},
+    {type:'mushroom_man', tx:196, tz:117},
+    {type:'mushroom_man', tx:195, tz:106},
+    {type:'mushroom_man', tx:40, tz:127},
+    {type:'mushroom_man', tx:199, tz:134},
+    {type:'mushroom_man', tx:190, tz:82},
+    {type:'mushroom_man', tx:128, tz:39},
+    {type:'mushroom_man', tx:40, tz:137},
+    {type:'mushroom_man', tx:141, tz:202},
+    {type:'mushroom_man', tx:96, tz:201},
+    {type:'mushroom_man', tx:38, tz:153},
+    {type:'mushroom_man', tx:180, tz:55},
+    {type:'mushroom_man', tx:58, tz:179},
+    {type:'mushroom_man', tx:84, tz:39},
+    {type:'mushroom_man', tx:79, tz:195},
+    {type:'mushroom_man', tx:152, tz:39},
+    {type:'mushroom_man', tx:57, tz:57},
+    {type:'mushroom_man', tx:171, tz:192},
+    {type:'mushroom_man', tx:49, tz:174},
+    {type:'mushroom_man', tx:38, tz:86},
+    {type:'mushroom_man', tx:202, tz:162},
+    {type:'mushroom_man', tx:191, tz:178},
+    {type:'mushroom_man', tx:213, tz:98},
+    {type:'mushroom_man', tx:165, tz:203},
+    {type:'mushroom_man', tx:97, tz:27},
+    {type:'mushroom_man', tx:25, tz:127},
+    {type:'mushroom_man', tx:174, tz:40},
+    {type:'mushroom_man', tx:141, tz:25},
+    {type:'mushroom_man', tx:196, tz:59},
+    {type:'mushroom_man', tx:216, tz:130},
+    {type:'mushroom_man', tx:87, tz:31},
+    {type:'mushroom_man', tx:23, tz:104},
+    {type:'mushroom_man', tx:23, tz:135},
+    {type:'mushroom_man', tx:112, tz:218},
+    {type:'mushroom_man', tx:161, tz:32},
+    {type:'mushroom_man', tx:65, tz:203},
+    {type:'spore_walker', tx:39, tz:59},
+    {type:'spore_walker', tx:103, tz:218},
+    {type:'spore_walker', tx:30, tz:74},
+    {type:'spore_walker', tx:30, tz:162},
+    {type:'spore_walker', tx:190, tz:48},
+    {type:'spore_walker', tx:215, tz:159},
+    {type:'spore_walker', tx:85, tz:218},
+    {type:'spore_walker', tx:56, tz:37},
+    {type:'spore_walker', tx:159, tz:215},
+    {type:'spore_walker', tx:136, tz:222},
+    {type:'spore_walker', tx:43, tz:195},
+    {type:'spore_walker', tx:221, tz:84},
+    {type:'spore_walker', tx:44, tz:44},
+    {type:'spore_walker', tx:172, tz:216},
+    {type:'spore_walker', tx:69, tz:24},
+    {type:'spore_walker', tx:212, tz:182},
+    {type:'spore_walker', tx:201, tz:199},
+    {type:'spore_walker', tx:23, tz:178},
+    {type:'spore_walker', tx:66, tz:222},
+    {type:'spore_walker', tx:24, tz:60},
+    {type:'spore_walker', tx:217, tz:59},
+    {type:'spore_walker', tx:174, tz:17},
+    {type:'spore_walker', tx:48, tz:215},
+    {type:'spore_walker', tx:28, tz:42},
+    {type:'spore_walker', tx:213, tz:44},
+    {type:'spore_walker', tx:30, tz:195},
+    {type:'spore_walker', tx:44, tz:28},
+    {type:'spore_walker', tx:191, tz:224},
+    {type:'spore_walker', tx:205, tz:25},
+    {type:'spore_walker', tx:222, tz:202},
+    {type:'spore_walker', tx:29, tz:23},
+    {type:'spore_walker', tx:215, tz:24},
+    {type:'spore_walker', tx:33, tz:223},
+    {type:'spore_walker', tx:219, tz:211}
+  ],
   // a553 — VOID CITADEL is now SERVER-AUTHORITATIVE (was client-side since a492).
   //   204 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
   //   HP is NOT unchanged here — this is the first migrated zone that needs it. See
@@ -3901,7 +4061,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0, riftvale: 1.5 };   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0, riftvale: 1.5, fungal: 3.0 };   // a558 — fungal mirrors the client kit's zone-local x3 (_tickFungalMob _fdInit)   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -4225,6 +4385,114 @@ const ZBOSS_SERVER = {
 
 
 
+
+
+  // ── MYCELIUM QUEEN (a558). The last zone boss to migrate. Five phases, a SIX-attack
+  //    rotation picked with Math.floor(gameTime/bACD)%6 off each client's own clock —
+  //    the same divergence CRYOTHAR had back in a548, closing the loop.
+  //    She chases, summons crawlers, and layers passive toxins that scale with phase.
+  //    NOTE: a fourth boss carrying TWO phase ladders in the client — this AI block's
+  //    (.80/.60/.40/.20, bACD = max(80,158-P*16)) and a second in 20_enemy_factory.part
+  //    at .75/.50. Ported the AI block's, as with CRYOTHAR (a548), THE XU SUPREME
+  //    OVERLORD (a551) and COMMANDANT XERATH (a553).
+  fungal: {
+    x: 180, z: 180,                                    // tile (120,120) — the Queen's grove
+    spd:    [0, 0.012, 0.018, 0.024, 0.032, 0.042],
+    dmg:    [0, 1.0,   1.5,   2.0,   2.7,   3.5],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 21, 18, 16, 13],                   // 120 then max(80,158-P*16), / 6
+    tele:   11,                                        // 65 frames
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, nd, zone, zoneName, game, aoe, fx, proj, geyser } = c;
+
+      if (atk === 0) {
+        // TENTACLE LASH — eight arms slam outward from the mass
+        fx('mq_lash'); aoe(6.5, Math.floor(400 * mult));
+        aoe(10.5, Math.floor(110 * mult));
+
+      } else if (atk === 1) {
+        // SPORE BURST — a toxic ring bursts in every direction
+        fx('mq_burst');
+        for (let s2 = 0; s2 < 8; s2++) proj(s2/8*Math.PI*2, 0x80ff40, Math.floor(100 * mult), 'plasma');
+        aoe(7.0, Math.floor(250 * mult));
+
+      } else if (atk === 2) {
+        // MYCELIUM SURGE — the ground erupts in fungal spikes around you
+        fx('mq_surge', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+        for (let m = 0; m < 6; m++) {
+          const a2 = m/6*Math.PI*2, r2 = (1.5 + Math.random()*2.5) * 1.5;
+          geyser(np.x + Math.sin(a2)*r2, np.z + Math.cos(a2)*r2, 4 + m, 3.0,
+                 Math.floor(110 * mult), 0x80ff40);
+        }
+        aoe(6.0, Math.floor(290 * mult));
+
+      } else if (atk === 3) {
+        // SPAWN CRAWLERS — three children clawed out of the mycelium, into the SHARED
+        //   zone (the a551 pattern). Client-side these were pushed straight into the
+        //   local enemies array, so every player fought their own private brood.
+        fx('mq_spawn');
+        for (let k = 0; k < 3; k++) {
+          const a2 = Math.random()*Math.PI*2, r2 = (2.0 + Math.random()*2.0) * 1.5;
+          const cx = b.x + Math.sin(a2)*r2, cz = b.z + Math.cos(a2)*r2;
+          if (cx < 2 || cx > 358 || cz < 2 || cz > 358) continue;
+          zone._nextEid = (zone._nextEid || 100000) + 1;
+          const add = {
+            id: zone._nextEid, type:'crawler',
+            x: cx, z: cz, spawnX: cx, spawnZ: cz,
+            hp: 1600, maxHp: 1600, atk: 88, spd: 0.065, aggroRange: 14,
+            reward: 160, expR: 48, dmgReduction: 0,
+            active: true, aggroed: true, respawnTimer: 0, attackTimer: 0,
+            _summoned: 1,
+          };
+          zone.enemies.push(add);
+          broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName,
+            ids:[add.id], xs:[+cx.toFixed(2)], zs:[+cz.toFixed(2)],
+            hps:[add.hp], acts:[1], types:[add.type] });
+          fx('mq_spawn_drop', { ex:+cx.toFixed(2), ez:+cz.toFixed(2) });
+        }
+
+      } else if (atk === 4) {
+        // TOXIC FLOOD — the rot washes over the whole grove
+        fx('mq_flood'); aoe(11.0, Math.floor(370 * mult));
+        aoe(16.0, Math.floor(100 * mult));
+
+      } else {
+        // BARBED IMPALE — three precise tentacle stabs
+        fx('mq_impale');
+        b._mqImpale = 3; b._mqImpaleT = 0; b._mqImpaleDmg = Math.floor(170 * mult);
+        aoe(7.0, Math.floor(310 * mult));
+      }
+    },
+    passive: (c) => {
+      const { b, ph, mult, ang, np, nd, zoneName, game, aoe, fx, proj } = c;
+
+      // BARBED IMPALE follow-through — the second and third stabs
+      if (b._mqImpale > 0) {
+        b._mqImpaleT++;
+        if (b._mqImpaleT >= 2) {
+          b._mqImpaleT = 0; b._mqImpale--;
+          const sp = (Math.random()-0.5) * 0.20;
+          proj(Math.atan2(np.x - b.x, np.z - b.z) + sp, 0xcc44ff, b._mqImpaleDmg, 'plasma');
+        }
+      }
+
+      // PASSIVE: spore cloud — the air around her is toxic at all times
+      if (b._vt % 3 === 0 && nd < 5.5) aoe(5.5, Math.floor(18 * mult));
+      // PASSIVE: phase 3+ — spore pods burst near the target
+      if (ph >= 3 && b._vt % 8 === 0 && nd < 12) {
+        fx('mq_pod', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const dx = p.x - np.x, dz = p.z - np.z;
+          if (dx*dx + dz*dz < 2.5*2.5) send(ws, { type:'sv_enemy_attack', eid:-1,
+            dmg:Math.floor(35 * mult), ex:+np.x.toFixed(2), ez:+np.z.toFixed(2), zone:zoneName });
+        });
+      }
+      // PASSIVE: phase 5 — the mycelium itself snares everything near her
+      if (ph >= 5 && b._vt % 4 === 0) { fx('mq_snare'); aoe(6.0, Math.floor(28 * mult)); }
+    },
+  },
 
   // ── XU ZET-HORAK (a557). 2M HP across five themed phases. Like THE PIXIELORD she
   //    does not chase — she holds the arena, backs off if crowded, and blinks. Her
@@ -5360,12 +5628,14 @@ function tickGame(game) {
         : (zoneName === 'forge' && FG_BESPOKE[e.type])        // a555 — foundry floor is 22u
         ? Math.max(e.aggroRange || 14, 22)
         : (zoneName === 'xulcan' && XU_BESPOKE[e.type])       // a557 — the metropolis sees you at 26u
-        ? Math.max(e.aggroRange || 16, 26) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
+        ? Math.max(e.aggroRange || 16, 26)
+        : (zoneName === 'fungal' && FD_BESPOKE[e.type])       // a558 — the caverns wake at 22u
+        ? Math.max(e.aggroRange || 10, 22) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -8616,6 +8886,125 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a558: FUNGAL DEPTHS spore AI (zone-gated to 'fungal'; all four types also
+        //    appear in 'mirrored', which is NOT migrated). Bioluminescent and toxic:
+        //    spore novas, root tendrils, lingering clouds, telegraphed detonations,
+        //    erratic darts, and the hallucinogen. Re-timed 60fps -> 10Hz.
+        //    Almost everything here poisons — that is the zone's whole identity.
+        if (zoneName === 'fungal' && e.aggroed && FD_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, pr=cos, pq=-sin, ang=Math.atan2(dxp,dzp);
+          if(e._strafe==null) e._strafe=Math.random()<0.5?1:-1;
+          if(Math.random()<0.036) e._strafe=-e._strafe;
+          const strafe=e._strafe;
+          e._ab=(e._ab||0)+1;
+          let _moved=false;
+          const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+          const hit=(mult,poisonDur)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer){
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_fdDmgS(e,mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName});
+            if(poisonDur) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'poison',statusDur:poisonDur}); } }); };
+          const hitAt=(mult,hx,hz,radius,poisonDur)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=p.x-hx, qz=p.z-hz; if(qx*qx+qz*qz < radius*radius){
+              send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_fdDmgS(e,mult),ex:+hx.toFixed(2),ez:+hz.toFixed(2),zone:zoneName});
+              if(poisonDur) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'poison',statusDur:poisonDur}); } }); };
+          const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const shoot=(baseAng,col,mult,count,spread)=>{ for(let i=0;i<count;i++){
+            const a=baseAng+(count>1?(i-(count-1)/2)*spread:0);
+            _sdSpawnProj(game,zoneName,e,a,col,_fdDmgS(e,mult),'magic','poison',90); } };
+
+          if(e.type==='mycelium_horror'){
+            // FUNGAL MASS — slow tank: spore novas, grasping root-tendrils, toxic slams
+            const MS=0.108;
+            if(dd>3.5) mv(sin,cos,MS);
+            if(dd<4.0 && e.attackTimer%13===0){ hit(1.0,150);
+              fx('fd_slam',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // SPORE NOVA — a cloud blooms where it stands
+            if(dd<10 && e._ab>=25){ e._ab=0;
+              _fdSpawnCloud(game,zoneName,zone, e.x, e.z, 8, _fdDmgS(e,0.45));
+              fx('fd_nova',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            // ROOT TENDRILS — marked ground, then the floor grabs you and holds
+            if(e._rootN>0){ e._rootT=(e._rootT||0)+1;
+              if(e._rootT>=5){ e._rootN=0; e._rootT=0;
+                fx('fd_roots_grab',{ex:+e._rootX.toFixed(2),ez:+e._rootZ.toFixed(2)});
+                const qx=nearestPlayer.x-e._rootX, qz=nearestPlayer.z-e._rootZ;
+                if(Math.sqrt(qx*qx+qz*qz)<2.4){ hitAt(1.0,e._rootX,e._rootZ,2.4,150);
+                  toPlayer({eff:'slow',slow:0,root:700}); } } }
+            e._root=(e._root||7)+1;
+            if(dd>3 && dd<12 && e._root>=28 && !e._rootN){ e._root=0; e._rootN=1; e._rootT=0;
+              e._rootX=nearestPlayer.x; e._rootZ=nearestPlayer.z;
+              fx('fd_roots',{eid:e.id,ex:+e._rootX.toFixed(2),ez:+e._rootZ.toFixed(2)}); }
+          }
+          else if(e.type==='fungal_shambler'){
+            // SHAMBLER — trails spores as it walks, then detonates itself in your face
+            const MS=0.156;
+            if(dd>2.8) mv(sin*0.8+pr*strafe*0.4, cos*0.8+pq*strafe*0.4, MS);
+            else mv(pr*strafe, pq*strafe, MS);
+            if(e.attackTimer%7===0) fx('fd_trail',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_fdHueS()});
+            if(dd<3.0 && e.attackTimer%9===0) hit(1.0,120);
+            // spore cloud lobbed onto your ground
+            if(dd<14 && e._ab>=22){ e._ab=0;
+              _fdSpawnCloud(game,zoneName,zone, nearestPlayer.x, nearestPlayer.z, 6, _fdDmgS(e,0.4)); }
+            // SPORE DETONATION — telegraphed, then it bursts
+            if(e._detN>0){ e._detT=(e._detT||0)+1;
+              if(e._detT>=6){ e._detN=0; e._detT=0;
+                fx('fd_detonate',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                hitAt(1.3, e.x, e.z, 4.5, 180); } }
+            e._det=(e._det||0)+1;
+            if(dd<4 && e._det>=33 && !e._detN){ e._det=0; e._detN=1; e._detT=0;
+              fx('fd_detonate_warn',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+          }
+          else if(e.type==='mushroom_man'){
+            // MUSHROOM MAN — kiting spore-bolt volleys and the HALLUCINOGENIC SPORE
+            const MS=0.18;
+            if(dd<6) mv(-sin*0.7+pr*strafe*0.6, -cos*0.7+pq*strafe*0.6, MS);
+            else if(dd>15) mv(sin*0.6, cos*0.6, MS);
+            else mv(pr*strafe*0.7, pq*strafe*0.7, MS);
+            if(dd>2.5 && dd<20 && e.attackTimer%9===0) shoot(ang,_fdHueS(),0.55,3,0.14);
+            // HALLUCINOGENIC SPORE — the zone's signature. Colours swim, the poison bites,
+            //   and your own controls veer away from you for ~2.6s.
+            if(dd<12 && e._ab>=33){ e._ab=0;
+              fx('fd_halluc_cast',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              if(dd<13){
+                hit(0.7,150);
+                toPlayer({eff:'confuse', dur:155, ang:(Math.random()<0.5?1:-1)*(1.6+Math.random()*1.0),
+                          msg:'Hallucinogenic spores cloud your vision!'});
+                toPlayer({eff:'slow',slow:0.6,root:2200});
+                toPlayer({eff:'fd_halluc', ms:2600});
+              } }
+          }
+          else {
+            // spore_walker — fast, erratic, lunges, and blows up when cornered
+            const MS=0.42;
+            if(e._lunge){
+              e._lst=(e._lst||0)+1;
+              mv(Math.sin(e._ldir),Math.cos(e._ldir),MS*2.2);
+              if(e._lst%1===0) fx('fd_trail',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_fdHueS()});
+              if(dd<2.2 && !e._lhit){ e._lhit=1; hit(1.2,120); }
+              if(e._lst>=2){ e._lunge=0; e._lst=0; }
+            } else {
+              if(dd>2.4) mv(sin*0.8+pr*strafe*0.7+(Math.random()-0.5)*0.2,
+                            cos*0.8+pq*strafe*0.7+(Math.random()-0.5)*0.2, MS);
+              else mv(pr*strafe, pq*strafe, MS);
+              if(e.attackTimer%4===0) fx('fd_trail',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_fdHueS()});
+              if(dd<2.8 && e.attackTimer%7===0) hit(1.0,0);
+              if(dd>4 && dd<14 && e._ab>=18){ e._ab=0; e._lunge=1; e._lst=0; e._ldir=ang; e._lhit=0;
+                fx('fd_lunge',{eid:e.id,dir:+ang.toFixed(3),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+              if(e._detN>0){ e._detT=(e._detT||0)+1;
+                if(e._detT>=6){ e._detN=0; e._detT=0;
+                  fx('fd_detonate',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                  hitAt(1.1, e.x, e.z, 4.5, 180); } }
+              e._det=(e._det||0)+1;
+              if(dd<3.5 && e._det>=30 && !e._detN){ e._det=0; e._detN=1; e._detT=0;
+                fx('fd_detonate_warn',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -8635,6 +9024,7 @@ function tickGame(game) {
     tickZoneBoss(game, zoneName, zone);   // a548 — server-authoritative zone boss (CRYOTHAR)
     if (zoneName === 'xumen_fortress') _xfTickPylons(game, zoneName, zone);   // a552 — sentry pylons outlive their owner
     if (zoneName === 'forge') _fgTickEntities(game, zoneName, zone);          // a555 — puddles / turrets / meteors / drones
+    if (zoneName === 'fungal') _fdTickClouds(game, zoneName, zone);           // a558 — lingering spore clouds
   });
   // a527 — advance server-owned SD projectiles once per tick; resolve hits
   if (game._sdProj && game._sdProj.length) {
@@ -8821,6 +9211,61 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //   solar weaponry. Damage is e.atk-based, as in Lucidwilde and The Forge, so there is
 //   no flat-PWR approximation — server damage matches the client exactly.
 //   Aggro floor is 26 with a 50-unit leash.
+// a558 — FUNGAL DEPTHS, the bioluminescent caverns (zone-gated to 'fungal'; all four
+//   types also appear in 'mirrored', which is NOT migrated, so the gate is mandatory).
+//   Same flat-PWR mirror as the other migrated zones — the client's _fdDmg adds a
+//   player-maxHP floor and a DEF term the server can't see, so we use the _FD_PWR values
+//   it falls back to. Note the kit's x2 ATK bump is deliberately NOT mirrored: every
+//   damage path here routes through _FD_PWR, so e.atk is never consulted for these four
+//   types and doubling it would change nothing.
+//   Lingering SPORE CLOUDS outlive whoever coughed them out, so they live on the zone
+//   and tick independently — same shape as the Forge's lava pools (a555).
+const FD_BESPOKE = { mycelium_horror:1, fungal_shambler:1, mushroom_man:1, spore_walker:1 };
+const FD_PWR = { mycelium_horror:110, fungal_shambler:95, mushroom_man:90, spore_walker:82 };
+function _fdDmgS(e, mult){ return Math.floor((FD_PWR[e.type] || e.atk || 40) * mult); }
+const _FD_GREEN=0x66ff66, _FD_TOXIC=0x9aff3a, _FD_PINK=0xff66cc, _FD_CYAN=0x66ccff,
+      _FD_PURP=0xcc66ff, _FD_YEL=0xffe24a, _FD_AQUA=0x66ffcc;
+const _FD_HUES=[_FD_GREEN,_FD_PINK,_FD_CYAN,_FD_YEL,_FD_PURP,_FD_AQUA];
+function _fdHueS(){ return _FD_HUES[(Math.random()*_FD_HUES.length)|0]; }
+
+// Lingering poison spore clouds, held on the zone so they outlive their source.
+function _fdTickClouds(game, zoneName, zone){
+  const list = zone._fdClouds;
+  if (!list || list.length === 0) return;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const c = list[i];
+    c.t++;
+    // the client pulsed these every 260ms; at 10Hz that is every ~3 ticks
+    if (c.t % 3 === 0) {
+      c.pulses--;
+      broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fd_cloud_pulse', zone:zoneName,
+        cid:c.cid, ex:+c.x.toFixed(2), ez:+c.z.toFixed(2), col:_fdHueS() });
+      players.forEach((p, ws) => {
+        if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+        const dx = p.x - c.x, dz = p.z - c.z;
+        if (dx*dx + dz*dz < 3.2*3.2) {
+          send(ws, { type:'sv_enemy_attack', eid:-4, dmg:c.dmg,
+                     ex:+c.x.toFixed(2), ez:+c.z.toFixed(2), zone:zoneName });
+          send(ws, { type:'sv_player_fx', zone:zoneName, eff:'status', status:'poison', statusDur:90 });
+        }
+      });
+    }
+    if (c.pulses <= 0) {
+      broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fd_cloud_end', zone:zoneName, cid:c.cid });
+      list.splice(i, 1);
+    }
+  }
+}
+function _fdSpawnCloud(game, zoneName, zone, x, z, pulses, dmg){
+  if (!zone._fdClouds) zone._fdClouds = [];
+  if (zone._fdClouds.length >= 40) return null;        // sanity cap on a 150-mob cavern
+  zone._fdCloudId = (zone._fdCloudId || 0) + 1;
+  const c = { cid: zone._fdCloudId, x:x, z:z, t:0, pulses:pulses, dmg:dmg };
+  zone._fdClouds.push(c);
+  broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fd_cloud', zone:zoneName,
+    cid:c.cid, ex:+x.toFixed(2), ez:+z.toFixed(2), ms:pulses*260 });
+  return c;
+}
 const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1 };
 const _XP_GOLD=0xffd24a, _XP_CYAN=0x40d0ff, _XP_BLUE=0x6080ff, _XP_HOT=0xffe48a, _XP_VIOLET=0x8040ff;
 const FG_BESPOKE = { molten_crawler:1, lava_forged_sentinel:1, forge_technician:1, industrial_devastator:1 };
