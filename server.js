@@ -4387,6 +4387,207 @@ const ZBOSS_SERVER = {
 
 
 
+// ── WARLORD VORRAKH (a559). Xu Citadel's general: cleaves, plasma volleys, an
+  //    execution lunge, the Iron Guard, and a dominion shockwave.
+  citadel: {
+    x: 180, z: 180,
+    spd:    [0, 0.018, 0.026, 0.034, 0.044, 0.056],
+    dmg:    [0, 1.0,   1.4,   1.9,   2.5,   3.2],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 21, 19, 16, 13],          // 120 then max(80,160-P*16), / 6
+    tele:   11,
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, mult, ang, np, aoe, fx, proj } = c;
+      if (atk === 0)      { fx('vk_cleave');  aoe(5.0, Math.floor(420 * mult)); }
+      else if (atk === 1) { fx('vk_volley');
+                            for (let i = 0; i < 6; i++) proj(ang + (i-2.5)*0.17, 0xff6622, Math.floor(120 * mult), 'plasma');
+                            aoe(5.0, Math.floor(260 * mult)); }
+      else if (atk === 2) { fx('vk_lunge', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            b.x = np.x - Math.sin(ang)*1.8; b.z = np.z - Math.cos(ang)*1.8;
+                            aoe(7.0, Math.floor(500 * mult)); }
+      else if (atk === 3) { fx('vk_guard'); _zbSummon(c, 'iron_guard', 2, 1400, 110, 0.030, 220, 70, 0, 3.0); }
+      else if (atk === 4) { fx('vk_shock');  aoe(9.0, Math.floor(350 * mult)); aoe(13.0, Math.floor(120 * mult)); }
+      else                { fx('vk_order');
+                            for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0xffaa33, Math.floor(110 * mult), 'plasma');
+                            aoe(10.0, Math.floor(300 * mult)); }
+    },
+    passive: (c) => {
+      const { b, mult, nd, aoe } = c;
+      if (b._vt % 3 === 0 && nd < 6.0) aoe(6.0, Math.floor(35 * mult));   // aura of dominion
+    },
+  },
+
+  // ── TITAN MK-VII (a559). The Xu Patrol walker. Four attacks, not six — the only
+  //    boss in the game with a short rotation, and a three-step phase ladder.
+  patrol: {
+    x: 180, z: 180,
+    spd:    [0, 0.022, 0.032, 0.044, 0.055],
+    dmg:    [0, 1.0,   1.5,   2.0,   2.7,   3.5],
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 19, 17, 14],              // 120 then max(80,150-P*18), / 6
+    tele:   11,
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 4; },
+    attack: (c) => {
+      const { atk, b, mult, ang, np, aoe, fx, proj, geyser } = c;
+      if (atk === 0)      { fx('tt_cannon');
+                            for (let i = 0; i < 2; i++) proj(ang + (i-0.5)*0.22, 0xffcc44, Math.floor(110 * mult), 'plasma');
+                            aoe(4.0, Math.floor(280 * mult)); }
+      else if (atk === 1) { fx('tt_missile', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            for (let m = 0; m < 4; m++)
+                              geyser(np.x + (Math.random()-0.5)*6, np.z + (Math.random()-0.5)*6,
+                                     5 + m*2, 3.0, Math.floor(90 * mult), 0xffaa22);
+                            aoe(6.0, Math.floor(240 * mult)); }
+      else if (atk === 2) { fx('tt_stomp');   aoe(5.5, Math.floor(300 * mult)); }
+      else                { fx('tt_lock');    aoe(8.0, Math.floor(200 * mult)); }
+    },
+    passive: (c) => {
+      const { b, mult, ang, nd, proj } = c;
+      if (b._vt % 7 === 0 && nd < 16) proj(ang, 0xffcc44, Math.floor(45 * mult), 'plasma');
+    },
+  },
+
+// ── THE VOID WRAITH (a559). Soul drain aura, void blinks, tentacle slams, a
+  //    reality tear, and a scream that fills the arena. 6-attack rotation, was picked
+  //    from each client's own gameTime.
+  void: {
+    x: 180, z: 180,
+    spd:    [0, 0.014, 0.020, 0.028, 0.038, 0.050],
+    dmg:    [0, 1.0,   1.5,   2.1,   2.8,   3.8],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 21, 18, 16, 13],          // 120 then max(80,155-P*15), / 6
+    tele:   10,                               // 60 frames
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, aoe, fx, proj } = c;
+      if (atk === 0)      { fx('vw_soulrip');  aoe(6.0, Math.floor(380 * mult)); aoe(9.0, Math.floor(100 * mult)); }
+      else if (atk === 1) { fx('vw_blink', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            b.x = np.x + (Math.random()-0.5)*6; b.z = np.z + (Math.random()-0.5)*6;
+                            aoe(5.0, Math.floor(300 * mult)); }
+      else if (atk === 2) { fx('vw_tentacle');
+                            for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.22, 0xcc00ff, Math.floor(110 * mult), 'void');
+                            aoe(7.0, Math.floor(320 * mult)); }
+      else if (atk === 3) { fx('vw_summon'); _zbSummon(c, 'wraith', 2, 1800, 95, 0.060, 180, 55, 0, 3.0); }
+      else if (atk === 4) { fx('vw_scream'); aoe(10.0, Math.floor(400 * mult)); aoe(14.0, Math.floor(140 * mult)); }
+      else                { fx('vw_tear');
+                            for (let i = 0; i < 4; i++) proj(ang + (i-1.5)*0.30, 0xff00ff, Math.floor(180 * mult), 'void');
+                            aoe(8.0, Math.floor(260 * mult)); }
+    },
+    passive: (c) => {
+      const { b, mult, ang, nd, aoe, proj } = c;
+      if (b._vt % 3 === 0 && nd < 5.0) aoe(5.0, Math.floor(22 * mult));          // soul drain aura
+      if (b._vt % 6 === 0 && nd < 18) proj(ang, 0xcc00ff, Math.floor(60 * mult), 'void');
+    },
+  },
+
+  // ── THE ASHLANDS COLOSSUS (a559). Caldera fists, magma eruptions, meteors and a
+  //    volcanic roar. The only one of this batch that summons nothing.
+  ashlands: {
+    x: 180, z: 180,
+    spd:    [0, 0.012, 0.018, 0.025, 0.034, 0.044],
+    dmg:    [0, 1.0,   1.5,   2.0,   2.8,   3.6],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 21, 19, 16, 13],          // 120 then max(80,160-P*16), / 6
+    tele:   11,
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
+      if (atk === 0)      { fx('ac_fist');    aoe(8.0, Math.floor(480 * mult)); aoe(11.0, Math.floor(130 * mult)); }
+      else if (atk === 1) { fx('ac_eruption', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            for (let i = 0; i < 3; i++) proj(ang + (i-1)*0.20, 0xff4400, Math.floor(120 * mult), 'plasma');
+                            geyser(np.x, np.z, 5, 5.5, Math.floor(110 * mult), 0xff6600);
+                            aoe(6.0, Math.floor(300 * mult)); }
+      else if (atk === 2) { fx('ac_torrent');
+                            for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.16, 0xff6600, Math.floor(150 * mult), 'plasma');
+                            aoe(5.0, Math.floor(280 * mult)); }
+      else if (atk === 3) { fx('ac_meteor', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            for (let m = 0; m < 4; m++)
+                              geyser(np.x + (Math.random()-0.5)*8, np.z + (Math.random()-0.5)*8,
+                                     5 + m*2, 4.0, Math.floor(160 * mult), 0xff4400, { shake:10 });
+                            aoe(7.0, Math.floor(420 * mult)); }
+      else if (atk === 4) { fx('ac_roar');    aoe(12.0, Math.floor(380 * mult)); aoe(16.0, Math.floor(150 * mult)); }
+      else                { fx('ac_stomp');   aoe(7.0, Math.floor(340 * mult));
+                            for (let g = 0; g < 4; g++)
+                              geyser(b.x + (Math.random()-0.5)*10, b.z + (Math.random()-0.5)*10,
+                                     4 + g, 3.0, Math.floor(100 * mult), 0xff4400); }
+    },
+    passive: (c) => {
+      const { b, mult, nd, aoe, fx } = c;
+      if (b._vt % 3 === 0 && nd < 5.5) aoe(5.5, Math.floor(28 * mult));          // lava aura
+      if (b._vt % 5 === 0 && nd < 8.0) { fx('ac_trail'); aoe(4.5, Math.floor(40 * mult)); }
+    },
+  },
+
+  // ── THE ANCIENT ARCHITECT (a559). Stone cleaves, void orb barrages, rune sigils,
+  //    awakened guardians and a shockwave that covers the realm.
+  ancient: {
+    x: 180, z: 180,
+    spd:    [0, 0.010, 0.015, 0.022, 0.030, 0.040],
+    dmg:    [0, 1.0,   1.5,   2.0,   2.7,   3.5],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 21, 19, 16, 13],          // 120 then max(80,160-P*16), / 6
+    tele:   11,
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
+      if (atk === 0)      { fx('aa_cleave');  aoe(6.5, Math.floor(480 * mult)); aoe(9.0, Math.floor(130 * mult)); }
+      else if (atk === 1) { fx('aa_barrage');
+                            for (let i = 0; i < 6; i++) proj(ang + (i-2.5)*0.18, 0x8844ff, Math.floor(140 * mult), 'void');
+                            aoe(6.0, Math.floor(300 * mult)); }
+      else if (atk === 2) { fx('aa_sigil', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            geyser(np.x, np.z, 6, 6.0, Math.floor(160 * mult), 0xffdd40);
+                            aoe(7.0, Math.floor(350 * mult)); }
+      else if (atk === 3) { fx('aa_guardians'); _zbSummon(c, 'ancient_guardian', 2, 3200, 140, 0.045, 280, 88, 0, 3.2); }
+      else if (atk === 4) { fx('aa_shockwave'); aoe(13.0, Math.floor(420 * mult)); aoe(17.0, Math.floor(170 * mult)); }
+      else                { fx('aa_storm');
+                            for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0xffdd40, Math.floor(110 * mult), 'plasma');
+                            aoe(8.0, Math.floor(350 * mult)); }
+    },
+    passive: (c) => {
+      const { b, mult, ang, nd, aoe, fx, proj } = c;
+      if (b._vt % 3 === 0 && nd < 5.5) aoe(5.5, Math.floor(25 * mult));          // ancient aura
+      if (b._vt % 6 === 0 && nd < 18) proj(ang, 0xffcc00, Math.floor(65 * mult), 'plasma');
+      if (nd < 4.0 && b._vt % 8 === 0) { fx('aa_blade'); aoe(4.0, Math.floor(60 * mult)); }
+    },
+  },
+
+  // ── THE FROSTVEIL COLOSSUS (a559). Glacier fists, blizzard breath, ice spikes,
+  //    frost wraiths and a permafrost shockwave.
+  frostveil: {
+    x: 180, z: 180,
+    spd:    [0, 0.014, 0.020, 0.028, 0.036, 0.046],
+    dmg:    [0, 1.0,   1.5,   2.1,   2.8,   3.6],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 21, 18, 16, 13],          // 120 then max(80,158-P*16), / 6
+    tele:   11,
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
+      if (atk === 0)      { fx('fv_fist');    aoe(7.0, Math.floor(460 * mult)); aoe(10.0, Math.floor(120 * mult)); }
+      else if (atk === 1) { fx('fv_breath');
+                            for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.15, 0x88ddff, Math.floor(120 * mult), 'plasma');
+                            aoe(6.0, Math.floor(280 * mult)); }
+      else if (atk === 2) { fx('fv_spikes', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            for (let k = 0; k < 5; k++) {
+                              const a2 = k/5*Math.PI*2, r2 = 2.0 + Math.random()*2.5;
+                              geyser(np.x + Math.sin(a2)*r2, np.z + Math.cos(a2)*r2, 4 + k, 2.5,
+                                     Math.floor(100 * mult), 0x88ddff);
+                            }
+                            aoe(6.0, Math.floor(310 * mult)); }
+      else if (atk === 3) { fx('fv_summon'); _zbSummon(c, 'frost_wraith', 2, 2200, 105, 0.058, 220, 65, 0, 3.0); }
+      else if (atk === 4) { fx('fv_permafrost'); aoe(12.0, Math.floor(400 * mult)); aoe(16.0, Math.floor(160 * mult)); }
+      else                { fx('fv_crystal');
+                            for (let i = 0; i < 6; i++) proj(ang + (i-2.5)*0.20, 0xaaeeff, Math.floor(140 * mult), 'plasma');
+                            aoe(9.0, Math.floor(330 * mult)); }
+    },
+    passive: (c) => {
+      const { b, mult, ang, nd, np, aoe, fx, proj, geyser } = c;
+      if (b._vt % 3 === 0 && nd < 5.5) aoe(5.5, Math.floor(20 * mult));          // frost aura
+      if (b._vt % 6 === 0 && nd < 18) proj(ang, 0x88ddff, Math.floor(70 * mult), 'plasma');
+      if (b._vt % 9 === 0 && nd < 14) geyser(np.x, np.z, 4, 3.5, Math.floor(30 * mult), 0xaaeeff);  // ice storm
+    },
+  },
+
   // ── MYCELIUM QUEEN (a558). The last zone boss to migrate. Five phases, a SIX-attack
   //    rotation picked with Math.floor(gameTime/bACD)%6 off each client's own clock —
   //    the same divergence CRYOTHAR had back in a548, closing the loop.
@@ -5350,6 +5551,35 @@ const ZBOSS_SERVER = {
     },
   },
 };
+
+// a559 — shared boss-summon helper. CRYOTHAR's descendants each hand-rolled this;
+//   from here every boss that calls adds uses one implementation. Adds go into the
+//   SHARED zone (client-side they were pushed into each player's local array, so every
+//   player fought their own invisible copy) and carry _summoned so the respawn loop
+//   reaps them on death instead of resurrecting them forever at their drop point.
+function _zbSummon(c, type, n, hp, atk, spd, reward, expR, dmgReduction, radius){
+  const { b, zone, zoneName, game } = c;
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, r = (radius || 3.0) + Math.random() * 2.0;
+    const sx = b.x + Math.sin(a) * r, sz = b.z + Math.cos(a) * r;
+    if (sx < 2 || sx > 358 || sz < 2 || sz > 358) continue;
+    zone._nextEid = (zone._nextEid || 100000) + 1;
+    const add = {
+      id: zone._nextEid, type: type,
+      x: sx, z: sz, spawnX: sx, spawnZ: sz,
+      hp: hp, maxHp: hp, atk: atk, spd: spd, aggroRange: 14,
+      reward: reward, expR: expR, dmgReduction: dmgReduction || 0,
+      active: true, aggroed: true, respawnTimer: 0, attackTimer: 0,
+      _summoned: 1,
+    };
+    zone.enemies.push(add);
+    broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName,
+      ids:[add.id], xs:[+sx.toFixed(2)], zs:[+sz.toFixed(2)],
+      hps:[add.hp], acts:[1], types:[add.type] });
+    broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'zb_summon_drop', zone:zoneName,
+      ex:+sx.toFixed(2), ez:+sz.toFixed(2) });
+  }
+}
 
 function tickZoneBoss(game, zoneName, zone) {
   const cfg = ZBOSS_SERVER[zoneName];
