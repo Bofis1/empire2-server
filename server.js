@@ -4447,6 +4447,142 @@ const ZBOSS_SERVER = {
     },
   },
 
+// ── DRAX (a560), Caves of Despair. Drill charges, pile-drivers, a called-in mining
+  //    crew and a cave-in. Straight 6-attack rotation.
+  caves_of_despair: {
+    x: 180, z: 180,
+    spd:    [0, 0.022, 0.030, 0.040, 0.052, 0.065],
+    dmg:    [0, 1.0,   1.5,   2.1,   2.8,   3.6],
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 19, 17, 15, 13],          // 120 then max(80,150-P*18), / 6
+    tele:   11,
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, aoe, fx, proj } = c;
+      if (atk === 0)      { fx('dx_drill', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            b.x = np.x - Math.sin(ang)*2.0; b.z = np.z - Math.cos(ang)*2.0;
+                            aoe(6.0, Math.floor(340 * mult)); }
+      else if (atk === 1) { fx('dx_pile');   aoe(6.0, Math.floor(400 * mult)); }
+      else if (atk === 2) { fx('dx_miners');
+                            // phase 3+ sends overseers instead of miners, as client-side
+                            const _t = ph >= 3 ? 'xu_overseer' : 'xu_miner';
+                            _zbSummon(c, _t, 3, ph >= 3 ? 1100 : 820, ph >= 3 ? 95 : 68, 0.050, 140, 44, 0, 3.0); }
+      else if (atk === 3) { fx('dx_shock');
+                            for (let i = 0; i < 6; i++) proj(i/6*Math.PI*2, 0x66ddff, Math.floor(90 * mult), 'plasma');
+                            aoe(5.0, Math.floor(240 * mult)); }
+      else if (atk === 4) { fx('dx_cavein'); aoe(7.0, Math.floor(280 * mult)); aoe(10.0, Math.floor(100 * mult)); }
+      else                { fx('dx_spin');   aoe(5.0, Math.floor(260 * mult)); }
+    },
+    passive: (c) => {
+      const { b, mult, nd, aoe } = c;
+      if (b._vt % 3 === 0 && nd < 4.0) aoe(4.0, Math.floor(32 * mult));   // engine heat
+    },
+  },
+
+  // ── THE BONE COLOSSUS (a560), Necropolis. Four phases, the heaviest single hit in
+  //    the mid game (skull slam), and a standing army of raised dead.
+  necropolis: {
+    x: 180, z: 180,
+    spd:    [0, 0.008, 0.013, 0.018, 0.024],
+    dmg:    [0, 1.0,   1.6,   2.4,   3.4],
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 26, 23, 19],              // 120 then max(100,200-P*22), / 6
+    tele:   12,                               // 70 frames
+    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
+    attack: (c) => {
+      const { atk, b, mult, ang, np, aoe, fx, proj, geyser } = c;
+      if (atk === 0)      { fx('bc_slam');   aoe(9.0, Math.floor(650 * mult)); }
+      else if (atk === 1) { fx('bc_beam');
+                            for (let i = 0; i < 4; i++) proj(ang + (i-1.5)*0.16, 0x9944ff, Math.floor(150 * mult), 'void');
+                            aoe(9.0, Math.floor(400 * mult)); }
+      else if (atk === 2) { fx('bc_raise'); _zbSummon(c, 'skeleton_warrior', 3, 5000, 180, 0.040, 320, 100, 0, 3.4); }
+      else if (atk === 3) { fx('bc_bones');
+                            for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0xddccaa, Math.floor(120 * mult), 'plasma');
+                            aoe(10.0, Math.floor(360 * mult)); }
+      else if (atk === 4) { fx('bc_harvest'); aoe(12.0, Math.floor(420 * mult));
+                            // the colossus mends itself on a harvest, as client-side
+                            b.hp = Math.min(b.maxHp, b.hp + Math.floor(b.maxHp * 0.03)); }
+      else                { fx('bc_pound');  aoe(7.0, Math.floor(480 * mult));
+                            for (let g = 0; g < 4; g++)
+                              geyser(np.x + (Math.random()-0.5)*7, np.z + (Math.random()-0.5)*7,
+                                     4 + g, 3.3, Math.floor(220 * mult), 0x9944ff); }
+    },
+    passive: (c) => {
+      const { b, mult, np, nd, aoe, fx, geyser } = c;
+      if (b._vt % 3 === 0 && nd < 6.0) aoe(6.0, Math.floor(40 * mult));                     // ribcage aura
+      if (b._vt % 7 === 0 && nd < 16) geyser(np.x, np.z, 4, 3.75, Math.floor(80 * mult), 0x9944ff);   // lightning
+      if (b._vt % 11 === 0 && nd < 12) { fx('bc_pillar'); aoe(7.5, Math.floor(110 * mult)); }          // void flame pillar
+    },
+  },
+
+  // ── THE LICH KING (a560), Xu Cemetery. Five attacks that UNLOCK with phase — the
+  //    only boss whose rotation widens as it escalates rather than re-weighting a pool.
+  //    Death Nova and the Curse are deliberately NOT phase-scaled, as client-side.
+  cemetery: {
+    x: 180, z: 180,
+    spd:    [0, 0.018, 0.026, 0.034, 0.044, 0.055],
+    dmg:    [0, 1.0,   1.4,   1.9,   2.5,   3.2],
+    phases: [0.75, 0.50, 0.25, 0.10],
+    acd:    [0, 16, 15, 13, 11, 9],           // max(50,95-P*10) cycle, / 6
+    tele:   11,
+    pick:   (b, ph) => {
+      // attacks unlock with phase: 1 and 2 at P2, 3 at P3, 4 at P4
+      b.atkIdx = (b.atkIdx || 0) + 1;
+      let a = b.atkIdx % 5;
+      if ((a === 1 || a === 2) && ph < 2) a = 0;
+      if (a === 3 && ph < 3) a = 0;
+      if (a === 4 && ph < 4) a = 0;
+      return a;
+    },
+    attack: (c) => {
+      const { atk, b, mult, ang, np, aoe, fx, proj, geyser } = c;
+      if (atk === 0)      { fx('lk_bolt');
+                            geyser(np.x, np.z, 4, 3.5, Math.floor(100 * mult), 0x9900ff); }
+      else if (atk === 1) { fx('lk_raise'); _zbSummon(c, 'skeleton_warrior', 3, 900, 60, 0.045, 90, 30, 0, 2.8); }
+      else if (atk === 2) { fx('lk_nova');  aoe(7.0, 170); }          // unscaled, as client-side
+      else if (atk === 3) { fx('lk_lance');
+                            for (let i = 0; i < 3; i++) proj(ang + (i-1)*0.18, 0xff00ff, Math.floor(125 * mult), 'void');
+                            aoe(5.0, Math.floor(125 * mult)); }
+      else                { fx('lk_curse');  aoe(9.0, 50); }          // unscaled, as client-side
+    },
+  },
+
+  // ── THE RIFT SOVEREIGN (a560), Rift Vale. No attack rotation at all — five abilities
+  //    on five independent timers that unlock with phase, same shape as THE APEX PYRAMID.
+  riftvale: {
+    x: 180, z: 180,
+    spd:    [0, 0.020, 0.028, 0.038, 0.050, 0.064],
+    dmg:    [0, 1.0,   1.5,   2.1,   2.9,   3.8],
+    phases: [0.75, 0.50, 0.25, 0.10],
+    acd:    [0, 20, 20, 20, 20, 20],          // unused — no rotation
+    tele:   0,
+    passive: (c) => {
+      const { b, ph, mult, ang, np, nd, aoe, fx, proj } = c;
+      // VOID PULSE — the sovereign's constant bleed
+      if (b._vt % 5 === 0 && nd < 5.5) { fx('rs_pulse'); aoe(4.5, Math.floor(35 * mult)); }
+      // P2+ RIFT SPIKES — four bolts radiate out
+      if (ph >= 2 && b._vt % 8 === 0) {
+        fx('rs_spikes');
+        for (let i = 0; i < 4; i++) proj(i/4*Math.PI*2, 0x440088, Math.floor(45 * mult), 'void');
+      }
+      // P3+ PHASE WARP — it blinks onto you and cuts
+      if (ph >= 3 && b._vt % 30 === 0) {
+        fx('rs_warp', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+        b.x = np.x + (Math.random()-0.5)*3; b.z = np.z + (Math.random()-0.5)*3;
+        aoe(3.0, Math.floor(60 * mult));
+      }
+      // P4+ DIMENSIONAL TEAR
+      if (ph >= 4 && b._vt % 15 === 0) { fx('rs_tear'); aoe(5.5, Math.floor(80 * mult)); }
+      // SOVEREIGN CLAW + aimed volley, widening with phase
+      if (b._vt % 9 === 0) {
+        if (nd < 3.0) aoe(3.0, Math.floor(50 * mult));
+        const shots = ph >= 3 ? 4 : ph >= 2 ? 2 : 1;
+        for (let i = 0; i < shots; i++)
+          proj(ang + (i - (shots-1)/2) * 0.18, 0x9900ff, Math.floor(40 * mult), 'plasma');
+      }
+    },
+  },
+
 // ── THE VOID WRAITH (a559). Soul drain aura, void blinks, tentacle slams, a
   //    reality tear, and a scream that fills the arena. 6-attack rotation, was picked
   //    from each client's own gameTime.
