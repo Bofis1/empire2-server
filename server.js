@@ -4447,6 +4447,96 @@ const ZBOSS_SERVER = {
     },
   },
 
+// ── THE KEEPER OF THE REACH (a563). The game's final boss: 5M HP, four phases, and a
+  //    move list that GROWS rather than a rotation — End Cycle and Sphere of Oblivion
+  //    from the start, Gravity Reversal and Temporal Lock at phase 2, Reality Collapse
+  //    at phase 3. She cycles them in order rather than rolling.
+  //    Her damage is kHit(flat, pctMaxHP) = flat*kDmg + playerMaxHP*pct*phaseMul. The
+  //    server can't see player max HP, so it mirrors the flat term — meaning she lands
+  //    somewhat softer here against very high-HP characters than she does solo, the same
+  //    caveat every migrated zone carries.
+  the_reach: {
+    x: 180, z: 144,                                    // tile (120,96)
+    spd:    [0, 0.018, 0.022, 0.028, 0.034],
+    dmg:    [0, 1.8,   2.7,   3.8,   5.2],             // kDmg
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 15, 13, 10],                       // 120 then 90 / 76 / 60, / 6
+    tele:   9,                                         // 55 frames
+    pick:   (b, ph) => {
+      const moves = ['end_cycle','sphere_of_oblivion'];
+      if (ph >= 2) { moves.push('gravity_reversal'); moves.push('temporal_lock'); }
+      if (ph >= 3) { moves.push('reality_collapse'); }
+      b._keMoveIdx = ((b._keMoveIdx || 0) + 1) % moves.length;
+      b._kePick = moves[b._keMoveIdx];
+      return 0;
+    },
+    attack: (c) => {
+      const { b, ph, mult, ang, np, zoneName, game, aoe, fx, proj, geyser } = c;
+      const K = (flat) => Math.floor(flat * mult);      // the flat half of kHit
+      const m = b._kePick || 'end_cycle';
+
+      if (m === 'end_cycle') {
+        // END CYCLE — a beam of condensed energy down the line
+        fx('ke_endcycle', { dir:+ang.toFixed(3), len:20 });
+        for (let d = 1; d <= 12; d++)
+          geyser(b.x + Math.sin(ang)*d*1.6, b.z + Math.cos(ang)*d*1.6, 8, 1.9, K(180), 0xffd84a);
+
+      } else if (m === 'sphere_of_oblivion') {
+        // SPHERE OF OBLIVION — 3 + phase spheres pulse, then detonate
+        const n = 3 + Math.min(3, ph);
+        fx('ke_spheres', { n:n });
+        for (let o = 0; o < n; o++) {
+          const ox = np.x + (Math.random()-0.5)*12, oz = np.z + (Math.random()-0.5)*12;
+          fx('ke_sphere_drop', { ex:+ox.toFixed(2), ez:+oz.toFixed(2), ms:(10 + o*2)*100 });
+          geyser(ox, oz, 10 + o*2, 2.4, K(140), 0x9a3cff);
+        }
+
+      } else if (m === 'gravity_reversal') {
+        // GRAVITY REVERSAL — gravity inverts, then the ground comes back up at you
+        fx('ke_gravity', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:0, root:700 });
+        });
+        geyser(np.x, np.z, 9, 5.0, K(150), 0xb060ff, { shake:14 });
+
+      } else if (m === 'temporal_lock') {
+        // TEMPORAL LOCK — held in place, then slowed hard
+        fx('ke_temporal', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:0, root:900 });
+        });
+        geyser(np.x, np.z, 10, 3.2, K(90), 0x6ad8ff, { slow:0.45, slowDur:2200 });
+
+      } else {
+        // REALITY COLLAPSE — the arena fractures in expanding rings from her
+        fx('ke_collapse');
+        b._keRing = 1.0; b._keRingDmg = K(130);
+      }
+    },
+    passive: (c) => {
+      const { b, ph, mult, nd, zoneName, game, aoe, fx } = c;
+      // KEEPER FIST — her standing melee, the only thing she does at contact range
+      if (b._vt % 9 === 0 && nd < 7.0) { fx('ke_fist'); aoe(7.0, Math.floor(170 * mult)); }
+
+      // REALITY COLLAPSE rings — expanding, caught once as each passes
+      if (b._keRing > 0) {
+        const prev = b._keRing;
+        b._keRing += 0.9 * 6;
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
+          if (pd >= prev - 1.5 && pd <= b._keRing + 1.5)
+            send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._keRingDmg,
+                       ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
+        });
+        fx('ke_collapse_ring', { r:+b._keRing.toFixed(2) });
+        if (b._keRing >= 22) b._keRing = 0;
+      }
+    },
+  },
+
 // ── VAELTHARAX THE UNDYING (a562), Vaeltharax's Lair.
   //
   //    READ THIS BEFORE CHANGING `pick`.
@@ -6398,12 +6488,14 @@ function tickGame(game) {
         : (zoneName === 'xulcan' && XU_BESPOKE[e.type])       // a557 — the metropolis sees you at 26u
         ? Math.max(e.aggroRange || 16, 26)
         : (zoneName === 'fungal' && FD_BESPOKE[e.type])       // a558 — the caverns wake at 22u
-        ? Math.max(e.aggroRange || 10, 22) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
+        ? Math.max(e.aggroRange || 10, 22)
+        : (zoneName === 'the_reach' && RE_BESPOKE[e.type])    // a563 — elites use their own stat range
+        ? (e.aggroRange || 18) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
       if (nearestDist <= _aggroR) e.aggroed = true;
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]) || (zoneName === 'the_reach' && RE_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
@@ -9773,6 +9865,141 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+
+        // ── a563: THE REACH elite AI (zone-gated to 'the_reach'). Five elites, each with a
+        //    constant projectile barrage, a light melee for the bruisers, and two big
+        //    abilities they alternate between. Re-timed 60fps -> 10Hz.
+        //    Dormant until you come inside their aggro range, exactly as client-side.
+        if (zoneName === 'the_reach' && e.aggroed && RE_BESPOKE[e.type]) {
+          const dxp=nearestPlayer.x-e.x, dzp=nearestPlayer.z-e.z, dd=Math.sqrt(dxp*dxp+dzp*dzp)||0.0001;
+          const sin=dxp/dd, cos=dzp/dd, ang=Math.atan2(dxp,dzp);
+          const A=(e.atk||800);
+          e._ab=(e._ab||0)+1;
+          let _moved=false;
+          const mv=(sp)=>{ e.x+=sin*sp; e.z+=cos*sp; _moved=true; };
+          const hit=(mult)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor(A*mult),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
+          const hitAt=(mult,hx,hz,radius)=>{ players.forEach((p,ws)=>{
+            if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+            const qx=p.x-hx, qz=p.z-hz; if(qx*qx+qz*qz < radius*radius)
+              send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor(A*mult),ex:+hx.toFixed(2),ez:+hz.toFixed(2),zone:zoneName}); }); };
+          const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer)
+            send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
+          const fx=(vt,extra)=>{ broadcastToZone(game.id,zoneName, Object.assign({type:'sv_fx',vt:vt,zone:zoneName},extra||{})); };
+          const shoot=(off,col,mult,kind,sc)=>{
+            _sdSpawnProj(game,zoneName,e,ang+off,col,Math.floor(A*mult),kind||'void',null,0);
+          };
+          const tele=(tx,tz,fuse,radius,mult,col,extra)=>{ if(!game._sdGeyser) game._sdGeyser=[];
+            game._sdGeyser.push(Object.assign({zone:zoneName,x:tx,z:tz,fuse:fuse,dmg:Math.floor(A*mult),
+                                 eid:e.id,col:col,radius:radius},extra||{}));
+            fx('sd_geyser_warn',{ex:+tx.toFixed(2),ez:+tz.toFixed(2),col:col}); };
+
+          // ── movement by role
+          const SP=(e.spd||0.025)*6*_RE_SPD_MUL;
+          if(e.type==='cubic_annihilator'){ if(dd>2.6) mv(SP); }
+          else if(e.type==='void_cube_warden'){ if(dd>4) mv(SP); }
+          else { if(dd<7) mv(-SP); else if(dd>12) mv(SP); }
+
+          // ── CONSTANT BARRAGE — each elite has its own pattern and colour
+          e._reFire=(e._reFire||Math.floor(Math.random()*3))-1;
+          if(e._reFire<=0 && dd < (e.aggroRange||18)+4){
+            e._reFire=(_RE_FIRE[e.type]||2)+Math.floor(Math.random()*2);
+            if(e.type==='sphere_disruptor')      [-0.16,0,0.16].forEach(o=>shoot(o,_RE_GRN,0.28,'void'));
+            else if(e.type==='harbinger_sphere'){ e._reSpin=(e._reSpin||0)+0.4;
+              for(let i=0;i<4;i++) shoot(e._reSpin+i*1.5708-ang, _RE_BLU,0.28,'void'); }
+            else if(e.type==='omega_observer')   [-0.34,-0.17,0,0.17,0.34].forEach(o=>shoot(o,_RE_GLD,0.28,'lightning'));
+            else if(e.type==='void_cube_warden') shoot(0,_RE_PUR,0.28,'void');
+            else                                 [-0.10,0.10].forEach(o=>shoot(o,_RE_RED,0.28,'void'));
+            fx('re_barrage',{eid:e.id,t:e.type});
+          }
+
+          // ── light melee for the bruisers
+          if(dd<3.0 && (e.type==='cubic_annihilator'||e.type==='void_cube_warden')){
+            e._reMelee=(e._reMelee||0)+1;
+            if(e._reMelee%9===0){ hit(0.5); toPlayer({eff:'shake',shake:5}); }
+          }
+
+          // ── multi-tick set pieces already in flight
+          if(e._gwT>0){                                   // GRAVITY WELL
+            e._gwT--;
+            players.forEach((p,ws)=>{
+              if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return;
+              const qx=e._gwX-p.x, qz=e._gwZ-p.z, q=Math.sqrt(qx*qx+qz*qz);
+              if(q>1.2) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'pull',px:+e._gwX.toFixed(2),pz:+e._gwZ.toFixed(2),pull:0.54});
+              send(ws,{type:'sv_player_fx',zone:zoneName,eff:'slow',slow:0.5,root:400});
+              if(q<3 && e._gwT%5===0)
+                send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:Math.floor(A*0.4),ex:+e._gwX.toFixed(2),ez:+e._gwZ.toFixed(2),zone:zoneName});
+            });
+            fx('re_well_tick',{ex:+e._gwX.toFixed(2),ez:+e._gwZ.toFixed(2)});
+          }
+          if(e._ssT>0){                                   // SEISMIC SLAM ring
+            e._ssT--; e._ssR+=1.3*0.75;
+            const pd=Math.sqrt((nearestPlayer.x-e._ssX)**2+(nearestPlayer.z-e._ssZ)**2)/0.75;
+            if(Math.abs(pd-e._ssR)<1.0 && !e._ssHit){ e._ssHit=1; hitAt(0.7,e._ssX,e._ssZ,99); }
+            fx('re_seismic_ring',{ex:+e._ssX.toFixed(2),ez:+e._ssZ.toFixed(2),r:+e._ssR.toFixed(2)});
+            if(e._ssR>7) e._ssT=0;
+          }
+          if(e._dsT>0){                                   // DOOM SPIRAL
+            e._dsT--;
+            fx('re_spiral',{ex:+e._dsX.toFixed(2),ez:+e._dsZ.toFixed(2),t:e._dsT});
+            if(e._dsT%2===0) hitAt(0.35, e._dsX, e._dsZ, 3.0);
+          }
+
+          // ── ABILITY ROTATION — alternates two per type
+          e._reCd=(e._reCd!=null?e._reCd:15)-1;
+          if(e._reCd<=0){
+            e._reCd=13+Math.floor(Math.random()*7);
+            e._reIdx=(e._reIdx||0)+1;
+            const alt=(e._reIdx%2===0);
+
+            if(e.type==='void_cube_warden'){
+              if(alt){ fx('re_voidpulse',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                       hitAt(0.7, e.x, e.z, 8.25); }
+              else   { e._gwT=15; e._gwX=nearestPlayer.x; e._gwZ=nearestPlayer.z;
+                       fx('re_well',{ex:+e._gwX.toFixed(2),ez:+e._gwZ.toFixed(2)}); }
+
+            } else if(e.type==='sphere_disruptor'){
+              if(alt){ // DISRUPTOR BEAM — a penetrating line, 450ms after the tell
+                fx('re_beam',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),a:+ang.toFixed(3),len:13.5,col:_RE_GRN});
+                for(let d=1;d<=9;d++)
+                  tele(e.x+Math.sin(ang)*d*1.5, e.z+Math.cos(ang)*d*1.5, 5, 2.4, 0.6, _RE_GRN);
+              } else { // ENERGY ORBS — three homing orbs
+                fx('re_orbs',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),n:3});
+                for(let o=0;o<3;o++)
+                  tele(nearestPlayer.x+(Math.random()-0.5)*3, nearestPlayer.z+(Math.random()-0.5)*3,
+                       6+o*2, 2.4, 0.4, _RE_GRN);
+              }
+
+            } else if(e.type==='cubic_annihilator'){
+              if(alt){ e._ssT=12; e._ssR=1; e._ssHit=0; e._ssX=e.x; e._ssZ=e.z;
+                       fx('re_seismic',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                       toPlayer({eff:'shake',shake:12}); }
+              else   { fx('re_cubes',{ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2)});
+                       for(let cB=0;cB<5;cB++)
+                         tele(nearestPlayer.x+(Math.random()-0.5)*7.5, nearestPlayer.z+(Math.random()-0.5)*7.5,
+                              5+cB, 3.0, 0.5, 0xff5a3a); }
+
+            } else if(e.type==='harbinger_sphere'){
+              if(alt){ e._dsT=18; e._dsX=e.x; e._dsZ=e.z;
+                       fx('re_spiral_start',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+              else   { fx('re_minions',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),n:2});
+                       for(let m=0;m<2;m++)
+                         tele(nearestPlayer.x+(Math.random()-0.5)*3, nearestPlayer.z+(Math.random()-0.5)*3,
+                              7+m*3, 2.4, 0.4, _RE_BLU); }
+
+            } else { // omega_observer
+              if(alt){ fx('re_judgment',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),a:+ang.toFixed(3),len:15});
+                       for(let d=1;d<=10;d++)
+                         tele(e.x+Math.sin(ang)*d*1.5, e.z+Math.cos(ang)*d*1.5, 6, 2.7, 0.7, _RE_GLD); }
+              else   { fx('re_rifts',{ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),n:4});
+                       for(let r=0;r<4;r++)
+                         tele(nearestPlayer.x+(Math.random()-0.5)*10.5, nearestPlayer.z+(Math.random()-0.5)*10.5,
+                              6+r, 3.3, 0.5, _RE_GLD); }
+            }
+          }
+
+          if(_moved) changed.push(e);
+        }
     });
 
     // Broadcast state for changed enemies (positions + HP)
@@ -9988,6 +10215,18 @@ const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
 //   types and doubling it would change nothing.
 //   Lingering SPORE CLOUDS outlive whoever coughed them out, so they live on the zone
 //   and tick independently — same shape as the Forge's lava pools (a555).
+// a563 — THE REACH elites. This zone was ALREADY in ZONE_SPAWNS with correct stats, so it
+//   looked migrated — but it was never added to the _bespoke list, so the server has been
+//   running its GENERIC chase-and-swing AI on these five while the client separately ran
+//   _tickReachElite for their real abilities. Two AIs driving the same enemies: the server
+//   swung for ~800-990 a hit on top of the client's abilities, and because the client seam
+//   copied its OWN e.pos to the mesh, every player saw them somewhere different from where
+//   the server thought they were (which also quietly failed the sv_hit_enemy range check).
+//   Flagging them bespoke stops the generic AI; the block below is the real kit.
+const RE_BESPOKE = { void_cube_warden:1, cubic_annihilator:1, sphere_disruptor:1, harbinger_sphere:1, omega_observer:1 };
+const _RE_SPD_MUL = 3.4;
+const _RE_FIRE = { sphere_disruptor:2, harbinger_sphere:2, omega_observer:1, void_cube_warden:3, cubic_annihilator:3 };
+const _RE_GRN=0x5cff3c, _RE_BLU=0x30b8ff, _RE_GLD=0xffd84a, _RE_PUR=0x9a3cff, _RE_RED=0xff2a2a;
 const FD_BESPOKE = { mycelium_horror:1, fungal_shambler:1, mushroom_man:1, spore_walker:1 };
 const FD_PWR = { mycelium_horror:110, fungal_shambler:95, mushroom_man:90, spore_walker:82 };
 function _fdDmgS(e, mult){ return Math.floor((FD_PWR[e.type] || e.atk || 40) * mult); }
