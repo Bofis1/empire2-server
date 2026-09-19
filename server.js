@@ -4447,6 +4447,206 @@ const ZBOSS_SERVER = {
     },
   },
 
+// ── VAELTHARAX THE UNDYING (a562), Vaeltharax's Lair.
+  //
+  //    READ THIS BEFORE CHANGING `pick`.
+  //    The client selects her attack with:
+  //        _dragonAttack = Math.floor(bATimer/(bACD/6)) % 6
+  //    ...but only fires when bATimer >= bACD, and bACD is 120 for this zone and never
+  //    changes (dragonlair sets no bACD anywhere). At bATimer === 120 that expression is
+  //    floor(120/20) % 6 = 6 % 6 = 0 — every single time. So in the live game Vaeltharax
+  //    only ever casts FIRE BREATH. Tail Sweep, Wing Slam, Meteor Rain, the Roar, the
+  //    Charge Slam and Void Corruption are all written, all finished, and all unreachable.
+  //    (The telegraph ring is computed 70 frames earlier, where the same expression gives
+  //    a DIFFERENT index — which is why the warning sometimes previews an attack that
+  //    never arrives.)
+  //
+  //    All seven bodies are ported below and work. `pick` decides which behaviour ships:
+  //      'faithful' (default) — index 0 always. Byte-for-byte what she does today.
+  //      'full'               — the 6-slot rotation the selector was written for.
+  //      'complete'           — 7 slots, so Void Corruption / Inferno Burst fire too.
+  //    Change ONE word on the `_VX_MODE` line to switch. Default is 'faithful' so this
+  //    patch changes nothing about how the fight plays.
+  dragonlair: {
+    x: 60, z: 60,                                      // tile (40,40) — not the usual centre
+    spd:    [0, 0.022, 0.030, 0.038, 0.048, 0.060],
+    dmg:    [0, 1.0,   1.4,   1.8,   2.4,   3.2],      // pDmgMult
+    phases: [0.75, 0.50, 0.25, 0.10],                  // the generic ladder, which is what she uses
+    acd:    [0, 20, 20, 20, 20, 20],                   // bACD is a flat 120 for this zone
+    tele:   12,                                        // 70 frames
+    pick:   (b, ph) => {
+      const _VX_MODE = 'complete';                     // 'faithful' | 'full' | 'complete'
+      if (_VX_MODE === 'faithful') return 0;
+      b.atkIdx = (b.atkIdx || 0) + 1;
+      return b.atkIdx % (_VX_MODE === 'complete' ? 7 : 6);
+    },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, nd, zoneName, game, aoe, fx, proj, geyser } = c;
+
+      if (atk === 0) {
+        // ── FIRE BREATH — four waves of five piercing bolts down the line
+        fx('vx_breath', { dir:+ang.toFixed(3) });
+        aoe(6.0, Math.floor(80 * mult));
+        b._vxBreath = 4; b._vxBreathT = 0; b._vxBreathAng = ang;
+        b._vxBreathDmg = Math.floor(160 * mult);
+        b._vxEmberDmg  = Math.floor(60 * mult);
+
+      } else if (atk === 1) {
+        // ── TAIL SWEEP — 360 shockwave, then burning ground
+        fx('vx_tail');
+        if (nd < 7.0) aoe(7.0, Math.floor(280 * mult));
+        aoe(5.5, Math.floor(80 * mult));
+        for (let f = 0; f < 4; f++) {
+          const gx = b.x + (Math.random()-0.5)*8, gz = b.z + (Math.random()-0.5)*8;
+          fx('vx_groundfire', { ex:+gx.toFixed(2), ez:+gz.toFixed(2), d:(2 + f*4)*100 });
+          geyser(gx, gz, 2 + f*4, 1.5, Math.floor(80 * mult), 0xff4400);
+        }
+
+      } else if (atk === 2) {
+        // ── WING SLAM — knockback and a brief stun
+        fx('vx_wing');
+        aoe(6.5, Math.floor(90 * mult));
+        if (nd < 8.0) {
+          aoe(8.0, Math.floor(320 * mult));
+          players.forEach((p, ws) => {
+            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+            const dx = p.x - b.x, dz = p.z - b.z;
+            if (dx*dx + dz*dz < 64) {
+              // push already moves the player AWAY from (px,pz) and its step loop
+              //   needs a POSITIVE distance — a negative value silently does nothing.
+              send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push',
+                         px:+b.x.toFixed(2), pz:+b.z.toFixed(2), push:13.5 });
+              send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:0, root:500 });
+            }
+          });
+        }
+
+      } else if (atk === 3) {
+        // ── METEOR RAIN — 2 + phase strikes walked onto the target
+        const n = 2 + ph;
+        fx('vx_meteor', { n:n });
+        for (let m = 0; m < n; m++) {
+          const tx = np.x + (Math.random()-0.5)*5, tz = np.z + (Math.random()-0.5)*5;
+          const fuse = 9 + m*7;
+          // the client renders the falling rock + ground ring for exactly this long
+          fx('vx_meteor_drop', { ex:+tx.toFixed(2), ez:+tz.toFixed(2), ms:fuse*100 });
+          geyser(tx, tz, fuse, 3.5, Math.floor(300 * mult), 0xff1100, { shake:12 });
+        }
+
+      } else if (atk === 4) {
+        // ── ROAR OF THE UNDYING — arena-wide, and she mends herself
+        fx('vx_roar');
+        aoe(999, Math.floor(220 * mult));              // the roar reaches everywhere
+        const heal = Math.floor(b.maxHp * (0.04 + ph*0.01));
+        b.hp = Math.min(b.maxHp, b.hp + heal);
+        fx('vx_roar_heal', { heal:heal });
+        b._vxRings = 3; b._vxRingT = 0; b._vxRingDmg = Math.floor(80 * mult);
+
+      } else if (atk === 5) {
+        // ── CHARGE SLAM — 0.8s telegraph, then she rockets at the marked ground
+        fx('vx_charge_wind', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+        aoe(5.0, Math.floor(80 * mult));
+        b._vxChargeT = 8;                              // 800ms
+        b._vxChargeX = np.x; b._vxChargeZ = np.z;
+        b._vxChargeDmg  = Math.floor(380 * mult);
+        b._vxImpactDmg  = Math.floor(420 * mult);
+
+      } else {
+        // ── VOID CORRUPTION (phase 3+) / INFERNO BURST (phases 1-2)
+        if (ph >= 3) {
+          fx('vx_void');
+          const n = 3 + ph;
+          for (let i = 0; i < n; i++) proj(ang + (i/8)*Math.PI*2, 0xaa00ff, Math.floor(180 * mult), 'void');
+          aoe(999, Math.floor(260 * mult));
+        } else {
+          fx('vx_inferno');
+          for (let i = 0; i < 5; i++) proj(ang + (Math.random()-0.5)*0.6, 0xff4400, Math.floor(150 * mult), 'plasma');
+          aoe(8.0, Math.floor(200 * mult));
+        }
+      }
+    },
+    passive: (c) => {
+      const { b, ph, mult, ang, np, nd, zoneName, game, aoe, fx, proj } = c;
+
+      // HEAT AURA — phase 3+, anything standing close cooks
+      if (ph >= 3 && b._vt % 5 === 0 && nd < 6.0) {
+        fx('vx_aura');
+        aoe(6.0, ph * 25);
+        if (nd < 4.0) aoe(4.0, ph * 40);
+      }
+
+      // CONTINUOUS BREATH STREAM — phase 5 only
+      if (ph >= 5 && b._vt % 2 === 0) {
+        for (let i = 0; i < 2; i++) proj(ang + (Math.random()-0.5)*0.8, 0xff4400, 150, 'plasma');
+        fx('vx_stream', { dir:+ang.toFixed(3) });
+      }
+
+      // FIRE BREATH waves — four of them, ~220ms apart
+      if (b._vxBreath > 0) {
+        b._vxBreathT--;
+        if (b._vxBreathT <= 0) {
+          b._vxBreathT = 2;
+          b._vxBreath--;
+          const a0 = b._vxBreathAng;
+          for (let i = 0; i < 5; i++) proj(a0 + (Math.random()-0.5)*1.4, 0xff4400, b._vxBreathDmg, 'plasma');
+          fx('vx_breath_wave', { dir:+a0.toFixed(3), w:4 - b._vxBreath });
+          aoe(2.0, b._vxEmberDmg);
+        }
+      }
+
+      // ROAR shockwave rings — three, marching outward
+      if (b._vxRings > 0) {
+        b._vxRingT--;
+        if (b._vxRingT <= 0) {
+          b._vxRingT = 4;                              // ~350ms
+          const r = 4 - b._vxRings;
+          b._vxRings--;
+          fx('vx_roar_ring', { r:r });
+          aoe(r * 3.5 + 1, b._vxRingDmg);
+        }
+      }
+
+      // CHARGE SLAM — wind-up, dash, impact
+      if (b._vxChargeT > 0) {
+        b._vxChargeT--;
+        if (b._vxChargeT === 0) { b._vxCharge = 5; fx('vx_charge_dash'); }
+      } else if (b._vxCharge > 0) {
+        b._vxCharge--;
+        // step toward the marked ground, burning a trail
+        const dx = b._vxChargeX - b.x, dz = b._vxChargeZ - b.z;
+        const d  = Math.sqrt(dx*dx + dz*dz) || 0.001;
+        const step = 1.2 * 6;                          // TILE*0.8 per frame -> per tick
+        if (d > step) {
+          const nx = b.x + (dx/d)*step, nz = b.z + (dz/d)*step;
+          if (nx > 2 && nx < 358 && nz > 2 && nz < 358) { b.x = nx; b.z = nz; }
+          fx('vx_charge_trail');
+          aoe(3.5, b._vxChargeDmg);                    // caught by the dash itself
+          players.forEach((p, ws) => {
+            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+            const qx = p.x - b.x, qz = p.z - b.z;
+            if (qx*qx + qz*qz < 12.25)
+              send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push',
+                         px:+b.x.toFixed(2), pz:+b.z.toFixed(2), push:15.0 });
+          });
+        } else {
+          b.x = b._vxChargeX; b.z = b._vxChargeZ; b._vxCharge = 0;
+          fx('vx_charge_impact');
+          aoe(7.0, Math.floor(100 * mult));
+          if (nd < 5.5) {
+            aoe(5.5, b._vxImpactDmg);
+            players.forEach((p, ws) => {
+              if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+              const qx = p.x - b.x, qz = p.z - b.z;
+              if (qx*qx + qz*qz < 30.25)
+                send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push',
+                           px:+b.x.toFixed(2), pz:+b.z.toFixed(2), push:12.0 });
+            });
+          }
+        }
+      }
+    },
+  },
+
 // ── KHEPRI THE SAND COLOSSUS (a561), Sunken Sands. Its rotation is a POOL that grows
   //    with phase (2 attacks at P1 up to 5 at P4) indexed off its own cycle, not a fixed
   //    modulo — so early Khepri is a genuinely smaller fight. Most of its damage is flat
