@@ -4447,6 +4447,208 @@ const ZBOSS_SERVER = {
     },
   },
 
+// ── KHEPRI THE SAND COLOSSUS (a561), Sunken Sands. Its rotation is a POOL that grows
+  //    with phase (2 attacks at P1 up to 5 at P4) indexed off its own cycle, not a fixed
+  //    modulo — so early Khepri is a genuinely smaller fight. Most of its damage is flat
+  //    (300 + P*70) rather than table-scaled; only the scarab volley uses the multiplier.
+  sunken_sands: {
+    x: 180, z: 180,
+    spd:    [0, 0.016, 0.022, 0.030, 0.040],
+    dmg:    [0, 1.0,   1.6,   2.4,   3.2],
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 14, 12, 11, 9],               // max(54, 92-P*10), / 6
+    tele:   11,
+    pick:   (b, ph) => {
+      const pool = ph >= 4 ? 5 : ph >= 3 ? 4 : ph >= 2 ? 3 : 2;
+      b.atkIdx = (b.atkIdx || 0) + 1;
+      return b.atkIdx % pool;
+    },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
+      if (atk === 0) {
+        // CATACLYSM — the desert splits, fissures walk outward
+        fx('kh_cataclysm'); aoe(6.5, Math.round(300 + ph*70));
+        for (let f = 0; f < 5; f++) {
+          const fa = ang + (f-2)*0.30, fr = 4 + f*2.2;
+          geyser(b.x + Math.sin(fa)*fr, b.z + Math.cos(fa)*fr, 4 + f, 2.3, Math.round(150 + ph*35), 0xd4a830);
+        }
+      } else if (atk === 1) {
+        // SANDSTORM — an expanding wall of grit
+        fx('kh_sandstorm'); b._khR = 1.0; b._khDmg = Math.round(130 + ph*32);
+      } else if (atk === 2) {
+        // QUICKSAND — the floor opens beneath you
+        fx('kh_quicksand', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+        geyser(np.x, np.z, 5, 2.8, Math.round(180 + ph*45), 0xc89a3a, { slow:0.45, slowDur:900 });
+        geyser(np.x, np.z, 9, 2.8, Math.round(70 + ph*20), 0xc89a3a);
+      } else if (atk === 3) {
+        // SCARAB SWARM — the only attack that uses the phase table
+        fx('kh_scarabs');
+        for (let i = 0; i < 7; i++) proj(ang + (i-3)*0.22, 0x4aaa3a, Math.round((90 + ph*25) * mult), 'plasma');
+      } else {
+        // SUN DISC — judgement, then a solar sweep
+        fx('kh_sundisc'); aoe(13.0, Math.round(240 + ph*55));
+        for (let i = 0; i < 10; i++) proj(i/10*Math.PI*2, 0xffd24a, Math.round(110 + ph*30), 'plasma');
+      }
+    },
+    passive: (c) => {
+      const { b, mult, nd, zoneName, game, aoe } = c;
+      if (b._vt % 4 === 0 && nd < 4.0) aoe(4.0, Math.round(18 * mult));
+      // SANDSTORM ring expands and catches you once as it passes
+      if (b._khR > 0) {
+        const prev = b._khR; b._khR += 0.55 * 6;
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
+          if (pd >= prev - 2.3 && pd <= b._khR + 2.3)
+            send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._khDmg,
+                       ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
+        });
+        if (b._khR >= 20) b._khR = 0;
+      }
+    },
+  },
+
+  // ── THE FINAL ABBOT (a561), Veiled Sanctuary. Five phases, six attacks, summons that
+  //    unlock at phase 3, and two censers that orbit him and burn anything they brush.
+  veiled_sanctuary: {
+    x: 180, z: 180,
+    spd:    [0, 0.016, 0.020, 0.024, 0.030, 0.036],
+    dmg:    [0, 1.0,   1.3,   1.7,   2.2,   2.8],       // faMul
+    phases: [0.80, 0.60, 0.40, 0.20],
+    acd:    [0, 20, 25, 22, 18, 15],                    // max(95,190-P*20), / 6
+    tele:   12,
+    pick:   (b, ph) => {
+      b.atkIdx = (b.atkIdx || 0) + 1;
+      let a = b.atkIdx % 6;
+      if (a === 2 && ph < 3) a = 0;                     // the choir only rises at phase 3
+      return a;
+    },
+    attack: (c) => {
+      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
+      const D = (m) => Math.floor(380 * m * mult);      // mirrors faD -> _vsDmg flat term
+      if (atk === 0)      { fx('fa_censer');
+                            proj(ang - 0.22, 0xff8a3c, D(0.55), 'magic');
+                            proj(ang + 0.22, 0x8a5cff, D(0.55), 'magic');
+                            aoe(4.2, D(1.1)); }
+      else if (atk === 1) { fx('fa_litany', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+                            geyser(b.x, b.z, 5, 3.0, D(0.75), 0xffd24a);
+                            geyser(np.x, np.z, 7, 4.2, D(1.3), 0x8a5cff); }
+      else if (atk === 2) { fx('fa_choir'); _zbSummon(c, 'choir_wraith', 2, 16000, 300, 0.050, 900, 280, 0, 3.4); }
+      else if (atk === 3) { fx('fa_excomm'); aoe(4.5, D(0.5)); aoe(6.0, D(1.6)); }
+      else if (atk === 4) { fx('fa_unmaking'); aoe(20.0, D(0.35));
+                            for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0xffd24a, D(0.45), 'magic'); }
+      else                { fx('fa_miserere'); aoe(9.0, D(0.4)); aoe(12.0, D(1.2)); }
+    },
+    passive: (c) => {
+      const { b, mult, nd, aoe, fx } = c;
+      // the two orbiting censers — brush one and it burns
+      b._faA = (b._faA || 0) + 0.05*6;
+      if (b._vt % 3 === 0) {
+        fx('fa_censer_orbit', { a:+b._faA.toFixed(3) });
+        if (nd < 3.2) aoe(3.2, Math.floor(380 * 0.30 * mult));
+      }
+    },
+  },
+
+  // ── THE WILDMOTHER (a561), Blooming Wilds. She has no bespoke AI block at all — she
+  //    falls through to the client's GENERIC boss handler, so this is that handler ported
+  //    faithfully: chase, telegraph, a melee swipe and one-to-three bolts by phase.
+  //    Flat damage, three phases, no rotation.
+  blooming_wilds: {
+    x: 180, z: 180,
+    spd:    [0, 0.025, 0.025, 0.025],
+    dmg:    [0, 1, 1, 1],
+    phases: [0.66, 0.33],
+    acd:    [0, 20, 20, 20],
+    tele:   10,                                          // 60 frames, as the generic handler
+    pick:   () => 0,
+    attack: (c) => {
+      const { b, ph, ang, nd, aoe, fx, proj } = c;
+      fx('wm_strike');
+      if (nd < 3.2) aoe(3.2, ph === 3 ? 42 : ph === 2 ? 30 : 20);
+      const shots = ph >= 2 ? 3 : 1;
+      const col   = ph === 3 ? 0x80ccff : 0xff1020;
+      const dmg   = ph === 3 ? 38 : 22;
+      for (let i = 0; i < shots; i++) proj(ang + (i - (shots-1)/2) * 0.18, col, dmg, ph === 3 ? 'lightning' : 'plasma');
+    },
+  },
+
+  // ── XUBERRY (a561), Avia Canyon. A hovering parrot-warlord: her ability is drawn from
+  //    a pool that grows with phase, and she periodically DIVES out of the rotation
+  //    entirely. She hovers at 3.5 and only descends on a dive, which the client renders
+  //    from the xb_dive cue — the server owns the ground track.
+  aviacanyon: {
+    x: 180, z: 180,
+    spd:    [0, 0.020, 0.026, 0.034, 0.042],
+    dmg:    [0, 1, 1, 1, 1],
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 17, 14, 11],                        // max(60,132-P*16), / 6
+    tele:   0,                                          // she screeches her own tell
+    pick:   (b, ph) => {
+      const pool = ['screech','volley','rain'];
+      if (ph >= 2) { pool.push('beam','summon'); }
+      if (ph >= 3) { pool.push('screech','beam','volley'); }
+      if (ph >= 4) { pool.push('rain','screech','beam'); }
+      b._xbPick = pool[Math.floor(Math.random() * pool.length)];
+      return 0;
+    },
+    attack: (c) => {
+      const { b, ph, ang, np, aoe, fx, proj, geyser } = c;
+      const A = 230;                                     // _XB_ATK
+      const k = b._xbPick || 'screech';
+      if (k === 'screech')      { fx('xb_screech'); b._xbR = 1.0; b._xbRDmg = Math.floor(A * 0.85); }
+      else if (k === 'volley')  { fx('xb_volley');
+                                  const n = 5 + ph*2;
+                                  for (let i = 0; i < n; i++) proj(ang + (i-(n-1)/2)*0.16, 0x5ce4f0, Math.floor(A * 0.55), 'plasma'); }
+      else if (k === 'rain')    { fx('xb_rain');
+                                  for (let r = 0; r < 6; r++)
+                                    geyser(np.x + (Math.random()-0.5)*9, np.z + (Math.random()-0.5)*9,
+                                           4 + r, 2.2, Math.floor(A * 0.9), 0x5ce4f0); }
+      else if (k === 'beam')    { fx('xb_beam', { dir:+ang.toFixed(3), len:26 });
+                                  for (let i = 1; i <= 8; i++)
+                                    geyser(b.x + Math.sin(ang)*i*3.2, b.z + Math.cos(ang)*i*3.2,
+                                           6, 1.4, Math.floor(A * 0.7), 0xfff06a); }
+      else                      { fx('xb_flock');
+                                  // the flock is skyscouts and beakdrones, 2 (+1 at phase 3), as client-side
+                                  const n = 2 + (ph >= 3 ? 1 : 0);
+                                  _zbSummon(c, Math.random() < 0.55 ? 'skyscout' : 'beakdrone', n,
+                                            4200, 150, 0.070, 300, 95, 0, 6.0); }
+    },
+    passive: (c) => {
+      const { b, ph, np, nd, ang, zoneName, game, aoe, fx } = c;
+      const A = 230;
+      // TALON DIVE — steps outside the rotation on its own cooldown
+      if (b._xbDive > 0) {
+        b._xbDive--;
+        if (b._xbDive === 3) {
+          fx('xb_dive', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
+          b.x = np.x; b.z = np.z;
+          aoe(4.0, Math.floor(A * 1.4));
+        }
+        if (b._xbDive === 0) fx('xb_dive_up');
+      } else {
+        b._xbDiveCd = (b._xbDiveCd != null ? b._xbDiveCd : 20) - 1;
+        if (b._xbDiveCd <= 0) {
+          b._xbDiveCd = Math.max(22, Math.round((250 - ph*28) / 6));
+          b._xbDive = 6;
+          fx('xb_dive_wind');
+        }
+      }
+      // SCREECH rings expand outward and catch you once
+      if (b._xbR > 0) {
+        const prev = b._xbR; b._xbR += 0.6 * 6;
+        players.forEach((p, ws) => {
+          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
+          const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
+          if (pd >= prev - 1.8 && pd <= b._xbR + 1.8)
+            send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._xbRDmg,
+                       ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
+        });
+        if (b._xbR >= 18) b._xbR = 0;
+      }
+    },
+  },
+
 // ── DRAX (a560), Caves of Despair. Drill charges, pile-drivers, a called-in mining
   //    crew and a cave-in. Straight 6-attack rotation.
   caves_of_despair: {
@@ -9794,7 +9996,9 @@ const RV_PWR = { void_colossus:220, rift_stalker:170, psyche_horror:160, rift_we
 function _rvDmgS(e, mult){ return Math.floor((RV_PWR[e.type] || e.atk || 150) * 1.5 * mult); }
 const DL_PWR = { void_spider:250, wyvern:270, fire_demon:295, inferno_golem:330 };
 function _dlDmgS(e, mult){ return Math.floor((DL_PWR[e.type] || e.atk || 275) * mult); }
-const VS_PWR = { veiled_acolyte:185, censer_bearer:205, penitent_striker:215, choir_wraith:195, stone_inquisitor:235, ritual_guardian:220, veiled_cardinal:290, forsaken_abbot:320 };
+// a561 — final_abbot added. The BOSS routes its damage through _vsDmg the same way the
+//   zone's mobs do, but only the mobs were ever mirrored here, so the boss had no entry.
+const VS_PWR = { veiled_acolyte:185, censer_bearer:205, penitent_striker:215, choir_wraith:195, stone_inquisitor:235, ritual_guardian:220, veiled_cardinal:290, forsaken_abbot:320, final_abbot:380 };
 function _vsDmgS(e, mult){ return Math.floor((VS_PWR[e.type] || e.atk || 200) * mult); }
 const NP_PWR = { necro_abomination:240, necro_wight:190, necro_lich_mage:200, necro_specter:170 };
 function _npDmgS(e, mult){ return Math.floor((NP_PWR[e.type] || e.atk || 180) * mult); }
