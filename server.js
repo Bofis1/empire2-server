@@ -4344,6 +4344,36 @@ function despawnWorldBoss(game, killed, killerName, bx, bz) {
 //   _sdSpawnProj / sv_enemy_attack); sv_enemy_attack ignores eid for damage, so the
 //   sentinel id -1 is safe. AoE hits EVERY player in radius — the whole point of co-op.
 //   Timings converted 60fps -> 10Hz (frame counters /6, per-frame speeds *6).
+// a564 — THE CONVERGENCE per-depth boss table. Six bosses in one zone; the depth lives
+//   on the zone (set by sv_set_depth) and decides which of these is running.
+function _cvD(zone){ return Math.max(1, Math.min(6, (zone && zone.convergenceDepth) || 1)); }
+const _CV = {
+  1: { name:'THE DEPTH SENTINEL', melee:85,
+       spd:[0,0.028,0.038,0.052,0.066,0.082], dmg:[0,1.0,1.4,2.0,2.7,3.5],
+       phases:[0.75,0.50,0.25,0.10], acd:[0,20,20,20,20,20],
+       base:['sentinel_strike'], unlock:[] },
+  2: { name:'THE INFERNO', melee:130,
+       spd:[0,0.040,0.052,0.066,0.082,0.10], dmg:[0,1.0,1.45,2.05,2.8,3.7],
+       phases:[0.80,0.60,0.40,0.20], acd:[0,20,13,11,9,7],
+       base:['inferno_cube'], unlock:[[2,'molten_rift'],[3,'core_collapse'],[4,'depth_inferno']] },
+  3: { name:'THE ARCHON', melee:80,
+       spd:[0,0.028,0.036,0.046,0.058,0.072], dmg:[0,1.0,1.45,2.05,2.8,3.7],
+       phases:[0.80,0.60,0.40,0.20], acd:[0,20,13,11,9,7],
+       base:['void_orb'], unlock:[[2,'laser_beam'],[3,'teleport'],[4,'orbital_barrage']] },
+  4: { name:'XERATHOR', melee:160,
+       spd:[0,0.034,0.044,0.056,0.07,0.086], dmg:[0,1.1,1.6,2.3,3.1,4.0],
+       phases:[0.80,0.60,0.40,0.20], acd:[0,20,13,11,8,6],
+       base:['cube_catalyst'], unlock:[[2,'geometric_lash'],[3,'sphere_of_nullity'],[4,'reality_reformat']] },
+  5: { name:'THE OVERSEER', melee:120,
+       spd:[0,0.030,0.044,0.060,0.060,0.060], dmg:[0,1.2,1.8,2.6,2.6,2.6],
+       phases:[0.66,0.33], acd:[0,20,12,9],
+       base:['plasma_bolts'], unlock:[[2,'techno_blades'],[2,'mechanical_assault'],[3,'overcharge']] },
+  6: { name:'THE ANCIENT', melee:150,
+       spd:[0,0.024,0.030,0.038,0.046,0.056], dmg:[0,1.2,1.7,2.4,3.2,4.2],
+       phases:[0.80,0.60,0.40,0.20], acd:[0,20,14,12,10,8],
+       base:['root_slam'], unlock:[[2,'natures_grasp'],[2,'leaf_storm'],[4,'ancient_wrath']] },
+};
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a548). Sequential 5-attack rotation.
@@ -4444,6 +4474,127 @@ const ZBOSS_SERVER = {
     passive: (c) => {
       const { b, mult, ang, nd, proj } = c;
       if (b._vt % 7 === 0 && nd < 16) proj(ang, 0xffcc44, Math.floor(45 * mult), 'plasma');
+    },
+  },
+
+// ── THE CONVERGENCE (a564). One zone, SIX bosses — a different one at each depth,
+  //    and the zone is procedurally regenerated on every descent. The server already
+  //    owned the run seed, the depth, the per-depth mob pools and the boss HP scaling;
+  //    the boss AI was the last piece still running on each client independently.
+  //    Every depth keeps its own speed curve, damage table, phase ladder and cadence,
+  //    which is what the function-valued config above exists for.
+  //    Each boss opens with one move and unlocks the rest as it is worn down.
+  convergence: {
+    x: 180, z: 180,                                    // tile (120,120)
+    spd:    (z) => _CV[_cvD(z)].spd,
+    dmg:    (z) => _CV[_cvD(z)].dmg,
+    phases: (z) => _CV[_cvD(z)].phases,
+    acd:    (z) => _CV[_cvD(z)].acd,
+    tele:   9,
+    pick:   (b, ph) => {
+      // the depth is on the zone, which pick doesn't get — stash it from the last tick
+      const D = b._cvDepth || 1;
+      const set = _CV[D];
+      const moves = set.base.slice();
+      for (const u of set.unlock) if (ph >= u[0]) moves.push(u[1]);
+      b._cvIdx = ((b._cvIdx || 0) + 1) % moves.length;
+      b._cvMove = moves[b._cvIdx];
+      return 0;
+    },
+    attack: (c) => {
+      const { b, ph, mult, ang, np, nd, zone, zoneName, game, aoe, fx, proj, geyser } = c;
+      const D = _cvD(zone);
+      const m = b._cvMove || _CV[D].base[0];
+      const H = (flat) => Math.floor(flat * mult);
+      fx('cv_move', { d:D, m:m });
+
+      switch (m) {
+        // ── DEPTH 1 — THE DEPTH SENTINEL
+        case 'sentinel_strike': aoe(6.0, H(85)); break;
+
+        // ── DEPTH 2 — THE INFERNO
+        case 'inferno_cube':
+          for (let i = 0; i < 6; i++) proj(i/6*Math.PI*2, 0xff4400, H(150), 'plasma');
+          aoe(6.0, H(150)); break;
+        case 'molten_rift':
+          for (let r = 0; r < 5; r++)
+            geyser(np.x + (Math.random()-0.5)*9, np.z + (Math.random()-0.5)*9, 4 + r*2, 3.0, H(120), 0xff6600);
+          break;
+        case 'core_collapse': aoe(11.0, H(170)); break;
+        case 'depth_inferno':
+          for (let i = 0; i < 10; i++) proj(i/10*Math.PI*2, 0xff2200, H(140), 'plasma');
+          aoe(8.0, H(140)); break;
+
+        // ── DEPTH 3 — THE ARCHON
+        case 'void_orb':
+          for (let i = 0; i < 4; i++) proj(ang + (i-1.5)*0.20, 0x9a3cff, H(120), 'void');
+          break;
+        case 'laser_beam':
+          fx('cv_beam', { dir:+ang.toFixed(3), len:24 });
+          for (let d2 = 1; d2 <= 10; d2++)
+            geyser(b.x + Math.sin(ang)*d2*2.4, b.z + Math.cos(ang)*d2*2.4, 7, 1.8, H(200), 0x30b8ff);
+          break;
+        case 'teleport':
+          b.x = np.x + (Math.random()-0.5)*8; b.z = np.z + (Math.random()-0.5)*8;
+          fx('cv_blink', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) }); break;
+        case 'orbital_barrage':
+          for (let o = 0; o < 6; o++)
+            geyser(np.x + (Math.random()-0.5)*11, np.z + (Math.random()-0.5)*11, 5 + o, 3.2, H(150), 0x30b8ff, { shake:10 });
+          break;
+
+        // ── DEPTH 4 — XERATHOR
+        case 'cube_catalyst':
+          for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0x6ad8ff, H(130), 'void');
+          aoe(6.0, H(130)); break;
+        case 'geometric_lash': aoe(8.5, H(140)); break;
+        case 'sphere_of_nullity':
+          for (let o = 0; o < 4; o++)
+            geyser(np.x + (Math.random()-0.5)*8, np.z + (Math.random()-0.5)*8, 6 + o*2, 2.6, H(90), 0xb060ff);
+          break;
+        case 'reality_reformat':
+          fx('cv_reformat'); aoe(14.0, H(100));
+          for (let i = 0; i < 12; i++) proj(i/12*Math.PI*2, 0xdc8cff, H(100), 'void');
+          break;
+
+        // ── DEPTH 5 — THE OVERSEER
+        case 'plasma_bolts':
+          for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.17, 0x30e0ff, H(95), 'plasma');
+          break;
+        case 'techno_blades': aoe(5.5, H(70)); 
+          for (let i = 0; i < 6; i++) proj(ang + (i-2.5)*0.22, 0xbfe8ff, H(70), 'bolt');
+          break;
+        case 'mechanical_assault': aoe(7.0, H(85)); break;
+        case 'overcharge':
+          fx('cv_overcharge'); aoe(10.0, H(150));
+          for (let i = 0; i < 10; i++) proj(i/10*Math.PI*2, 0x30e0ff, H(150), 'lightning');
+          break;
+
+        // ── DEPTH 6 — THE ANCIENT
+        case 'root_slam':
+          aoe(6.5, H(120));
+          for (let r = 0; r < 4; r++)
+            geyser(b.x + Math.sin(ang + (r-1.5)*0.4)*(4 + r*2), b.z + Math.cos(ang + (r-1.5)*0.4)*(4 + r*2),
+                   4 + r, 2.4, H(100), 0x4faa3a);
+          break;
+        case 'natures_grasp':
+          geyser(np.x, np.z, 6, 4.0, H(110), 0x4faa3a, { slow:0.4, slowDur:1500 }); break;
+        case 'leaf_storm':
+          for (let i = 0; i < 12; i++) proj(i/12*Math.PI*2, 0x8fd44a, H(55), 'magic');
+          break;
+        case 'ancient_wrath':
+          fx('cv_wrath'); aoe(13.0, H(150)); break;
+
+        default: aoe(6.0, H(100));
+      }
+    },
+    passive: (c) => {
+      const { b, ph, mult, nd, zone, aoe, fx } = c;
+      const D = _cvD(zone);
+      b._cvDepth = D;                                  // pick() reads this next tick
+      if (b._cvSeen !== D) { b._cvSeen = D; b._cvIdx = 0; fx('cv_depth', { d:D }); }
+      // the standing melee each depth boss keeps up
+      const mel = _CV[D].melee;
+      if (b._vt % 9 === 0 && nd < 5.0) aoe(5.0, Math.floor(mel * mult));
     },
   },
 
@@ -6226,20 +6377,28 @@ function tickZoneBoss(game, zoneName, zone) {
   });
   if (!np) return;
 
+  // a564 — cfg.spd / dmg / phases / acd may be a function of the zone instead of a flat
+  //   array. The Convergence needs this: it is one zone with SIX different bosses, one
+  //   per depth, each with its own speed curve, damage table, phase ladder and cadence.
+  const CSPD = (typeof cfg.spd === 'function') ? cfg.spd(zone) : cfg.spd;
+  const CDMG = (typeof cfg.dmg === 'function') ? cfg.dmg(zone) : cfg.dmg;
+  const CPHS = (typeof cfg.phases === 'function') ? cfg.phases(zone) : cfg.phases;
+  const CACD = (typeof cfg.acd === 'function') ? cfg.acd(zone) : cfg.acd;
+
   // ── Phase escalation from the config's HP ladder
-  const th = cfg.phases;
+  const th = CPHS;
   let nph = 1;
   for (let i = 0; i < th.length; i++) if (b.hp <= b.maxHp * th[i]) nph = i + 2;
   if (nph > (b.phase || 1)) {
     b.phase = nph;
-    b.acd = cfg.acd[Math.min(nph, cfg.acd.length - 1)] || 15;
+    b.acd = CACD[Math.min(nph, CACD.length - 1)] || 15;
     broadcastToZone(game.id, zoneName, { type:'sv_boss_phase', zone:zoneName, phase:nph });
     broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'zb_phase', zone:zoneName,
                                          ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), phase:nph });
   }
-  const ph = Math.min(b.phase || 1, cfg.dmg.length - 1);   // a550 — was hardcoded 5; OVERSEER ZERO runs 8
-  if (!b.acd) b.acd = cfg.acd[1] || 20;
-  const mult = cfg.dmg[ph];
+  const ph = Math.min(b.phase || 1, CDMG.length - 1);   // a550 — was hardcoded 5; OVERSEER ZERO runs 8
+  if (!b.acd) b.acd = CACD[1] || 20;
+  const mult = CDMG[ph];
   const ang = Math.atan2(np.x - b.x, np.z - b.z);
 
   // ── Shared helpers handed to the config's attack/passive handlers
@@ -6278,7 +6437,7 @@ function tickZoneBoss(game, zoneName, zone) {
     nx = b._anchorX + Math.cos(b._drift) * dr;
     nz = b._anchorZ + Math.sin(b._drift * 0.8) * dr;
   } else {
-    const spd = cfg.spd[ph] * 6;
+    const spd = CSPD[ph] * 6;
     nx = b.x + Math.sin(ang)*spd; nz = b.z + Math.cos(ang)*spd;
   }
   if (nx > 2 && nx < 358 && nz > 2 && nz < 358) { b.x = nx; b.z = nz; }
