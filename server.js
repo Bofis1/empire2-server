@@ -4203,12 +4203,55 @@ function broadcastToZone(gameId, zone, data, exclude = null) {
   });
 }
 
+let _pidSeq = 0;   // a578
 function getPlayersInZone(gameId, zone) {
   const result = [];
   players.forEach((p, ws) => {
     if (p.gameId === gameId && p.zone === zone && p.x !== undefined) result.push(p);
   });
   return result;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// a578 — PLAYER LIVENESS. The server had no idea whether a player was alive, so mobs
+//   and bosses picked their target from everyone in the zone and kept chasing a corpse
+//   while a living teammate stood right there. Players now report health on every
+//   state packet, and downed / dead / alive as explicit events. Anything that CHOOSES
+//   A TARGET uses getTargetablePlayersInZone; anything that asks "is anyone here?"
+//   keeps the full list — a downed player waiting for a revive still counts as present,
+//   so zones don't sleep, bosses don't reset and a Convergence run isn't wiped.
+// ═══════════════════════════════════════════════════════════════════════════════
+const REVIVE_RANGE     = 3.5;    // world units, a touch wider than the client's 3.0 prompt
+const REVIVE_HOLD_MS   = 2700;   // the 3s hold, less a little network slack
+function isTargetable(p){
+  return !!p && !p.downed && !p.dead && !(typeof p.hp === 'number' && p.hp <= 0);
+}
+function getTargetablePlayersInZone(gameId, zone){
+  return getPlayersInZone(gameId, zone).filter(isTargetable);
+}
+// Once a second, every zone's players get the roster of who's there: health, downed,
+//   dead and position. Built per recipient so each client can tell which entry is itself.
+function _broadcastPartyRosters(){
+  const groups = new Map();
+  players.forEach((p, ws) => {
+    if (!p.gameId || !p.zone || ws.readyState !== 1) return;
+    const k = p.gameId + '|' + p.zone;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push([p, ws]);
+  });
+  groups.forEach(list => {
+    const m = list.map(([p]) => ({
+      id: p.pid, n: p.name || '?',
+      hp: (typeof p.hp === 'number') ? Math.round(p.hp) : null,
+      mhp: (typeof p.maxHp === 'number') ? Math.round(p.maxHp) : null,
+      dn: p.downed ? 1 : 0, dd: p.dead ? 1 : 0,
+      x: (p.x !== undefined) ? +(+p.x).toFixed(2) : null,
+      z: (p.z !== undefined) ? +(+p.z).toFixed(2) : null,
+    }));
+    list.forEach(([p, ws]) => {
+      try { ws.send(JSON.stringify({ type:'sv_party', me:p.pid, m:m })); } catch(e){}
+    });
+  });
 }
 
 // ══════════════════════════════════════════════════════════
@@ -6365,7 +6408,7 @@ function tickZoneBoss(game, zoneName, zone) {
   if (!cfg) return;
   const b = zone.boss;
   if (!b || !b.spawned || b.hp <= 0) return;
-  const zonePlayers = getPlayersInZone(game.id, zoneName);
+  const zonePlayers = getTargetablePlayersInZone(game.id, zoneName);   // a578 — bosses only target the living
   if (zonePlayers.length === 0) return;
   if (b.x === undefined) { b.x = cfg.x; b.z = cfg.z; }
 
@@ -6498,7 +6541,7 @@ function tickWorldBoss(game) {
     despawnWorldBoss(game, false, null, wb.x, wb.z);
     return;
   }
-  const zonePlayers = getPlayersInZone(game.id, wb.zone);
+  const zonePlayers = getTargetablePlayersInZone(game.id, wb.zone);   // a578
   if (zonePlayers.length === 0) {
     // No one in zone — reset aggro, freeze position
     if (wb.aggroed) { wb.aggroed = false; }
@@ -6572,6 +6615,8 @@ function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
     const hasPlayers = zonePlayers.length > 0;
+    // a578 — presence uses everyone; choosing a target or a victim uses the living only
+    const targetPlayers = zonePlayers.filter(isTargetable);
     if (hasPlayers) zone.lastActivity = Date.now();
 
     // a233 — CO-OP: when the Convergence empties, end the shared run so the next
@@ -6622,7 +6667,7 @@ function tickGame(game) {
 
       // Find nearest player in zone
       let nearestPlayer = null, nearestDist = Infinity;
-      zonePlayers.forEach(p => {
+      targetPlayers.forEach(p => {   // a578 — never chase a downed or dead player
         const dx = p.x - e.x, dz = p.z - e.z;
         const d = Math.sqrt(dx*dx + dz*dz);
         if (d < nearestDist) { nearestDist = d; nearestPlayer = p; }
@@ -6740,7 +6785,7 @@ function tickGame(game) {
               ex:+hx.toFixed(2), ez:+hz.toFixed(2)
             });
             let victim = null;
-            zonePlayers.forEach(p => {
+            targetPlayers.forEach(p => {   // a578 — a downed body doesn't absorb the shot
               if (p.x === undefined) return;
               const ddx = p.x - hx, ddz = p.z - hz;
               if (ddx*ddx + ddz*ddz < 2.2*2.2) victim = p; // a524 widened hit radius
@@ -10449,7 +10494,7 @@ function _fgSpawnEnt(game, zoneName, zone, ent){
 function _fgTickEntities(game, zoneName, zone){
   const list = zone._fgEnt;
   if (!list || list.length === 0) return;
-  const zonePlayers = getPlayersInZone(game.id, zoneName);
+  const zonePlayers = getTargetablePlayersInZone(game.id, zoneName);   // a578
   const hitP = (ws, dmg, x, z) => send(ws, { type:'sv_enemy_attack', eid:-3, dmg:dmg,
     ex:+x.toFixed(2), ez:+z.toFixed(2), zone:zoneName });
 
@@ -10540,7 +10585,7 @@ const _XF_CYAN=0x00ffff, _XF_RED=0xff2233, _XF_GOLD=0xffc832, _XF_LIME=0x9dff00;
 function _xfTickPylons(game, zoneName, zone){
   const list = zone._xfPylons;
   if (!list || list.length === 0) return;
-  const zonePlayers = getPlayersInZone(game.id, zoneName);
+  const zonePlayers = getTargetablePlayersInZone(game.id, zoneName);   // a578
   for (let i = list.length - 1; i >= 0; i--) {
     const py = list[i];
     py.t++;
@@ -10678,11 +10723,13 @@ function sendZoneSnapshot(ws, game, zoneName) {
 // ══════════════════════════════════════════════════════════
 // GLOBAL GAME LOOP — 10Hz
 // ══════════════════════════════════════════════════════════
+let _rosterTick = 0;   // a578
 setInterval(() => {
   games.forEach(game => {
     // Tick as soon as a game exists — zones are pre-populated, enemies need ticking from start
     if (game.players.length > 0) tickGame(game);
   });
+  if (++_rosterTick % 10 === 0) { try { _broadcastPartyRosters(); } catch(e){} }   // a578 — 1Hz
 }, 100);
 
 // ══════════════════════════════════════════════════════════
@@ -10760,7 +10807,7 @@ setInterval(()=>{
 wss.on('connection', ws => {
   ws.isAlive = true;
   ws.on('pong', ()=>{ ws.isAlive = true; });
-  players.set(ws, { name:'', gameId:null, zone:null, x:undefined, z:undefined });
+  players.set(ws, { name:'', gameId:null, zone:null, x:undefined, z:undefined, pid: ++_pidSeq });   // a578 — pid
 
   ws.on('message', raw => {
     ws.isAlive = true;
@@ -11007,14 +11054,67 @@ wss.on('connection', ws => {
         player.x    = data.x;
         player.z    = data.z;
         player.zone = data.zone;
+        // a578 — health and downed ride on the state packet: no extra traffic, and a
+        //   dropped downed/alive event heals itself within a fraction of a second
+        if (typeof data.hp === 'number')  player.hp    = data.hp;
+        if (typeof data.mhp === 'number') player.maxHp = data.mhp;
+        if (data.dn !== undefined)        player.downed = !!data.dn;
         if (player.gameId) {
           const g = games.get(player.gameId);
           if (g) g.started = true;
         }
         break;
 
+      // ── a578 — liveness events ──
+      case 'sv_player_downed':
+        player.downed = true; player.dead = false; player.hp = 0;
+        player._downedAt = Date.now();
+        if (player.gameId && player.zone)
+          broadcastToZone(player.gameId, player.zone, { type:'sv_party_event', ev:'downed', id:player.pid, n:player.name }, ws);
+        break;
+      case 'sv_player_dead':
+        player.downed = false; player.dead = true; player.hp = 0;
+        if (player.gameId && player.zone)
+          broadcastToZone(player.gameId, player.zone, { type:'sv_party_event', ev:'dead', id:player.pid, n:player.name }, ws);
+        break;
+      case 'sv_player_alive':
+        player.downed = false; player.dead = false;
+        if (typeof data.hp === 'number') player.hp = data.hp;
+        if (typeof data.mhp === 'number') player.maxHp = data.mhp;
+        if (player.gameId && player.zone)
+          broadcastToZone(player.gameId, player.zone, { type:'sv_party_event', ev:'alive', id:player.pid, n:player.name }, ws);
+        break;
+
+      // ── a578 — REVIVE, validated server-side ──
+      //   Two messages so the 3s hold is enforced here, not trusted from the client:
+      //   start records who you're reviving and when; finish is only honoured if it
+      //   comes at least REVIVE_HOLD_MS later, and both are checked against the server's
+      //   own positions — the reviver standing, the target downed, same zone, in range.
+      case 'sv_revive_start':
+      case 'sv_revive': {
+        if (!player.gameId || !player.zone || !isTargetable(player)) { player._revT = null; break; }
+        const _tid = data.target | 0;
+        let _tws = null, _tp = null;
+        players.forEach((p, w) => {
+          if (p.gameId === player.gameId && p.zone === player.zone && p.pid === _tid) { _tws = w; _tp = p; }
+        });
+        if (!_tp || _tp === player || !_tp.downed || _tp.dead ||
+            _tp.x === undefined || player.x === undefined) { player._revT = null; break; }
+        const _dx = _tp.x - player.x, _dz = _tp.z - player.z;
+        if (_dx*_dx + _dz*_dz > REVIVE_RANGE*REVIVE_RANGE) { player._revT = null; break; }
+        if (data.type === 'sv_revive_start') { player._revT = { id:_tid, at:Date.now() }; break; }
+        if (!player._revT || player._revT.id !== _tid || Date.now() - player._revT.at < REVIVE_HOLD_MS) break;
+        player._revT = null;
+        _tp.downed = false; _tp.dead = false;
+        try { _tws.send(JSON.stringify({ type:'sv_revived', by:player.name, byId:player.pid })); } catch(e){}
+        broadcastToZone(player.gameId, player.zone,
+          { type:'sv_party_event', ev:'revived', id:_tp.pid, n:_tp.name, by:player.name });
+        break;
+      }
+
       case 'sv_enter_zone': {
         player.zone = data.zone;
+        player.downed = false; player.dead = false;   // a578 — arriving somewhere means you're up
         if(!player.name && data.name) player.name = data.name.slice(0,20).replace(/[<>]/g,'');
 
         // Recover gameId if lost after WS reconnect
