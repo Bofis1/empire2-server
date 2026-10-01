@@ -4181,7 +4181,84 @@ function buildRunState(zone, zoneName) {
 // SEND HELPERS
 // ══════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a579 — THE DAMAGE CURVE. Every hit an enemy lands on a player now climbs with the
+//   zone's level. Measured with live bots in all 26 zones, 19 zones' mobs and 21 of
+//   their bosses hit SOFTER than some lower-level zone already did: the Ashlands (35)
+//   hit for a third of the Citadel (25), five of the six level-100 zones averaged
+//   under the Ancient Realm (58), and Overseer Zero opened softer than the level-5
+//   Patrol boss. Damage now follows one curve:
+//
+//       target(L) = DMG_CURVE_LO * (DMG_CURVE_HI / DMG_CURVE_LO) ^ ((L - 5) / 95)
+//
+//   anchored on the game as it stands — level 5 unchanged, level 95 on the Forge, your
+//   hardest tuned zone — so it rises a steady ~2.9% per level. Bosses open at
+//   BOSS_DMG_RATIO times their zone's mobs and then escalate through their phases
+//   exactly as designed.
+//
+//   "Damage" here is the average of a zone's MEANINGFUL hits (the upper half of what
+//   it lands), not the raw average: plain averages are dragged down by chip damage,
+//   and normalising them would have turned bosses' big telegraphed slams into one-shots.
+//
+//   Every enemy attack passes through send(), so one multiplier per zone does the job
+//   and each zone keeps its own internal mix of chip, burst and abilities. eid:-1 is
+//   only ever used by boss code (direct hits, boss projectiles and boss geysers), so it
+//   selects the boss curve. Convergence keeps its own depth scaling and isn't listed.
+//
+//   Change the anchors and every multiplier recomputes. If you retune a zone's mobs,
+//   re-run the measurement scripts and update its row below.
+// ═══════════════════════════════════════════════════════════════════════════════
+const DMG_CURVE_LO   = 46;     // average meaningful hit at level 5   (the Patrol, unchanged)
+const DMG_CURVE_HI   = 720;    // average meaningful hit at level 100
+const BOSS_DMG_RATIO = 1.5;    // a boss opens this many times harder than its zone's mobs
+function dmgCurve(L){
+  return DMG_CURVE_LO * Math.pow(DMG_CURVE_HI / DMG_CURVE_LO, (L - 5) / 95);
+}
+// measured in a578: average meaningful hit for each zone's mobs and its boss (phase 1)
+const ZONE_DMG_BASE = {
+  patrol:          { lvl:  5, mob:  46, boss: 152 },
+  blooming_wilds:  { lvl: 10, mob:  44, boss:  22 },
+  void:            { lvl: 15, mob:  42, boss: 114 },
+  cemetery:        { lvl: 20, mob:  54, boss: 100 },
+  citadel:         { lvl: 25, mob: 161, boss: 123 },
+  aviacanyon:      { lvl: 30, mob: 103, boss: 196 },
+  ashlands:        { lvl: 35, mob:  60, boss: 121 },
+  caves_of_despair:{ lvl: 40, mob:  90, boss:  94 },
+  fungal:          { lvl: 42, mob:  95, boss: 106 },
+  frostveil:       { lvl: 50, mob: 229, boss: 110 },
+  ancient:         { lvl: 58, mob: 348, boss: 114 },
+  sunken_sands:    { lvl: 60, mob: 292, boss: 130 },
+  dragonlair:      { lvl: 65, mob: 167, boss: 209 },
+  riftvale:        { lvl: 65, mob: 274, boss:  45 },
+  void_citadel:    { lvl: 70, mob: 216, boss: 191 },
+  veiled_sanctuary:{ lvl: 80, mob: 228, boss: 217 },
+  wyvernwastes:    { lvl: 80, mob: 259, boss: 238 },
+  xumen:           { lvl: 80, mob: 267, boss: 183 },
+  xulcan:          { lvl: 90, mob: 633, boss: 407 },
+  forge:           { lvl: 95, mob: 624, boss: 288 },
+  lucidwilde:      { lvl:100, mob: 526, boss: 377 },
+  necropolis:      { lvl:100, mob: 183, boss: 150 },
+  neon_hollow:     { lvl:100, mob: 275, boss: 118 },
+  the_reach:       { lvl:100, mob: 422, boss: 316 },
+  xeron:           { lvl:100, mob: 290, boss:  97 },
+  xumen_fortress:  { lvl:100, mob: 334, boss: 141 }
+};
+const ZONE_DMG_K = {};
+Object.keys(ZONE_DMG_BASE).forEach(function(z){
+  const r = ZONE_DMG_BASE[z], t = dmgCurve(r.lvl);
+  ZONE_DMG_K[z] = { mob: r.mob ? t / r.mob : 1, boss: r.boss ? (t * BOSS_DMG_RATIO) / r.boss : 1 };
+});
+function _scaleEnemyAttack(ws, data){
+  const k = ZONE_DMG_K[data.zone || (players.get(ws) || {}).zone];
+  if (!k) return data;
+  const m = (data.eid === -1) ? k.boss : k.mob;
+  if (!m || m === 1) return data;
+  // copy: the same object is often sent to several players, and must be scaled once each
+  return Object.assign({}, data, { dmg: Math.max(1, Math.round(data.dmg * m)) });
+}
+
 function send(ws, data) {
+  if (data && data.type === 'sv_enemy_attack' && typeof data.dmg === 'number') data = _scaleEnemyAttack(ws, data);
   if (ws.readyState === 1) ws.send(JSON.stringify(data));
 }
 
