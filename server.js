@@ -11,7 +11,7 @@ const server = http.createServer(app);
 //   single client send a giant frame (e.g. a bloated sv_cloud_save) and force a
 //   full synchronous disk rewrite, or just exhaust memory. 256KB is far larger than
 //   any legitimate message (the biggest is a full character save) with headroom.
-const wss = new WebSocketServer({ server, maxPayload: 256 * 1024 });
+const wss = new WebSocketServer({ server, maxPayload: 1536 * 1024 });   // a580 — big characters (see SAVE_MAX_BYTES)
 
 const players = new Map(); // ws -> player obj
 const games   = new Map(); // gameId -> game obj
@@ -143,10 +143,58 @@ const SAVES_FILE = path.join(DATA_DIR, 'saves.json');
 let cloudSaves = {};
 let saveOwners = {}; // a481 — saveKey -> owner token (declared before load block that uses it)
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a580 — CHARACTER SAFETY. Every character lives in this one file, with no history.
+//   Two ways that loses characters are closed here:
+//   1. A CORRUPT FILE USED TO BE ERASED. If saves.json failed to parse, the server
+//      started with an empty save list — and its next routine write replaced the
+//      damaged file with nothing. Now the bad file is set aside untouched and the
+//      newest good backup is loaded, and an empty save list is never written over a
+//      non-empty file.
+//   2. NO BACKUPS. The file is now snapshotted at startup and every hour into
+//      save_backups/, keeping the last 48 hourly copies plus one a day for 30 days.
+//   Plus a per-character safety net: if a save arrives that looks like a wipe — a
+//   level drop, the bag more than halving, or 90% of the gold vanishing — the version
+//   it replaces is kept in `prev`, so one character can be restored without rolling
+//   back everyone else. Use restore_saves.js to list backups or restore a character.
+// ═══════════════════════════════════════════════════════════════════════════════
+const SAVE_BACKUP_DIR = path.join(DATA_DIR, 'save_backups');
+const SAVE_MAX_BYTES  = 1024 * 1024;   // ~11,000 items; the frame cap sits above it
+let savesPrev = {};   // key -> { data, ts, reason }: the version a suspicious save replaced
+function _parseSaveEnvelope(txt){
+  const p = JSON.parse(txt);
+  if (p && p.saves && typeof p.saves === 'object')
+    return { saves:p.saves, owners:(p.owners && typeof p.owners==='object') ? p.owners : {},
+             prev:(p.prev && typeof p.prev==='object') ? p.prev : {} };
+  return { saves:p || {}, owners:{}, prev:{} };            // legacy flat file
+}
+function _newestGoodBackup(){
+  try {
+    const files = fs.readdirSync(SAVE_BACKUP_DIR).filter(f => /^saves-.*\.json$/.test(f)).sort().reverse();
+    for (const f of files) {
+      try { return { file:f, env:_parseSaveEnvelope(fs.readFileSync(path.join(SAVE_BACKUP_DIR, f), 'utf8')) }; }
+      catch(e){ console.warn('[saves] backup ' + f + ' is also unreadable, trying older'); }
+    }
+  } catch(e){}
+  return null;
+}
+
 // Load saves from disk on startup
 try {
   if (fs.existsSync(SAVES_FILE)) {
-    const _parsed = JSON.parse(fs.readFileSync(SAVES_FILE, 'utf8'));
+    let _parsed;
+    try { _parsed = JSON.parse(fs.readFileSync(SAVES_FILE, 'utf8')); }
+    catch (_corrupt) {
+      // a580 — set the damaged file aside instead of letting the next write erase it
+      const _aside = SAVES_FILE + '.corrupt-' + Date.now();
+      try { fs.copyFileSync(SAVES_FILE, _aside); } catch(e){}
+      console.error('[saves] !!! saves.json is unreadable (' + _corrupt.message + '). Kept a copy at ' + _aside);
+      const _bk = _newestGoodBackup();
+      if (!_bk) throw _corrupt;
+      console.error('[saves] !!! Restored ' + Object.keys(_bk.env.saves).length + ' characters from backup ' + _bk.file);
+      _parsed = { saves:_bk.env.saves, owners:_bk.env.owners, prev:_bk.env.prev };
+    }
+    if (_parsed && _parsed.prev && typeof _parsed.prev === 'object') savesPrev = _parsed.prev;
     // a481 — file shape migration. New format is { saves:{...}, owners:{...} }.
     //   Legacy files were the flat saves object with no owners — detect that (no
     //   `saves` key) and load it as saves with an empty owners map, so every legacy
@@ -178,7 +226,18 @@ function flushSaves() {
     //   truncated saves.json that takes ALL cloud saves with it. Now we serialize
     //   the {saves, owners} envelope, write to a temp file, then rename() — which is
     //   atomic on the same filesystem, so a crash never leaves a half-written file.
-    const payload = JSON.stringify({ saves: cloudSaves, owners: saveOwners });
+    // a580 — never write an EMPTY save list over a file that has characters in it.
+    //   An empty in-memory list means something went wrong upstream, not that every
+    //   character was deleted; refusing here keeps the file (and the characters) safe.
+    if (Object.keys(cloudSaves).length === 0) {
+      try {
+        if (fs.existsSync(SAVES_FILE) && fs.statSync(SAVES_FILE).size > 2048) {
+          console.error('[saves] !!! Refusing to overwrite saves.json with an EMPTY save list.');
+          return;
+        }
+      } catch(e){}
+    }
+    const payload = JSON.stringify({ saves: cloudSaves, owners: saveOwners, prev: savesPrev });
     const tmp = SAVES_FILE + '.tmp';
     fs.writeFile(tmp, payload, 'utf8', (err) => {
       if (err) { console.warn('[saves] Failed to write temp file:', err.message); return; }
@@ -187,6 +246,45 @@ function flushSaves() {
       });
     });
   }, 10000);
+}
+
+// a580 — rotating backups: startup + hourly; keep 48 hourly and one per day for 30 days
+function _backupSaves(){
+  try {
+    if (!fs.existsSync(SAVES_FILE)) return;
+    if (!fs.existsSync(SAVE_BACKUP_DIR)) fs.mkdirSync(SAVE_BACKUP_DIR, { recursive:true });
+    const d = new Date(), pad = n => String(n).padStart(2,'0');
+    const stamp = d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())+'-'+pad(d.getUTCHours())+pad(d.getUTCMinutes());
+    fs.copyFile(SAVES_FILE, path.join(SAVE_BACKUP_DIR, 'saves-' + stamp + '.json'), err => {
+      if (err) { console.warn('[saves] backup failed:', err.message); return; }
+      _pruneSaveBackups();
+    });
+  } catch(e){ console.warn('[saves] backup error:', e.message); }
+}
+function _pruneSaveBackups(){
+  try {
+    const files = fs.readdirSync(SAVE_BACKUP_DIR).filter(f => /^saves-\d{8}-\d{4}\.json$/.test(f)).sort().reverse();
+    const keep = new Set(files.slice(0, 48));                 // the most recent 48
+    const days = new Set();
+    for (const f of files) {                                  // plus the newest of each day, 30 days back
+      const day = f.slice(6, 14);
+      if (!days.has(day) && days.size < 30) { days.add(day); keep.add(f); }
+    }
+    for (const f of files) if (!keep.has(f)) fs.unlink(path.join(SAVE_BACKUP_DIR, f), ()=>{});
+  } catch(e){}
+}
+setTimeout(_backupSaves, 5000);
+setInterval(_backupSaves, 60 * 60 * 1000);
+// a580 — does this save look like it would wipe a character?
+function _saveLooksLikeWipe(oldS, newS){
+  if (!oldS || !newS) return null;
+  const ol = +oldS.pLvl || 0, nl = +newS.pLvl || 0;
+  if (ol && nl && ol - nl >= 3) return 'level ' + ol + ' -> ' + nl;
+  const ob = Array.isArray(oldS.bag) ? oldS.bag.length : 0, nb = Array.isArray(newS.bag) ? newS.bag.length : 0;
+  if (ob >= 20 && nb < ob * 0.5) return 'bag ' + ob + ' -> ' + nb + ' items';
+  const og = +oldS.gold || 0, ng = +newS.gold || 0;
+  if (og >= 100000 && ng < og * 0.1) return 'gold ' + og + ' -> ' + ng;
+  return null;
 }
 
 function getSaveKey(name, raceId, cls) {
@@ -10834,7 +10932,7 @@ function getPlayerSummary(){
 }
 function broadcastPlayerList(){ broadcast({ type:'player_list', players:getPlayerSummary() }); }
 function sendGameList(ws){
-  const list = [...games.values()].map(g => ({
+  const list = [...games.values()].filter(g => !g._pausedAt).map(g => ({   // a580 — paused games are private
     id:g.id, name:g.name, host:g.host, hostPeer:g.hostPeer,
     zone:g.zone, players:g.players.length, max:g.maxPlayers, hasPass:!!g.password
   }));
@@ -10842,12 +10940,123 @@ function sendGameList(ws){
 }
 function broadcastGameList(){ broadcast({ type:'game_list_update' }); }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a580 — PRESENCE TUNNEL. Players used to see each other through WebRTC relayed by
+//   the host's browser — which needed a free public TURN relay and PeerJS's public
+//   signaling server to work at all, and which died with the host. Now the game's
+//   existing peer protocol is carried by this server instead: the host is still the
+//   host (it keeps its authority over world events and relaying), every message type
+//   is unchanged, and only the wire is different. Everyone already holds a working
+//   WebSocket to this server, so no NAT traversal is needed.
+//
+//   Traffic is BATCHED: each client sends one frame every ~50ms holding everything
+//   it has queued, and this forwards each recipient's share as one frame. Peer state
+//   runs at 20Hz per player, so unbatched a four-player host would push ~180
+//   messages a second — far past the 30/s game-traffic limit, which is why tunnel
+//   frames have their own budget.
+//
+//   When the host leaves, the game is handed to the next player instead of deleted:
+//   before, a host disconnecting deleted the game outright, which stopped the world
+//   ticking for everyone still in it.
+// ═══════════════════════════════════════════════════════════════════════════════
+const wsByPid = new Map();
+const _TUN_HEAD = '{"type":"sv_tun_b",';   // how every tunnel frame begins (client sends type first)
+const TUN_FRAMES_PER_SEC = 40, TUN_FRAME_BURST = 80, TUN_MSGS_PER_FRAME = 64;
+function _gamePlayers(g){                      // [{pid, name, ws}] in join order, one per connection
+  const out = [], seen = new Set();
+  g.players.forEach(n => {
+    players.forEach((p, w) => {
+      if (p.gameId === g.id && p.name === n && w.readyState === 1 && !seen.has(p.pid)) {
+        seen.add(p.pid); out.push({ pid:p.pid, name:p.name, ws:w });
+      }
+    });
+  });
+  return out;
+}
+function _tunOnFrame(ws, raw){
+  const now = Date.now();
+  if (ws._tunTokens === undefined) { ws._tunTokens = TUN_FRAME_BURST; ws._tunLast = now; }
+  ws._tunTokens = Math.min(TUN_FRAME_BURST, ws._tunTokens + (now - ws._tunLast) * (TUN_FRAMES_PER_SEC / 1000));
+  ws._tunLast = now;
+  if (ws._tunTokens < 1) return;
+  ws._tunTokens -= 1;
+  let d; try { d = JSON.parse(raw); } catch(e){ return; }
+  const me = players.get(ws);
+  if (!me || !me.gameId || !Array.isArray(d.b)) return;
+  const g = games.get(me.gameId);
+  if (!g || !g.tun) return;
+  const out = new Map();                       // recipient pid -> [msgs]
+  for (const item of d.b.slice(0, TUN_MSGS_PER_FRAME)) {
+    if (!Array.isArray(item) || item.length !== 2) continue;
+    const to = item[0] | 0;
+    const tw = wsByPid.get(to);
+    if (!tw || tw === ws) continue;
+    const tp = players.get(tw);
+    if (!tp || tp.gameId !== me.gameId) continue;   // only within your own game
+    if (!out.has(to)) out.set(to, []);
+    out.get(to).push(item[1]);
+  }
+  out.forEach((msgs, to) => {
+    const tw = wsByPid.get(to);
+    if (tw && tw.readyState === 1) tw.send(JSON.stringify({ type:'sv_tun_b', from:me.pid, b:msgs }));
+  });
+}
+// a580 — another live connection of the same character still in this game?
+function _sameCharStillHere(g, leaverWs, name){
+  let here = false;
+  players.forEach((p, w) => { if (w !== leaverWs && p.gameId === g.id && p.name === name && w.readyState === 1) here = true; });
+  return here;
+}
+// a580 — when the last player drops, PAUSE the game for a grace period instead of deleting
+//   it, so a solo player whose connection blips comes back to the same world. An empty
+//   game doesn't tick (the loop skips games with no players), so the world simply waits.
+const TUN_GRACE_MS = 90 * 1000;
+function _tunEndOrPause(gid, g){
+  if (g.players.length > 0) return;
+  g._pausedAt = Date.now();
+  setTimeout(() => { const cur = games.get(gid); if (cur && cur._pausedAt && cur.players.length === 0) games.delete(gid); }, TUN_GRACE_MS + 1000);
+}
+
+// a player has left a tunnel game: hand off the host if needed, tell everyone else
+function _tunPlayerLeft(g, leaver){
+  const rest = _gamePlayers(g).filter(x => x.pid !== leaver.pid);
+  if (!rest.length) return false;               // nobody left: caller deletes the game
+  if (g.hostPid === leaver.pid) {
+    const nh = rest[0];
+    g.hostPid = nh.pid; g.host = nh.name;
+    const roster = rest.map(x => ({ pid:x.pid, name:x.name }));
+    rest.forEach(x => send(x.ws, { type:'sv_tun_host', hostPid:nh.pid, hostName:nh.name, oldPid:leaver.pid,
+                                    oldName:leaver.name, me:x.pid, players:roster }));
+    broadcast({ type:'lobby_chat', name:'SERVER', msg:g.name + ' is now hosted by ' + nh.name + '.', system:true });
+    console.log('[tun] host of game ' + g.id + ' moved ' + leaver.name + ' -> ' + nh.name);
+  } else {
+    rest.forEach(x => send(x.ws, { type:'sv_tun_left', pid:leaver.pid, name:leaver.name }));
+  }
+  return true;
+}
+
 function removePlayer(ws){
   const player = players.get(ws);
   if(!player) return;
   if(player.gameId){
     const g = games.get(player.gameId);
     if(g){
+      // a580 — a tunnel game survives its host: hand it on rather than delete it
+      if (g.tun) {
+        if (!player._retired) _tunPlayerLeft(g, player);   // a retired (stale) socket was already handed over
+        else { const rest = _gamePlayers(g).filter(x => x.pid !== player.pid);
+               rest.forEach(x => send(x.ws, { type:'sv_tun_left', pid:player.pid, name:player.name })); }
+        if (!_sameCharStillHere(g, ws, player.name)) g.players = g.players.filter(n => n !== player.name);
+        _tunEndOrPause(player.gameId, g);
+        broadcastGameList();
+        player.gameId = null;
+        if (player.name) broadcast({ type:'lobby_chat', name:'SERVER', msg:player.name+' left the lobby.', system:true });
+        wsByPid.delete(player.pid);
+        players.delete(ws);
+        broadcast({ type:'player_count', count:players.size });
+        broadcastPlayerList();
+        return;
+      }
       g.players = g.players.filter(n => n !== player.name);
       // If the host disconnected, delete the game entirely
       if(g.host === player.name){
@@ -10865,6 +11074,7 @@ function removePlayer(ws){
   if(player.name){
     broadcast({ type:'lobby_chat', name:'SERVER', msg:player.name+' left the lobby.', system:true });
   }
+  wsByPid.delete(player.pid);   // a580
   players.delete(ws);
   broadcast({ type:'player_count', count:players.size });
   broadcastPlayerList();
@@ -10885,6 +11095,7 @@ wss.on('connection', ws => {
   ws.isAlive = true;
   ws.on('pong', ()=>{ ws.isAlive = true; });
   players.set(ws, { name:'', gameId:null, zone:null, x:undefined, z:undefined, pid: ++_pidSeq });   // a578 — pid
+  wsByPid.set(players.get(ws).pid, ws);   // a580
 
   ws.on('message', raw => {
     ws.isAlive = true;
@@ -10893,6 +11104,20 @@ wss.on('connection', ws => {
     //   (and, via sv_cloud_save, hammering disk writes). Legitimate play sends a
     //   handful of messages per second; state updates are the most frequent and sit
     //   well under this. Over-budget messages are silently dropped.
+    // a580 — byte budget (3MB burst, 300KB/s), so the larger frame cap can't be abused
+    {
+      const _nb = Date.now(), _len = (raw && raw.length) || 0;
+      if (ws._bbTokens === undefined) { ws._bbTokens = 3 * 1024 * 1024; ws._bbLast = _nb; }
+      ws._bbTokens = Math.min(3 * 1024 * 1024, ws._bbTokens + (_nb - ws._bbLast) * 300);
+      ws._bbLast = _nb;
+      if (_len > ws._bbTokens) return;
+      ws._bbTokens -= _len;
+    }
+    // a580 — presence tunnel frames have their own budget (see TUNNEL below)
+    if ((typeof raw === 'string' ? raw.slice(0, _TUN_HEAD.length) : raw.slice(0, _TUN_HEAD.length).toString()) === _TUN_HEAD) {
+      _tunOnFrame(ws, raw);
+      return;
+    }
     {
       const _now = Date.now();
       if (ws._rlTokens === undefined) { ws._rlTokens = 60; ws._rlLast = _now; }
@@ -10929,7 +11154,7 @@ wss.on('connection', ws => {
           // trust data.guildTag: the client's myGuild isn't populated until the server
           // sends guild_info (later in this handler), so at login it was always null.
         }
-        send(ws, { type:'logged_in', name:player.name });
+        send(ws, { type:'logged_in', name:player.name, tun:1, pid:player.pid });   // a580 — tunnel available
         sendGameList(ws);
         send(ws, { type:'player_count', count:players.size });
         send(ws, { type:'player_list', players:getPlayerSummary() });
@@ -10964,7 +11189,9 @@ wss.on('connection', ws => {
         const incoming = data.saveData;
         // a481 — SERVER-2: per-save size cap. maxPayload already bounds the frame,
         //   but cap the stored blob too so no single save can bloat the file.
-        if (JSON.stringify(incoming).length > 200 * 1024) {
+        // a580 — the cap was 200KB, which a big inventory reaches at roughly 2,200 items;
+        //   past it, saves were silently skipped and the character stopped being backed up.
+        if (JSON.stringify(incoming).length > SAVE_MAX_BYTES) {
           send(ws, { type:'sv_cloud_save_ok', key, skipped:true, error:'save_too_large' });
           break;
         }
@@ -10988,6 +11215,11 @@ wss.on('connection', ws => {
         const existing = cloudSaves[key];
         // Only overwrite if incoming is newer
         if (!existing || (incoming.ts && incoming.ts > (existing.ts||0))) {
+          const _wipe = _saveLooksLikeWipe(existing, incoming);
+          if (_wipe) {
+            savesPrev[key] = { data: existing, ts: Date.now(), reason: _wipe };
+            console.warn('[saves] Kept the previous version of ' + key + ' (' + _wipe + ')');
+          }
           cloudSaves[key] = incoming;
           flushSaves();
           send(ws, { type:'sv_cloud_save_ok', key, ts: incoming.ts });
@@ -11055,6 +11287,7 @@ wss.on('connection', ws => {
         const game = {
           id:gId, name:(data.name||player.name+"'s Game").slice(0,40),
           host:player.name, hostPeer:data.hostPeer,
+          tun: data.hostPeer === 'tun', hostPid: player.pid,   // a580
           zone:data.zone||'XU Outpost', password:data.password||'',
           maxPlayers:Math.min(data.max||4,4), players:[player.name],
           createdAt:Date.now(),
@@ -11078,7 +11311,7 @@ wss.on('connection', ws => {
         });
         games.set(gId, game);
         player.gameId = gId;
-        send(ws, { type:'game_created', game });
+        send(ws, { type:'game_created', game, pid:player.pid });
         broadcastGameList();
         break;
       }
@@ -11100,6 +11333,14 @@ wss.on('connection', ws => {
         if(jGame.password&&jGame.password!==data.password){ send(ws,{type:'join_error',msg:'Wrong password.'}); break; }
         if(!jGame.players.includes(player.name)) jGame.players.push(player.name);
         player.gameId = data.id;
+        if (jGame.tun) {
+          // a580 — introduce the joiner to the host through the tunnel, then let them in
+          const _hw = wsByPid.get(jGame.hostPid);
+          if (_hw) send(_hw, { type:'sv_tun_conn', from:player.pid, name:player.name });
+          send(ws, { type:'join_success', tun:1, hostPid:jGame.hostPid, pid:player.pid, game:jGame });
+          broadcastGameList();
+          break;
+        }
         send(ws, { type:'join_success', hostPeer:jGame.hostPeer, game:jGame });
         broadcastGameList();
         break;
@@ -11108,7 +11349,14 @@ wss.on('connection', ws => {
       case 'leave_game':
         if(player.gameId){
           const lg = games.get(player.gameId);
-          if(lg){
+          if(lg && lg.tun){
+            // a580 — leaving a tunnel game hands it on instead of ending it. A deliberate
+            //   leave ends an empty game straight away; only a dropped connection is paused.
+            _tunPlayerLeft(lg, player);
+            if (!_sameCharStillHere(lg, ws, player.name)) lg.players = lg.players.filter(n => n !== player.name);
+            if (lg.players.length === 0) games.delete(player.gameId);
+            broadcastGameList();
+          } else if(lg){
             lg.players = lg.players.filter(n => n !== player.name);
             if(data.isHost===true && lg.host===player.name){
               games.delete(player.gameId);
@@ -11141,6 +11389,39 @@ wss.on('connection', ws => {
           if (g) g.started = true;
         }
         break;
+
+      // ── a580 — rejoin a tunnel game after the connection dropped ──
+      case 'sv_tun_rejoin': {
+        const g = games.get(data.gameId | 0);
+        if (!g || !g.tun || !player.name) { send(ws, { type:'sv_tun_rejoin_fail' }); break; }
+        if (!g.players.includes(player.name)) {
+          if (g.players.length >= g.maxPlayers) { send(ws, { type:'sv_tun_rejoin_fail' }); break; }
+          g.players.push(player.name);
+        }
+        g._pausedAt = null;
+        player.gameId = g.id;
+        // this character's older, stale connections in the same game
+        const stale = [];
+        players.forEach((p, w) => { if (w !== ws && p.gameId === g.id && p.name === player.name) stale.push([w, p]); });
+        const hostWs = wsByPid.get(g.hostPid);
+        const wasHost = stale.some(([w, p]) => p.pid === g.hostPid) || (g.host === player.name && (!hostWs || hostWs.readyState !== 1));
+        if (wasHost) {
+          // you were hosting: you get it back, on your new connection
+          const oldPid = g.hostPid;
+          g.hostPid = player.pid; g.host = player.name;
+          const live = _gamePlayers(g).filter(x => !stale.some(([w]) => w === x.ws));
+          const roster = live.map(x => ({ pid:x.pid, name:x.name }));
+          live.forEach(x => send(x.ws, { type:'sv_tun_host', hostPid:player.pid, hostName:player.name, oldPid,
+                                          oldName:player.name, me:x.pid, players:roster, rejoin:1 }));
+        } else {
+          if (hostWs && hostWs.readyState === 1) send(hostWs, { type:'sv_tun_conn', from:player.pid, name:player.name });
+          send(ws, { type:'sv_tun_rejoined', hostPid:g.hostPid, pid:player.pid, game:g });
+        }
+        // retire the stale sockets now — they're no longer the host, so their departure is ordinary
+        stale.forEach(([w, p]) => { p._retired = true; try { w.terminate(); } catch(e){} });
+        broadcastGameList();
+        break;
+      }
 
       // ── a578 — liveness events ──
       case 'sv_player_downed':
