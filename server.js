@@ -11001,6 +11001,91 @@ function _tunOnFrame(ws, raw){
     if (tw && tw.readyState === 1) tw.send(JSON.stringify({ type:'sv_tun_b', from:me.pid, b:msgs }));
   });
 }
+// ═══════════════════════════════════════════════════════════════════════════════
+// a582 — GOLD AUDIT (stage 1 of server-owned gold). SHADOW MODE: this observes and
+//   records; it never changes or refuses anyone's gold. The client reports every gold
+//   change, attributed to the function that made it, and the server keeps a running
+//   copy per character, seeded from the stored save. Anything it can't account for is
+//   appended to econ_audit.log:
+//     unknown_source  a gold change from a function not in ECON_SOURCES (a source we
+//                     haven't catalogued yet — or a modified client)
+//     unattributed    the client's gold, or a saved gold figure, differs from what the
+//                     reported changes add up to (a save edited outside the game)
+//     load_mismatch   a character loaded with different gold than the server holds
+//   Every gold source has to read clean here before stage 3 starts enforcing anything.
+//   Run econ_report.js to read the log.
+// ═══════════════════════════════════════════════════════════════════════════════
+const ECON_LOG = path.join(DATA_DIR, 'econ_audit.log');
+const ECON_SOURCES = {
+  // income
+  kill:'kill', killEnemy:'kill', killBoss:'boss', onRareKill:'rare', _worldBossOnDeath:'worldboss',
+  doSell:'sell', _invQuickSell:'sell', sellAllJunk:'sell', _bulkSellByPredicate:'sell',
+  turnInQuest:'quest', claimBounty:'bounty', grantDailyReward:'daily', _apexCompleteTrial:'trial',
+  checkLevelUp:'levelcap', updatePlayer:'pickup', _mpOnData:'party', _removeTutorialDummy:'tutorial',
+  vaultGoldWithdraw:'vault',
+  // spending
+  doBuy:'buy', doUpgrade:'upgrade', buySkill:'skill', upgradeSkill:'skill', vaultGoldDeposit:'vault',
+  guild:'guild', playerDie:'death',
+  // both
+  tradeExecute:'trade',
+};
+const econLedger = new Map();      // save key -> { gold, src:{cat:{sum,n}}, touched }
+function _econLog(o){
+  try {
+    o.at = new Date().toISOString();
+    fs.appendFile(ECON_LOG, JSON.stringify(o) + '\n', () => {});
+    fs.stat(ECON_LOG, (e, st) => { if (!e && st.size > 5 * 1024 * 1024) fs.rename(ECON_LOG, ECON_LOG + '.1', () => {}); });
+  } catch(e){}
+}
+function _econL(key){
+  let L = econLedger.get(key);
+  if (!L) {
+    const sv = cloudSaves[key];
+    L = { gold: (sv && typeof sv.gold === 'number') ? sv.gold : null, src:{}, touched:false };
+    econLedger.set(key, L);
+  }
+  return L;
+}
+function _econOnReport(data){
+  const key = getSaveKey(data.n, data.r, data.c);
+  if (!key) return;
+  const L = _econL(key);
+  L.touched = true;
+  if (typeof data.base === 'number') {
+    if (L.gold !== null && Math.round(L.gold) !== Math.round(data.base))
+      _econLog({ t:'load_mismatch', key, server:L.gold, client:data.base, d:data.base - L.gold });
+    L.gold = data.base;
+  }
+  let sum = 0;
+  (Array.isArray(data.ev) ? data.ev : []).slice(0, 100).forEach(e => {
+    if (!Array.isArray(e)) return;
+    const s = String(e[0]).slice(0, 60), d = +e[1] || 0, n = e[2] | 0;
+    const cat = ECON_SOURCES[s] || ('unknown:' + s);
+    const S = L.src[cat] || (L.src[cat] = { sum:0, n:0 });
+    S.sum += d; S.n += n;
+    if (!ECON_SOURCES[s]) _econLog({ t:'unknown_source', key, src:s, d, n });
+    sum += d;
+  });
+  if (L.gold === null) L.gold = (typeof data.g === 'number') ? data.g - sum : 0;   // first sight: anchor on the client
+  L.gold += sum;
+  if (typeof data.g === 'number' && Math.round(data.g) !== Math.round(L.gold)) {
+    _econLog({ t:'unattributed', key, where:'live', expected:L.gold, client:data.g, d:data.g - L.gold });
+    L.gold = data.g;
+  }
+}
+// a save is compared against the running copy, then (shadow mode) still accepted as-is
+function _econOnSave(key, incoming){
+  const L = econLedger.get(key);
+  if (!L || typeof incoming.gold !== 'number') return;
+  if (L.gold !== null && Math.round(L.gold) !== Math.round(incoming.gold))
+    _econLog({ t:'unattributed', key, where:'save', expected:L.gold, client:incoming.gold, d:incoming.gold - L.gold });
+  L.gold = incoming.gold;
+}
+// every ten minutes, a per-source summary for each character that was active
+setInterval(() => {
+  econLedger.forEach((L, key) => { if (L.touched) { _econLog({ t:'summary', key, gold:L.gold, src:L.src }); L.touched = false; L.src = {}; } });
+}, 10 * 60 * 1000);
+
 // a580 — another live connection of the same character still in this game?
 function _sameCharStillHere(g, leaverWs, name){
   let here = false;
@@ -11220,6 +11305,7 @@ wss.on('connection', ws => {
             savesPrev[key] = { data: existing, ts: Date.now(), reason: _wipe };
             console.warn('[saves] Kept the previous version of ' + key + ' (' + _wipe + ')');
           }
+          try { _econOnSave(key, incoming); } catch(e){}   // a582 — compare against the running gold copy
           cloudSaves[key] = incoming;
           flushSaves();
           send(ws, { type:'sv_cloud_save_ok', key, ts: incoming.ts });
@@ -11388,6 +11474,11 @@ wss.on('connection', ws => {
           const g = games.get(player.gameId);
           if (g) g.started = true;
         }
+        break;
+
+      // ── a582 — gold audit report (shadow mode) ──
+      case 'sv_econ':
+        try { _econOnReport(data); } catch(e){ console.warn('[econ] report error', e.message); }
         break;
 
       // ── a580 — rejoin a tunnel game after the connection dropped ──
