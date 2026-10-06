@@ -589,6 +589,7 @@ const WORLD_BOSS_IDLE_MS = 5 * 60 * 1000; // 5 min
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
+  carport: [],   // a583 — skycar dealership, safe
   // a529 — MULTIPLAYER MIGRATION: Xu Patrol is now server-authoritative (bespoke patrol AI server-side).
   patrol: [
     {type:'xu_rebel', tx:20, tz:27},
@@ -11028,6 +11029,7 @@ const ECON_SOURCES = {
   guild:'guild', playerDie:'death',
   // both
   tradeExecute:'trade',
+  _carBuy:'skycar',   // a583
 };
 const econLedger = new Map();      // save key -> { gold, src:{cat:{sum,n}}, touched }
 function _econLog(o){
