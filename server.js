@@ -10921,9 +10921,18 @@ function broadcast(data, exclude=null){
 function getPlayerNames(){ return [...players.values()].filter(p=>p.name).map(p=>p.name); }
 // v93.0-a66 — richer payload: {name, level, cls, raceName} per player.
 // Defaults are sane for clients who haven't sent the new fields yet (old client).
+// a596 — character portraits for the lobby list. Clients send a small image (~2-4 KB);
+//   the list itself only carries a version number, and clients fetch the images they lack.
+let _portraitSeq = 0;
+function _cleanPortrait(s){
+  if (typeof s !== 'string' || s.length > 24000) return null;
+  const m = /^data:image\/(png|webp|jpeg);base64,([A-Za-z0-9+\/=]+)$/.exec(s);
+  return m ? s : null;
+}
 function getPlayerSummary(){
   return [...players.values()].filter(p=>p.name).map(p=>({
     name: p.name,
+    pv: p.portrait ? (p.pv || 0) : 0,   // a596 — portrait version (0 = none)
     level: (typeof p.level === 'number') ? p.level : 1,
     cls: p.cls || 'Warrior',
     raceName: p.raceName || 'Xu',
@@ -11236,6 +11245,8 @@ wss.on('connection', ws => {
           // v93.0-a256 — ascendancy level for the player list. Clamp to a sane range.
           const _asc = parseInt(data.asc, 10);
           player.asc = (isFinite(_asc) && _asc >= 0 && _asc <= 99999) ? _asc : 0;
+          // a596 — character portrait for the lobby list
+          { const _pt = _cleanPortrait(data.portrait); if (_pt) { player.portrait = _pt; player.pv = ++_portraitSeq; } }
           // v93.0-a258 — guild tag is resolved server-side from our persisted guild
           // registry (see getPlayerSummary → _serverGuildTag). We intentionally do NOT
           // trust data.guildTag: the client's myGuild isn't populated until the server
@@ -11255,6 +11266,27 @@ wss.on('connection', ws => {
         }
         break;
 
+      case 'set_portrait': {   // a596 — gear changed: new face for the lobby list
+        if (!player.name) break;
+        const _pt = _cleanPortrait(data.portrait);
+        if (!_pt || _pt === player.portrait) break;
+        const _now = Date.now();
+        if (player._portraitAt && _now - player._portraitAt < 5000) break;
+        player._portraitAt = _now;
+        player.portrait = _pt; player.pv = ++_portraitSeq;
+        broadcastPlayerList();
+        break;
+      }
+      case 'get_portraits': {   // a596 — images for the names a client is missing
+        if (!Array.isArray(data.names)) break;
+        const items = {};
+        const want = new Set(data.names.slice(0, 40).map(String));
+        for (const p of players.values()) {
+          if (p.name && p.portrait && want.has(p.name)) items[p.name] = { pv: p.pv || 0, img: p.portrait };
+        }
+        send(ws, { type:'portraits', items });
+        break;
+      }
       case 'lobby_chat':
         if(!player.name) break;
         const msg = (data.msg||'').slice(0,200).replace(/[<>]/g,'');
