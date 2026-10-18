@@ -4437,6 +4437,13 @@ function _broadcastPartyRosters(){
 
 const ATTACK_COOLDOWN = 60; // frames at 10Hz = 6 seconds... adjusted to ticks
 const ATTACK_RANGE   = 2.5;
+// a597 — every mob notices you from further than a staff can reach. A staff bolt travels
+//   ~22u and the server accepts magic/ranged hits from up to 24u, so mages could clear
+//   whole packs from outside aggro range. Nothing aggros from less than this now.
+const AGGRO_FLOOR    = 26;
+// a597 — a mob that's hit locks on to whoever hit it and chases them anywhere in the zone.
+//   If that player stops hitting it for this long it falls back to the nearest player.
+const HIT_LOCK_MS    = 30000;
 const RESPAWN_TICKS  = 300; // 30 seconds at 10Hz
 
 // ──────────────────────────────────────────────────────────
@@ -6829,7 +6836,7 @@ function tickGame(game) {
         if (e.respawnTimer >= RESPAWN_TICKS) {
           e.active = true; e.hp = e.maxHp;
           e.x = e.spawnX; e.z = e.spawnZ;
-          e.respawnTimer = 0; e.aggroed = false;
+          e.respawnTimer = 0; e.aggroed = false; e._tgt = null;   // a597
           changed.push(e);
         }
         return;
@@ -6837,7 +6844,7 @@ function tickGame(game) {
 
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
-        if (e.aggroed) { e.aggroed = false; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
+        if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
         return;
       }
 
@@ -6871,7 +6878,16 @@ function tickGame(game) {
         ? Math.max(e.aggroRange || 10, 22)
         : (zoneName === 'the_reach' && RE_BESPOKE[e.type])    // a563 — elites use their own stat range
         ? (e.aggroRange || 18) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
-      if (nearestDist <= _aggroR) e.aggroed = true;
+      // a597 — hit-lock: chase the player who hit us, however far away they are
+      if (e._tgt) {
+        const _hp = (Date.now() - (e._tgtAt || 0) < HIT_LOCK_MS) ? targetPlayers.find(p => p.name === e._tgt) : null;
+        if (_hp) {
+          const _dx = _hp.x - e.x, _dz = _hp.z - e.z;
+          nearestPlayer = _hp; nearestDist = Math.sqrt(_dx*_dx + _dz*_dz);
+          e.aggroed = true;
+        } else { e._tgt = null; }
+      }
+      if (nearestDist <= Math.max(_aggroR || 0, AGGRO_FLOOR)) e.aggroed = true;   // a597 — aggro floor
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
@@ -11677,6 +11693,8 @@ wss.on('connection', ws => {
         const cappedDmg = Math.min(data.dmg||1, 999999);
         const rawDmg = Math.max(1, Math.floor(cappedDmg * (1 - (e.dmgReduction||0))));
         e.hp -= rawDmg;
+        // a597 — getting hit always pulls the mob onto its attacker
+        e.aggroed = true; e._tgt = player.name; e._tgtAt = Date.now();
 
         if (e.hp <= 0) {
           e.hp = 0; e.active = false; e.aggroed = false; e.respawnTimer = 0;
