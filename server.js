@@ -4160,7 +4160,7 @@ function generateConvergenceSpawns(depth) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0, riftvale: 1.5, fungal: 3.0 };   // a558 — fungal mirrors the client kit's zone-local x3 (_tickFungalMob _fdInit)   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
+const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0, riftvale: 1.5, fungal: 3.0, dragonlair: 2.0 };   // a598 — Vaeltharax's Lair (Lv65) had no multiplier: its mobs averaged half the HP of Ancient Realm (Lv58)   // a558 — fungal mirrors the client kit's zone-local x3 (_tickFungalMob _fdInit)   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -4189,6 +4189,9 @@ function _aviaWalkable(wx, wz, r){ r=r||0.3;
 const ZONE_TYPE_HP = {
   void:         { void_sentinel: 4500,   void_construct: 3600 },
   void_citadel: { void_construct: 224000, void_sentinel: 264000, rift_stalker: 192000, rift_weaver: 180000 },
+  // a598 — the lair's gate guards used their early-zone stats (2.8k-6.5k HP) and died in a
+  //   hit or two. Values are before the zone's x2 multiplier (so 80k / 50k / 75k in game).
+  dragonlair:   { ancient_guardian: 40000, citadel_mage: 25000, iron_guard: 37500 },
 };
 function createZoneEnemies(zoneName) {
   // v93.0 phase 3 — special-case convergence: generate spawns procedurally
