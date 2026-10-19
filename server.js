@@ -4124,36 +4124,179 @@ function convBaseHp(type, rawHp){
   return Math.max(rawHp, CONV_MIN_BASE_HP);
 }
 
-function generateConvergenceSpawns(depth) {
-  // v93.0-a18 — Pool restricted to Xu-tier (48k-95k HP) + ash_wraith (2200 HP tier).
-  // Previous pool included crawler (210 HP), elite (540), wraith (480), void_eye (390),
-  // which a Lv 100 player 1-shots — completely defeating the endgame difficulty.
-  // ash_wraith stays as the lower-tier variety (still meaningful at 4400 HP after 2x scale).
-  // a197 — pool is now depth-aware.
+// ═════════════════════════════════════════════════════════════════════════════
+// a599 — THE CONVERGENCE MAZE. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js): both build the identical maze from the run seed + depth, so
+//   every player sees the same walls and the server can steer mobs through it.
+//   Layout: 29x29 cells of 8 tiles (6-tile corridors, 2-tile walls) on the 240 grid.
+//   Recursive-backtracker maze (long winding corridors, many dead ends), a few
+//   loops so it isn't a single path, open chambers for fights, the spawn hall at the
+//   top and the 4x4-cell boss arena in the middle (tiles 106-135, centre 120,120).
+// ═════════════════════════════════════════════════════════════════════════════
+function e2ConvMaze(seed, depth){
+  var W = 240, S = 8, N = 29;
+  depth = Math.max(1, depth | 0);
+  var st = ((seed | 0) ^ Math.imul(depth + 7, 0x9E3779B1)) >>> 0; if(!st) st = 0x1234567;
+  function rnd(){ st ^= (st << 13) >>> 0; st >>>= 0; st ^= st >>> 17; st ^= (st << 5) >>> 0; st >>>= 0; return st / 4294967296; }
+  function ri(a, b){ return a + Math.floor(rnd() * (b - a + 1)); }
+  var NC = N * N;
+  var eh = new Uint8Array(NC), ev = new Uint8Array(NC);   // open walls: eh[c] = (i,j)-(i+1,j), ev[c] = (i,j)-(i,j+1)
+  var nodeOf = new Int16Array(NC); for(var c = 0; c < NC; c++) nodeOf[c] = c;
+  var blockOf = new Int16Array(NC); for(var c2 = 0; c2 < NC; c2++) blockOf[c2] = -1;
+  var blocks = [];
+  function free(i0, j0, i1, j1){
+    if(i0 < 1 || j0 < 1 || i1 > N - 2 || j1 > N - 2) return false;
+    for(var j = j0 - 1; j <= j1 + 1; j++) for(var i = i0 - 1; i <= i1 + 1; i++) if(blockOf[j * N + i] !== -1) return false;
+    return true;
+  }
+  function addBlock(i0, j0, i1, j1, kind){
+    var b = { i0:i0, j0:j0, i1:i1, j1:j1, kind:kind, id:blocks.length };
+    blocks.push(b);
+    var root = j0 * N + i0;
+    for(var j = j0; j <= j1; j++) for(var i = i0; i <= i1; i++){ var c = j * N + i; nodeOf[c] = root; blockOf[c] = b.id; if(i < i1) eh[c] = 1; if(j < j1) ev[c] = 1; }
+    return b;
+  }
+  addBlock(13, 1, 16, 3, 'spawn');     // tiles 106-135 x 10-31: player spawn (120,20) + return portal (120,24)
+  addBlock(13, 13, 16, 16, 'arena');   // tiles 106-135 square: the depth boss
+  var want = 9 + Math.min(4, depth - 1), tries = 0;
+  while(blocks.length < 2 + want && tries++ < 400){
+    var w = ri(2, 3), h = ri(2, 3); if(w === 3 && h === 3) h = 2;
+    var i0 = ri(1, N - 1 - w), j0 = ri(5, N - 1 - h);
+    if(free(i0, j0, i0 + w - 1, j0 + h - 1)) addBlock(i0, j0, i0 + w - 1, j0 + h - 1, 'chamber');
+  }
+  // cells of each node
+  var cellsOf = {};
+  for(var c3 = 0; c3 < NC; c3++){ var n = nodeOf[c3]; (cellsOf[n] || (cellsOf[n] = [])).push(c3); }
+  // recursive backtracker over nodes (a chamber is one node)
+  var seen = new Uint8Array(NC), stack = [nodeOf[2 * N + 14]];
+  seen[stack[0]] = 1;
+  while(stack.length){
+    var cur = stack[stack.length - 1], opts = [];
+    var cl = cellsOf[cur];
+    for(var k = 0; k < cl.length; k++){
+      var cc = cl[k], ci = cc % N, cj = (cc / N) | 0;
+      if(ci < N - 1 && !seen[nodeOf[cc + 1]]) opts.push([cc, 0, cc + 1]);
+      if(ci > 0     && !seen[nodeOf[cc - 1]]) opts.push([cc - 1, 0, cc - 1]);
+      if(cj < N - 1 && !seen[nodeOf[cc + N]]) opts.push([cc, 1, cc + N]);
+      if(cj > 0     && !seen[nodeOf[cc - N]]) opts.push([cc - N, 1, cc - N]);
+    }
+    if(!opts.length){ stack.pop(); continue; }
+    var o = opts[Math.floor(rnd() * opts.length)];
+    if(o[1] === 0) eh[o[0]] = 1; else ev[o[0]] = 1;
+    var nn = nodeOf[o[2]]; seen[nn] = 1; stack.push(nn);
+  }
+  // a few loops (fewer the deeper you go) so it's a maze, not a single path
+  var pLoop = Math.max(0.025, 0.09 - 0.012 * (depth - 1));
+  for(var c4 = 0; c4 < NC; c4++){
+    var i4 = c4 % N, j4 = (c4 / N) | 0;
+    if(i4 < N - 1 && !eh[c4] && nodeOf[c4] !== nodeOf[c4 + 1] && rnd() < pLoop) eh[c4] = 1;
+    if(j4 < N - 1 && !ev[c4] && nodeOf[c4] !== nodeOf[c4 + N] && rnd() < pLoop) ev[c4] = 1;
+  }
+  // tile grid: 1 = wall
+  var grid = new Uint8Array(W * W);
+  for(var z = 0; z < W; z++) for(var x = 0; x < W; x++){
+    if(x % S < 2 || z % S < 2 || x >= N * S || z >= N * S) grid[z * W + x] = 1;
+  }
+  function clearRect(x0, z0, x1, z1){ for(var zz = z0; zz <= z1; zz++) for(var xx = x0; xx <= x1; xx++) grid[zz * W + xx] = 0; }
+  for(var c5 = 0; c5 < NC; c5++){
+    var i5 = c5 % N, j5 = (c5 / N) | 0;
+    if(eh[c5]) clearRect((i5 + 1) * S, j5 * S + 2, (i5 + 1) * S + 1, j5 * S + 7);
+    if(ev[c5]) clearRect(i5 * S + 2, (j5 + 1) * S, i5 * S + 7, (j5 + 1) * S + 1);
+  }
+  for(var b2 = 0; b2 < blocks.length; b2++){ var B = blocks[b2]; clearRect(B.i0 * S + 2, B.j0 * S + 2, B.i1 * S + 7, B.j1 * S + 7); }
+  // degree + distance (in cells) from the spawn hall
+  var deg = new Uint8Array(NC);
+  for(var c6 = 0; c6 < NC; c6++){ if(eh[c6]){ deg[c6]++; deg[c6 + 1]++; } if(ev[c6]){ deg[c6]++; deg[c6 + N]++; } }
+  var dist = e2ConvMazeBFS({N:N, eh:eh, ev:ev}, 2 * N + 14);
+  // mob spots (tile coords): chambers hold packs, dead ends hold a guard, corridors a straggler
+  var spots = [], deadEnds = [];
+  for(var c7 = 0; c7 < NC; c7++){
+    var bo = blockOf[c7];
+    if(bo === 0 || bo === 1) continue;                        // spawn hall / boss arena
+    if(dist[c7] < 4) continue;                                 // breathing room near spawn
+    var i7 = c7 % N, j7 = (c7 / N) | 0, bx = i7 * S + 3, bz = j7 * S + 3;
+    var nMob = 0;
+    if(bo >= 2){ var Bk = blocks[bo]; if(Bk._done) continue; Bk._done = 1;   // a chamber holds one pack, spread across it
+      var nc = (Bk.i1 - Bk.i0 + 1) * (Bk.j1 - Bk.j0 + 1), pack = Math.min(7, nc + ri(0, 2));
+      for(var pm = 0; pm < pack; pm++) spots.push({ tx: Bk.i0 * S + 3 + ri(0, (Bk.i1 - Bk.i0) * S + 4), tz: Bk.j0 * S + 3 + ri(0, (Bk.j1 - Bk.j0) * S + 4), cell: c7, pack: bo });
+      continue; }
+    else if(deg[c7] === 1){ deadEnds.push(c7); nMob = rnd() < 0.5 ? 1 : 0; }
+    else { var r = rnd(); nMob = r < 0.04 ? 2 : r < 0.13 ? 1 : 0; }
+    for(var m = 0; m < nMob; m++) spots.push({ tx: bx + ri(0, 3), tz: bz + ri(0, 3), cell: c7 });
+  }
+  return { W:W, S:S, N:N, grid:grid, eh:eh, ev:ev, blocks:blocks, blockOf:blockOf, deg:deg, dist:dist, spots:spots, deadEnds:deadEnds, rnd:rnd, seed:seed, depth:depth };
+}
+// breadth-first distances (in cells) from one cell over open walls
+function e2ConvMazeBFS(m, from){
+  var N = m.N, NC = N * N, d = new Int16Array(NC); for(var i = 0; i < NC; i++) d[i] = -1;
+  var q = new Int16Array(NC), h = 0, t = 0; d[from] = 0; q[t++] = from;
+  while(h < t){
+    var c = q[h++], ci = c % N, cj = (c / N) | 0, nd = d[c] + 1;
+    if(ci < N - 1 && m.eh[c]     && d[c + 1] < 0){ d[c + 1] = nd; q[t++] = c + 1; }
+    if(ci > 0     && m.eh[c - 1] && d[c - 1] < 0){ d[c - 1] = nd; q[t++] = c - 1; }
+    if(cj < N - 1 && m.ev[c]     && d[c + N] < 0){ d[c + N] = nd; q[t++] = c + N; }
+    if(cj > 0     && m.ev[c - N] && d[c - N] < 0){ d[c - N] = nd; q[t++] = c - N; }
+  }
+  return d;
+}
+// which way to walk: from world (ex,ez) toward world (tx,tz), returns a world-space waypoint.
+//   Same cell (or no path) → head straight for the target; otherwise head for the centre of
+//   the next cell on the shortest path. Flow fields are cached per target cell.
+function e2ConvMazeSteer(m, ex, ez, tx, tz, tile){
+  var S = m.S, N = m.N;
+  var ei = Math.floor(ex / tile / S), ej = Math.floor(ez / tile / S), ti = Math.floor(tx / tile / S), tj = Math.floor(tz / tile / S);
+  if(ei < 0 || ej < 0 || ei >= N || ej >= N || ti < 0 || tj < 0 || ti >= N || tj >= N) return null;
+  var ec = ej * N + ei, tc = tj * N + ti;
+  if(ec === tc) return null;
+  if(m.blockOf[ec] >= 0 && m.blockOf[ec] === m.blockOf[tc]) return null;   // same open chamber
+  m._ff = m._ff || {};
+  var f = m._ff[tc]; if(!f){ f = m._ff[tc] = e2ConvMazeBFS(m, tc); m._ffN = (m._ffN || 0) + 1; if(m._ffN > 64){ m._ff = {}; m._ffN = 0; m._ff[tc] = f; } }
+  var best = -1, bd = f[ec];
+  if(bd < 0) return null;
+  if(ei < N - 1 && m.eh[ec]     && f[ec + 1] >= 0 && f[ec + 1] < bd){ bd = f[ec + 1]; best = ec + 1; }
+  if(ei > 0     && m.eh[ec - 1] && f[ec - 1] >= 0 && f[ec - 1] < bd){ bd = f[ec - 1]; best = ec - 1; }
+  if(ej < N - 1 && m.ev[ec]     && f[ec + N] >= 0 && f[ec + N] < bd){ bd = f[ec + N]; best = ec + N; }
+  if(ej > 0     && m.ev[ec - N] && f[ec - N] >= 0 && f[ec - N] < bd){ bd = f[ec - N]; best = ec - N; }
+  if(best < 0) return null;
+  var bi = best % N, bj = (best / N) | 0;
+  // aim at the doorway first if we're off-axis, then the next cell's centre
+  var cx = (bi * S + 5) * tile, cz = (bj * S + 5) * tile;
+  if(bi !== ei){ var dz0 = (ej * S + 5) * tile; if(Math.abs(ez - dz0) > 2.4 * tile) return { x: (Math.max(ei, bi) * S + 1) * tile, z: dz0 }; }
+  else { var dx0 = (ei * S + 5) * tile; if(Math.abs(ex - dx0) > 2.4 * tile) return { x: dx0, z: (Math.max(ej, bj) * S + 1) * tile }; }
+  return { x: cx, z: cz };
+}
+function e2ConvMazeWall(m, wx, wz, tile){
+  var x = Math.floor(wx / tile), z = Math.floor(wz / tile);
+  if(x < 0 || z < 0 || x >= m.W || z >= m.W) return true;
+  return m.grid[z * m.W + x] === 1;
+}
+
+// a599 — the server's copy of the current maze for a convergence zone (rebuilt when the
+//   run seed or depth changes). Used to place spawns and to steer mobs down corridors.
+function _convMazeFor(zone){
+  const key = (zone.runSeed || 1) + ':' + (zone.convergenceDepth || 1);
+  if (!zone._maze || zone._mazeKey !== key) { zone._maze = e2ConvMaze(zone.runSeed || 1, zone.convergenceDepth || 1); zone._mazeKey = key; }
+  return zone._maze;
+}
+function generateConvergenceSpawns(depth, seed, copies) {
+  // a599 — spawns now come from the maze: packs in the side chambers, a guard at many
+  //   dead ends, stragglers along the corridors, nothing near the spawn hall or in the
+  //   boss arena. Positions always land on open floor. (Was: random spots in 24-tile
+  //   chunks with no idea where walls were.) copies>1 = the Density modifier.
   const _d = Math.max(1, parseInt(depth, 10) || 1);
   const POOL = CONV_ENEMY_POOLS[_d] || CONV_ENEMY_POOLS[1];
+  const m = e2ConvMaze((seed || 1) | 0, _d);
   const spawns = [];
-  const W = 240;
-  const SPAWN_BUFFER_Z = 60; // no enemies in the top 60 tiles (spawn chamber + breathing room)
-
-  // Place enemies in clusters spread across the zone south of the spawn buffer.
-  // Use a coarse grid: divide the playable area into ~24x24 chunks and place
-  // 3-5 enemies in each chunk at random offsets. ~9x9 = 81 chunks south of buffer.
-  const CHUNK = 24;
-  for (let cz = SPAWN_BUFFER_Z; cz < W - CHUNK; cz += CHUNK) {
-    for (let cx = CHUNK; cx < W - CHUNK; cx += CHUNK) {
-      // Some chunks left empty for variety (~25% skip rate)
-      if (Math.random() < 0.25) continue;
-      const count = 3 + Math.floor(Math.random() * 3); // 3-5
-      for (let n = 0; n < count; n++) {
-        const ex = cx + 4 + Math.floor(Math.random() * (CHUNK - 8));
-        const ez = cz + 4 + Math.floor(Math.random() * (CHUNK - 8));
-        const etype = POOL[Math.floor(Math.random() * POOL.length)];
-        spawns.push({tx: ex, tz: ez, type: etype});
-      }
+  const n = Math.max(1, copies || 1);
+  m.spots.forEach(sp => {
+    for (let k = 0; k < n; k++) {
+      let tx = sp.tx, tz = sp.tz;
+      if (k > 0) { const jx = tx + (Math.random() < 0.5 ? -1 : 1), jz = tz + (Math.random() < 0.5 ? -1 : 1);
+        if (!m.grid[jz * m.W + jx]) { tx = jx; tz = jz; } }
+      spawns.push({ tx, tz, type: POOL[Math.floor(Math.random() * POOL.length)] });
     }
-  }
-  console.log(`[convergence] Generated ${spawns.length} enemy spawns across 240x240 zone`);
+  });
+  console.log(`[convergence] Maze depth ${_d} seed ${seed}: ${spawns.length} enemy spawns`);
   return spawns;
 }
 
@@ -4193,11 +4336,11 @@ const ZONE_TYPE_HP = {
   //   hit or two. Values are before the zone's x2 multiplier (so 80k / 50k / 75k in game).
   dragonlair:   { ancient_guardian: 40000, citadel_mage: 25000, iron_guard: 37500 },
 };
-function createZoneEnemies(zoneName) {
+function createZoneEnemies(zoneName, convSeed) {
   // v93.0 phase 3 — special-case convergence: generate spawns procedurally
   // per game-instance instead of using the static ZONE_SPAWNS entry.
   const spawns = (zoneName === 'convergence')
-    ? generateConvergenceSpawns()
+    ? generateConvergenceSpawns(1, convSeed || 1)   // a599 — depth-1 maze for this run's seed
     : (ZONE_SPAWNS[zoneName] || []);
   const scale  = ZONE_SCALE[zoneName]  || 1.0;
   return spawns.map((s, i) => {
@@ -4262,7 +4405,17 @@ function getOrCreateZone(game, zoneName) {
       } : null,
     };
   }
+  _convInitZone(game.zones[zoneName], zoneName);
   return game.zones[zoneName];
+}
+// a599 — a convergence zone always has a seed + depth, and its enemies sit in THAT maze
+function _convInitZone(zone, zoneName){
+  if (zoneName !== 'convergence' || !zone || zone._convInit) return;
+  zone._convInit = true;
+  if (!zone.runSeed) zone.runSeed = ((Date.now() ^ (Math.random()*0x7fffffff)) & 0x7fffffff) || 1;
+  if (!zone.convergenceDepth) zone.convergenceDepth = 1;
+  if (!zone.activeModIds) zone.activeModIds = [];
+  zone.enemies = createZoneEnemies('convergence', zone.runSeed);
 }
 
 // a233 — CO-OP run-state broadcast. Tells every client the authoritative seed +
@@ -6815,6 +6968,7 @@ function tickGame(game) {
         zone.convergenceDepth = 1;
         zone.activeModIds = [];
         zone.runSeed = ((Date.now() ^ (Math.random()*0x7fffffff)) & 0x7fffffff);
+        zone.enemies = createZoneEnemies('convergence', zone.runSeed);   // a599 — fresh maze, fresh depth-1 mobs
         zone._emptySince = 0;
         console.log(`[convergence] Run reset (zone empty) — fresh seed ${zone.runSeed} for next group.`);
       }
@@ -6897,10 +7051,19 @@ function tickGame(game) {
       const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]) || (zoneName === 'the_reach' && RE_BESPOKE[e.type]);
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
-        const dx = nearestPlayer.x - e.x, dz = nearestPlayer.z - e.z;
+        let gx = nearestPlayer.x, gz = nearestPlayer.z;
+        // a599 — Convergence maze: walk the corridors toward the target, never through walls
+        const _mz = (zoneName === 'convergence') ? _convMazeFor(zone) : null;
+        if (_mz) { const wp = e2ConvMazeSteer(_mz, e.x, e.z, gx, gz, TILE); if (wp) { gx = wp.x; gz = wp.z; } }
+        const dx = gx - e.x, dz = gz - e.z;
         const len = Math.sqrt(dx*dx + dz*dz) || 1;
-        e.x += (dx/len) * e.spd * 1.6; // 1.6 = server tick scale
-        e.z += (dz/len) * e.spd * 1.6;
+        // a599 — maze mobs move at their offline speed (spd per 60fps frame = x6 at 10Hz); the
+        //   generic x1.6 is a quarter of that, far too slow to hunt anyone through corridors
+        const _sp = e.spd * (_mz ? 6 : 1.6);
+        const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
+        if (!_mz || !e2ConvMazeWall(_mz, nx, nz, TILE)) { e.x = nx; e.z = nz; }
+        else if (!e2ConvMazeWall(_mz, nx, e.z, TILE)) e.x = nx;      // slide along the wall
+        else if (!e2ConvMazeWall(_mz, e.x, nz, TILE)) e.z = nz;
         changed.push(e);
       }
 
@@ -11448,6 +11611,7 @@ wss.on('connection', ws => {
             } : null,
           };
         });
+        _convInitZone(game.zones.convergence, 'convergence');   // a599
         games.set(gId, game);
         player.gameId = gId;
         send(ws, { type:'game_created', game, pid:player.pid });
@@ -11989,14 +12153,16 @@ wss.on('connection', ws => {
         //   seed is adopted as the authoritative run seed on a fresh establish so
         //   the driver's already-built local map matches the server; on a pure
         //   advance we keep the existing run seed (continuity within a run).
+        const _seedBefore = zone.runSeed;
         if (!runInProgress && typeof data.seed === 'number' && isFinite(data.seed)) {
           zone.runSeed = (data.seed & 0x7fffffff) || zone.runSeed;
         }
+        const seedChanged = zone.runSeed !== _seedBefore;   // a599 — a new seed is a new maze: mobs must be re-placed
         zone._runEstablished = true;
 
         // Skip if depth AND mods both unchanged
         const sameMods = JSON.stringify(modIds.slice().sort()) === JSON.stringify((zone.activeModIds||[]).slice().sort());
-        if (newDepth === oldDepth && sameMods) break;
+        if (newDepth === oldDepth && sameMods && !seedChanged) break;
 
         zone.convergenceDepth = newDepth;
         zone.activeModIds = modIds;
@@ -12016,12 +12182,9 @@ wss.on('connection', ws => {
         const frenzyMul = hasMod('frenzied') ? 1.6 : 1.0;
 
         // Density: 3x enemy count
-        const baseSpawns = generateConvergenceSpawns(newDepth); // a197 — depth-aware pool
-        let procSpawns = baseSpawns;
-        if (hasMod('density')) {
-          procSpawns = baseSpawns.concat(generateConvergenceSpawns(newDepth), generateConvergenceSpawns(newDepth));
-          console.log(`[convergence] Density active: ${procSpawns.length} enemies (3x base)`);
-        }
+        // a599 — spawns come from this run's maze at the new depth (Density = 3 per spot)
+        const procSpawns = generateConvergenceSpawns(newDepth, zone.runSeed, hasMod('density') ? 3 : 1);
+        if (hasMod('density')) console.log(`[convergence] Density active: ${procSpawns.length} enemies (3x base)`);
 
         zone.enemies = procSpawns.map((s, i) => {
           const st = ENEMY_STATS[s.type] || ENEMY_STATS.soldier;
