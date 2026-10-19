@@ -4270,6 +4270,12 @@ function e2ConvMazeWall(m, wx, wz, tile){
   if(x < 0 || z < 0 || x >= m.W || z >= m.W) return true;
   return m.grid[z * m.W + x] === 1;
 }
+// a601 — line of sight across the maze: false if any wall tile lies between the two points
+function e2ConvMazeLOS(m, x0, z0, x1, z1, tile){
+  var dx = x1 - x0, dz = z1 - z0, d = Math.sqrt(dx * dx + dz * dz), n = Math.ceil(d / (tile * 0.4));
+  for(var i = 1; i < n; i++){ var f = i / n; if(e2ConvMazeWall(m, x0 + dx * f, z0 + dz * f, tile)) return false; }
+  return true;
+}
 
 // a599 — the server's copy of the current maze for a convergence zone (rebuilt when the
 //   run seed or depth changes). Used to place spawns and to steer mobs down corridors.
@@ -4600,6 +4606,7 @@ const AGGRO_FLOOR    = 26;
 // a597 — a mob that's hit locks on to whoever hit it and chases them anywhere in the zone.
 //   If that player stops hitting it for this long it falls back to the nearest player.
 const HIT_LOCK_MS    = 30000;
+const CONV_SIGHT     = 16;      // a601 — Convergence: sight range, and it needs a clear line through the maze
 const RESPAWN_TICKS  = 300; // 30 seconds at 10Hz
 
 // ──────────────────────────────────────────────────────────
@@ -6747,9 +6754,25 @@ function tickZoneBoss(game, zoneName, zone) {
   if (!cfg) return;
   const b = zone.boss;
   if (!b || !b.spawned || b.hp <= 0) return;
-  const zonePlayers = getTargetablePlayersInZone(game.id, zoneName);   // a578 — bosses only target the living
+  let zonePlayers = getTargetablePlayersInZone(game.id, zoneName);   // a578 — bosses only target the living
   if (zonePlayers.length === 0) return;
   if (b.x === undefined) { b.x = cfg.x; b.z = cfg.z; }
+  // a601 — THE CONVERGENCE LAIR. The depth boss used to march at the nearest player from
+  //   the moment they came through the portal — straight through the maze walls. It now
+  //   only fights players standing in its arena (tiles 106-135, world 159-204); with no
+  //   one inside it walks home to the centre and waits, and it can never leave the arena.
+  if (zoneName === 'convergence') {
+    const _inA = p => p.x !== undefined && p.x >= 158 && p.x <= 205 && p.z >= 158 && p.z <= 205;
+    const _inside = zonePlayers.filter(_inA);
+    if (!_inside.length) {
+      const hx = cfg.x - b.x, hz = cfg.z - b.z, hd = Math.sqrt(hx*hx + hz*hz);
+      if (hd > 0.3) { const st = Math.min(hd, 0.6); b.x += hx / hd * st; b.z += hz / hd * st; }
+      b.atkT = 0;
+      broadcastToZone(game.id, zoneName, { type:'sv_zboss', zone:zoneName, x:+b.x.toFixed(2), z:+b.z.toFixed(2), phase:Math.min(b.phase || 1, 5) });
+      return;
+    }
+    zonePlayers = _inside;
+  }
 
   let np = null, nd = Infinity;
   zonePlayers.forEach(p => {
@@ -6850,6 +6873,9 @@ function tickZoneBoss(game, zoneName, zone) {
     }
   }
 
+  if (zoneName === 'convergence') {   // a601 — never outside the lair (also catches teleport/charge moves)
+    b.x = Math.max(161, Math.min(202, b.x)); b.z = Math.max(161, Math.min(202, b.z));
+  }
   // ── Position + phase broadcast. Deliberately NOT sv_boss_state: that message carries
   //    hp and runs through the client's heal-jump watchdog, which has a long bug history.
   broadcastToZone(game.id, zoneName, {
@@ -7044,7 +7070,20 @@ function tickGame(game) {
           e.aggroed = true;
         } else { e._tgt = null; }
       }
-      if (nearestDist <= Math.max(_aggroR || 0, AGGRO_FLOOR)) e.aggroed = true;   // a597 — aggro floor
+      if (zoneName === 'convergence') {
+        // a601 — in the maze a mob only notices someone it can actually SEE: within 16u and
+        //   with no wall in between (the 26u floor went straight through walls, so mobs
+        //   corridors away came hunting). Getting hit still locks it on (above).
+        if (!e.aggroed) {
+          const _mzA = _convMazeFor(zone);
+          for (const p of targetPlayers) {
+            const ddx = p.x - e.x, ddz = p.z - e.z;
+            if (ddx*ddx + ddz*ddz <= CONV_SIGHT*CONV_SIGHT && e2ConvMazeLOS(_mzA, e.x, e.z, p.x, p.z, TILE)) {
+              e.aggroed = true; if (!e._tgt) { nearestPlayer = p; nearestDist = Math.sqrt(ddx*ddx + ddz*ddz); } break;
+            }
+          }
+        }
+      } else if (nearestDist <= Math.max(_aggroR || 0, AGGRO_FLOOR)) e.aggroed = true;   // a597 — aggro floor
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
