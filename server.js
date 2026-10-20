@@ -4562,6 +4562,9 @@ function getPlayersInZone(gameId, zone) {
 const REVIVE_RANGE     = 3.5;    // world units, a touch wider than the client's 3.0 prompt
 const REVIVE_HOLD_MS   = 2700;   // the 3s hold, less a little network slack
 function isTargetable(p){
+  // a604 — a player off the edge of the map is inside an Apex Trial arena: nothing in the
+  //   zone may chase, aggro on or attack them
+  if (p && typeof p.x === 'number' && (p.x > 365 || p.z > 365 || p.x < -5 || p.z < -5)) return false;
   return !!p && !p.downed && !p.dead && !(typeof p.hp === 'number' && p.hp <= 0);
 }
 function getTargetablePlayersInZone(gameId, zone){
