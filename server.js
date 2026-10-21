@@ -4519,7 +4519,10 @@ function _scaleEnemyAttack(ws, data){
 }
 
 function send(ws, data) {
-  if (data && data.type === 'sv_enemy_attack' && typeof data.dmg === 'number') data = _scaleEnemyAttack(ws, data);
+  if (data && data.type === 'sv_enemy_attack' && typeof data.dmg === 'number') {
+    data = _scaleEnemyAttack(ws, data);
+    try { _hpaOnSent(ws, data); } catch(e){}   // a605 — HP audit counts every hit the server sends
+  }
   if (ws.readyState === 1) ws.send(JSON.stringify(data));
 }
 
@@ -11321,6 +11324,165 @@ setInterval(() => {
   econLedger.forEach((L, key) => { if (L.touched) { _econLog({ t:'summary', key, gold:L.gold, src:L.src }); L.touched = false; L.src = {}; } });
 }, 10 * 60 * 1000);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a605 — HP AUDIT (stage 1 of server-owned health). SHADOW MODE: this observes and
+//   records; it never changes anyone's health or refuses anything. Every player now has
+//   a health record on the server (player.hpa: health, max health, level, defence and the
+//   share of a raw hit that lands for them). The client reports every health change,
+//   attributed to the function that made it, every 2 seconds. The server also counts
+//   every hit IT sends (sv_enemy_attack, see send()) and compares that with what landed.
+//   Written to hp_audit.log, with flags also printed to the console (Railway logs):
+//     no_damage_landed  the server sent real damage for a minute and none of it landed
+//                       (god mode, or a client that drops sv_enemy_attack)
+//     editor_heal       health set by the editor god mode in an online game
+//     over_max          health above max health
+//     unattributed      health changed without passing through the watcher
+//     unknown_source    a health change from a function not in HPA_SOURCES yet
+//     mhp_jump          max health more than doubled within a minute at the same level
+//   Every source has to read clean here before stage 2 (server-side death) enforces.
+// ═══════════════════════════════════════════════════════════════════════════════
+const HPA_LOG = path.join(DATA_DIR, 'hp_audit.log');
+const HPA_SUMMARY_MS = Math.max(10000, parseInt(process.env.HPA_SUMMARY_MS, 10) || 10 * 60 * 1000);
+const HPA_WINDOW_MS = 60 * 1000;
+const HPA_SOURCES = {
+  // damage
+  sv:'server_hit', _dotTick:'dot', _convTrapsTick:'trap',
+  // healing
+  hitEnemy:'lifesteal', _upgOnHit:'gear_heal', applySetBonuses:'set_bonus', killBoss:'boss_kill',
+  checkLevelUp:'level_up', loop:'regen', tickPassiveRegen:'regen', tickPotionBuffs:'potion',
+  useItem:'potion', doDefaultSkill:'potion', updateAutomaton:'pet', tickEarthsense:'racial',
+  renderAscPanel:'ascension', _mpOnData:'party',
+  // resets and clamps (load, respawn, revive, max-health changes)
+  loadGame:'reset', _startGameActual:'reset', returnToLobby:'reset', deathReturn:'reset',
+  playerDie:'reset', _mpDeathRespawn:'reset', _soloDeathRespawn:'reset', _pvpHandleDeath:'reset',
+  _coopEnterDowned:'reset', _coopDownTick:'reset', _coopOnRevived:'reset',
+  applyPassives:'clamp', applyStatBonuses:'clamp',
+  // never legitimate online
+  tickEditorGodMode:'editor',
+};
+function _hpaLog(o, loud){
+  try {
+    o.at = new Date().toISOString();
+    fs.appendFile(HPA_LOG, JSON.stringify(o) + '\n', () => {});
+    fs.stat(HPA_LOG, (e, st) => { if (!e && st.size > 5 * 1024 * 1024) fs.rename(HPA_LOG, HPA_LOG + '.1', () => {}); });
+    if (loud) console.warn('[hp-audit] ' + o.t + ' ' + (o.key || '') + ' ' +
+      JSON.stringify(Object.assign({}, o, { t:undefined, key:undefined, at:undefined })));
+  } catch(e){}
+}
+function _hpaRec(player){
+  if (!player.hpa) player.hpa = {
+    key:null, hp:null, mhp:0, lvl:1, def:0, mit:null, zone:null, trial:false, last:0,
+    // rolling one-minute window of server hits: sent by the server, landed on the client
+    win:{ t0:Date.now(), sent:0, sentN:0, recv:0, recvN:0, landed:0, landedN:0, expect:0, trialMs:0 },
+    mhpAt:{ t:Date.now(), mhp:0, lvl:0 },
+    sum:{ src:{}, sent:0, sentN:0, landed:0, landedN:0, expect:0, flags:{} },
+    flagAt:{}, unknown:{}, touched:false,
+  };
+  return player.hpa;
+}
+// one flag per kind per character per minute, so a stuck client can't flood the log
+function _hpaFlag(R, t, o){
+  const now = Date.now();
+  R.sum.flags[t] = (R.sum.flags[t] || 0) + 1;
+  if (R.flagAt[t] && now - R.flagAt[t] < 60000) return;
+  R.flagAt[t] = now;
+  _hpaLog(Object.assign({ t, key:R.key }, o), true);
+}
+// called from send() for every sv_enemy_attack the server delivers
+function _hpaOnSent(ws, data){
+  const p = players.get(ws);
+  if (!p) return;
+  const R = _hpaRec(p);
+  const ex = (typeof R.mit === 'number') ? data.dmg * R.mit : 0;
+  R.win.sent += data.dmg; R.win.sentN++; R.win.expect += ex;
+  R.sum.sent += data.dmg; R.sum.sentN++; R.sum.expect += ex;
+}
+function _hpaCloseWindow(R, p){
+  const W = R.win, now = Date.now();
+  if (now - W.t0 < HPA_WINDOW_MS) return;
+  // the server meant it: eight or more hits worth half your health after defence,
+  // you weren't in a trial, downed or dead, and not one point of it landed
+  if (W.sentN >= 8 && R.mhp > 0 && W.expect >= R.mhp * 0.5 && W.landed === 0 &&
+      W.trialMs === 0 && !p.downed && !p.dead) {
+    _hpaFlag(R, 'no_damage_landed', { hits:W.sentN, raw:Math.round(W.sent), expected:Math.round(W.expect),
+                                     received:W.recvN, mhp:R.mhp, lvl:R.lvl, zone:R.zone });
+  }
+  R.win = { t0:now, sent:0, sentN:0, recv:0, recvN:0, landed:0, landedN:0, expect:0, trialMs:0 };
+}
+function _hpaOnReport(ws, player, data){
+  const key = getSaveKey(String(data.n || player.name || '').slice(0, 20), String(data.r || '').slice(0, 16), String(data.c || '').slice(0, 16));
+  if (!key) return;
+  const R = _hpaRec(player);
+  const now = Date.now();
+  if (R.key !== key) { R.key = key; R.hp = null; R.unknown = {}; }   // a different character on this connection
+  R.touched = true;
+  const hp = +data.hp, mhp = +data.mhp;
+  if (isFinite(mhp) && mhp > 0) R.mhp = Math.round(mhp);
+  const _lv = parseInt(data.lvl, 10); if (isFinite(_lv) && _lv >= 1 && _lv <= 200) R.lvl = _lv;
+  const _df = +data.def; if (isFinite(_df) && _df >= 0) R.def = Math.round(_df);
+  const _mt = +data.mit; R.mit = (data.mit !== null && isFinite(_mt) && _mt > 0 && _mt <= 4) ? _mt : null;
+  R.zone = typeof data.zone === 'string' ? data.zone.slice(0, 40) : R.zone;
+  const inTrial = !!data.tr;
+  if (inTrial) R.win.trialMs += R.last ? (now - R.last) : 2000;
+  R.trial = inTrial;
+  R.last = now;
+  // the changes, by source
+  let sum = 0;
+  (Array.isArray(data.ev) ? data.ev : []).slice(0, 100).forEach(e => {
+    if (!Array.isArray(e)) return;
+    const s = String(e[0]).slice(0, 60), d = Math.round(+e[1] || 0), n = e[2] | 0;
+    const cat = HPA_SOURCES[s] || ((d < 0 ? 'other_dmg:' : 'other_heal:') + s);
+    const S = R.sum.src[cat] || (R.sum.src[cat] = { sum:0, n:0 });
+    S.sum += d; S.n += n;
+    if (cat === 'editor' && d > 0) _hpaFlag(R, 'editor_heal', { d, zone:R.zone });
+    if (!HPA_SOURCES[s] && !R.unknown[s]) { R.unknown[s] = 1; _hpaLog({ t:'unknown_source', key, src:s, d, n }); }
+    sum += d;
+  });
+  // the server's hits as the client saw them
+  if (Array.isArray(data.sv)) {
+    R.win.recv += +data.sv[0] || 0; R.win.recvN += data.sv[1] | 0;
+    R.win.landed += +data.sv[2] || 0; R.win.landedN += data.sv[3] | 0;
+    R.sum.landed += +data.sv[2] || 0; R.sum.landedN += data.sv[3] | 0;
+  }
+  // running copy: last health + reported changes should equal the health reported now
+  if (isFinite(hp)) {
+    if (R.hp !== null && Math.abs((R.hp + sum) - hp) > 1)
+      _hpaFlag(R, 'unattributed', { expected:R.hp + sum, client:hp, d:hp - (R.hp + sum) });
+    R.hp = hp;
+    if (R.mhp > 0 && hp > R.mhp + 1) _hpaFlag(R, 'over_max', { hp, mhp:R.mhp });
+    player.hp = hp; player.maxHp = R.mhp;   // the a578 liveness fields stay in step
+  }
+  // max health more than doubling inside a minute without a level-up
+  if (now - R.mhpAt.t > HPA_WINDOW_MS || R.lvl !== R.mhpAt.lvl) R.mhpAt = { t:now, mhp:R.mhp, lvl:R.lvl };
+  else if (R.mhpAt.mhp > 0 && R.mhp > R.mhpAt.mhp * 2) {
+    _hpaFlag(R, 'mhp_jump', { from:R.mhpAt.mhp, to:R.mhp, lvl:R.lvl });
+    R.mhpAt = { t:now, mhp:R.mhp, lvl:R.lvl };
+  }
+  _hpaCloseWindow(R, player);
+}
+// a short, readable summary per active character, to the log and to the console
+function _hpaSummary(R){
+  const S = R.sum;
+  const pct = S.expect > 0 ? Math.round(100 * S.landed / S.expect) : null;
+  _hpaLog({ t:'summary', key:R.key, lvl:R.lvl, mhp:R.mhp, def:R.def, mit:R.mit,
+            serverHits:S.sentN, serverRaw:Math.round(S.sent), expected:Math.round(S.expect),
+            landed:Math.round(S.landed), landedHits:S.landedN, landedPct:pct, src:S.src, flags:S.flags });
+  const fl = Object.keys(S.flags);
+  console.log(`[hp-audit] ${R.key} L${R.lvl} mhp ${R.mhp}: server hits ${S.sentN}, landed ${Math.round(S.landed)}` +
+              (pct !== null ? ` of ${Math.round(S.expect)} expected (${pct}%)` : '') +
+              (fl.length ? ' FLAGS ' + fl.map(f => f + 'x' + S.flags[f]).join(' ') : ', clean'));
+  R.sum = { src:{}, sent:0, sentN:0, landed:0, landedN:0, expect:0, flags:{} };
+  R.touched = false;
+}
+setInterval(() => {
+  players.forEach(p => {
+    const R = p.hpa;
+    if (!R || !R.key) return;
+    _hpaCloseWindow(R, p);
+    if (R.touched || R.sum.sentN) _hpaSummary(R);
+  });
+}, HPA_SUMMARY_MS);
+
 // a580 — another live connection of the same character still in this game?
 function _sameCharStillHere(g, leaverWs, name){
   let here = false;
@@ -11738,6 +11900,11 @@ wss.on('connection', ws => {
       // ── a582 — gold audit report (shadow mode) ──
       case 'sv_econ':
         try { _econOnReport(data); } catch(e){ console.warn('[econ] report error', e.message); }
+        break;
+
+      // ── a605 — HP audit report (shadow mode) ──
+      case 'sv_hpa':
+        try { _hpaOnReport(ws, player, data); } catch(e){ console.warn('[hp-audit] report error', e.message); }
         break;
 
       // ── a580 — rejoin a tunnel game after the connection dropped ──
