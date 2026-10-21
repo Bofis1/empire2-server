@@ -11359,6 +11359,7 @@ const HPA_SOURCES = {
   applyPassives:'clamp', applyStatBonuses:'clamp',
   // never legitimate online
   tickEditorGodMode:'editor',
+  _nonnumeric:'not_a_number',   // a606 — health set to NaN or Infinity (a game bug, flagged)
 };
 function _hpaLog(o, loud){
   try {
@@ -11414,7 +11415,12 @@ function _hpaOnReport(ws, player, data){
   if (!key) return;
   const R = _hpaRec(player);
   const now = Date.now();
-  if (R.key !== key) { R.key = key; R.hp = null; R.unknown = {}; }   // a different character on this connection
+  if (R.key !== key) { R.key = key; R.hp = null; R.unknown = {}; R.q = null; }   // a different character on this connection
+  // a606 — reports are numbered. A missing one (dropped or lost) means its changes are
+  //   unknown, so re-anchor on the health reported now instead of flagging a mismatch.
+  const q = data.q | 0;
+  if (q && R.q !== null && R.q !== undefined && q !== R.q + 1) { R.sum.gaps = (R.sum.gaps || 0) + 1; R.hp = null; }
+  if (q) R.q = q;
   R.touched = true;
   const hp = +data.hp, mhp = +data.mhp;
   if (isFinite(mhp) && mhp > 0) R.mhp = Math.round(mhp);
@@ -11435,6 +11441,7 @@ function _hpaOnReport(ws, player, data){
     const S = R.sum.src[cat] || (R.sum.src[cat] = { sum:0, n:0 });
     S.sum += d; S.n += n;
     if (cat === 'editor' && d > 0) _hpaFlag(R, 'editor_heal', { d, zone:R.zone });
+    if (s === '_nonnumeric') _hpaFlag(R, 'hp_not_a_number', { n, zone:R.zone });   // a606 — health became NaN/Infinity
     if (!HPA_SOURCES[s] && !R.unknown[s]) { R.unknown[s] = 1; _hpaLog({ t:'unknown_source', key, src:s, d, n }); }
     sum += d;
   });
@@ -11461,25 +11468,31 @@ function _hpaOnReport(ws, player, data){
   _hpaCloseWindow(R, player);
 }
 // a short, readable summary per active character, to the log and to the console
-function _hpaSummary(R){
+function _hpaSummary(R, ws){
   const S = R.sum;
+  // a606 — messages the server dropped for this connection since the last summary
+  const drops = (ws && ws._rlDrops) || null;
+  if (ws) ws._rlDrops = null;
   const pct = S.expect > 0 ? Math.round(100 * S.landed / S.expect) : null;
   _hpaLog({ t:'summary', key:R.key, lvl:R.lvl, mhp:R.mhp, def:R.def, mit:R.mit,
             serverHits:S.sentN, serverRaw:Math.round(S.sent), expected:Math.round(S.expect),
-            landed:Math.round(S.landed), landedHits:S.landedN, landedPct:pct, src:S.src, flags:S.flags });
+            landed:Math.round(S.landed), landedHits:S.landedN, landedPct:pct, src:S.src, flags:S.flags,
+            gaps:S.gaps || 0, dropped:drops });
   const fl = Object.keys(S.flags);
   console.log(`[hp-audit] ${R.key} L${R.lvl} mhp ${R.mhp}: server hits ${S.sentN}, landed ${Math.round(S.landed)}` +
               (pct !== null ? ` of ${Math.round(S.expect)} expected (${pct}%)` : '') +
-              (fl.length ? ' FLAGS ' + fl.map(f => f + 'x' + S.flags[f]).join(' ') : ', clean'));
-  R.sum = { src:{}, sent:0, sentN:0, landed:0, landedN:0, expect:0, flags:{} };
+              (fl.length ? ' FLAGS ' + fl.map(f => f + 'x' + S.flags[f]).join(' ') : ', clean') +
+              (S.gaps ? `, missing reports ${S.gaps}` : '') +
+              (drops ? ', DROPPED ' + Object.keys(drops).map(k => k + ' ' + drops[k]).join(', ') : ''));
+  R.sum = { src:{}, sent:0, sentN:0, landed:0, landedN:0, expect:0, flags:{}, gaps:0 };
   R.touched = false;
 }
 setInterval(() => {
-  players.forEach(p => {
+  players.forEach((p, ws) => {
     const R = p.hpa;
     if (!R || !R.key) return;
     _hpaCloseWindow(R, p);
-    if (R.touched || R.sum.sentN) _hpaSummary(R);
+    if (R.touched || R.sum.sentN) _hpaSummary(R, ws);
   });
 }, HPA_SUMMARY_MS);
 
@@ -11566,6 +11579,18 @@ function removePlayer(ws){
 // WEBSOCKET
 // ══════════════════════════════════════════════════════════
 
+// a606 — per-kind message allowances (messages per second, and burst)
+const _RL_LIMITS = {
+  fx:    { rate:40, burst:60 },    // spell effects (client already caps these at 30/s)
+  hit:   { rate:80, burst:160 },   // hits on mobs and bosses: an AoE sends one per target
+  core:  { rate:15, burst:30 },    // position, health and gold reports
+  other: { rate:30, burst:60 },    // everything else, as before
+};
+const _RL_KIND = {
+  sv_vfx:'fx',
+  sv_hit_enemy:'hit', sv_hit_boss:'hit', sv_worldboss_hit:'hit',
+  sv_player_state:'core', sv_hpa:'core', sv_econ:'core',
+};
 setInterval(()=>{
   wss.clients.forEach(ws=>{
     if(ws.isAlive === false){ removePlayer(ws); return ws.terminate(); }
@@ -11600,16 +11625,29 @@ wss.on('connection', ws => {
       _tunOnFrame(ws, raw);
       return;
     }
-    {
-      const _now = Date.now();
-      if (ws._rlTokens === undefined) { ws._rlTokens = 60; ws._rlLast = _now; }
-      ws._rlTokens = Math.min(60, ws._rlTokens + (_now - ws._rlLast) * (30 / 1000));
-      ws._rlLast = _now;
-      if (ws._rlTokens < 1) return;   // over budget — drop
-      ws._rlTokens -= 1;
-    }
     let data;
     try { data = JSON.parse(raw); } catch { return; }
+    // a606 — one allowance PER KIND of message instead of one shared 30/s bucket. The
+    //   client may send up to 30 spell-effect messages a second on its own, which used the
+    //   whole shared allowance: in a busy fight the server then silently dropped your hits
+    //   on mobs (measured: 19 of 40 lost), your health reports and anything else. Effects,
+    //   hits and position/health reports now each have their own allowance, so cosmetic
+    //   traffic can never starve gameplay. Everything else keeps the old 30/s.
+    if (!data || typeof data !== 'object') return;
+    {
+      const _k = _RL_KIND[data.type] || 'other', L = _RL_LIMITS[_k], _now = Date.now();
+      const B = ws._rl || (ws._rl = {});
+      const b = B[_k] || (B[_k] = { t:L.burst, at:_now });
+      b.t = Math.min(L.burst, b.t + (_now - b.at) * (L.rate / 1000));
+      b.at = _now;
+      if (b.t < 1) {   // over budget — drop, and count it so the HP audit summary can show it
+        const D = ws._rlDrops || (ws._rlDrops = {});
+        const _ty = String(data.type).slice(0, 30);
+        D[_ty] = (D[_ty] || 0) + 1;
+        return;
+      }
+      b.t -= 1;
+    }
     const player = players.get(ws);
 
     switch(data.type){
