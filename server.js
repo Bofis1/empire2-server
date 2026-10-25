@@ -4364,7 +4364,7 @@ function createZoneEnemies(zoneName, convSeed) {
       spawnZ: s.tz * TILE,
       hp: Math.round(_baseHp * scale * _hpMul),
       maxHp: Math.round(_baseHp * scale * _hpMul),
-      atk: Math.round(st.atk * scale),
+      atk: Math.round(((zoneName === 'convergence') ? convBaseAtk(s.type, st.atk) : st.atk) * scale),   // a609 — convergence attack floor
       spd: st.spd,
       aggroRange: st.aggroRange,
       reward: Math.round(st.reward * scale),
@@ -7093,7 +7093,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]) || (zoneName === 'the_reach' && RE_BESPOKE[e.type]);
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]) || (zoneName === 'the_reach' && RE_BESPOKE[e.type]) || (zoneName === 'convergence' && CV_BESPOKE[e.type]);   // a609
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         let gx = nearestPlayer.x, gz = nearestPlayer.z;
@@ -10354,6 +10354,9 @@ function tickGame(game) {
           if(_moved) changed.push(e);
         }
 
+        // ── a609: THE CONVERGENCE — per-depth ability kits (see CV_KIT)
+        if (zoneName === 'convergence' && e.aggroed && CV_BESPOKE[e.type]) _cvMobTick(game, zoneName, zone, e, nearestPlayer, changed);
+
         // ── a558: FUNGAL DEPTHS spore AI (zone-gated to 'fungal'; all four types also
         //    appear in 'mirrored', which is NOT migrated). Bioluminescent and toxic:
         //    spore novas, root tendrils, lingering clouds, telegraphed detonations,
@@ -10627,6 +10630,7 @@ function tickGame(game) {
     if (zoneName === 'xumen_fortress') _xfTickPylons(game, zoneName, zone);   // a552 — sentry pylons outlive their owner
     if (zoneName === 'forge') _fgTickEntities(game, zoneName, zone);          // a555 — puddles / turrets / meteors / drones
     if (zoneName === 'fungal') _fdTickClouds(game, zoneName, zone);           // a558 — lingering spore clouds
+    if (zoneName === 'convergence') _cvTickEnts(game, zoneName, zone);       // a609 — telegraphed strikes, fields, projectiles
   });
   // a527 — advance server-owned SD projectiles once per tick; resolve hits
   if (game._sdProj && game._sdProj.length) {
@@ -10880,6 +10884,387 @@ function _fdSpawnCloud(game, zoneName, zone, x, z, pulses, dmg){
     cid:c.cid, ex:+x.toFixed(2), ez:+z.toFixed(2), ms:pulses*260 });
   return c;
 }
+// ═══════════════════════════════════════════════════════════════════════════════
+// a609 — THE CONVERGENCE MOB KIT. The Convergence was never migrated to bespoke AI:
+//   all 24 of its types ran the generic chase-and-swing (one hit every 6 seconds),
+//   with no abilities, no telegraphs and no colour. Every depth now has its own
+//   theme and every type a basic attack plus signature abilities, built from a few
+//   maze-aware verbs:
+//     circle / line  telegraphed ground strikes — the warning fills, THEN it goes off
+//     field          a lingering pool (fire, lightning, spores) that ticks while you stand in it
+//     proj           a projectile you can sidestep; it stops at maze walls
+//     dash / blink   movement abilities, wind-up first, never through a wall
+//   Everything a player can be hit by is warned for at least 0.6s. Damage is a
+//   multiple of the mob's own atk (which already carries the depth scaling).
+//   Server ticks at 10Hz: every count below is in ticks (10 = 1 second).
+// ═══════════════════════════════════════════════════════════════════════════════
+const CV_KIT = {
+  // depth 1 — BROKEN REALITY (glitch magenta / cyan)
+  corrupted_xu: 0xff2bd6, void_marine: 0x8a4cff, holo_wraith: 0x30f0ff, ash_wraith: 0xff8a3c,
+  // depth 2 — CINDER
+  fire_demon: 0xff4a1a, inferno_golem: 0xff7a00, lava_golem: 0xff5500, magma_crab: 0xffa020,
+  // depth 3 — STORM
+  arc_sentinel: 0x6af2ff, tesla_golem: 0xfff04a, storm_wraith: 0x9ab8ff, volt_hound: 0xffe040,
+  // depth 4 — SCALE & PRISM
+  saurian_brute: 0x7ad43a, geo_basilisk: 0xb4ff3a, cube_drake: 0xc070ff, raptor_shard: 0x8affd8,
+  // depth 5 — MACHINE
+  sentry_mech: 0xff3048, hunter_drone: 0x30e0ff, plasma_bot: 0x9a5cff, cube_sentinel: 0x30ffb0,
+  // depth 6 — OVERGROWTH
+  thorn_brute: 0x3fae2a, spore_fiend: 0xc6ff4a, vine_lasher: 0x2fd46a, bloom_wisp: 0xff6ad5,
+};
+const CV_BESPOKE = {}; Object.keys(CV_KIT).forEach(k => { CV_BESPOKE[k] = 1; });
+// the three home-zone types that kept their low-tier attack (HP was floored in a206; atk never was)
+const CV_MIN_BASE_ATK = 400;
+function convBaseAtk(type, rawAtk){ return Math.max(rawAtk, CV_MIN_BASE_ATK); }
+
+function _cvSendTo(p, msg){ players.forEach((q, ws) => { if (q === p) send(ws, msg); }); }
+function _cvFx(game, zoneName, vt, o){ broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt:vt, zone:zoneName }, o || {})); }
+function _cvR(v){ return +(+v).toFixed(2); }
+// how far a projectile can travel from (x,z) along ang before a maze wall (or max)
+function _cvRay(M, x, z, ang, max){
+  if (!M) return max;
+  const sx = Math.sin(ang), sz = Math.cos(ang);
+  for (let d = 0.6; d <= max; d += 0.6) if (e2ConvMazeWall(M, x + sx*d, z + sz*d, TILE)) return Math.max(0.6, d - 0.6);
+  return max;
+}
+// the effect a hit carries: slow/root, a status, a petrify flash
+function _cvApplyEff(p, zoneName, eff){
+  if (!eff) return;
+  const m = { type:'sv_player_fx', zone:zoneName };
+  if (typeof eff.slow === 'number') { m.slow = eff.slow; m.root = eff.ms || 800; }
+  if (eff.status) { m.status = eff.status; m.statusDur = eff.dur || 150; }
+  if (eff.fx) m.eff = eff.fx;
+  if (eff.col) m.col = eff.col;
+  _cvSendTo(p, m);
+}
+function _cvHitPlayer(game, zoneName, p, eid, dmg, x, z, eff){
+  _cvSendTo(p, { type:'sv_enemy_attack', eid:eid, dmg:Math.max(1, Math.floor(dmg)), ex:_cvR(x), ez:_cvR(z), zone:zoneName });
+  _cvApplyEff(p, zoneName, eff);
+}
+function _cvAdd(zone, ent){ if (!zone._cv) zone._cv = []; if (zone._cv.length < 160) zone._cv.push(ent); return ent; }
+
+// ── one Convergence mob's turn (called from the zone AI loop once it has aggro) ──
+function _cvMobTick(game, zoneName, zone, e, np, changed){
+  const M = _convMazeFor(zone);
+  const dx = np.x - e.x, dz = np.z - e.z, dd = Math.sqrt(dx*dx + dz*dz) || 0.0001, ang = Math.atan2(dx, dz);
+  const los = !M || e2ConvMazeLOS(M, e.x, e.z, np.x, np.z, TILE);
+  const S = e._cv || (e._cv = { cd:{} });
+  S.t = (S.t || 0) + 1;
+  const col = CV_KIT[e.type] || 0xffffff;
+  const A = e.atk || 500;
+  const haste = (S.hasteT > 0) ? 1.45 : 1; if (S.hasteT > 0) S.hasteT--;
+  if (S.shieldT > 0 && --S.shieldT === 0) e.dmgReduction = S.baseDR || 0;
+  const SP = (e.spd || 0.04) * 6 * haste;
+  let moved = false;
+  const fx = (vt, o) => _cvFx(game, zoneName, vt, Object.assign({ eid:e.id }, o || {}));
+  const free = (x, z) => !M || !e2ConvMazeWall(M, x, z, TILE);
+  const stepTo = (gx, gz, sp) => {
+    if (M) { const wp = e2ConvMazeSteer(M, e.x, e.z, gx, gz, TILE); if (wp) { gx = wp.x; gz = wp.z; } }
+    const vx = gx - e.x, vz = gz - e.z, l = Math.sqrt(vx*vx + vz*vz) || 1;
+    const nx = e.x + vx/l*sp, nz = e.z + vz/l*sp;
+    if (free(nx, nz)) { e.x = nx; e.z = nz; } else if (free(nx, e.z)) e.x = nx; else if (free(e.x, nz)) e.z = nz; else return;
+    moved = true;
+  };
+  const chase = (stop, mul) => { if (dd > stop || !los) stepTo(np.x, np.z, SP * (mul || 1)); };
+  const away = (mul) => { const nx = e.x - dx/dd*SP*mul, nz = e.z - dz/dd*SP*mul;
+    if (free(nx, nz)) { e.x = nx; e.z = nz; moved = true; } };
+  const kite = (lo, hi) => { if (!los || dd > hi) chase(0); else if (dd < lo) away(0.85); };
+  // cooldowns count down every tick, whatever the mob is doing
+  for (const k in S.cd) if (S.cd[k] > 0) S.cd[k]--;
+  const ready = (k, every, first) => { if (S.cd[k] === undefined) S.cd[k] = first !== undefined ? first : Math.floor(every * (0.3 + Math.random()*0.5));
+    return S.cd[k] <= 0; };
+  const use = (k, every) => { S.cd[k] = every; };
+  const melee = (mult, every, range, eff) => {
+    if (dd <= range && ready('m', every, 4)) { use('m', every);
+      _cvHitPlayer(game, zoneName, np, e.id, A * mult * (0.9 + Math.random()*0.2), e.x, e.z, eff);
+      fx('cvm_melee', { ex:_cvR(e.x), ez:_cvR(e.z), ang:_cvR(ang), col }); } };
+  const wind = (ticks) => fx('cvm_wind', { col, ms:ticks*100 });
+  const circle = (x, z, r, fuse, mult, eff, c) => {
+    _cvAdd(zone, { k:'circle', x, z, r, fuse, dmg:A*mult, eff, eid:e.id, col:c||col });
+    _cvFx(game, zoneName, 'cvm_warn', { ex:_cvR(x), ez:_cvR(z), r, ms:fuse*100, col:c||col }); };
+  const line = (x, z, a, len, w, fuse, mult, eff, c) => {
+    len = _cvRay(M, x, z, a, len);
+    _cvAdd(zone, { k:'line', x, z, a, len, w, fuse, dmg:A*mult, eff, eid:e.id, col:c||col });
+    _cvFx(game, zoneName, 'cvm_line', { ex:_cvR(x), ez:_cvR(z), ang:_cvR(a), len:_cvR(len), w, ms:fuse*100, col:c||col }); };
+  const field = (x, z, r, life, every, mult, eff, c, delay) => {
+    _cvAdd(zone, { k:'field', x, z, r, life, every, cd:delay||0, delay:delay||0, dmg:A*mult, eff, eid:e.id, col:c||col });
+    _cvFx(game, zoneName, 'cvm_field', { ex:_cvR(x), ez:_cvR(z), r, ms:(life+(delay||0))*100, delay:(delay||0)*100, col:c||col }); };
+  const proj = (a, mult, spd, size, eff, after, c) => {
+    const len = _cvRay(M, e.x, e.z, a, 22);
+    _cvAdd(zone, { k:'proj', x:e.x, z:e.z, vx:Math.sin(a)*spd/10, vz:Math.cos(a)*spd/10, left:len, r:0.9 + size*0.35,
+                   dmg:A*mult, eff, after, eid:e.id, col:c||col, A });
+    _cvFx(game, zoneName, 'cvm_proj', { ex:_cvR(e.x), ez:_cvR(e.z), ang:_cvR(a), len:_cvR(len), spd, s:size, col:c||col }); };
+  const fan = (n, spread, mult, spd, size, eff, c) => { for (let i = 0; i < n; i++) proj(ang + (i - (n-1)/2) * spread, mult, spd, size, eff, null, c); };
+  // a dash: wind-up, then a straight rush that stops at walls and hits once on contact
+  const startDash = (tx, tz, windT, spdMul, mult, eff, landR) => {
+    S.dash = { tx, tz, w:windT, spd:SP*spdMul, mult, eff, hit:false, landR:landR||0, n:0 };
+    fx('cvm_dash', { tx:_cvR(tx), tz:_cvR(tz), col, ms:windT*100 }); };
+  const blinkTo = (x, z) => { if (!free(x, z)) return false;
+    fx('cvm_blink', { sx:_cvR(e.x), sz:_cvR(e.z), ex:_cvR(x), ez:_cvR(z), col }); e.x = x; e.z = z; moved = true; return true; };
+  const allies = (r) => zone.enemies.filter(o => o && o.active && o !== e && CV_BESPOKE[o.type] &&
+                                          (o.x-e.x)*(o.x-e.x) + (o.z-e.z)*(o.z-e.z) < r*r);
+
+  // ── a dash in progress owns the turn ──
+  if (S.dash) {
+    const D = S.dash;
+    if (D.w > 0) { D.w--; }
+    else {
+      const vx = D.tx - e.x, vz = D.tz - e.z, l = Math.sqrt(vx*vx + vz*vz);
+      const st = Math.min(D.spd, l), nx = e.x + vx/(l||1)*st, nz = e.z + vz/(l||1)*st;
+      let stop = l < 0.5 || ++D.n > 25;
+      if (free(nx, nz)) { e.x = nx; e.z = nz; moved = true; } else stop = true;
+      if (!D.hit && D.mult > 0) { const qx = np.x - e.x, qz = np.z - e.z;
+        if (qx*qx + qz*qz < 2.2*2.2) { D.hit = true; _cvHitPlayer(game, zoneName, np, e.id, A*D.mult, e.x, e.z, D.eff); } }
+      if (stop) {
+        if (D.landR) { _cvFx(game, zoneName, 'cvm_boom', { ex:_cvR(e.x), ez:_cvR(e.z), r:D.landR, col, s:1 });
+          tps_hit(game, zoneName, e.x, e.z, D.landR, A*D.mult*0.6, e.id, D.eff); }
+        S.dash = null;
+      }
+    }
+    if (moved) changed.push(e);
+    return;
+  }
+
+  switch (e.type) {
+    // ═════ DEPTH 1 — BROKEN REALITY ═════
+    case 'corrupted_xu':      // bruiser — GLITCH SLAM
+      chase(2.2); melee(1.0, 13, 3.0);
+      if (dd < 6 && ready('slam', 55)) { use('slam', 55); wind(10);
+        circle(e.x, e.z, 4.2, 10, 1.7, { slow:0.5, ms:1200 }); }
+      break;
+    case 'void_marine':       // trooper — VOID RIFLE bursts, GRAVITY GRENADE
+      kite(5, 11); melee(1.0, 14, 2.8);
+      if (los && dd < 16 && ready('rifle', 16)) { use('rifle', 16); fan(3, 0.13, 0.7, 15, 0); }
+      if (los && dd < 15 && ready('nade', 60)) { use('nade', 60); wind(6);
+        circle(np.x, np.z, 3.6, 12, 1.5, { slow:0, ms:700 }, 0xb070ff); }
+      break;
+    case 'holo_wraith':       // phantom — PHASE SHIFT behind you
+      chase(2.0); melee(0.9, 9, 2.6);
+      if (los && dd < 14 && dd > 3 && ready('phase', 50)) {
+        const bx = np.x + dx/dd*2.4, bz = np.z + dz/dd*2.4;
+        if (blinkTo(bx, bz)) { use('phase', 50); circle(bx, bz, 2.8, 6, 1.6); }
+      }
+      break;
+    case 'ash_wraith':        // caster — CINDER ORB, EMBER FIELD
+      kite(4, 10);
+      if (los && dd < 15 && ready('orb', 18)) { use('orb', 18); proj(ang, 0.9, 9, 1, { status:'burn', dur:120 }); }
+      if (los && dd < 13 && ready('ember', 70)) { use('ember', 70); wind(5);
+        field(np.x, np.z, 3.0, 50, 5, 0.22, { status:'burn', dur:90 }, null, 6); }
+      break;
+
+    // ═════ DEPTH 2 — CINDER ═════
+    case 'fire_demon':        // FIREBALL, HELLFIRE RING
+      kite(4, 12); melee(1.0, 14, 2.8);
+      if (los && dd < 16 && ready('fb', 15)) { use('fb', 15); proj(ang, 1.0, 11, 2, { status:'burn', dur:120 }); }
+      if (dd < 7 && ready('ring', 60)) { use('ring', 60); wind(11); circle(e.x, e.z, 5.5, 11, 1.8, { status:'burn', dur:150 }); }
+      break;
+    case 'inferno_golem':     // MAGMA FISSURE — a line that leaves lava behind
+      chase(2.6); melee(1.2, 16, 3.4);
+      if (los && dd < 13 && ready('fis', 65)) { use('fis', 65); wind(12);
+        line(e.x, e.z, ang, 13, 2.6, 12, 1.8, { status:'burn', dur:120 });
+        for (let k = 1; k <= 3; k++) { const fx2 = e.x + Math.sin(ang)*k*3.4, fz2 = e.z + Math.cos(ang)*k*3.4;
+          if (free(fx2, fz2)) field(fx2, fz2, 2.0, 40, 5, 0.2, { status:'burn', dur:90 }, null, 12); } }
+      break;
+    case 'lava_golem':        // LAVA TRAIL, LAVA LOB
+      chase(2.4); melee(1.1, 15, 3.0);
+      if (ready('trail', 25)) { use('trail', 25); field(e.x, e.z, 2.4, 60, 5, 0.25, { status:'burn', dur:90 }); }
+      if (los && dd < 14 && ready('lob', 50)) { use('lob', 50); wind(5);
+        circle(np.x, np.z, 3.0, 12, 1.4); field(np.x, np.z, 3.0, 40, 5, 0.2, { status:'burn', dur:90 }, null, 12); }
+      break;
+    case 'magma_crab':        // SCUTTLE CHARGE, ERUPTION
+      chase(2.0); melee(1.0, 11, 2.6);
+      if (los && dd > 4 && dd < 14 && ready('chg', 55)) { use('chg', 55);
+        startDash(np.x + dx/dd*3, np.z + dz/dd*3, 6, 4.0, 1.5, null); break; }
+      if (los && dd < 13 && ready('erupt', 70)) { use('erupt', 70); wind(6);
+        for (let k = 1; k <= 3; k++) { const ex = e.x + Math.sin(ang)*k*3.2, ez = e.z + Math.cos(ang)*k*3.2;
+          if (free(ex, ez)) circle(ex, ez, 2.6, 6 + k*3, 1.2, { status:'burn', dur:90 }); } }
+      break;
+
+    // ═════ DEPTH 3 — STORM ═════
+    case 'arc_sentinel':      // ARC BOLT, CHAIN LIGHTNING line
+      kite(6, 14);
+      if (los && dd < 18 && ready('arc', 14)) { use('arc', 14); proj(ang, 0.8, 18, 0); }
+      if (los && dd < 16 && ready('chain', 55)) { use('chain', 55); wind(9);
+        line(e.x, e.z, ang, Math.min(dd + 5, 18), 1.6, 9, 1.9, { slow:0.6, ms:900 }); }
+      break;
+    case 'tesla_golem':       // shock melee, TESLA COIL field
+      chase(2.6); melee(1.1, 15, 3.2, { slow:0.7, ms:600 });
+      if (dd < 8 && ready('coil', 75)) { use('coil', 75); wind(8);
+        field(e.x, e.z, 4.6, 45, 6, 0.35, { slow:0.7, ms:600 }, null, 8); }
+      break;
+    case 'storm_wraith':      // LIGHTNING STRIKES around you, STORM BLINK away
+      kite(5, 12);
+      if (los && dd < 16 && ready('strike', 45)) { use('strike', 45); wind(6);
+        for (let k = 0; k < 4; k++) { const a2 = Math.random()*Math.PI*2, r2 = k === 0 ? 0 : 1.5 + Math.random()*3.5;
+          const sx = np.x + Math.sin(a2)*r2, sz = np.z + Math.cos(a2)*r2; if (free(sx, sz)) circle(sx, sz, 2.4, 8 + k*2, 1.3); } }
+      if (dd < 5 && ready('sblink', 70)) {
+        for (let tries = 0; tries < 8; tries++) { const a3 = ang + Math.PI + (Math.random()-0.5)*1.6;
+          if (blinkTo(e.x + Math.sin(a3)*8, e.z + Math.cos(a3)*8)) { use('sblink', 70); break; } } }
+      break;
+    case 'volt_hound':        // fast bites, POUNCE
+      chase(1.8); melee(0.9, 8, 2.4);
+      if (los && dd > 4 && dd < 13 && ready('pounce', 40)) { use('pounce', 40);
+        startDash(np.x, np.z, 4, 4.5, 1.4, { slow:0.6, ms:700 }, 2.6); }
+      break;
+
+    // ═════ DEPTH 4 — SCALE & PRISM ═════
+    case 'saurian_brute':     // TAIL SWEEP, WAR ROAR (hastes the pack)
+      chase(2.6); melee(1.2, 15, 3.2);
+      if (dd < 5 && ready('tail', 45)) { use('tail', 45); wind(8); circle(e.x, e.z, 4.8, 8, 1.6); }
+      if (ready('roar', 120, 30)) { use('roar', 120);
+        const al = allies(12); al.forEach(o => { (o._cv || (o._cv = { cd:{} })).hasteT = 50; }); S.hasteT = 50;
+        fx('cvm_roar', { ex:_cvR(e.x), ez:_cvR(e.z), r:12, col, n:al.length }); }
+      break;
+    case 'geo_basilisk':      // ACID SPIT, PETRIFYING GAZE
+      kite(4, 11); melee(1.0, 14, 2.8);
+      if (los && dd < 15 && ready('spit', 17)) { use('spit', 17); proj(ang, 0.85, 12, 1, { status:'poison', dur:150 }); }
+      if (los && dd < 14 && ready('gaze', 65)) { use('gaze', 65); wind(11);
+        line(e.x, e.z, ang, 15, 2.2, 11, 1.2, { slow:0, ms:1500, fx:'petrify' }, 0xd8d0a0); }
+      break;
+    case 'cube_drake':        // PRISM BREATH, DIVE
+      kite(4, 12);
+      if (los && dd < 12 && ready('breath', 40)) { use('breath', 40); wind(4);
+        const P = [0xff5ad8, 0xc070ff, 0x6a8aff, 0x40e0ff, 0x7affb0];
+        for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.16, 0.75, 12, 1, null, null, P[i]); }
+      if (los && dd > 4 && dd < 12 && ready('dive', 70)) { use('dive', 70);
+        startDash(np.x + dx/dd*4, np.z + dz/dd*4, 5, 5.0, 1.6, null); }
+      break;
+    case 'raptor_shard':      // SHARD LEAP — lands on a marked spot and bursts into shards
+      chase(2.0); melee(0.9, 9, 2.4);
+      if (los && dd > 4 && dd < 14 && ready('leap', 50)) { use('leap', 50);
+        circle(np.x, np.z, 3.0, 10, 1.5);
+        S.shardAt = { x:np.x, z:np.z, t:10 };
+        startDash(np.x, np.z, 6, 3.6, 0, null); }
+      break;
+
+    // ═════ DEPTH 5 — MACHINE ═════
+    case 'sentry_mech':       // GATLING, MISSILE BARRAGE
+      kite(5, 14); melee(1.1, 15, 3.0);
+      if (los && dd < 16 && ready('gat', 20)) { use('gat', 20); fan(5, 0.08, 0.55, 17, 0); }
+      if (los && dd < 18 && ready('miss', 60)) { use('miss', 60); wind(6);
+        for (let k = 0; k < 5; k++) { const mx = np.x + (Math.random()-0.5)*6, mz = np.z + (Math.random()-0.5)*6;
+          if (free(mx, mz)) circle(mx, mz, 2.6, 8 + k*2, 1.2, null, 0xff6040); } }
+      break;
+    case 'hunter_drone':      // PULSE SHOTS, LOCK-ON LASER
+      kite(6, 13);
+      if (los && dd < 16 && ready('pulse', 12)) { use('pulse', 12); proj(ang, 0.6, 20, 0); }
+      if (los && dd < 16 && ready('laser', 45)) { use('laser', 45); wind(10);
+        line(e.x, e.z, ang, 18, 1.4, 10, 2.0, null, 0xff3048); }
+      break;
+    case 'plasma_bot':        // PLASMA ORB (bursts into a field), OVERHEAT
+      chase(3.0); melee(1.0, 14, 3.0);
+      if (los && dd < 15 && ready('orb', 35)) { use('orb', 35); proj(ang, 1.3, 7, 3, null, 'field'); }
+      if (dd < 5 && ready('heat', 70)) { use('heat', 70); wind(12); circle(e.x, e.z, 5.0, 12, 1.9); }
+      break;
+    case 'cube_sentinel':     // LASER GRID, AEGIS LINK (shields the pack)
+      kite(5, 12);
+      if (los && dd < 16 && ready('grid', 55)) { use('grid', 55); wind(6);
+        // an X of four beams centred on you, each stopping at the maze walls
+        for (let q = 0; q < 4; q++) line(np.x, np.z, ang + Math.PI/4 + q*Math.PI/2, 8, 1.6, 12, 0.6); }   // standing dead centre catches all four
+      if (ready('aegis', 90, 20)) { use('aegis', 90);
+        const al = allies(10).concat([e]);
+        al.forEach(o => { const s2 = o._cv || (o._cv = { cd:{} });
+          if (!(s2.shieldT > 0)) { s2.baseDR = o.dmgReduction || 0; o.dmgReduction = Math.min(0.85, s2.baseDR + 0.3); }
+          s2.shieldT = 50; });
+        fx('cvm_aegis', { ex:_cvR(e.x), ez:_cvR(e.z), r:10, col, ids:al.map(o => o.id) }); }
+      break;
+
+    // ═════ DEPTH 6 — OVERGROWTH ═════
+    case 'thorn_brute':       // BRAMBLE WAVE (slowing thorns left behind)
+      chase(2.6); melee(1.2, 16, 3.2);
+      if (los && dd < 12 && ready('bramble', 55)) { use('bramble', 55); wind(10);
+        line(e.x, e.z, ang, 12, 3.0, 10, 1.5, { slow:0.5, ms:1500 });
+        for (let k = 1; k <= 3; k++) { const fx2 = e.x + Math.sin(ang)*k*3.3, fz2 = e.z + Math.cos(ang)*k*3.3;
+          if (free(fx2, fz2)) field(fx2, fz2, 2.0, 40, 6, 0.15, { slow:0.5, ms:700 }, null, 10); } }
+      break;
+    case 'spore_fiend':       // TOXIC SPIT, SPORE CLOUD
+      kite(4, 10);
+      if (los && dd < 14 && ready('spit', 16)) { use('spit', 16); proj(ang, 0.8, 11, 1, { status:'poison', dur:150 }); }
+      if (los && dd < 13 && ready('cloud', 55)) { use('cloud', 55); wind(5);
+        circle(np.x, np.z, 3.4, 9, 0.8, { status:'poison', dur:150 });
+        field(np.x, np.z, 3.4, 50, 5, 0.2, { status:'poison', dur:120 }, null, 9); }
+      break;
+    case 'vine_lasher':       // long LASH, VINE GRAB (roots you)
+      chase(4.2); melee(1.0, 13, 4.6);
+      if (los && dd > 4 && dd < 13 && ready('grab', 50)) { use('grab', 50); wind(9);
+        line(e.x, e.z, ang, dd + 2, 1.8, 9, 1.3, { slow:0, ms:1300 }); }
+      break;
+    case 'bloom_wisp':        // PETAL STORM, HEALING BLOOM
+      kite(6, 13);
+      if (los && dd < 14 && ready('petal', 30)) { use('petal', 30);
+        for (let i = 0; i < 8; i++) proj(ang + i/8*Math.PI*2, 0.55, 10, 0); }
+      if (ready('bloom', 60, 25)) {
+        const hurt = allies(12).concat([e]).filter(o => o.hp < o.maxHp);
+        if (hurt.length) { use('bloom', 60);
+          hurt.forEach(o => { o.hp = Math.min(o.maxHp, o.hp + Math.floor(o.maxHp * 0.05)); changed.push(o); });
+          fx('cvm_heal', { ex:_cvR(e.x), ez:_cvR(e.z), r:12, col, ids:hurt.map(o => o.id) }); } }
+      break;
+  }
+  if (moved) changed.push(e);
+}
+
+// every targetable player inside a circle takes the hit
+function tps_hit(game, zoneName, x, z, r, dmg, eid, eff){
+  getTargetablePlayersInZone(game.id, zoneName).forEach(p => {
+    if (p.x === undefined) return; const qx = p.x - x, qz = p.z - z;
+    if (qx*qx + qz*qz < r*r) _cvHitPlayer(game, zoneName, p, eid, dmg, x, z, eff); });
+}
+
+// ── the zone's live strikes, fields and projectiles, once per tick ──
+function _cvTickEnts(game, zoneName, zone){
+  const list = zone._cv; if (!list || !list.length) return;
+  const M = _convMazeFor(zone);
+  const tps = getTargetablePlayersInZone(game.id, zoneName);
+  const keep = [];
+  for (const h of list) {
+    if (h.k === 'circle') {
+      if (--h.fuse > 0) { keep.push(h); continue; }
+      _cvFx(game, zoneName, 'cvm_boom', { ex:_cvR(h.x), ez:_cvR(h.z), r:h.r, col:h.col });
+      tps_hit(game, zoneName, h.x, h.z, h.r, h.dmg, h.eid, h.eff);
+    } else if (h.k === 'line') {
+      if (--h.fuse > 0) { keep.push(h); continue; }
+      _cvFx(game, zoneName, 'cvm_line_fire', { ex:_cvR(h.x), ez:_cvR(h.z), ang:_cvR(h.a), len:_cvR(h.len), w:h.w, col:h.col });
+      const sx = Math.sin(h.a), sz = Math.cos(h.a);
+      tps.forEach(p => { if (p.x === undefined) return;
+        const qx = p.x - h.x, qz = p.z - h.z, along = qx*sx + qz*sz, perp = Math.abs(qx*sz - qz*sx);
+        if (along > -0.5 && along < h.len + 0.5 && perp < h.w/2 + 0.6) _cvHitPlayer(game, zoneName, p, h.eid, h.dmg, p.x, p.z, h.eff); });
+    } else if (h.k === 'field') {
+      if (h.delay > 0) { h.delay--; keep.push(h); continue; }
+      if (--h.life <= 0) continue;
+      if (--h.cd <= 0) { h.cd = h.every;
+        tps.forEach(p => { if (p.x === undefined) return; const qx = p.x - h.x, qz = p.z - h.z;
+          if (qx*qx + qz*qz < h.r*h.r) _cvHitPlayer(game, zoneName, p, h.eid, h.dmg, h.x, h.z, h.eff); }); }
+      keep.push(h);
+    } else if (h.k === 'proj') {
+      const st = Math.sqrt(h.vx*h.vx + h.vz*h.vz);
+      let hit = null;
+      // sub-step so a fast bolt can't skip over a player between ticks
+      for (let s = 0; s < 3 && !hit && h.left > 0; s++) {
+        h.x += h.vx/3; h.z += h.vz/3; h.left -= st/3;
+        for (const p of tps) { if (p.x === undefined) continue; const qx = p.x - h.x, qz = p.z - h.z;
+          if (qx*qx + qz*qz < h.r*h.r) { hit = p; break; } }
+      }
+      if (hit) _cvHitPlayer(game, zoneName, hit, h.eid, h.dmg, h.x, h.z, h.eff);
+      if (hit || h.left <= 0) {
+        if (h.after === 'field') {
+          _cvAdd(zone, { k:'field', x:h.x, z:h.z, r:2.6, life:30, every:5, cd:0, delay:0, dmg:h.A*0.25, eid:h.eid, col:h.col });
+          _cvFx(game, zoneName, 'cvm_field', { ex:_cvR(h.x), ez:_cvR(h.z), r:2.6, ms:3000, delay:0, col:h.col });
+        }
+        continue;
+      }
+      keep.push(h);
+    }
+  }
+  zone._cv = keep;
+  // raptor shard bursts land with the leap
+  zone.enemies.forEach(e => { const s = e._cv && e._cv.shardAt; if (!s) return;
+    if (--s.t <= 0 && e.active) { e._cv.shardAt = null;
+      for (let i = 0; i < 6; i++) { const a = i/6*Math.PI*2, len = _cvRay(M, e.x, e.z, a, 12);
+        _cvAdd(zone, { k:'proj', x:e.x, z:e.z, vx:Math.sin(a)*1.3, vz:Math.cos(a)*1.3, left:len, r:0.9, dmg:(e.atk||500)*0.5, eid:e.id, col:CV_KIT[e.type], A:e.atk });
+        _cvFx(game, zoneName, 'cvm_proj', { ex:_cvR(e.x), ez:_cvR(e.z), ang:_cvR(a), len:_cvR(len), spd:13, s:0, col:CV_KIT[e.type] }); } }
+    else if (!e.active) e._cv.shardAt = null; });
+}
+
 const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1 };
 const _XP_GOLD=0xffd24a, _XP_CYAN=0x40d0ff, _XP_BLUE=0x6080ff, _XP_HOT=0xffe48a, _XP_VIOLET=0x8040ff;
 const FG_BESPOKE = { molten_crawler:1, lava_forged_sentinel:1, forge_technician:1, industrial_devastator:1 };
@@ -12447,7 +12832,7 @@ wss.on('connection', ws => {
             spawnZ: s.tz * TILE,
             hp: Math.round(_baseHp * effectiveScale * hpMul),
             maxHp: Math.round(_baseHp * effectiveScale * hpMul),
-            atk: Math.round(st.atk * effectiveScale * atkMul),
+            atk: Math.round(convBaseAtk(s.type, st.atk) * effectiveScale * atkMul),   // a609 — attack floor too
             spd: st.spd * frenzyMul,
             aggroRange: st.aggroRange,
             reward: Math.round(st.reward * effectiveScale * rewardMul),
