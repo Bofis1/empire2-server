@@ -4880,117 +4880,18 @@ const ZBOSS_SERVER = {
   //    which is what the function-valued config above exists for.
   //    Each boss opens with one move and unlocks the rest as it is worn down.
   convergence: {
+    // a611 — the move sets, telegraphs and damage live in CVB / _cvbAttack below; the
+    //   a564 tables (_CV) still drive speed and the phase ladder. The old pre-a611
+    //   attack/passive is replaced wholesale (git history / a564 notes have it).
     x: 180, z: 180,                                    // tile (120,120)
     spd:    (z) => _CV[_cvD(z)].spd,
     dmg:    (z) => _CV[_cvD(z)].dmg,
     phases: (z) => _CV[_cvD(z)].phases,
-    acd:    (z) => _CV[_cvD(z)].acd,
-    tele:   9,
-    pick:   (b, ph) => {
-      // the depth is on the zone, which pick doesn't get — stash it from the last tick
-      const D = b._cvDepth || 1;
-      const set = _CV[D];
-      const moves = set.base.slice();
-      for (const u of set.unlock) if (ph >= u[0]) moves.push(u[1]);
-      b._cvIdx = ((b._cvIdx || 0) + 1) % moves.length;
-      b._cvMove = moves[b._cvIdx];
-      return 0;
-    },
-    attack: (c) => {
-      const { b, ph, mult, ang, np, nd, zone, zoneName, game, aoe, fx, proj, geyser } = c;
-      const D = _cvD(zone);
-      const m = b._cvMove || _CV[D].base[0];
-      const H = (flat) => Math.floor(flat * mult);
-      fx('cv_move', { d:D, m:m });
-
-      switch (m) {
-        // ── DEPTH 1 — THE DEPTH SENTINEL
-        case 'sentinel_strike': aoe(6.0, H(85)); break;
-
-        // ── DEPTH 2 — THE INFERNO
-        case 'inferno_cube':
-          for (let i = 0; i < 6; i++) proj(i/6*Math.PI*2, 0xff4400, H(150), 'plasma');
-          aoe(6.0, H(150)); break;
-        case 'molten_rift':
-          for (let r = 0; r < 5; r++)
-            geyser(np.x + (Math.random()-0.5)*9, np.z + (Math.random()-0.5)*9, 4 + r*2, 3.0, H(120), 0xff6600);
-          break;
-        case 'core_collapse': aoe(11.0, H(170)); break;
-        case 'depth_inferno':
-          for (let i = 0; i < 10; i++) proj(i/10*Math.PI*2, 0xff2200, H(140), 'plasma');
-          aoe(8.0, H(140)); break;
-
-        // ── DEPTH 3 — THE ARCHON
-        case 'void_orb':
-          for (let i = 0; i < 4; i++) proj(ang + (i-1.5)*0.20, 0x9a3cff, H(120), 'void');
-          break;
-        case 'laser_beam':
-          fx('cv_beam', { dir:+ang.toFixed(3), len:24 });
-          for (let d2 = 1; d2 <= 10; d2++)
-            geyser(b.x + Math.sin(ang)*d2*2.4, b.z + Math.cos(ang)*d2*2.4, 7, 1.8, H(200), 0x30b8ff);
-          break;
-        case 'teleport':
-          b.x = np.x + (Math.random()-0.5)*8; b.z = np.z + (Math.random()-0.5)*8;
-          fx('cv_blink', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) }); break;
-        case 'orbital_barrage':
-          for (let o = 0; o < 6; o++)
-            geyser(np.x + (Math.random()-0.5)*11, np.z + (Math.random()-0.5)*11, 5 + o, 3.2, H(150), 0x30b8ff, { shake:10 });
-          break;
-
-        // ── DEPTH 4 — XERATHOR
-        case 'cube_catalyst':
-          for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0x6ad8ff, H(130), 'void');
-          aoe(6.0, H(130)); break;
-        case 'geometric_lash': aoe(8.5, H(140)); break;
-        case 'sphere_of_nullity':
-          for (let o = 0; o < 4; o++)
-            geyser(np.x + (Math.random()-0.5)*8, np.z + (Math.random()-0.5)*8, 6 + o*2, 2.6, H(90), 0xb060ff);
-          break;
-        case 'reality_reformat':
-          fx('cv_reformat'); aoe(14.0, H(100));
-          for (let i = 0; i < 12; i++) proj(i/12*Math.PI*2, 0xdc8cff, H(100), 'void');
-          break;
-
-        // ── DEPTH 5 — THE OVERSEER
-        case 'plasma_bolts':
-          for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.17, 0x30e0ff, H(95), 'plasma');
-          break;
-        case 'techno_blades': aoe(5.5, H(70)); 
-          for (let i = 0; i < 6; i++) proj(ang + (i-2.5)*0.22, 0xbfe8ff, H(70), 'bolt');
-          break;
-        case 'mechanical_assault': aoe(7.0, H(85)); break;
-        case 'overcharge':
-          fx('cv_overcharge'); aoe(10.0, H(150));
-          for (let i = 0; i < 10; i++) proj(i/10*Math.PI*2, 0x30e0ff, H(150), 'lightning');
-          break;
-
-        // ── DEPTH 6 — THE ANCIENT
-        case 'root_slam':
-          aoe(6.5, H(120));
-          for (let r = 0; r < 4; r++)
-            geyser(b.x + Math.sin(ang + (r-1.5)*0.4)*(4 + r*2), b.z + Math.cos(ang + (r-1.5)*0.4)*(4 + r*2),
-                   4 + r, 2.4, H(100), 0x4faa3a);
-          break;
-        case 'natures_grasp':
-          geyser(np.x, np.z, 6, 4.0, H(110), 0x4faa3a, { slow:0.4, slowDur:1500 }); break;
-        case 'leaf_storm':
-          for (let i = 0; i < 12; i++) proj(i/12*Math.PI*2, 0x8fd44a, H(55), 'magic');
-          break;
-        case 'ancient_wrath':
-          fx('cv_wrath'); aoe(13.0, H(150)); break;
-
-        default: aoe(6.0, H(100));
-      }
-    },
-    passive: (c) => {
-      const { b, ph, mult, nd, zone, aoe, fx } = c;
-      const D = _cvD(zone);
-      b._cvDepth = D;                                  // pick() reads this next tick
-      if (b._cvSeen !== D) { b._cvSeen = D; b._cvIdx = 0; fx('cv_depth', { d:D }); }
-      // the standing melee each depth boss keeps up
-      const mel = _CV[D].melee;
-      if (b._vt % 9 === 0 && nd < 5.0) aoe(5.0, Math.floor(mel * mult));
-    },
+    acd:    (z) => CVB_ACD,
+    tele:   0,                                         // every move draws its own warning
+    pick:   () => 0,
+    attack: (c) => { c.b._cvMove = _cvbPick(c.b, c.zone); _cvbAttack(c); },
+    passive: (c) => _cvbPassive(c),
   },
 
 // ── THE KEEPER OF THE REACH (a563). The game's final boss: 5M HP, four phases, and a
@@ -6753,6 +6654,238 @@ function _zbSummon(c, type, n, hp, atk, spd, reward, expR, dmgReduction, radius)
     broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'zb_summon_drop', zone:zoneName,
       ex:+sx.toFixed(2), ez:+sz.toFixed(2) });
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// a611 — CONVERGENCE BOSS OVERHAUL. The six depth bosses opened with ONE move and only
+//   unlocked the rest as they were worn down; their area hits landed instantly with no
+//   warning (nothing to dodge), and their damage was sized for a much older curve
+//   (85-200 base, below their own depth's mobs). Now every boss has four moves from
+//   the first second, a SIGNATURE move at phase 3 and an ULTIMATE at phase 4, every
+//   strike is telegraphed with the same warning circles/lines/fields/projectiles the
+//   Convergence mobs use (a609, _cvTickEnts), multi-wave attacks are sequenced over
+//   time, and damage is anchored to the depth. Movement, HP, phases and the lair rules
+//   are unchanged (tickZoneBoss).
+// ═══════════════════════════════════════════════════════════════════════════════
+const CVB = {
+  1: { name:'THE DEPTH SENTINEL', col:0x30f0ff, alt:0xff2bd6,
+       moves:['sentinel_strike','glitch_lattice','void_mines','phase_shot'], sig:'reality_tear', ult:'sentinel_overload',
+       pose:{ sentinel_strike:'sentinel_strike' } },
+  2: { name:'THE INFERNO', col:0xff4a1a, alt:0xffa020,
+       moves:['inferno_cube','molten_rift','flame_wave','meteor_rain'], sig:'core_collapse', ult:'depth_inferno',
+       pose:{ inferno_cube:'inferno_cube', molten_rift:'molten_rift', flame_wave:'molten_rift', meteor_rain:'molten_rift',
+              core_collapse:'core_collapse', depth_inferno:'depth_inferno' } },
+  3: { name:'THE ARCHON', col:0x9a3cff, alt:0x30b8ff,
+       moves:['void_orb','laser_beam','rift_step','orbital_barrage'], sig:'laser_sweep', ult:'storm_cage',
+       pose:{ void_orb:'void_orb', laser_beam:'void_orb', orbital_barrage:'orbital_barrage', laser_sweep:'void_orb', storm_cage:'orbital_barrage' } },
+  4: { name:'XERATHOR', col:0xc070ff, alt:0x6ad8ff,
+       moves:['cube_catalyst','geometric_lash','sphere_of_nullity','prism_split'], sig:'reality_reformat', ult:'shattered_space',
+       pose:{ cube_catalyst:'cube_catalyst', geometric_lash:'geometric_lash', sphere_of_nullity:'sphere_of_nullity',
+              prism_split:'cube_catalyst', reality_reformat:'geometric_lash', shattered_space:'sphere_of_nullity' } },
+  5: { name:'THE OVERSEER', col:0x30e0ff, alt:0xff3048,
+       moves:['plasma_bolts','techno_blades','missile_salvo','lockdown_grid'], sig:'overcharge', ult:'orbital_laser',
+       pose:{ plasma_bolts:'plasma_bolts', techno_blades:'techno_blades', missile_salvo:'mechanical_assault',
+              lockdown_grid:'techno_blades', overcharge:'mechanical_assault', orbital_laser:'plasma_bolts' } },
+  6: { name:'THE ANCIENT', col:0x4faa3a, alt:0xff6ad5,
+       moves:['root_slam','natures_grasp','leaf_storm','thorn_field'], sig:'spore_pods', ult:'ancient_wrath',
+       pose:{ root_slam:'root_slam', natures_grasp:'natures_grasp', leaf_storm:'leaf_storm', thorn_field:'natures_grasp',
+              spore_pods:'leaf_storm', ancient_wrath:'root_slam' } },
+};
+const CVB_NAMES = {
+  sentinel_strike:'SENTINEL STRIKE', glitch_lattice:'GLITCH LATTICE', void_mines:'VOID MINES', phase_shot:'PHASE SHOT',
+  reality_tear:'REALITY TEAR', sentinel_overload:'SENTINEL OVERLOAD',
+  inferno_cube:'INFERNO CUBE', molten_rift:'MOLTEN RIFT', flame_wave:'FLAME WAVE', meteor_rain:'METEOR RAIN',
+  core_collapse:'CORE COLLAPSE', depth_inferno:'DEPTH INFERNO',
+  void_orb:'VOID ORBS', laser_beam:'ANNIHILATION BEAM', rift_step:'RIFT STEP', orbital_barrage:'ORBITAL BARRAGE',
+  laser_sweep:'LASER SWEEP', storm_cage:'STORM CAGE',
+  cube_catalyst:'CUBE CATALYST', geometric_lash:'GEOMETRIC LASH', sphere_of_nullity:'SPHERE OF NULLITY', prism_split:'PRISM SPLIT',
+  reality_reformat:'REALITY REFORMAT', shattered_space:'SHATTERED SPACE',
+  plasma_bolts:'PLASMA BOLTS', techno_blades:'TECHNO BLADES', missile_salvo:'MISSILE SALVO', lockdown_grid:'LOCKDOWN GRID',
+  overcharge:'OVERCHARGE', orbital_laser:'ORBITAL LASER',
+  root_slam:'ROOT SLAM', natures_grasp:"NATURE'S GRASP", leaf_storm:'LEAF STORM', thorn_field:'THORN FIELD',
+  spore_pods:'SPORE PODS', ancient_wrath:'ANCIENT WRATH',
+};
+const CVB_ACD = [0, 30, 27, 23, 19, 16];      // ticks between moves, by phase (10 = 1s)
+
+function _cvbKit(c){
+  const { game, zoneName, zone, b, np, ph } = c;
+  const D = _cvD(zone), T = CVB[D] || CVB[1];
+  const A = 1250 * (1 + 0.5 * (D - 1)) * (1 + 0.12 * ((ph || 1) - 1));   // anchored to the depth, climbing with phase
+  const M = _convMazeFor(zone);
+  const K = {
+    D, T, A, col:T.col, alt:T.alt,
+    circle: (x, z, r, fuse, mult, eff, col) => {
+      _cvAdd(zone, { k:'circle', x, z, r, fuse, dmg:A*mult, eff, eid:-1, col:col||T.col });
+      _cvFx(game, zoneName, 'cvm_warn', { ex:_cvR(x), ez:_cvR(z), r, ms:fuse*100, col:col||T.col }); },
+    line: (x, z, a, len, w, fuse, mult, eff, col) => {
+      len = _cvRay(M, x, z, a, len);
+      _cvAdd(zone, { k:'line', x, z, a, len, w, fuse, dmg:A*mult, eff, eid:-1, col:col||T.col });
+      _cvFx(game, zoneName, 'cvm_line', { ex:_cvR(x), ez:_cvR(z), ang:_cvR(a), len:_cvR(len), w, ms:fuse*100, col:col||T.col }); },
+    field: (x, z, r, life, every, mult, eff, col, delay) => {
+      _cvAdd(zone, { k:'field', x, z, r, life, every, cd:delay||0, delay:delay||0, dmg:A*mult, eff, eid:-1, col:col||T.col });
+      _cvFx(game, zoneName, 'cvm_field', { ex:_cvR(x), ez:_cvR(z), r, ms:(life+(delay||0))*100, delay:(delay||0)*100, col:col||T.col }); },
+    proj: (a, mult, spd, size, eff, col, ox, oz) => {
+      const x0 = ox !== undefined ? ox : b.x, z0 = oz !== undefined ? oz : b.z;
+      const len = _cvRay(M, x0, z0, a, 26);
+      _cvAdd(zone, { k:'proj', x:x0, z:z0, vx:Math.sin(a)*spd/10, vz:Math.cos(a)*spd/10, left:len, r:1.0 + size*0.35,
+                     dmg:A*mult, eff, eid:-1, col:col||T.col, A });
+      _cvFx(game, zoneName, 'cvm_proj', { ex:_cvR(x0), ez:_cvR(z0), ang:_cvR(a), len:_cvR(len), spd, s:size, col:col||T.col }); },
+    ring: (n, off, mult, spd, size, col, eff) => { for (let i = 0; i < n; i++) K.proj(off + i/n*Math.PI*2, mult, spd, size, eff, col); },
+    // run fn after `t` ticks (multi-wave attacks)
+    later: (t, fn) => { (b._cvQ || (b._cvQ = [])).push({ t, fn }); },
+    glow: (ticks, col) => _cvFx(game, zoneName, 'cvm_bwind', { col:col||T.col, ms:ticks*100 }),
+    call: (m, col) => _cvFx(game, zoneName, 'cvm_bname', { name:CVB_NAMES[m] || m, boss:T.name, col:col||T.col }),
+  };
+  return K;
+}
+
+function _cvbAttack(c){
+  const { b, np, ph, ang, game, zoneName, zone } = c;
+  const K = _cvbKit(c), { D, T, A } = K;
+  const m = b._cvMove;
+  K.call(m, (m === T.sig || m === T.ult) ? T.alt : T.col);
+  _cvFx(game, zoneName, 'cv_move', { d:D, m:(T.pose[m] || m) });     // the existing boss pose animation
+  const px = np.x, pz = np.z, bx = b.x, bz = b.z;
+  const perp = ang + Math.PI/2;
+  switch (m) {
+    // ═════ DEPTH 1 — THE DEPTH SENTINEL ═════
+    case 'sentinel_strike': K.glow(9); K.circle(bx, bz, 5.5, 9, 1.6, { slow:0.6, ms:900 }); break;
+    case 'glitch_lattice':  K.glow(6);
+      for (let k = -1; k <= 1; k++) { const ox = px + Math.sin(perp)*k*4.5 - Math.sin(ang)*12, oz = pz + Math.cos(perp)*k*4.5 - Math.cos(ang)*12;
+        K.line(ox, oz, ang, 24, 2.4, 11, 1.3, null, k ? T.col : T.alt); } break;
+    case 'void_mines':      K.glow(5);
+      for (let k = 0; k < 6; k++) K.circle(px + (Math.random()-0.5)*10, pz + (Math.random()-0.5)*10, 2.6, 10 + k*2, 1.1, null, T.alt); break;
+    case 'phase_shot':      for (let i = 0; i < 7; i++) K.proj(ang + (i-3)*0.13, 0.7, 14, 1); break;
+    case 'reality_tear':    K.glow(13, T.alt);
+      for (let i = 0; i < 8; i++) K.line(bx, bz, ang + i*Math.PI/4 + Math.PI/8, 22, 2.2, 13, 1.5, null, i%2 ? T.col : T.alt); break;
+    case 'sentinel_overload': K.glow(10, T.alt);
+      K.field(bx, bz, 7.5, 30, 5, 0.35, { slow:0.6, ms:600 }, T.alt, 10);
+      K.later(10, () => K.ring(12, 0, 0.6, 12, 1, T.col)); K.later(20, () => K.ring(12, Math.PI/12, 0.6, 12, 1, T.alt)); break;
+
+    // ═════ DEPTH 2 — THE INFERNO ═════
+    case 'inferno_cube':    K.glow(9); K.circle(bx, bz, 5.5, 9, 1.4, { status:'burn', dur:150 });
+      K.later(9, () => K.ring(10, ang, 0.7, 12, 1, T.alt, { status:'burn', dur:120 })); break;
+    case 'molten_rift':     K.glow(6);
+      for (let k = 1; k <= 6; k++) { const rx = bx + Math.sin(ang)*k*3.6, rz = bz + Math.cos(ang)*k*3.6;
+        K.circle(rx, rz, 2.8, 6 + k*2, 1.3, { status:'burn', dur:120 });
+        K.field(rx, rz, 2.4, 30, 5, 0.22, { status:'burn', dur:90 }, T.alt, 6 + k*2); } break;
+    case 'flame_wave':      K.glow(10); K.line(bx, bz, ang, 24, 4.2, 10, 1.7, { status:'burn', dur:150 });
+      for (let k = 1; k <= 5; k++) K.field(bx + Math.sin(ang)*k*4, bz + Math.cos(ang)*k*4, 2.2, 35, 5, 0.2, { status:'burn', dur:90 }, T.alt, 10); break;
+    case 'meteor_rain':     K.glow(6, T.alt);
+      for (let k = 0; k < 9; k++) { const mx = (k < 3 ? px : 181) + (Math.random()-0.5)*(k < 3 ? 6 : 34), mz = (k < 3 ? pz : 181) + (Math.random()-0.5)*(k < 3 ? 6 : 34);
+        K.circle(mx, mz, 3.2, 10 + k*2, 1.4, { status:'burn', dur:120 }, T.alt); } break;
+    case 'core_collapse':   K.glow(16, T.alt); K.circle(bx, bz, 11, 16, 2.2, { status:'burn', dur:180 }, T.alt); break;
+    case 'depth_inferno':   K.glow(8, T.alt);
+      for (let w = 0; w < 4; w++) K.later(w*5, () => K.ring(12, w*0.13, 0.55, 11, 1, w%2 ? T.col : T.alt, { status:'burn', dur:90 })); break;
+
+    // ═════ DEPTH 3 — THE ARCHON ═════
+    case 'void_orb':        for (let i = 0; i < 5; i++) K.proj(ang + (i-2)*0.2, 1.0, 8, 3); break;
+    case 'laser_beam':      K.glow(9, T.alt); K.line(bx, bz, ang, 28, 2.4, 9, 2.0, null, T.alt); break;
+    case 'rift_step': {
+      const a2 = Math.random()*Math.PI*2, nx = Math.max(162, Math.min(201, px + Math.sin(a2)*3.5)), nz = Math.max(162, Math.min(201, pz + Math.cos(a2)*3.5));
+      _cvFx(game, zoneName, 'cvm_blink', { sx:_cvR(bx), sz:_cvR(bz), ex:_cvR(nx), ez:_cvR(nz), col:T.col });
+      b.x = nx; b.z = nz; K.circle(nx, nz, 4.8, 8, 1.5); break; }
+    case 'orbital_barrage': K.glow(6, T.alt);
+      for (let k = 0; k < 7; k++) K.circle(px + (k ? (Math.random()-0.5)*9 : 0), pz + (k ? (Math.random()-0.5)*9 : 0), 3.0, 6 + k*2, 1.3, null, T.alt); break;
+    case 'laser_sweep':     K.glow(8, T.alt);
+      for (let k = 0; k < 6; k++) K.line(bx, bz, ang - 0.9 + k*0.36, 26, 2.0, 8 + k*3, 1.6, null, k%2 ? T.col : T.alt); break;
+    case 'storm_cage':      K.glow(12, T.alt);
+      for (let i = 0; i < 10; i++) K.circle(px + Math.sin(i/10*Math.PI*2)*5.5, pz + Math.cos(i/10*Math.PI*2)*5.5, 2.2, 12, 1.2, { slow:0.6, ms:700 });
+      K.circle(px, pz, 3.4, 20, 1.9, null, T.alt); break;
+
+    // ═════ DEPTH 4 — XERATHOR ═════
+    case 'cube_catalyst':   K.glow(9); K.circle(bx, bz, 5.5, 9, 1.4);
+      K.later(9, () => K.ring(8, ang + Math.PI/8, 0.75, 11, 2, T.alt)); break;
+    case 'geometric_lash':  K.glow(10);
+      for (let i = 0; i < 4; i++) K.line(bx, bz, ang + i*Math.PI/2, 22, 2.6, 10, 1.6, null, i%2 ? T.col : T.alt); break;
+    case 'sphere_of_nullity': K.glow(8);
+      for (let k = 0; k < 4; k++) K.field(px + (Math.random()-0.5)*9, pz + (Math.random()-0.5)*9, 3.0, 40, 5, 0.3, { slow:0.5, ms:700 }, T.col, 8); break;
+    case 'prism_split': {   const P = [0xff5ad8, 0xc070ff, 0x6a8aff, 0x40e0ff, 0x7affb0, 0xfff04a, 0xffa040, 0xff5a5a, 0xff5ad8];
+      for (let i = 0; i < 9; i++) K.proj(ang + (i-4)*0.12, 0.65, 13, 1, null, P[i]); break; }
+    case 'reality_reformat': K.glow(12, T.alt);
+      for (let i = 0; i < 8; i++) K.line(bx, bz, ang + i*Math.PI/4, 22, 2.2, 12, 1.4, null, i%2 ? T.col : T.alt);
+      K.later(12, () => K.ring(12, 0, 0.6, 11, 1, T.alt)); break;
+    case 'shattered_space': { K.glow(14, T.alt);
+      const safe = Math.floor(Math.random()*9);
+      for (let gx = -1, i = 0; gx <= 1; gx++) for (let gz = -1; gz <= 1; gz++, i++) if (i !== safe)
+        K.circle(px + gx*4.2, pz + gz*4.2, 2.3, 14, 1.5, null, i%2 ? T.col : T.alt);
+      break; }
+
+    // ═════ DEPTH 5 — THE OVERSEER ═════
+    case 'plasma_bolts':    for (let i = 0; i < 5; i++) K.proj(ang + (i-2)*0.15, 0.8, 16, 1); break;
+    case 'techno_blades':   K.glow(8);
+      for (const off of [-0.45, 0, 0.45]) K.line(bx, bz, ang + off, 22, 2.0, 8, 1.4, null, off ? T.col : T.alt); break;
+    case 'missile_salvo':   K.glow(6, T.alt);
+      for (let k = 0; k < 8; k++) K.circle(px + (Math.random()-0.5)*8, pz + (Math.random()-0.5)*8, 2.6, 8 + k*2, 1.2, null, T.alt); break;
+    case 'lockdown_grid':   K.glow(10);
+      for (let q = 0; q < 4; q++) K.line(px, pz, ang + Math.PI/4 + q*Math.PI/2, 10, 1.8, 12, 0.7, { slow:0.5, ms:800 }); break;
+    case 'overcharge':      K.glow(12, T.alt); K.circle(bx, bz, 7.5, 12, 2.0, { slow:0.5, ms:900 }, T.alt);
+      K.later(12, () => K.ring(14, 0, 0.6, 15, 0, T.col)); break;
+    case 'orbital_laser':   K.glow(8, T.alt);
+      // three strikes that each aim at wherever the target is standing at the time
+      for (let k = 0; k < 3; k++) K.later(k*7, () => {
+        const tp = getTargetablePlayersInZone(game.id, zoneName).filter(p => p.x !== undefined)
+                     .sort((p, q) => ((p.x-b.x)**2+(p.z-b.z)**2) - ((q.x-b.x)**2+(q.z-b.z)**2))[0] || np;
+        const a3 = Math.atan2(tp.x - b.x, tp.z - b.z);
+        K.line(b.x, b.z, a3, 28, 2.4, 8, 1.6, null, T.alt); });
+      break;
+
+    // ═════ DEPTH 6 — THE ANCIENT ═════
+    case 'root_slam':       K.glow(9); K.circle(bx, bz, 6, 9, 1.6, { slow:0.5, ms:900 });
+      for (let r = 1; r <= 4; r++) K.circle(bx + Math.sin(ang)*(4 + r*3), bz + Math.cos(ang)*(4 + r*3), 2.6, 9 + r*2, 1.2, null, T.alt); break;
+    case 'natures_grasp':   K.glow(7); K.circle(px, pz, 4.2, 9, 1.2, { slow:0, ms:1500 }); break;
+    case 'leaf_storm':      K.ring(14, ang, 0.55, 11, 0, 0x8fd44a); K.later(6, () => K.ring(14, ang + Math.PI/14, 0.55, 11, 0, T.alt)); break;
+    case 'thorn_field':     K.glow(8);
+      for (let k = 0; k < 5; k++) K.field(px + (Math.random()-0.5)*12, pz + (Math.random()-0.5)*12, 3.0, 50, 6, 0.25, { slow:0.5, ms:800 }, T.col, 8); break;
+    case 'spore_pods':      K.glow(8, T.alt);
+      for (let k = 0; k < 6; k++) { const sx = px + (Math.random()-0.5)*12, sz = pz + (Math.random()-0.5)*12;
+        K.circle(sx, sz, 3.0, 12 + k*2, 1.4, { status:'poison', dur:150 }, T.alt);
+        K.field(sx, sz, 3.0, 30, 5, 0.2, { status:'poison', dur:120 }, 0xc6ff4a, 12 + k*2); } break;
+    case 'ancient_wrath':   K.glow(18, T.alt);
+      for (let i = 0; i < 6; i++) K.line(bx, bz, ang + i*Math.PI/3, 22, 2.4, 10, 1.4, null, T.col);
+      K.later(8, () => { for (let i = 0; i < 6; i++) K.line(b.x, b.z, ang + Math.PI/6 + i*Math.PI/3, 22, 2.4, 10, 1.4, null, T.alt); });
+      K.circle(bx, bz, 8.5, 18, 2.2, null, T.alt); break;
+
+    default: K.circle(bx, bz, 5, 9, 1.4);
+  }
+}
+
+// picks the next move: the four basics cycle from the start; a newly unlocked signature
+//   or ultimate jumps the queue the moment its phase arrives, then joins the cycle
+function _cvbPick(b, zone){
+  const D = _cvD(zone), T = CVB[D] || CVB[1], ph = b.phase || 1;
+  // the signature and ultimate unlock relative to THIS boss's ladder (the Overseer only has 3 phases)
+  const nPh = ((_CV[D] && _CV[D].phases) || [0,0,0,0]).length + 1;
+  const sigAt = nPh >= 5 ? 3 : 2, ultAt = nPh >= 5 ? 4 : 3;
+  const pool = T.moves.slice();
+  if (ph >= sigAt) pool.push(T.sig);
+  if (ph >= ultAt) pool.push(T.ult);
+  if (ph >= sigAt && !b._cvSigDone) { b._cvSigDone = 1; return T.sig; }
+  if (ph >= ultAt && !b._cvUltDone) { b._cvUltDone = 1; return T.ult; }
+  let m;
+  do { m = pool[Math.floor(Math.random() * pool.length)]; } while (pool.length > 1 && m === b._cvMove);
+  return m;
+}
+
+function _cvbPassive(c){
+  const { b, np, nd, zone, game, zoneName, ang } = c;
+  const D = _cvD(zone);
+  b._cvDepth = D;
+  if (b._cvSeen !== D) { b._cvSeen = D; b._cvQ = []; b._cvSigDone = 0; b._cvUltDone = 0; b._cvMove = null;
+    _cvFx(game, zoneName, 'cv_depth', { d:D }); }
+  b.acd = CVB_ACD[Math.min(b.phase || 1, CVB_ACD.length - 1)];
+  // queued waves
+  if (b._cvQ && b._cvQ.length) {
+    const due = [];
+    b._cvQ = b._cvQ.filter(q => { if (--q.t <= 0) { due.push(q); return false; } return true; });
+    due.forEach(q => { try { q.fn(); } catch (e) {} });
+  }
+  // a close-range swing whenever someone hugs the boss
+  b._cvMel = (b._cvMel || 0) + 1;
+  if (nd < 4.5 && b._cvMel >= 12) { b._cvMel = 0;
+    const K = _cvbKit(c);
+    _cvHitPlayer(game, zoneName, np, -1, K.A * 0.8, b.x, b.z, null);
+    _cvFx(game, zoneName, 'cvm_melee', { ex:_cvR(b.x), ez:_cvR(b.z), ang:_cvR(ang), col:K.col }); }
 }
 
 function tickZoneBoss(game, zoneName, zone) {
@@ -10941,7 +11074,7 @@ function _cvHitPlayer(game, zoneName, p, eid, dmg, x, z, eff){
   _cvSendTo(p, { type:'sv_enemy_attack', eid:eid, dmg:Math.max(1, Math.floor(dmg)), ex:_cvR(x), ez:_cvR(z), zone:zoneName });
   _cvApplyEff(p, zoneName, eff);
 }
-function _cvAdd(zone, ent){ if (!zone._cv) zone._cv = []; if (zone._cv.length < 160) zone._cv.push(ent); return ent; }
+function _cvAdd(zone, ent){ if (!zone._cv) zone._cv = []; if (zone._cv.length < 320) zone._cv.push(ent); return ent; }   // a611 — room for boss waves too
 
 // ── one Convergence mob's turn (called from the zone AI loop once it has aggro) ──
 function _cvMobTick(game, zoneName, zone, e, np, changed){
