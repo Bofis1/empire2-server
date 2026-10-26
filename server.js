@@ -543,7 +543,7 @@ const ZONE_BOSS_HP = {
   xumen_fortress:   { hp:1200000,  name:'THE APEX PYRAMID' },
   void_citadel:     { hp:800000,   name:'COMMANDANT XERATH' },
   neon_hollow:      { hp:1600000,  name:'THE CURATOR' },
-  veiled_sanctuary: { hp:850000,   name:'THE FINAL ABBOT' },  // v92.41
+  veiled_sanctuary: { hp:4000000,  name:'THE FINAL ABBOT' },  // v92.41 · a614 — 110+ raid boss (was 850k)
   blooming_wilds:   { hp:35000,    name:'THE WILDMOTHER' },   // v92.49
   xeron:            { hp:3000000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
@@ -4309,7 +4309,9 @@ function generateConvergenceSpawns(depth, seed, copies) {
 // a528 — per-zone HP multiplier (HP ONLY — atk/reward/expR untouched). Lets a zone
 //   feel dangerous for its level band without inflating damage or loot. The sand worm
 //   is already the tankiest, so its buff is scaled down so it doesn't become a slog.
-const ZONE_HP_MULT = { sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0, riftvale: 1.5, fungal: 3.0, dragonlair: 2.0 };   // a598 — Vaeltharax's Lair (Lv65) had no multiplier: its mobs averaged half the HP of Ancient Realm (Lv58)   // a558 — fungal mirrors the client kit's zone-local x3 (_tickFungalMob _fdInit)   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
+// a614 — per-zone kill reward multiplier (gold + XP), for zones raised above their old tier
+const ZONE_REWARD_MULT = { veiled_sanctuary: 2.5 };
+const ZONE_HP_MULT = { veiled_sanctuary: 3.0, sunken_sands: 6, void: 1.15, blooming_wilds: 1.2, cemetery: 1.8, ashlands: 1.5, citadel: 1.6, frostveil: 6.0, ancient: 7.0, riftvale: 1.5, fungal: 3.0, dragonlair: 2.0 };   // a598 — Vaeltharax's Lair (Lv65) had no multiplier: its mobs averaged half the HP of Ancient Realm (Lv58)   // a558 — fungal mirrors the client kit's zone-local x3 (_tickFungalMob _fdInit)   // a538 — cemetery mirrors the client's zone-local 1.8x undead bump (on top of ZONE_SCALE 1.4)
 // a537 — AVIA CANYON walkable grid. The canyon maze is generated client-side from a
 //   FIXED seed (10_core_setup _buildAviaCanyonTerrain, seed 30421987), so it's identical
 //   every load. We embed the resulting 240x240 wall bitmap (bit=1 => wall) so the server
@@ -4367,8 +4369,8 @@ function createZoneEnemies(zoneName, convSeed) {
       atk: Math.round(((zoneName === 'convergence') ? convBaseAtk(s.type, st.atk) : st.atk) * scale),   // a609 — convergence attack floor
       spd: st.spd,
       aggroRange: st.aggroRange,
-      reward: Math.round(st.reward * scale),
-      expR: Math.round(st.expR * scale),
+      reward: Math.round(st.reward * scale * (ZONE_REWARD_MULT[zoneName] || 1)),   // a614
+      expR: Math.round(st.expR * scale * (ZONE_REWARD_MULT[zoneName] || 1)),
       dmgReduction: st.dmgReduction || 0,
       active: true,
       aggroed: false,
@@ -4492,7 +4494,7 @@ const ZONE_DMG_BASE = {
   dragonlair:      { lvl: 65, mob: 167, boss: 209 },
   riftvale:        { lvl: 65, mob: 274, boss:  45 },
   void_citadel:    { lvl: 70, mob: 216, boss: 191 },
-  veiled_sanctuary:{ lvl: 80, mob: 228, boss: 217 },
+  veiled_sanctuary:{ lvl:110, mob: 228, boss: 217 },   // a614 — 110+ (was 80): hits on the level-110 curve
   wyvernwastes:    { lvl: 80, mob: 259, boss: 238 },
   xumen:           { lvl: 80, mob: 267, boss: 183 },
   xulcan:          { lvl: 90, mob: 633, boss: 407 },
@@ -5248,7 +5250,10 @@ const ZBOSS_SERVER = {
   // ── THE FINAL ABBOT (a561), Veiled Sanctuary. Five phases, six attacks, summons that
   //    unlock at phase 3, and two censers that orbit him and burn anything they brush.
   veiled_sanctuary: {
-    x: 180, z: 180,
+    // a614 — the Sanctuary is still the compact monastery (tiles 4-76 x 22-58); its
+    //   apse is tile (74,40). a561 placed the Abbot at the 240-map centre like the
+    //   rebuilt zones, so he spawned outside the walls and fought from across the map.
+    x: 111, z: 60,
     spd:    [0, 0.016, 0.020, 0.024, 0.030, 0.036],
     dmg:    [0, 1.0,   1.3,   1.7,   2.2,   2.8],       // faMul
     phases: [0.80, 0.60, 0.40, 0.20],
