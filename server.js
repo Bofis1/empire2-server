@@ -11789,6 +11789,7 @@ const ECON_SOURCES = {
   // both
   tradeExecute:'trade',
   _carBuy:'skycar',   // a583
+  _mechBuy:'mech',    // a617
 };
 const econLedger = new Map();      // save key -> { gold, src:{cat:{sum,n}}, touched }
 function _econLog(o){
