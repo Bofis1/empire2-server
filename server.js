@@ -4905,85 +4905,17 @@ const ZBOSS_SERVER = {
   //    somewhat softer here against very high-HP characters than she does solo, the same
   //    caveat every migrated zone carries.
   the_reach: {
+    // a619 — rebuilt: the move set, telegraphs and damage live in KX / _kxAttack (below the
+    //   Convergence bosses). Speed and the four-phase ladder are unchanged.
     x: 180, z: 144,                                    // tile (120,96)
     spd:    [0, 0.018, 0.022, 0.028, 0.034],
-    dmg:    [0, 1.8,   2.7,   3.8,   5.2],             // kDmg
+    dmg:    [0, 1, 1, 1, 1],                           // unused — KX_A anchors the damage
     phases: [0.75, 0.50, 0.25],
-    acd:    [0, 20, 15, 13, 10],                       // 120 then 90 / 76 / 60, / 6
-    tele:   9,                                         // 55 frames
-    pick:   (b, ph) => {
-      const moves = ['end_cycle','sphere_of_oblivion'];
-      if (ph >= 2) { moves.push('gravity_reversal'); moves.push('temporal_lock'); }
-      if (ph >= 3) { moves.push('reality_collapse'); }
-      b._keMoveIdx = ((b._keMoveIdx || 0) + 1) % moves.length;
-      b._kePick = moves[b._keMoveIdx];
-      return 0;
-    },
-    attack: (c) => {
-      const { b, ph, mult, ang, np, zoneName, game, aoe, fx, proj, geyser } = c;
-      const K = (flat) => Math.floor(flat * mult);      // the flat half of kHit
-      const m = b._kePick || 'end_cycle';
-
-      if (m === 'end_cycle') {
-        // END CYCLE — a beam of condensed energy down the line
-        fx('ke_endcycle', { dir:+ang.toFixed(3), len:20 });
-        for (let d = 1; d <= 12; d++)
-          geyser(b.x + Math.sin(ang)*d*1.6, b.z + Math.cos(ang)*d*1.6, 8, 1.9, K(180), 0xffd84a);
-
-      } else if (m === 'sphere_of_oblivion') {
-        // SPHERE OF OBLIVION — 3 + phase spheres pulse, then detonate
-        const n = 3 + Math.min(3, ph);
-        fx('ke_spheres', { n:n });
-        for (let o = 0; o < n; o++) {
-          const ox = np.x + (Math.random()-0.5)*12, oz = np.z + (Math.random()-0.5)*12;
-          fx('ke_sphere_drop', { ex:+ox.toFixed(2), ez:+oz.toFixed(2), ms:(10 + o*2)*100 });
-          geyser(ox, oz, 10 + o*2, 2.4, K(140), 0x9a3cff);
-        }
-
-      } else if (m === 'gravity_reversal') {
-        // GRAVITY REVERSAL — gravity inverts, then the ground comes back up at you
-        fx('ke_gravity', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:0, root:700 });
-        });
-        geyser(np.x, np.z, 9, 5.0, K(150), 0xb060ff, { shake:14 });
-
-      } else if (m === 'temporal_lock') {
-        // TEMPORAL LOCK — held in place, then slowed hard
-        fx('ke_temporal', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:0, root:900 });
-        });
-        geyser(np.x, np.z, 10, 3.2, K(90), 0x6ad8ff, { slow:0.45, slowDur:2200 });
-
-      } else {
-        // REALITY COLLAPSE — the arena fractures in expanding rings from her
-        fx('ke_collapse');
-        b._keRing = 1.0; b._keRingDmg = K(130);
-      }
-    },
-    passive: (c) => {
-      const { b, ph, mult, nd, zoneName, game, aoe, fx } = c;
-      // KEEPER FIST — her standing melee, the only thing she does at contact range
-      if (b._vt % 9 === 0 && nd < 7.0) { fx('ke_fist'); aoe(7.0, Math.floor(170 * mult)); }
-
-      // REALITY COLLAPSE rings — expanding, caught once as each passes
-      if (b._keRing > 0) {
-        const prev = b._keRing;
-        b._keRing += 0.9 * 6;
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
-          if (pd >= prev - 1.5 && pd <= b._keRing + 1.5)
-            send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._keRingDmg,
-                       ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
-        });
-        fx('ke_collapse_ring', { r:+b._keRing.toFixed(2) });
-        if (b._keRing >= 22) b._keRing = 0;
-      }
-    },
+    acd:    () => KX_ACD,                              // (a function: KX_ACD is defined further down)
+    tele:   0,                                         // every move draws its own warning
+    pick:   () => 0,
+    attack: (c) => { c.b._kxMove = _kxPick(c.b, c.zone); _kxAttack(c); },
+    passive: (c) => _kxPassive(c),
   },
 
 // ── VAELTHARAX THE UNDYING (a562), Vaeltharax's Lair.
@@ -6893,6 +6825,422 @@ function _cvbPassive(c){
     _cvFx(game, zoneName, 'cvm_melee', { ex:_cvR(b.x), ez:_cvR(b.z), ang:_cvR(ang), col:K.col }); }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a619 — THE KEEPER OF THE END, REBUILT. The game's final boss was softer than the
+//   Convergence depth bosses: five moves, untelegraphed geysers, ~1-3k hits. He now
+//   runs on the Convergence telegraph engine (_cvTickEnts) plus six new kinds of
+//   strike built for him: a rotating HEX LASER LATTICE you have to live inside, a
+//   3-colour TESSELLATION floor that detonates every colour but one, rotating sweep
+//   beams from MANIFESTED MONOLITHS, a contracting EVENT HORIZON that bursts back out
+//   through four gaps, THE EYE OF THE END hunting you with its gaze, and THE END OF ALL
+//   THINGS (the whole arena dies except one moving circle of light). He also summons
+//   CONSTRUCT LEGIONS — real server enemies: kamikaze Tetra Seekers, laser-firing Cubic
+//   Sentinels and Icosa Minds that LINK to him (60% damage reduction while any lives).
+//   Damage is anchored above the deepest Convergence boss (KX_A, final numbers after
+//   the zone's boss scaling), cadence tightens every phase, and long patterns hold the
+//   next move back (busy) so two lattices never stack into something undodgeable.
+// ═══════════════════════════════════════════════════════════════════════════════
+const KX_COL = 0xffd84a, KX_ALT = 0x9a3cff, KX_RED = 0xff2a4a, KX_CYAN = 0x40e8ff;
+const KX_A   = [0, 5000, 5800, 6700, 7700];       // a "1.0" hit, by phase, as the player receives it
+const KX_ACD = [0, 26, 22, 19, 15];               // ticks between moves (10 = 1s), after any busy time
+const KX_BOSS = 'KEEPER OF THE END';
+const KX_NAMES = {
+  hexfall:'HEXFALL LATTICE', tessellate:'TESSELLATION', monoliths:'MANIFEST: MONOLITHS', legion:'CONSTRUCT LEGION',
+  end_cycle:'END CYCLE', horizon:'EVENT HORIZON', echo:'TEMPORAL ECHO', eye:'THE EYE OF THE END',
+  tesseract:'THE SHAPE OF THE END', mirror:'MIRROR OF ENDS', end_all:'THE END OF ALL THINGS', phase:'THE CYCLE ADVANCES',
+};
+// his summons — real enemies in zone.enemies, so they can be targeted, hit and killed normally
+const KX_MIN = {
+  ke_seeker:   { hp:  70000, atk:1, spd:0.55, reward:600,  expR:900,  dr:0 },     // spd here = units per tick
+  ke_sentinel: { hp: 180000, atk:1, spd:0.14, reward:1400, expR:2200, dr:0.15 },
+  ke_mind:     { hp: 220000, atk:1, spd:0.10, reward:2000, expR:3000, dr:0.2 },
+};
+const KE_MINION = { ke_seeker:1, ke_sentinel:1, ke_mind:1 };
+function _kxKB(){ return (ZONE_DMG_K.the_reach && ZONE_DMG_K.the_reach.boss) || 1; }   // boss hits get scaled by this on send
+function _kxKM(){ return (ZONE_DMG_K.the_reach && ZONE_DMG_K.the_reach.mob)  || 1; }   // mob hits by this
+function _kxTps(game, zoneName){ return getTargetablePlayersInZone(game.id, zoneName).filter(p => p.x !== undefined); }
+function _kxAngD(a, b){ let d = a - b; while (d > Math.PI) d -= Math.PI*2; while (d < -Math.PI) d += Math.PI*2; return d; }
+// distance from a point to the nearest edge of a hex lattice (apothem a, edge normals at 0/60/120 degrees)
+function _kxHexNear(x, z, a){
+  const S3 = Math.sqrt(3), jf = z / (a*S3), i_f = (x - a*jf) / (2*a);
+  let best = 1e9, dx = 0, dz = 0, bi = 0, bj = 0;
+  for (const i of [Math.floor(i_f), Math.ceil(i_f)]) for (const j of [Math.floor(jf), Math.ceil(jf)]) {
+    const cx = 2*a*i + a*j, cz = a*S3*j, d = (x-cx)*(x-cx) + (z-cz)*(z-cz);
+    if (d < best) { best = d; dx = x - cx; dz = z - cz; bi = i; bj = j; } }
+  return { dx, dz, i:bi, j:bj };
+}
+function _kxHexEdge(x, z, a){
+  const n = _kxHexNear(x, z, a);
+  return a - Math.max(Math.abs(n.dx), Math.abs(0.5*n.dx + 0.8660254*n.dz), Math.abs(-0.5*n.dx + 0.8660254*n.dz));
+}
+// which of three colours the floor tile under (x,z) is (tiles = hexes on a lattice of spacing s)
+function _kxTriColor(x, z, s){ const n = _kxHexNear(x, z, s/2); return (((n.i - n.j) % 3) + 3) % 3; }
+
+function _kxKit(c){
+  const { game, zoneName, zone, b } = c;
+  const ph = Math.min(4, b.phase || 1), A = KX_A[ph] / _kxKB();
+  const F = (vt, o) => _cvFx(game, zoneName, vt, o);
+  const K = { ph, A, F,
+    circle: (x, z, r, fuse, mult, eff, col) => {
+      _cvAdd(zone, { k:'circle', x, z, r, fuse, dmg:A*mult, eff, eid:-1, col:col||KX_COL });
+      F('cvm_warn', { ex:_cvR(x), ez:_cvR(z), r, ms:fuse*100, col:col||KX_COL }); },
+    line: (x, z, a, len, w, fuse, mult, eff, col) => {
+      _cvAdd(zone, { k:'line', x, z, a, len, w, fuse, dmg:A*mult, eff, eid:-1, col:col||KX_COL });
+      F('cvm_line', { ex:_cvR(x), ez:_cvR(z), ang:_cvR(a), len:_cvR(len), w, ms:fuse*100, col:col||KX_COL }); },
+    proj: (a, mult, spd, size, eff, col, ox, oz) => {
+      const x0 = ox !== undefined ? ox : b.x, z0 = oz !== undefined ? oz : b.z, len = 26;
+      _cvAdd(zone, { k:'proj', x:x0, z:z0, vx:Math.sin(a)*spd/10, vz:Math.cos(a)*spd/10, left:len, r:1.0 + size*0.35, dmg:A*mult, eff, eid:-1, col:col||KX_COL, A });
+      F('cvm_proj', { ex:_cvR(x0), ez:_cvR(z0), ang:_cvR(a), len, spd, s:size, col:col||KX_COL }); },
+    ring: (n, off, mult, spd, size, col, ox, oz) => { for (let i = 0; i < n; i++) K.proj(off + i/n*Math.PI*2, mult, spd, size, null, col, ox, oz); },
+    later: (t, fn) => { (b._kxQ || (b._kxQ = [])).push({ t, fn }); },
+    glow:  (ticks, col) => F('cvm_bwind', { col:col||KX_COL, ms:ticks*100 }),
+    call:  (m, col) => F('cvm_bname', { name:KX_NAMES[m] || m, boss:KX_BOSS, col:col||KX_COL }),
+    pose:  (a) => F('kx_pose', { a }),
+    ent:   (e) => _cvAdd(zone, e),
+  };
+  return K;
+}
+
+function _kxMinionsAlive(zone, type){ return zone.enemies.filter(e => e.active && e._kx && (!type || e.type === type)).length; }
+function _kxSpawnMinion(game, zoneName, zone, type, x, z){
+  const S = KX_MIN[type]; if (!S) return null;
+  x = Math.max(3, Math.min(357, x)); z = Math.max(3, Math.min(357, z));
+  zone._nextEid = (zone._nextEid || 100000) + 1;
+  const add = { id:zone._nextEid, type, x, z, spawnX:x, spawnZ:z, hp:S.hp, maxHp:S.hp, atk:S.atk, spd:0.03, aggroRange:999,
+    reward:S.reward, expR:S.expR, dmgReduction:S.dr || 0, active:true, aggroed:true, respawnTimer:0, attackTimer:0,
+    _summoned:1, _kx:{ t:Math.floor(Math.random()*10), orb:Math.random()*Math.PI*2 } };
+  zone.enemies.push(add);
+  broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName, ids:[add.id], xs:[_cvR(x)], zs:[_cvR(z)], hps:[add.hp], acts:[1], types:[type] });
+  return add;
+}
+function _kxDespawn(game, zoneName, e){
+  if (!e.active) return;
+  e.active = false; e.hp = 0; e.aggroed = false;
+  broadcastToZone(game.id, zoneName, { type:'sv_enemy_killed', id:e.id, etype:e.type, zone:zoneName, reward:0, expR:0,
+    ex:_cvR(e.x), ez:_cvR(e.z), killer:'(the keeper)' });
+}
+
+function _kxAttack(c){
+  const { b, np, ang, game, zoneName, zone } = c;
+  const K = _kxKit(c), ph = K.ph, A = K.A;
+  const m = b._kxMove;
+  const px = np.x, pz = np.z, bx = b.x, bz = b.z;
+  const tps = _kxTps(game, zoneName);
+  K.call(m, (m === 'tesseract' || m === 'mirror' || m === 'end_all') ? KX_ALT : KX_COL);
+  let busy = 0;
+  switch (m) {
+    // ── HEXFALL LATTICE — a field of hexagonal laser fences turns around him. Stand inside a
+    //    cell and turn with it; the fences burn. From phase 3 the spin reverses halfway.
+    case 'hexfall': {
+      K.pose('reality_collapse'); K.glow(20);
+      const warn = 22, life = 50 + ph*5, R = 26, a = 3.1, w = 1.0;
+      const av = (0.010 + ph*0.004) * (Math.random() < 0.5 ? 1 : -1), a0 = Math.random()*Math.PI;
+      const flip = ph >= 3 ? Math.floor(life/2) : 0;
+      K.ent({ k:'hex', x:bx, z:bz, R, a, w, ang:a0, av, warn, life, flip, t:0, every:4, cd:0, dmg:A*0.38, eid:-1 });
+      K.F('kx_hex', { ex:_cvR(bx), ez:_cvR(bz), R, a, w, ang:_cvR(a0), av:+(av*10).toFixed(4), warn:warn*100, life:life*100, flip:flip*100, col:KX_COL });
+      b._hold = warn + life; busy = warn + life - 6;
+      break; }
+    // ── TESSELLATION — the floor becomes a three-colour hex mosaic. Each wave, every colour
+    //    but one detonates; the safe colour changes every wave.
+    case 'tessellate': {
+      K.pose('sphere_of_oblivion'); K.glow(14, KX_ALT);
+      const n = ph >= 3 ? 5 : 4, gap = ph >= 4 ? 9 : 11, s = 4.6, R = 24;
+      const waves = []; let last = -1;
+      for (let i = 0; i < n; i++) { let sc; do { sc = Math.floor(Math.random()*3); } while (sc === last); last = sc; waves.push({ t:18 + i*gap, safe:sc }); }
+      K.ent({ k:'tess', x:px, z:pz, s, R, waves, wi:0, t:0, dmg:A*1.15, eid:-1 });
+      K.F('kx_tess', { ex:_cvR(px), ez:_cvR(pz), s, R, waves:waves.map(w => [w.t*100, w.safe]), col:KX_COL, alt:KX_RED });
+      busy = 18 + n*gap;
+      break; }
+    // ── MANIFEST: MONOLITHS — obelisks crash down around you, then each one sweeps a beam.
+    case 'monoliths': {
+      K.pose('gravity_reversal'); K.glow(10, KX_ALT);
+      const n = 3 + ph, pts = [];
+      for (let i = 0; i < n; i++) { const a2 = i/n*Math.PI*2 + Math.random()*0.5, r2 = 5 + Math.random()*7; pts.push([_cvR(px + Math.sin(a2)*r2), _cvR(pz + Math.cos(a2)*r2)]); }
+      const fall = 12, life = 55;
+      pts.forEach((p, i) => K.circle(p[0], p[1], 2.6, fall + i, 1.6, null, KX_ALT));
+      K.F('kx_monolith', { pts, fall:fall*100, life:(life + 10)*100, col:KX_ALT });
+      K.later(fall + n, () => pts.forEach((p, i) => {
+        const nb = ph >= 3 ? 2 : 1, av = (0.05 + 0.01*ph) * (i % 2 ? 1 : -1), a0 = Math.random()*Math.PI*2;
+        K.ent({ k:'sweep', x:p[0], z:p[1], n:nb, ang:a0, av, len:9, w:1.1, warn:8, life, t:0, every:3, cd:0, dmg:A*0.45, eid:-1 });
+        K.F('kx_sweep', { ex:p[0], ez:p[1], n:nb, ang:_cvR(a0), av:+(av*10).toFixed(4), len:9, w:1.1, warn:800, life:life*100, col:KX_ALT });
+      }));
+      busy = fall + n + life - 6;   // the beams finish before his next pattern starts
+      break; }
+    // ── CONSTRUCT LEGION — sentient geometric constructs fold out of the air.
+    case 'legion': {
+      K.pose('temporal_lock'); K.glow(10, KX_CYAN);
+      const plan = [['ke_mind', ph >= 4 ? 2 : (ph >= 2 ? 1 : 0)], ['ke_sentinel', ph >= 3 ? 2 : 1], ['ke_seeker', 2 + ph]];   // the Minds first, so the cap never squeezes them out
+      const pts = [];
+      let room = 9 - _kxMinionsAlive(zone);
+      plan.forEach(([t, cnt]) => { for (let i = 0; i < cnt && room > 0; i++, room--) {
+        const a2 = Math.random()*Math.PI*2, r2 = t === 'ke_mind' ? 4 : 5 + Math.random()*4;
+        pts.push([t, _cvR(bx + Math.sin(a2)*r2), _cvR(bz + Math.cos(a2)*r2)]); } });
+      K.F('kx_summon', { pts:pts.map(p => [p[1], p[2], p[0]]), ms:900 });
+      K.later(9, () => pts.forEach(p => _kxSpawnMinion(game, zoneName, zone, p[0], p[1], p[2])));
+      busy = 10;
+      break; }
+    // ── END CYCLE — three golden blades of light turn around him like the hand of a clock.
+    case 'end_cycle': {
+      K.pose('end_cycle'); K.glow(10);
+      const nb = ph >= 4 ? 4 : 3, av = (0.045 + 0.008*ph) * (Math.random() < 0.5 ? 1 : -1);
+      K.ent({ k:'sweep', x:bx, z:bz, n:nb, ang, av, len:24, w:2.2, warn:10, life:28, t:0, every:3, cd:0, dmg:A*0.9, eid:-1 });
+      K.F('kx_sweep', { ex:_cvR(bx), ez:_cvR(bz), n:nb, ang:_cvR(ang), av:+(av*10).toFixed(4), len:24, w:2.2, warn:1000, life:2800, col:KX_COL, big:1 });
+      b._hold = 38; busy = 30;
+      break; }
+    // ── EVENT HORIZON — a ring closes in from the edge of the arena (outside it burns),
+    //    then bursts back outward. Only its four gaps are safe from the burst.
+    case 'horizon': {
+      K.pose('gravity_reversal'); K.glow(14, KX_ALT);
+      const g0 = Math.random()*Math.PI*2, gaps = [0, 1, 2, 3].map(i => +(g0 + i*Math.PI/2).toFixed(3));
+      const dur = 50, bdur = 12, r0 = 26, r1 = 6.5;
+      K.ent({ k:'hor', x:bx, z:bz, r0, r1, dur, bdur, gaps, gw:0.34, t:0, every:4, cd:4, dmgOut:A*0.45, bdmg:A*1.7, hit:{}, eid:-1 });
+      K.F('kx_horizon', { ex:_cvR(bx), ez:_cvR(bz), r0, r1, dur:dur*100, bdur:bdur*100, gaps, gw:0.34, col:KX_ALT });
+      if (ph >= 3) K.later(22, () => K.ring(10, Math.random(), 0.5, 7, 1, KX_COL));
+      b._hold = dur + bdur; busy = dur + bdur - 4;
+      break; }
+    // ── TEMPORAL ECHO — the last four seconds of where you walked detonate, oldest first.
+    case 'echo': {
+      K.pose('temporal_lock'); K.glow(8, KX_CYAN);
+      const victims = ph >= 3 ? tps : [np];
+      victims.forEach(v => {
+        const h = (b._kxHist && b._kxHist[v.name]) || [];
+        const pts = [];
+        for (let k = 8; k >= 1; k--) { const q = h[h.length - 1 - k*5]; if (q) pts.push(q); }
+        pts.push({ x:v.x, z:v.z });
+        pts.forEach((q, i) => K.circle(q.x, q.z, 2.8, 8 + i*3, 1.0, { slow:0.55, ms:500 }, KX_CYAN));
+      });
+      K.F('kx_echo', {});
+      busy = 18;
+      break; }
+    // ── THE EYE OF THE END — an eye opens in the sky and its gaze hunts you.
+    case 'eye': {
+      K.pose('sphere_of_oblivion'); K.glow(8, KX_RED);
+      const n = ph >= 3 ? 2 : 1, targets = tps.slice().sort(() => Math.random() - 0.5);
+      for (let i = 0; i < n; i++) {
+        const t = targets[i % targets.length] || np;
+        zone._kxGid = (zone._kxGid || 0) + 1;
+        const sx = t.x + (Math.random()-0.5)*10, sz = t.z + (Math.random()-0.5)*10;
+        K.ent({ k:'gaze', gid:zone._kxGid, tgt:t.name, x:sx, z:sz, spd:0.36 + 0.03*ph, r:2.8, warn:10, life:70, t:0, every:3, cd:0, dmg:A*0.55, eid:-1 });
+        K.F('kx_eye', { gid:zone._kxGid, ex:_cvR(sx), ez:_cvR(sz), life:7000, r:2.8, col:KX_RED });
+      }
+      busy = 26;
+      break; }
+    // ── THE SHAPE OF THE END (signature, phase 3) — a tesseract manifests above him and
+    //    unfolds; its eight cells slam down around the arena and fire back through the centre.
+    case 'tesseract': {
+      K.pose('reality_collapse'); K.glow(16, KX_ALT);
+      const pts = [];
+      for (let i = 0; i < 8; i++) { const a2 = i*Math.PI/4 + Math.PI/8; pts.push([_cvR(bx + Math.sin(a2)*13), _cvR(bz + Math.cos(a2)*13)]); }
+      K.F('kx_tesseract', { ex:_cvR(bx), ez:_cvR(bz), pts, ms:1600, col:KX_ALT });
+      pts.forEach((p, i) => K.later(10 + i, () => K.circle(p[0], p[1], 3.2, 8, 1.8, null, KX_ALT)));
+      K.later(20, () => pts.forEach((p, i) => { const a2 = Math.atan2(bx - p[0], bz - p[1]); K.line(p[0], p[1], a2 + (i % 2 ? 0.18 : -0.18), 26, 2.2, 10, 1.5, null, i % 2 ? KX_ALT : KX_COL); }));
+      K.later(32, () => K.ring(24, 0, 0.55, 10, 1, KX_ALT));
+      K.later(40, () => pts.forEach((p, i) => { const a2 = Math.atan2(bx - p[0], bz - p[1]); K.line(p[0], p[1], a2 + (i % 2 ? -0.35 : 0.35), 26, 2.2, 10, 1.5, null, i % 2 ? KX_COL : KX_ALT); }));
+      b._hold = 52; busy = 50;
+      break; }
+    // ── MIRROR OF ENDS — three golden reflections of him surround you and each fires an End
+    //    Cycle through where you stand, then slams the ground where it stood.
+    case 'mirror': {
+      K.pose('end_cycle'); K.glow(12, KX_ALT);
+      const a0 = Math.random()*Math.PI*2, pts = [];
+      for (let i = 0; i < 3; i++) { const a2 = a0 + i*Math.PI*2/3; pts.push([_cvR(px + Math.sin(a2)*10), _cvR(pz + Math.cos(a2)*10)]); }
+      K.F('kx_mirror', { pts, tx:_cvR(px), tz:_cvR(pz), ms:3400, col:KX_COL });
+      pts.forEach((p, i) => K.later(i*3, () => {
+        const t = tps.find(q => q.name === np.name) || np, a2 = Math.atan2(t.x - p[0], t.z - p[1]);
+        K.line(p[0], p[1], a2, 24, 2.6, 15, 1.6, null, KX_COL); }));
+      K.later(26, () => pts.forEach(p => K.circle(p[0], p[1], 4.5, 8, 1.2, null, KX_ALT)));
+      busy = 36;
+      break; }
+    // ── THE END OF ALL THINGS (ultimate, phase 4) — the arena is erased. One circle of light
+    //    survives, and it moves; the next one shows before the current one dies.
+    case 'end_all': {
+      K.pose('reality_collapse'); K.glow(22, KX_ALT);
+      const warn = 22, seg = 24, R = 30, r = 3.8, safes = [];
+      let sx = bx + (Math.random()-0.5)*14, sz = bz + (Math.random()-0.5)*14;
+      for (let i = 0; i < 4; i++) {
+        safes.push([_cvR(sx), _cvR(sz)]);
+        const a2 = Math.random()*Math.PI*2, d2 = 7 + Math.random()*4;
+        let nx = sx + Math.sin(a2)*d2, nz = sz + Math.cos(a2)*d2;
+        if ((nx - bx)*(nx - bx) + (nz - bz)*(nz - bz) > 18*18) { nx = sx - Math.sin(a2)*d2; nz = sz - Math.cos(a2)*d2; }
+        sx = nx; sz = nz;
+      }
+      K.ent({ k:'void', x:bx, z:bz, R, r, safes, warn, seg, t:0, every:5, cd:0, dmg:A*0.72, eid:-1 });
+      K.F('kx_void', { ex:_cvR(bx), ez:_cvR(bz), R, r, safes, warn:warn*100, seg:seg*100, col:KX_ALT });
+      b._hold = warn + seg*4; busy = warn + seg*4 - 2;
+      break; }
+    default: K.circle(bx, bz, 6, 9, 1.4);
+  }
+  b.atkT = -busy;
+}
+
+function _kxPick(b, zone){
+  const ph = b.phase || 1;
+  if (ph >= 3 && !b._kxSig) { b._kxSig = 1; return 'tesseract'; }
+  if (ph >= 4 && !b._kxUlt) { b._kxUlt = 1; return 'end_all'; }
+  if (!b._kxFirst) { b._kxFirst = 1; return 'hexfall'; }
+  const pool = ['hexfall', 'tessellate', 'monoliths', 'end_cycle'];
+  if (_kxMinionsAlive(zone) < 3) pool.push('legion', 'legion');
+  if (ph >= 2) pool.push('horizon', 'echo', 'eye');
+  if (ph >= 3) pool.push('tesseract', 'mirror');
+  if (ph >= 4) pool.push('end_all');
+  const recent = b._kxRecent || (b._kxRecent = []);
+  let m, guard = 0;
+  do { m = pool[Math.floor(Math.random() * pool.length)]; } while (recent.indexOf(m) >= 0 && ++guard < 30);
+  recent.push(m); if (recent.length > 2) recent.shift();
+  return m;
+}
+
+function _kxPassive(c){
+  const { b, np, nd, zone, game, zoneName } = c;
+  const ph = b.phase || 1;
+  // a fresh fight (respawn) starts clean
+  if ((b._kxPh || 0) > ph) { b._kxSig = 0; b._kxUlt = 0; b._kxFirst = 0; b._kxQ = []; b._kxRecent = []; }
+  // a new phase announces itself with a nova
+  if (b._kxPh && ph > b._kxPh) {
+    const K = _kxKit(c);
+    K.call('phase', KX_ALT); K.glow(14, KX_ALT); K.pose('reality_collapse');
+    K.circle(b.x, b.z, 11, 14, 2.0, null, KX_ALT);
+    b.atkT = Math.min(b.atkT || 0, -8);
+  }
+  b._kxPh = ph;
+  b.acd = KX_ACD[Math.min(ph, 4)];
+  // queued waves
+  if (b._kxQ && b._kxQ.length) {
+    const due = [];
+    b._kxQ = b._kxQ.filter(q => { if (--q.t <= 0) { due.push(q); return false; } return true; });
+    due.forEach(q => { try { q.fn(); } catch (e) {} });
+  }
+  // where everyone has been (for Temporal Echo)
+  const H = b._kxHist || (b._kxHist = {});
+  _kxTps(game, zoneName).forEach(p => { const a = H[p.name] || (H[p.name] = []); a.push({ x:p.x, z:p.z }); if (a.length > 50) a.shift(); });
+  // KEEPER FIST — anyone hugging him gets a short-fused slam
+  b._kxMel = (b._kxMel || 0) + 1;
+  if (nd < 5 && b._kxMel >= 14) { b._kxMel = 0; const K = _kxKit(c);
+    K.pose('keeper_fist'); K.circle(b.x, b.z, 5.5, 6, 1.3, null, KX_COL); }
+  // ORBITAL NEEDLES — from phase 2, between big patterns, small strikes chase you
+  b._kxNdl = (b._kxNdl || 0) + 1;
+  if (ph >= 2 && !(b._hold > 0) && b._kxNdl >= 34 - ph*3) { b._kxNdl = 0; const K = _kxKit(c);
+    _kxTps(game, zoneName).forEach(p => { for (let i = 0; i < 2 + (ph >= 4 ? 1 : 0); i++)
+      K.circle(p.x + (i ? (Math.random()-0.5)*5 : 0), p.z + (i ? (Math.random()-0.5)*5 : 0), 2.2, 10 + i*2, 0.75, null, KX_RED); }); }
+  // SENTIENT LINK — while any Icosa Mind lives he takes 60% less damage
+  const minds = zone.enemies.filter(e => e.active && e.type === 'ke_mind');
+  const dr = minds.length ? 0.6 : 0;
+  b._kxLinkT = (b._kxLinkT || 0) + 1;
+  if (dr !== (b._keLinkDR || 0) || b._kxLinkT >= 20) {
+    if (dr !== (b._keLinkDR || 0) && dr === 0) _cvFx(game, zoneName, 'cvm_bname', { name:'LINK SEVERED', boss:KX_BOSS, col:KX_CYAN });
+    b._keLinkDR = dr; b._kxLinkT = 0;
+    _cvFx(game, zoneName, 'kx_link', { ids:minds.map(e => e.id), on:dr ? 1 : 0 });
+  }
+}
+
+// one summoned construct's turn
+function _kxMinionTick(game, zoneName, zone, e, np, changed){
+  const b = zone.boss;
+  if (!b || !b.spawned || b.hp <= 0) { _kxDespawn(game, zoneName, e); return; }
+  const S = e._kx || (e._kx = { t:0 });
+  S.t++;
+  const ph = Math.min(4, b.phase || 1), A = KX_A[ph] / _kxKM();
+  const dx = np.x - e.x, dz = np.z - e.z, dd = Math.sqrt(dx*dx + dz*dz) || 0.001, ang = Math.atan2(dx, dz);
+  const F = (vt, o) => _cvFx(game, zoneName, vt, Object.assign({ eid:e.id }, o || {}));
+  const mv = (vx, vz, sp) => { const l = Math.sqrt(vx*vx + vz*vz) || 1; const nx = e.x + vx/l*sp, nz = e.z + vz/l*sp;
+    if (nx > 3 && nx < 357 && nz > 3 && nz < 357) { e.x = nx; e.z = nz; changed.push(e); } };
+  const circle = (x, z, r, fuse, mult, col) => { _cvAdd(zone, { k:'circle', x, z, r, fuse, dmg:A*mult, eid:e.id, col });
+    _cvFx(game, zoneName, 'cvm_warn', { ex:_cvR(x), ez:_cvR(z), r, ms:fuse*100, col }); };
+  if (e.type === 'ke_seeker') {
+    // TETRA SEEKER — darts in and detonates
+    if (S.arm) { if (--S.arm <= 0) { F('kx_seeker_pop', { ex:_cvR(e.x), ez:_cvR(e.z) }); _kxDespawn(game, zoneName, e); } return; }
+    if (dd > 2.6) mv(dx + Math.sin(S.t*0.7)*dd*0.25, dz + Math.cos(S.t*0.7)*dd*0.25, KX_MIN.ke_seeker.spd);
+    else { S.arm = 8; circle(e.x, e.z, 3.6, 8, 1.3, KX_RED); F('kx_seeker_arm', {}); }
+  } else if (e.type === 'ke_sentinel') {
+    // CUBIC SENTINEL — holds at range, fires a laser line and an occasional ring
+    if (dd < 7) mv(-dx, -dz, KX_MIN.ke_sentinel.spd); else if (dd > 12) mv(dx, dz, KX_MIN.ke_sentinel.spd);
+    else mv(dz, -dx, KX_MIN.ke_sentinel.spd * 0.6);
+    if (S.t % 30 === 12) { _cvAdd(zone, { k:'line', x:e.x, z:e.z, a:ang, len:22, w:1.6, fuse:10, dmg:A*0.9, eid:e.id, col:KX_CYAN });
+      _cvFx(game, zoneName, 'cvm_line', { ex:_cvR(e.x), ez:_cvR(e.z), ang:_cvR(ang), len:22, w:1.6, ms:1000, col:KX_CYAN }); F('cvm_wind', { col:KX_CYAN, ms:1000 }); }
+    if (S.t % 45 === 30) for (let i = 0; i < 8; i++) { const a2 = i*Math.PI/4 + S.t; _cvAdd(zone, { k:'proj', x:e.x, z:e.z, vx:Math.sin(a2)*1.1, vz:Math.cos(a2)*1.1, left:18, r:1.0, dmg:A*0.5, eid:e.id, col:KX_CYAN, A });
+      _cvFx(game, zoneName, 'cvm_proj', { ex:_cvR(e.x), ez:_cvR(e.z), ang:_cvR(a2), len:18, spd:11, s:0, col:KX_CYAN }); }
+  } else if (e.type === 'ke_mind') {
+    // ICOSA MIND — orbits close to the Keeper (shielding him) and lobs slow orbs at you
+    S.orb = (S.orb || 0) + 0.06;
+    const tx = b.x + Math.sin(S.orb)*4.5, tz = b.z + Math.cos(S.orb)*4.5, ox = tx - e.x, oz = tz - e.z;
+    if (ox*ox + oz*oz > 0.04) mv(ox, oz, Math.min(KX_MIN.ke_mind.spd * 3, Math.sqrt(ox*ox + oz*oz)));
+    if (S.t % 36 === 18) for (let i = -1; i <= 1; i++) { const a2 = ang + i*0.3;
+      _cvAdd(zone, { k:'proj', x:e.x, z:e.z, vx:Math.sin(a2)*0.75, vz:Math.cos(a2)*0.75, left:22, r:1.2, dmg:A*0.6, eid:e.id, col:KX_ALT, A });
+      _cvFx(game, zoneName, 'cvm_proj', { ex:_cvR(e.x), ez:_cvR(e.z), ang:_cvR(a2), len:22, spd:7.5, s:2, col:KX_ALT }); }
+  }
+}
+
+// a619 — the Keeper's own strike kinds, ticked inside _cvTickEnts. Returns true to keep it.
+function _kxTickEnt(game, zoneName, h, tps){
+  const hitP = (p, dmg) => _cvHitPlayer(game, zoneName, p, h.eid, dmg, p.x, p.z, h.eff);
+  h.t = (h.t || 0) + 1;
+  if (h.k === 'hex') {
+    h.ang += h.av;
+    if (h.flip && h.t === h.warn + h.flip) h.av = -h.av;
+    if (h.t <= h.warn) return true;
+    if (h.t > h.warn + h.life) return false;
+    if (--h.cd <= 0) { h.cd = h.every;
+      const ca = Math.cos(h.ang), sa = Math.sin(h.ang);
+      tps.forEach(p => { const wx = p.x - h.x, wz = p.z - h.z; if (wx*wx + wz*wz > (h.R + 0.5)*(h.R + 0.5)) return;
+        const lx = wx*ca - wz*sa, lz = wx*sa + wz*ca;
+        if (_kxHexEdge(lx, lz, h.a) < h.w/2 + 0.3) hitP(p, h.dmg); }); }
+    return true;
+  }
+  if (h.k === 'sweep') {
+    h.ang += h.av;
+    if (h.t <= h.warn) return true;
+    if (h.t > h.warn + h.life) return false;
+    if (--h.cd <= 0) { h.cd = h.every;
+      tps.forEach(p => { const qx = p.x - h.x, qz = p.z - h.z;
+        for (let q = 0; q < h.n; q++) { const a = h.ang + q*Math.PI*2/h.n, sx = Math.sin(a), sz = Math.cos(a);
+          const al = qx*sx + qz*sz, pr = Math.abs(qx*sz - qz*sx);
+          if (al > -0.5 && al < h.len + 0.5 && pr < h.w/2 + 0.6) { hitP(p, h.dmg); break; } } }); }
+    return true;
+  }
+  if (h.k === 'hor') {
+    if (h.t <= h.dur) {
+      const r = h.r0 + (h.r1 - h.r0) * h.t / h.dur;
+      if (--h.cd <= 0) { h.cd = h.every;
+        tps.forEach(p => { const dx = p.x - h.x, dz = p.z - h.z; if (dx*dx + dz*dz > (r + 0.4)*(r + 0.4)) hitP(p, h.dmgOut); }); }
+      return true;
+    }
+    const bt = h.t - h.dur; if (bt > h.bdur) return false;
+    const rEnd = h.r0 + 4, r0 = h.r1 + (rEnd - h.r1) * (bt - 1) / h.bdur, r1 = h.r1 + (rEnd - h.r1) * bt / h.bdur;
+    tps.forEach(p => { if (h.hit[p.name]) return;
+      const dx = p.x - h.x, dz = p.z - h.z, d = Math.sqrt(dx*dx + dz*dz), a = Math.atan2(dx, dz);
+      if (d >= r0 - 1.2 && d <= r1 + 1.2 && !h.gaps.some(g => Math.abs(_kxAngD(a, g)) < h.gw)) { h.hit[p.name] = 1; hitP(p, h.bdmg); } });
+    return true;
+  }
+  if (h.k === 'tess') {
+    const w = h.waves[h.wi];
+    if (w && h.t >= w.t) { h.wi++;
+      tps.forEach(p => { const dx = p.x - h.x, dz = p.z - h.z; if (dx*dx + dz*dz > h.R*h.R) return;
+        if (_kxTriColor(dx, dz, h.s) !== w.safe) hitP(p, h.dmg); }); }
+    return h.wi < h.waves.length;
+  }
+  if (h.k === 'void') {
+    if (h.t <= h.warn) return true;
+    const idx = Math.floor((h.t - h.warn - 1) / h.seg); if (idx >= h.safes.length) return false;
+    const S = h.safes[idx];
+    if (--h.cd <= 0) { h.cd = h.every;
+      tps.forEach(p => { const dx = p.x - h.x, dz = p.z - h.z; if (dx*dx + dz*dz > h.R*h.R) return;
+        const sx = p.x - S[0], sz = p.z - S[1]; if (sx*sx + sz*sz > h.r*h.r) hitP(p, h.dmg); }); }
+    return true;
+  }
+  if (h.k === 'gaze') {
+    if (h.t > h.warn + h.life) { _cvFx(game, zoneName, 'kx_gaze_end', { gid:h.gid }); return false; }
+    let t = tps.find(p => p.name === h.tgt);
+    if (!t) { let bd = 1e9; tps.forEach(p => { const d = (p.x - h.x)**2 + (p.z - h.z)**2; if (d < bd) { bd = d; t = p; } }); }
+    if (t && h.t > h.warn) { const dx = t.x - h.x, dz = t.z - h.z, d = Math.sqrt(dx*dx + dz*dz);
+      if (d > 0.05) { const st = Math.min(d, h.spd * (1 + h.t/240)); h.x += dx/d*st; h.z += dz/d*st; } }   // tops out below a player's run speed
+    _cvFx(game, zoneName, 'kx_gaze', { gid:h.gid, ex:_cvR(h.x), ez:_cvR(h.z) });
+    if (h.t > h.warn && --h.cd <= 0) { h.cd = h.every;
+      tps.forEach(p => { const dx = p.x - h.x, dz = p.z - h.z; if (dx*dx + dz*dz < h.r*h.r) hitP(p, h.dmg); }); }
+    return true;
+  }
+  return false;
+}
+
 function tickZoneBoss(game, zoneName, zone) {
   const cfg = ZBOSS_SERVER[zoneName];
   if (!cfg) return;
@@ -6976,7 +7324,10 @@ function tickZoneBoss(game, zoneName, zone) {
   //    rather than chasing: a slow Lissajous wander around the spawn anchor, widening
   //    with phase. Marching her at the player would be wrong for the fight.
   let nx, nz;
-  if (cfg.move === 'hold') {
+  if (b._hold > 0) {
+    // a619 — a channelled pattern (the Keeper's lattices, horizon, End Cycle) anchors the boss
+    b._hold--; nx = b.x; nz = b.z;
+  } else if (cfg.move === 'hold') {
     // a552 — THE APEX PYRAMID never moves at all: it hovers over its arena and spins.
     nx = b.x; nz = b.z;
   } else if (cfg.move === 'drift') {
@@ -7231,7 +7582,7 @@ function tickGame(game) {
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
-      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]) || (zoneName === 'the_reach' && RE_BESPOKE[e.type]) || (zoneName === 'convergence' && CV_BESPOKE[e.type]);   // a609
+      const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]) || (zoneName === 'the_reach' && (RE_BESPOKE[e.type] || KE_MINION[e.type])) || (zoneName === 'convergence' && CV_BESPOKE[e.type]);   // a609
       // Move toward player (generic chase — bespoke mobs use their own movement below)
       if (!_bespoke && nearestDist > ATTACK_RANGE) {
         let gx = nearestPlayer.x, gz = nearestPlayer.z;
@@ -10494,6 +10845,7 @@ function tickGame(game) {
 
         // ── a609: THE CONVERGENCE — per-depth ability kits (see CV_KIT)
         if (zoneName === 'convergence' && e.aggroed && CV_BESPOKE[e.type]) _cvMobTick(game, zoneName, zone, e, nearestPlayer, changed);
+        if (zoneName === 'the_reach' && KE_MINION[e.type]) _kxMinionTick(game, zoneName, zone, e, nearestPlayer, changed);   // a619 — the Keeper's constructs
 
         // ── a558: FUNGAL DEPTHS spore AI (zone-gated to 'fungal'; all four types also
         //    appear in 'mirrored', which is NOT migrated). Bioluminescent and toxic:
@@ -10768,7 +11120,7 @@ function tickGame(game) {
     if (zoneName === 'xumen_fortress') _xfTickPylons(game, zoneName, zone);   // a552 — sentry pylons outlive their owner
     if (zoneName === 'forge') _fgTickEntities(game, zoneName, zone);          // a555 — puddles / turrets / meteors / drones
     if (zoneName === 'fungal') _fdTickClouds(game, zoneName, zone);           // a558 — lingering spore clouds
-    if (zoneName === 'convergence') _cvTickEnts(game, zoneName, zone);       // a609 — telegraphed strikes, fields, projectiles
+    if (zoneName === 'convergence' || zoneName === 'the_reach') _cvTickEnts(game, zoneName, zone);       // a609 / a619 — telegraphed strikes, fields, projectiles
   });
   // a527 — advance server-owned SD projectiles once per tick; resolve hits
   if (game._sdProj && game._sdProj.length) {
@@ -11351,7 +11703,7 @@ function tps_hit(game, zoneName, x, z, r, dmg, eid, eff){
 // ── the zone's live strikes, fields and projectiles, once per tick ──
 function _cvTickEnts(game, zoneName, zone){
   const list = zone._cv; if (!list || !list.length) return;
-  const M = _convMazeFor(zone);
+  const M = (zoneName === 'convergence') ? _convMazeFor(zone) : null;
   const tps = getTargetablePlayersInZone(game.id, zoneName);
   const keep = [];
   for (const h of list) {
@@ -11373,6 +11725,8 @@ function _cvTickEnts(game, zoneName, zone){
         tps.forEach(p => { if (p.x === undefined) return; const qx = p.x - h.x, qz = p.z - h.z;
           if (qx*qx + qz*qz < h.r*h.r) _cvHitPlayer(game, zoneName, p, h.eid, h.dmg, h.x, h.z, h.eff); }); }
       keep.push(h);
+    } else if (h.k === 'hex' || h.k === 'sweep' || h.k === 'hor' || h.k === 'tess' || h.k === 'void' || h.k === 'gaze') {
+      if (_kxTickEnt(game, zoneName, h, tps)) keep.push(h);
     } else if (h.k === 'proj') {
       const st = Math.sqrt(h.vx*h.vx + h.vz*h.vz);
       let hit = null;
@@ -12723,6 +13077,7 @@ wss.on('connection', ws => {
         //   the boss vulnerable.
         let _inDmg = data.dmg || 1;
         if (player.zone === 'forge' && b._fcWeak) _inDmg = Math.floor(_inDmg * 1.6);
+        if (player.zone === 'the_reach' && b._keLinkDR) _inDmg = Math.max(1, Math.floor(_inDmg * (1 - b._keLinkDR)));   // a619 — Sentient Link
         const bdmg = Math.min(_inDmg, 999999);
         b.hp = Math.max(0, b.hp - bdmg);
 
