@@ -11703,6 +11703,10 @@ function tps_hit(game, zoneName, x, z, r, dmg, eid, eff){
 // ── the zone's live strikes, fields and projectiles, once per tick ──
 function _cvTickEnts(game, zoneName, zone){
   const list = zone._cv; if (!list || !list.length) return;
+  // a620 — a dead boss's pending strikes die with it (mob strikes carry their own eid and stay)
+  if (!zone.boss || zone.boss.hp <= 0 || !zone.boss.spawned) {
+    if (list.some(h => h.eid === -1)) { zone._cv = list.filter(h => h.eid !== -1); if (!zone._cv.length) return; }
+  }
   const M = (zoneName === 'convergence') ? _convMazeFor(zone) : null;
   const tps = getTargetablePlayersInZone(game.id, zoneName);
   const keep = [];
