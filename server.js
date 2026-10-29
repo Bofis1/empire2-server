@@ -11958,7 +11958,11 @@ function _avDmg(e, mult){ return Math.floor((e.atk || 100) * mult); }
 function _bwDmg(e, mult){ return Math.floor((BW_PWR[e.type] || e.atk || 32) * mult); }
 const VW_PWR = { void_stalker:42, void_eye:40, void_phantom:48, void_sentinel:60, void_construct:54, void_spike_horror:56, wraith:38 };
 function _vwDmg(e, mult){ return Math.floor((VW_PWR[e.type] || e.atk || 36) * mult); }
-const PM_PWR = { xu_rebel:38, bandit:40, bandit_archer:34, sniper:36, wraith:38, xu_scout:34, xu_siege_bot:52, xu_commander:50 };
+// a634 — the Patrol is the onboarding zone: every patrol mob hits 25% softer (was rebel 38, bandit 40,
+//   archer 34, sniper 36, wraith 38, scout 34, siege bot 52, commander 50). Tested: a pack of 4-5 landed
+//   ~5 hits/s, which a fresh ~300 HP character can't survive. ZONE_DMG_BASE.patrol keeps 46 on purpose
+//   so the a579 damage curve (anchored on it) doesn't shift for every other zone.
+const PM_PWR = { xu_rebel:28, bandit:30, bandit_archer:26, sniper:27, wraith:28, xu_scout:26, xu_siege_bot:39, xu_commander:37 };
 function _pmDmg(e, mult){ return Math.floor((PM_PWR[e.type] || e.atk || 30) * mult); }
 // a527 — spawn a server-owned SD projectile (server resolves the hit; client renders the flyer).
 // a529 — telegraphed ground strike (recon ping / mortar / airstrike): warning ring now, AoE later.
