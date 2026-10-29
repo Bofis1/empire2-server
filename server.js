@@ -988,8 +988,8 @@ const ZONE_SPAWNS = {
     {type:'void_phantom', tx:215, tz:15},
     {type:'void_eye', tx:26, tz:59},
     {type:'void_eye', tx:28, tz:59},
-    {type:'void_phantom', tx:60, tz:51},
-    {type:'void_eye', tx:57, tz:51},
+    {type:'void_phantom', tx:62, tz:47},
+    {type:'void_eye', tx:61, tz:46},
     {type:'void_spike_horror', tx:79, tz:60},
     {type:'void_phantom', tx:86, tz:55},
     {type:'void_stalker', tx:80, tz:57},
@@ -1000,8 +1000,8 @@ const ZONE_SPAWNS = {
     {type:'void_spike_horror', tx:151, tz:57},
     {type:'void_phantom', tx:153, tz:54},
     {type:'void_phantom', tx:151, tz:51},
-    {type:'void_phantom', tx:182, tz:60},
-    {type:'void_eye', tx:180, tz:59},
+    {type:'void_phantom', tx:187, tz:65},
+    {type:'void_eye', tx:184, tz:66},
     {type:'void_sentinel', tx:227, tz:50},
     {type:'void_construct', tx:226, tz:51},
     {type:'wraith', tx:226, tz:48},
@@ -1011,12 +1011,12 @@ const ZONE_SPAWNS = {
     {type:'void_phantom', tx:51, tz:89},
     {type:'void_sentinel', tx:89, tz:90},
     {type:'void_construct', tx:85, tz:88},
-    {type:'void_stalker', tx:121, tz:94},
-    {type:'void_sentinel', tx:123, tz:94},
-    {type:'void_eye', tx:123, tz:91},
-    {type:'void_stalker', tx:154, tz:94},
+    {type:'void_stalker', tx:120, tz:94},
+    {type:'void_sentinel', tx:120, tz:94},
+    {type:'void_eye', tx:122, tz:90},
+    {type:'void_stalker', tx:153, tz:95},
     {type:'void_sentinel', tx:154, tz:97},
-    {type:'void_eye', tx:158, tz:91},
+    {type:'void_eye', tx:154, tz:89},
     {type:'void_spike_horror', tx:185, tz:79},
     {type:'void_phantom', tx:176, tz:82},
     {type:'void_sentinel', tx:222, tz:85},
@@ -1067,16 +1067,16 @@ const ZONE_SPAWNS = {
     {type:'void_eye', tx:85, tz:186},
     {type:'void_eye', tx:87, tz:180},
     {type:'void_phantom', tx:94, tz:187},
-    {type:'void_stalker', tx:118, tz:189},
-    {type:'void_sentinel', tx:112, tz:191},
-    {type:'void_eye', tx:112, tz:194},
-    {type:'void_sentinel', tx:116, tz:190},
-    {type:'void_eye', tx:150, tz:192},
+    {type:'void_stalker', tx:119, tz:189},
+    {type:'void_sentinel', tx:107, tz:195},
+    {type:'void_eye', tx:112, tz:197},
+    {type:'void_sentinel', tx:119, tz:192},
+    {type:'void_eye', tx:152, tz:190},
     {type:'void_eye', tx:156, tz:195},
-    {type:'void_stalker', tx:178, tz:184},
-    {type:'void_sentinel', tx:183, tz:187},
-    {type:'void_eye', tx:185, tz:189},
-    {type:'void_sentinel', tx:181, tz:185},
+    {type:'void_stalker', tx:187, tz:191},
+    {type:'void_sentinel', tx:187, tz:191},
+    {type:'void_eye', tx:187, tz:191},
+    {type:'void_sentinel', tx:187, tz:191},
     {type:'void_construct', tx:215, tz:182},
     {type:'void_stalker', tx:219, tz:185},
     {type:'void_eye', tx:216, tz:185},
@@ -4338,6 +4338,40 @@ function _patrolWall(tx, tz){ if(tx<0||tz<0||tx>=_PATROL_W||tz>=_PATROL_W) retur
 function _patrolWalkable(wx, wz, r){ r=r||0.3;
   return !_patrolWall(((wx-r)/TILE)|0, ((wz-r)/TILE)|0) && !_patrolWall(((wx+r)/TILE)|0, ((wz-r)/TILE)|0)
       && !_patrolWall(((wx-r)/TILE)|0, ((wz+r)/TILE)|0) && !_patrolWall(((wx+r)/TILE)|0, ((wz+r)/TILE)|0); }
+// ════════════════════════════════════════════════════════════════════════════
+// a640 — VOID WASTES pit map. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js) so players and the server-run void mobs agree on where the
+//   ground ends. Tile-space: the Wastes are a broken shelf floating over open void —
+//   a ragged abyss rings the map edge, the central arena is an island in a moat of
+//   nothing (four land-bridges on the roads), and pits of black space are torn
+//   through the plain. [cx, cz, r, phase1, phase2, bridge] — bridge 'ns' leaves a
+//   2-tile walkway straight across (the Starbridge).
+// ════════════════════════════════════════════════════════════════════════════
+var _VW_PITS = [
+  [60, 62, 13, 0.7, 2.1, 0], [178, 58, 11, 2.3, 4.0, 0], [58, 182, 12, 4.1, 0.6, 0], [182, 180, 14, 1.4, 3.3, 0],
+  [94, 40, 6, 3.0, 1.0, 0], [160, 92, 5, 0.2, 5.1, 0], [36, 98, 6, 5.5, 2.4, 0], [200, 142, 7, 1.9, 0.4, 0],
+  [146, 196, 6, 3.7, 2.9, 0], [96, 162, 5, 2.6, 4.4, 0], [206, 98, 5, 4.8, 1.7, 0], [30, 150, 5, 0.9, 3.8, 0],
+  [80, 98, 3.2, 1.1, 0.3, 0], [142, 58, 3.4, 2.2, 1.9, 0], [88, 212, 4, 4.4, 2.0, 0], [212, 212, 5, 3.3, 5.0, 0],
+  [120, 186, 11, 0.5, 2.7, 'ns'], [28, 32, 4.5, 2.0, 1.2, 0], [214, 28, 5, 5.2, 0.8, 0]
+];
+function _vwPitR(p, a){ return p[2]*(1 + 0.16*Math.sin(3*a + p[3]) + 0.08*Math.sin(7*a + p[4])); }
+function _vwEdgeW(x, z){ return 6.2 + 1.5*Math.sin(x*0.21 + z*0.07) + 1.1*Math.sin(z*0.17 - x*0.05); }
+// true where (x,z) [tiles, float] is open void
+function _vwPitAt(x, z){
+  var e = Math.min(x, z, 240 - x, 240 - z);
+  if(e < _vwEdgeW(x, z)) return true;
+  var dx = x - 120, dz = z - 120, dc = Math.sqrt(dx*dx + dz*dz);
+  if(dc > 21.5 && dc < 28.5 && Math.abs(dx) > 3.3 && Math.abs(dz) > 3.3) return true;   // the moat (bridges on the 4 roads)
+  for(var i = 0; i < _VW_PITS.length; i++){
+    var p = _VW_PITS[i], px = x - p[0], pz = z - p[1], d2 = px*px + pz*pz, R = p[2]*1.3;
+    if(d2 > R*R) continue;
+    if(p[5] === 'ns' && Math.abs(px) < 2.6) continue;
+    var r = _vwPitR(p, Math.atan2(pz, px));
+    if(d2 < r*r) return true;
+  }
+  return false;
+}
+function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
 // a532 — per-zone-per-type HP override. void_sentinel/void_construct carry boss-tier HP
 //   that is correct for VOID CITADEL but far too tanky for the lvl15-28 VOID WASTES where
 //   they also spawn. Scope a zone-appropriate HP to Void Wastes only (base stats untouched,
@@ -7608,7 +7642,8 @@ function tickGame(game) {
         //   generic x1.6 is a quarter of that, far too slow to hunt anyone through corridors
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
-        if (!_mz || !e2ConvMazeWall(_mz, nx, nz, TILE)) { e.x = nx; e.z = nz; }
+        if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (!_mz || !e2ConvMazeWall(_mz, nx, nz, TILE)) { e.x = nx; e.z = nz; }
         else if (!e2ConvMazeWall(_mz, nx, e.z, TILE)) e.x = nx;      // slide along the wall
         else if (!e2ConvMazeWall(_mz, e.x, nz, TILE)) e.z = nz;
         changed.push(e);
@@ -7975,7 +8010,9 @@ function tickGame(game) {
         const strafe=e._strafe;
         e._ab=(e._ab||0)+1;
         let _moved=false;
-        const mv=(vx,vz,sp)=>{ e.x+=vx*sp; e.z+=vz*sp; _moved=true; };
+        const mv=(vx,vz,sp)=>{ const nx=e.x+vx*sp, nz=e.z+vz*sp;   // a640 — never walk out over a void pit
+          if(_vwWalkable(nx,nz)){ e.x=nx; e.z=nz; } else if(_vwWalkable(nx,e.z)) e.x=nx; else if(_vwWalkable(e.x,nz)) e.z=nz; else return; _moved=true; };
+        const _vwX0=e.x, _vwZ0=e.z;
         const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
         const rift=(col)=>{ broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:col}); };
 
@@ -8056,6 +8093,7 @@ function tickGame(game) {
           e._wail=(e._wail||0)+1; if(dd<8 && e._wail>=35){ e._wail=0; _pmShock(game,zoneName,e,e.x,e.z,4.5,_vwDmg(e,1.1),0x9b30ff,players,send,0.55,1400); }
         }
 
+        if(!_vwWalkable(e.x,e.z)){ e.x=_vwX0; e.z=_vwZ0; }   // a640 — a blink that lands in the void is cancelled
         if(_moved) changed.push(e);
       }
 
