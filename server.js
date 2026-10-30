@@ -1115,106 +1115,106 @@ const ZONE_SPAWNS = {
     {type:'xu_shieldbot', tx:75, tz:133},
     {type:'xu_shieldbot', tx:120, tz:164},
     {type:'xu_shieldbot', tx:120, tz:166},
-    {type:'xu_shieldbot', tx:147, tz:157},
+    {type:'xu_shieldbot', tx:146, tz:157},
     {type:'xu_shieldbot', tx:144, tz:156},
-    {type:'xu_shieldbot', tx:147, tz:84},
-    {type:'xu_shieldbot', tx:149, tz:86},
-    {type:'xu_shieldbot', tx:102, tz:165},
-    {type:'xu_shieldbot', tx:101, tz:165},
+    {type:'xu_shieldbot', tx:146, tz:84},
+    {type:'xu_shieldbot', tx:147, tz:87},
+    {type:'xu_shieldbot', tx:102, tz:163},
+    {type:'xu_shieldbot', tx:101, tz:163},
     {type:'xu_shieldbot', tx:161, tz:95},
     {type:'xu_shieldbot', tx:162, tz:95},
-    {type:'xu_shieldbot', tx:153, tz:160},
-    {type:'xu_shieldbot', tx:156, tz:161},
+    {type:'xu_shieldbot', tx:150, tz:162},
+    {type:'xu_shieldbot', tx:159, tz:164},
     {type:'xu_shieldbot', tx:67, tz:111},
     {type:'xu_shieldbot', tx:66, tz:113},
-    {type:'xu_shieldbot', tx:102, tz:171},
-    {type:'xu_shieldbot', tx:102, tz:173},
-    {type:'xu_shieldbot', tx:161, tz:80},
-    {type:'xu_shieldbot', tx:161, tz:81},
+    {type:'xu_shieldbot', tx:107, tz:176},
+    {type:'xu_shieldbot', tx:106, tz:177},
+    {type:'xu_shieldbot', tx:162, tz:78},
+    {type:'xu_shieldbot', tx:163, tz:79},
     {type:'xu_shieldbot', tx:177, tz:104},
     {type:'xu_shieldbot', tx:175, tz:103},
-    {type:'xu_sniper_elite', tx:179, tz:128},
-    {type:'xu_sniper_elite', tx:179, tz:127},
-    {type:'xu_sniper_elite', tx:98, tz:65},
-    {type:'xu_sniper_elite', tx:100, tz:65},
+    {type:'xu_sniper_elite', tx:178, tz:127},
+    {type:'xu_sniper_elite', tx:179, tz:126},
+    {type:'xu_sniper_elite', tx:98, tz:61},
+    {type:'xu_sniper_elite', tx:100, tz:61},
     {type:'xu_sniper_elite', tx:119, tz:58},
     {type:'xu_sniper_elite', tx:121, tz:57},
     {type:'xu_sniper_elite', tx:77, tz:163},
-    {type:'xu_sniper_elite', tx:74, tz:161},
-    {type:'xu_sniper_elite', tx:168, tz:83},
-    {type:'xu_sniper_elite', tx:169, tz:82},
-    {type:'xu_sniper_elite', tx:177, tz:146},
+    {type:'xu_sniper_elite', tx:76, tz:161},
+    {type:'xu_sniper_elite', tx:163, tz:79},
+    {type:'xu_sniper_elite', tx:163, tz:79},
+    {type:'xu_sniper_elite', tx:178, tz:146},
     {type:'xu_sniper_elite', tx:178, tz:143},
-    {type:'xu_sniper_elite', tx:127, tz:181},
     {type:'xu_sniper_elite', tx:125, tz:181},
-    {type:'xu_sniper_elite', tx:132, tz:57},
-    {type:'xu_sniper_elite', tx:133, tz:54},
-    {type:'xu_sniper_elite', tx:75, tz:71},
+    {type:'xu_sniper_elite', tx:125, tz:181},
+    {type:'xu_sniper_elite', tx:134, tz:53},
+    {type:'xu_sniper_elite', tx:134, tz:53},
+    {type:'xu_sniper_elite', tx:76, tz:71},
     {type:'xu_sniper_elite', tx:77, tz:73},
-    {type:'xu_sniper_elite', tx:57, tz:130},
-    {type:'xu_sniper_elite', tx:55, tz:132},
-    {type:'xu_sniper_elite', tx:180, tz:152},
-    {type:'xu_sniper_elite', tx:176, tz:153},
-    {type:'xu_sniper_elite', tx:67, tz:79},
-    {type:'xu_sniper_elite', tx:67, tz:82},
-    {type:'xu_sniper_elite', tx:57, tz:98},
-    {type:'xu_sniper_elite', tx:58, tz:99},
+    {type:'xu_sniper_elite', tx:54, tz:126},
+    {type:'xu_sniper_elite', tx:53, tz:134},
+    {type:'xu_sniper_elite', tx:178, tz:152},
+    {type:'xu_sniper_elite', tx:178, tz:153},
+    {type:'xu_sniper_elite', tx:61, tz:79},
+    {type:'xu_sniper_elite', tx:61, tz:82},
+    {type:'xu_sniper_elite', tx:53, tz:98},
+    {type:'xu_sniper_elite', tx:61, tz:99},
     {type:'citadel_mage', tx:138, tz:186},
-    {type:'citadel_mage', tx:134, tz:184},
-    {type:'citadel_mage', tx:65, tz:161},
-    {type:'citadel_mage', tx:65, tz:164},
-    {type:'citadel_mage', tx:166, tz:65},
-    {type:'citadel_mage', tx:164, tz:64},
+    {type:'citadel_mage', tx:134, tz:186},
+    {type:'citadel_mage', tx:61, tz:161},
+    {type:'citadel_mage', tx:61, tz:164},
+    {type:'citadel_mage', tx:164, tz:63},
+    {type:'citadel_mage', tx:164, tz:63},
     {type:'citadel_mage', tx:162, tz:177},
-    {type:'citadel_mage', tx:165, tz:176},
+    {type:'citadel_mage', tx:164, tz:176},
     {type:'citadel_mage', tx:50, tz:144},
     {type:'citadel_mage', tx:50, tz:142},
-    {type:'citadel_mage', tx:81, tz:182},
-    {type:'citadel_mage', tx:83, tz:183},
-    {type:'citadel_mage', tx:70, tz:173},
-    {type:'citadel_mage', tx:72, tz:173},
+    {type:'citadel_mage', tx:81, tz:178},
+    {type:'citadel_mage', tx:83, tz:186},
+    {type:'citadel_mage', tx:74, tz:177},
+    {type:'citadel_mage', tx:75, tz:176},
     {type:'citadel_mage', tx:135, tz:193},
     {type:'citadel_mage', tx:133, tz:191},
     {type:'citadel_mage', tx:47, tz:111},
     {type:'citadel_mage', tx:47, tz:113},
     {type:'citadel_mage', tx:125, tz:196},
     {type:'citadel_mage', tx:125, tz:194},
-    {type:'citadel_mage', tx:153, tz:192},
+    {type:'citadel_mage', tx:153, tz:191},
     {type:'citadel_mage', tx:151, tz:189},
-    {type:'citadel_mage', tx:175, tz:175},
-    {type:'citadel_mage', tx:176, tz:175},
-    {type:'citadel_mage', tx:77, tz:57},
-    {type:'citadel_mage', tx:77, tz:56},
+    {type:'citadel_mage', tx:177, tz:176},
+    {type:'citadel_mage', tx:177, tz:176},
+    {type:'citadel_mage', tx:77, tz:53},
+    {type:'citadel_mage', tx:77, tz:53},
     {type:'citadel_mage', tx:145, tz:47},
-    {type:'citadel_mage', tx:48, tz:92},
+    {type:'citadel_mage', tx:49, tz:93},
     {type:'citadel_mage', tx:103, tz:42},
     {type:'citadel_mage', tx:198, tz:121},
     {type:'citadel_mage', tx:118, tz:42},
     {type:'citadel_mage', tx:195, tz:146},
     {type:'citadel_mage', tx:176, tz:62},
     {type:'citadel_mage', tx:61, tz:66},
-    {type:'iron_guard', tx:43, tz:148},
+    {type:'iron_guard', tx:42, tz:149},
     {type:'iron_guard', tx:191, tz:77},
     {type:'iron_guard', tx:82, tz:192},
     {type:'iron_guard', tx:105, tz:203},
     {type:'iron_guard', tx:170, tz:48},
-    {type:'iron_guard', tx:159, tz:43},
-    {type:'iron_guard', tx:196, tz:162},
+    {type:'iron_guard', tx:157, tz:45},
+    {type:'iron_guard', tx:193, tz:162},
     {type:'iron_guard', tx:205, tz:98},
-    {type:'iron_guard', tx:74, tz:43},
+    {type:'iron_guard', tx:76, tz:45},
     {type:'iron_guard', tx:212, tz:124},
     {type:'iron_guard', tx:174, tz:196},
-    {type:'iron_guard', tx:149, tz:209},
-    {type:'iron_guard', tx:35, tz:76},
+    {type:'iron_guard', tx:149, tz:212},
+    {type:'iron_guard', tx:37, tz:75},
     {type:'iron_guard', tx:124, tz:215},
     {type:'iron_guard', tx:98, tz:27},
-    {type:'iron_guard', tx:199, tz:172},
-    {type:'iron_guard', tx:71, tz:39},
+    {type:'iron_guard', tx:194, tz:176},
+    {type:'iron_guard', tx:77, tz:44},
     {type:'iron_guard', tx:46, tz:62},
     {type:'iron_guard', tx:28, tz:145},
     {type:'iron_guard', tx:216, tz:97},
     {type:'iron_guard', tx:36, tz:171},
-    {type:'iron_guard', tx:150, tz:25},
+    {type:'iron_guard', tx:152, tz:27},
     {type:'iron_guard', tx:85, tz:212},
     {type:'iron_guard', tx:166, tz:212},
     {type:'iron_guard', tx:62, tz:202},
@@ -1223,34 +1223,34 @@ const ZONE_SPAWNS = {
     {type:'iron_guard', tx:190, tz:47},
     {type:'iron_guard', tx:42, tz:187},
     {type:'iron_guard', tx:172, tz:206},
-    {type:'iron_guard', tx:138, tz:20},
-    {type:'iron_guard', tx:19, tz:104},
-    {type:'iron_guard', tx:208, tz:174},
+    {type:'iron_guard', tx:133, tz:20},
+    {type:'iron_guard', tx:19, tz:108},
+    {type:'iron_guard', tx:208, tz:178},
     {type:'iron_guard', tx:29, tz:69},
     {type:'iron_guard', tx:225, tz:138},
     {type:'iron_guard', tx:101, tz:223},
     {type:'iron_guard', tx:204, tz:56},
-    {type:'iron_guard', tx:89, tz:16},
-    {type:'iron_guard', tx:217, tz:73},
-    {type:'iron_guard', tx:226, tz:159},
+    {type:'iron_guard', tx:89, tz:13},
+    {type:'iron_guard', tx:227, tz:63},
+    {type:'iron_guard', tx:228, tz:159},
     {type:'iron_guard', tx:18, tz:160},
     {type:'iron_guard', tx:16, tz:81},
     {type:'iron_guard', tx:67, tz:220},
-    {type:'iron_guard', tx:205, tz:197},
-    {type:'iron_guard', tx:180, tz:25},
-    {type:'iron_guard', tx:193, tz:209},
-    {type:'iron_guard', tx:216, tz:54},
-    {type:'iron_guard', tx:22, tz:183},
-    {type:'iron_guard', tx:32, tz:38},
-    {type:'iron_guard', tx:51, tz:20},
-    {type:'iron_guard', tx:211, tz:203},
+    {type:'iron_guard', tx:205, tz:191},
+    {type:'iron_guard', tx:178, tz:26},
+    {type:'iron_guard', tx:193, tz:216},
+    {type:'iron_guard', tx:218, tz:52},
+    {type:'iron_guard', tx:21, tz:182},
+    {type:'iron_guard', tx:34, tz:38},
+    {type:'iron_guard', tx:56, tz:20},
+    {type:'iron_guard', tx:216, tz:203},
     {type:'iron_guard', tx:198, tz:25},
-    {type:'iron_guard', tx:20, tz:39},
+    {type:'iron_guard', tx:14, tz:44},
     {type:'iron_guard', tx:24, tz:204},
     {type:'iron_guard', tx:39, tz:223},
     {type:'iron_guard', tx:222, tz:37},
-    {type:'iron_guard', tx:214, tz:27},
-    {type:'iron_guard', tx:32, tz:20},
+    {type:'iron_guard', tx:214, tz:28},
+    {type:'iron_guard', tx:34, tz:20},
     {type:'iron_guard', tx:17, tz:208},
     {type:'iron_guard', tx:224, tz:215}
   ],
@@ -4372,6 +4372,59 @@ function _vwPitAt(x, z){
   return false;
 }
 function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
+// a641 — XU CITADEL layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js) so players and the server-run garrison collide with the same
+//   walls, towers and halls. Tiles. R = [x0, z0, x1, z1, kind, height(tiles)],
+//   C = [cx, cz, r, kind, height(tiles)]. Avenues (x/z 112..128) and the throne
+//   plaza (r < 30 around 120,120) are kept open.
+// ════════════════════════════════════════════════════════════════════════════
+var _CT = (function(){
+  var R = [], C = [], i, k;
+  // outer curtain wall — gates on all four avenues
+  R.push([6,4,112,8,'wall',7],[128,4,234,8,'wall',7],[6,232,112,236,'wall',7],[128,232,234,236,'wall',7]);
+  R.push([4,6,8,112,'wall',7],[4,128,8,234,'wall',7],[232,6,236,112,'wall',7],[232,128,236,234,'wall',7]);
+  C.push([108,6,4.5,'gatetower',16],[132,6,4.5,'gatetower',16],[108,234,4.5,'gatetower',16],[132,234,4.5,'gatetower',16]);
+  C.push([6,108,4.5,'gatetower',16],[6,132,4.5,'gatetower',16],[234,108,4.5,'gatetower',16],[234,132,4.5,'gatetower',16]);
+  C.push([8,8,7.5,'bastion',14],[232,8,7.5,'bastion',14],[8,232,7.5,'bastion',14],[232,232,7.5,'bastion',14]);
+  [40,74,166,200].forEach(function(t){ C.push([t,6,3.2,'tower',11],[t,234,3.2,'tower',11],[6,t,3.2,'tower',11],[234,t,3.2,'tower',11]); });
+  // inner wall — the Royal Ward
+  R.push([56,56,112,59,'iwall',9],[128,56,184,59,'iwall',9],[56,181,112,184,'iwall',9],[128,181,184,184,'iwall',9]);
+  R.push([56,56,59,112,'iwall',9],[56,128,59,184,'iwall',9],[181,56,184,112,'iwall',9],[181,128,184,184,'iwall',9]);
+  C.push([109,57.5,3.6,'gatehouse',14],[131,57.5,3.6,'gatehouse',14],[109,182.5,3.6,'gatehouse',14],[131,182.5,3.6,'gatehouse',14]);
+  C.push([57.5,109,3.6,'gatehouse',14],[57.5,131,3.6,'gatehouse',14],[182.5,109,3.6,'gatehouse',14],[182.5,131,3.6,'gatehouse',14]);
+  C.push([57.5,57.5,5.5,'itower',22],[182.5,57.5,5.5,'itower',22],[57.5,182.5,5.5,'itower',22],[182.5,182.5,5.5,'itower',22]);
+  // the Royal Spire's four legs over the throne plaza
+  C.push([110,110,2.6,'leg',0],[130,110,2.6,'leg',0],[110,130,2.6,'leg',0],[130,130,2.6,'leg',0]);
+  // the four high spires of the Royal Ward + their halls
+  C.push([84,84,7,'spire',46],[156,84,7,'spire',52],[84,156,7,'spire',50],[156,156,7,'spire',44]);
+  R.push([64,64,74,96,'hall',8],[90,64,106,74,'hall',7],[166,64,176,96,'hall',8],[134,64,150,74,'hall',7]);
+  R.push([64,144,74,176,'hall',8],[90,166,106,176,'hall',7],[166,144,176,176,'hall',8],[134,166,150,176,'hall',7]);
+  // NORTH — barracks blocks either side of the avenue
+  [[16,98],[136,220]].forEach(function(b){ for(var x=b[0]; x+16<=b[1]; x+=22){ R.push([x,16,x+16,26,'barracks',6],[x,34,x+16,44,'barracks',6]); } });
+  // WEST — artillery batteries + shield pylons + supply depots
+  C.push([30,78,6,'battery',6],[30,162,6,'battery',6]);
+  C.push([46,68,2,'pylon',12],[46,92,2,'pylon',12],[46,148,2,'pylon',12],[46,172,2,'pylon',12]);
+  R.push([14,96,28,106,'depot',4],[14,134,28,144,'depot',4]);
+  // EAST — hangars + dropships on landing pads
+  R.push([196,64,226,90,'hangar',9],[196,150,226,176,'hangar',9]);
+  C.push([208,104,3.4,'dropship',3],[208,138,3.4,'dropship',3]);
+  // SOUTH — training yard mechs (SW), foundry + armory (SE)
+  for(k = 0; k < 6; k++) C.push([28 + k*13, 214, 2.4, 'mech', 5]);
+  R.push([138,194,168,210,'armory',7],[180,194,214,214,'foundry',8]);
+  C.push([186,220,2.4,'stack',16],[198,220,2.4,'stack',18],[210,220,2.4,'stack',15]);
+  // comm array (NW) + sensor dishes
+  C.push([26,56,4,'radar',8],[214,56,4,'radar',8],[26,186,4,'radar',8]);
+  return { R:R, C:C };
+})();
+// true where (x,z) [tiles, float] is blocked by citadel architecture
+function _ctWallAt(x, z){
+  var R = _CT.R, C = _CT.C, i;
+  for(i = 0; i < R.length; i++){ var r = R[i]; if(x >= r[0] && x < r[2] && z >= r[1] && z < r[3]) return true; }
+  for(i = 0; i < C.length; i++){ var c = C[i], dx = x - c[0], dz = z - c[1]; if(dx*dx + dz*dz < c[2]*c[2]) return true; }
+  return false;
+}
+function _ctWalkable(wx, wz){ return !_ctWallAt(wx/TILE, wz/TILE); }
 // a532 — per-zone-per-type HP override. void_sentinel/void_construct carry boss-tier HP
 //   that is correct for VOID CITADEL but far too tanky for the lvl15-28 VOID WASTES where
 //   they also spawn. Scope a zone-appropriate HP to Void Wastes only (base stats untouched,
@@ -7643,6 +7696,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'citadel') { if (_ctWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_ctWalkable(nx, e.z)) e.x = nx; else if (_ctWalkable(e.x, nz)) e.z = nz; }   // a641 — citadel walls
         else if (!_mz || !e2ConvMazeWall(_mz, nx, nz, TILE)) { e.x = nx; e.z = nz; }
         else if (!e2ConvMazeWall(_mz, nx, e.z, TILE)) e.x = nx;      // slide along the wall
         else if (!e2ConvMazeWall(_mz, e.x, nz, TILE)) e.z = nz;
@@ -8521,7 +8575,9 @@ function tickGame(game) {
           //   above (it runs for bespoke mobs too); incrementing it here as well ran every
           //   %-based attack check in this zone off a counter advancing 2 per tick.
         let _moved=false;
-        const mv=(vx,vz,sp)=>{ e.x+=vx*sp*OVR; e.z+=vz*sp*OVR; _moved=true; };
+        const mv=(vx,vz,sp)=>{ const nx=e.x+vx*sp*OVR, nz=e.z+vz*sp*OVR;   // a641 — the garrison walks around the citadel's walls
+          if(_ctWalkable(nx,nz)){ e.x=nx; e.z=nz; } else if(_ctWalkable(nx,e.z)) e.x=nx; else if(_ctWalkable(e.x,nz)) e.z=nz; else return; _moved=true; };
+        const _ctX0=e.x, _ctZ0=e.z;
         const hit=(dmg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:dmg,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); }); };
         const shoot=(baseAng,col,mult,kind,spread,count)=>{ for(let i=0;i<count;i++){ const a=baseAng+(count>1?(i-(count-1)/2)*spread:0); _sdSpawnProj(game,zoneName,e,a,col,_ctDmgS(e,mult),kind,null,0); } };
         const toPlayer=(msg)=>{ players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws, Object.assign({type:'sv_player_fx',zone:zoneName},msg)); }); };
@@ -8626,6 +8682,7 @@ function tickGame(game) {
             broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CTC}); }
         }
 
+        if(!_ctWalkable(e.x,e.z)){ e.x=_ctX0; e.z=_ctZ0; }   // a641 — no blinking into a wall
         if(_moved) changed.push(e);
       }
 
