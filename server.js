@@ -1935,7 +1935,7 @@ const ZONE_SPAWNS = {
   riftvale: [
     {type:'rift_stalker', tx:41, tz:47},
     {type:'rift_stalker', tx:44, tz:40},
-    {type:'rift_weaver', tx:49, tz:49},
+    {type:'rift_weaver', tx:47, tz:47},
     {type:'rift_weaver', tx:32, tz:45},
     {type:'psyche_horror', tx:35, tz:44},
     {type:'psyche_horror', tx:43, tz:46},
@@ -1953,26 +1953,26 @@ const ZONE_SPAWNS = {
     {type:'rift_stalker', tx:71, tz:44},
     {type:'void_colossus', tx:76, tz:47},
     {type:'void_colossus', tx:69, tz:41},
-    {type:'rift_stalker', tx:42, tz:63},
-    {type:'rift_stalker', tx:48, tz:65},
+    {type:'rift_stalker', tx:42, tz:62},
+    {type:'rift_stalker', tx:48, tz:68},
     {type:'rift_weaver', tx:49, tz:80},
-    {type:'rift_weaver', tx:41, tz:79},
-    {type:'psyche_horror', tx:39, tz:65},
+    {type:'rift_weaver', tx:37, tz:77},
+    {type:'psyche_horror', tx:40, tz:62},
     {type:'psyche_horror', tx:47, tz:72},
-    {type:'rift_stalker', tx:36, tz:65},
+    {type:'rift_stalker', tx:34, tz:66},
     {type:'rift_stalker', tx:47, tz:80},
     {type:'void_colossus', tx:31, tz:70},
     {type:'void_colossus', tx:33, tz:66},
     {type:'rift_stalker', tx:209, tz:43},
-    {type:'rift_stalker', tx:195, tz:49},
-    {type:'rift_weaver', tx:197, tz:46},
-    {type:'rift_weaver', tx:197, tz:41},
-    {type:'psyche_horror', tx:204, tz:37},
-    {type:'psyche_horror', tx:192, tz:45},
-    {type:'rift_stalker', tx:193, tz:34},
-    {type:'rift_stalker', tx:194, tz:44},
-    {type:'void_colossus', tx:195, tz:43},
-    {type:'void_colossus', tx:199, tz:45},
+    {type:'rift_stalker', tx:193, tz:53},
+    {type:'rift_weaver', tx:201, tz:49},
+    {type:'rift_weaver', tx:202, tz:48},
+    {type:'psyche_horror', tx:208, tz:33},
+    {type:'psyche_horror', tx:187, tz:50},
+    {type:'rift_stalker', tx:194, tz:28},
+    {type:'rift_stalker', tx:201, tz:49},
+    {type:'void_colossus', tx:201, tz:49},
+    {type:'void_colossus', tx:202, tz:48},
     {type:'rift_stalker', tx:167, tz:36},
     {type:'rift_stalker', tx:164, tz:38},
     {type:'rift_weaver', tx:177, tz:49},
@@ -1983,19 +1983,19 @@ const ZONE_SPAWNS = {
     {type:'rift_stalker', tx:163, tz:39},
     {type:'void_colossus', tx:169, tz:45},
     {type:'void_colossus', tx:168, tz:36},
-    {type:'rift_stalker', tx:207, tz:70},
-    {type:'rift_stalker', tx:205, tz:69},
-    {type:'rift_weaver', tx:194, tz:71},
-    {type:'rift_weaver', tx:197, tz:69},
+    {type:'rift_stalker', tx:208, tz:73},
+    {type:'rift_stalker', tx:204, tz:66},
+    {type:'rift_weaver', tx:191, tz:74},
+    {type:'rift_weaver', tx:197, tz:67},
     {type:'psyche_horror', tx:191, tz:79},
-    {type:'psyche_horror', tx:206, tz:70},
+    {type:'psyche_horror', tx:208, tz:73},
     {type:'rift_stalker', tx:208, tz:80},
-    {type:'rift_stalker', tx:193, tz:67},
-    {type:'void_colossus', tx:204, tz:73},
-    {type:'void_colossus', tx:198, tz:73},
+    {type:'rift_stalker', tx:193, tz:65},
+    {type:'void_colossus', tx:205, tz:74},
+    {type:'void_colossus', tx:199, tz:75},
     {type:'rift_stalker', tx:44, tz:205},
     {type:'rift_stalker', tx:32, tz:202},
-    {type:'rift_weaver', tx:46, tz:193},
+    {type:'rift_weaver', tx:43, tz:191},
     {type:'rift_weaver', tx:33, tz:194},
     {type:'psyche_horror', tx:33, tz:205},
     {type:'psyche_horror', tx:38, tz:203},
@@ -2005,8 +2005,8 @@ const ZONE_SPAWNS = {
     {type:'void_colossus', tx:42, tz:197},
     {type:'rift_stalker', tx:64, tz:199},
     {type:'rift_stalker', tx:81, tz:192},
-    {type:'rift_weaver', tx:81, tz:202},
-    {type:'rift_weaver', tx:81, tz:201},
+    {type:'rift_weaver', tx:80, tz:201},
+    {type:'rift_weaver', tx:81, tz:200},
     {type:'psyche_horror', tx:74, tz:193},
     {type:'psyche_horror', tx:69, tz:192},
     {type:'rift_stalker', tx:76, tz:201},
@@ -2014,7 +2014,7 @@ const ZONE_SPAWNS = {
     {type:'void_colossus', tx:73, tz:201},
     {type:'void_colossus', tx:75, tz:196},
     {type:'rift_stalker', tx:38, tz:174},
-    {type:'rift_stalker', tx:49, tz:177},
+    {type:'rift_stalker', tx:45, tz:176},
     {type:'rift_weaver', tx:31, tz:176},
     {type:'rift_weaver', tx:46, tz:169},
     {type:'psyche_horror', tx:42, tz:164},
@@ -2033,21 +2033,21 @@ const ZONE_SPAWNS = {
     {type:'rift_stalker', tx:197, tz:208},
     {type:'void_colossus', tx:198, tz:200},
     {type:'void_colossus', tx:195, tz:205},
-    {type:'rift_stalker', tx:174, tz:193},
+    {type:'rift_stalker', tx:173, tz:194},
     {type:'rift_stalker', tx:175, tz:205},
     {type:'rift_weaver', tx:162, tz:194},
     {type:'rift_weaver', tx:163, tz:205},
-    {type:'psyche_horror', tx:176, tz:195},
+    {type:'psyche_horror', tx:175, tz:196},
     {type:'psyche_horror', tx:161, tz:191},
     {type:'rift_stalker', tx:172, tz:200},
     {type:'rift_stalker', tx:177, tz:209},
     {type:'void_colossus', tx:160, tz:201},
-    {type:'void_colossus', tx:159, tz:206},
+    {type:'void_colossus', tx:161, tz:204},
     {type:'rift_stalker', tx:198, tz:162},
-    {type:'rift_stalker', tx:209, tz:164},
+    {type:'rift_stalker', tx:206, tz:161},
     {type:'rift_weaver', tx:197, tz:166},
-    {type:'rift_weaver', tx:191, tz:171},
-    {type:'psyche_horror', tx:204, tz:171},
+    {type:'rift_weaver', tx:191, tz:170},
+    {type:'psyche_horror', tx:203, tz:171},
     {type:'psyche_horror', tx:204, tz:164},
     {type:'rift_stalker', tx:194, tz:169},
     {type:'rift_stalker', tx:192, tz:160},
@@ -2067,15 +2067,15 @@ const ZONE_SPAWNS = {
     {type:'rift_weaver', tx:126, tz:194},
     {type:'psyche_horror', tx:113, tz:188},
     {type:'psyche_horror', tx:122, tz:189},
-    {type:'rift_stalker', tx:128, tz:180},
+    {type:'rift_stalker', tx:127, tz:176},
     {type:'rift_stalker', tx:128, tz:191},
     {type:'rift_stalker', tx:57, tz:118},
     {type:'rift_stalker', tx:48, tz:116},
-    {type:'rift_weaver', tx:63, tz:127},
+    {type:'rift_weaver', tx:59, tz:129},
     {type:'rift_weaver', tx:53, tz:121},
     {type:'psyche_horror', tx:53, tz:115},
-    {type:'psyche_horror', tx:58, tz:114},
-    {type:'rift_stalker', tx:64, tz:118},
+    {type:'psyche_horror', tx:56, tz:116},
+    {type:'rift_stalker', tx:65, tz:119},
     {type:'rift_stalker', tx:51, tz:112},
     {type:'rift_stalker', tx:193, tz:121},
     {type:'rift_stalker', tx:180, tz:124},
@@ -2087,19 +2087,19 @@ const ZONE_SPAWNS = {
     {type:'rift_stalker', tx:189, tz:122},
     {type:'psyche_horror', tx:121, tz:217},
     {type:'rift_weaver', tx:132, tz:23},
-    {type:'psyche_horror', tx:188, tz:40},
+    {type:'psyche_horror', tx:185, tz:42},
     {type:'rift_weaver', tx:184, tz:203},
     {type:'psyche_horror', tx:90, tz:187},
-    {type:'rift_weaver', tx:213, tz:151},
-    {type:'psyche_horror', tx:117, tz:155},
+    {type:'rift_weaver', tx:210, tz:147},
+    {type:'psyche_horror', tx:116, tz:153},
     {type:'rift_weaver', tx:58, tz:74},
-    {type:'psyche_horror', tx:153, tz:44},
+    {type:'psyche_horror', tx:150, tz:45},
     {type:'rift_weaver', tx:167, tz:37},
-    {type:'psyche_horror', tx:71, tz:138},
+    {type:'psyche_horror', tx:74, tz:135},
     {type:'rift_weaver', tx:36, tz:100},
     {type:'psyche_horror', tx:86, tz:216},
     {type:'rift_weaver', tx:150, tz:26},
-    {type:'psyche_horror', tx:137, tz:198},
+    {type:'psyche_horror', tx:137, tz:201},
     {type:'rift_weaver', tx:43, tz:215},
     {type:'psyche_horror', tx:104, tz:217},
     {type:'rift_weaver', tx:215, tz:73},
@@ -2112,7 +2112,7 @@ const ZONE_SPAWNS = {
     {type:'rift_weaver', tx:75, tz:200},
     {type:'rift_weaver', tx:182, tz:89},
     {type:'rift_weaver', tx:167, tz:183},
-    {type:'rift_weaver', tx:148, tz:138}
+    {type:'rift_weaver', tx:149, tz:138}
   ],
   // a548 — WYVERN WASTES is now SERVER-AUTHORITATIVE (was client-side since a488).
   //   190 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
@@ -4372,6 +4372,65 @@ function _vwPitAt(x, z){
   return false;
 }
 function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
+// a645 — RIFT VALE layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js) so players and the server-run rift mobs agree on where the
+//   world has been torn away. Tile-space signed field: < 0 is open void.
+//   • THE MAELSTROM — the breach island (r 21) ringed by a chasm, with three
+//     spiral arms of void whirling out to r 62 (causeways on the four axes)
+//   • four BLACK HOLES over bottomless pits (kind 'bh'), smaller pits between
+//   • the RIFTS — jagged chasms torn across the vale (bridged at the gap points)
+//   • the ragged abyss at the edge of the world, with the two gates kept on land
+// ════════════════════════════════════════════════════════════════════════════
+var _RV = (function(){
+  var P = [   // [cx, cz, r, phase1, phase2, kind]
+    [58, 56, 12, 0.7, 2.1, 'bh'], [196, 40, 10, 2.3, 4.0, 'bh'], [184, 186, 13, 4.1, 0.6, 'bh'], [56, 186, 11, 1.4, 3.3, 'bh'],
+    [100, 20, 4, 3.0, 1.0, 0], [212, 104, 4.5, 0.2, 5.1, 0], [26, 92, 5, 5.5, 2.4, 0], [28, 154, 5, 1.9, 0.4, 0],
+    [214, 214, 6, 3.7, 2.9, 0], [148, 224, 4, 2.6, 4.4, 0], [26, 28, 5, 4.8, 1.7, 0], [216, 150, 3.5, 0.9, 3.8, 0]
+  ];
+  var R = [   // rifts: [points], half-width, [gap points]
+    [[[150,4],[157,20],[149,36],[163,52],[178,66],[198,72],[216,68],[236,80]], 2.4, [[155,30],[188,71]]],
+    [[[30,58],[44,70],[40,86],[52,98]], 2.0, []],
+    [[[68,212],[92,200],[118,206],[140,196],[162,208]], 2.2, [[120,205]]],
+    [[[198,140],[214,156],[206,174]], 1.9, []],
+    [[[78,26],[94,38],[110,32]], 1.8, []]
+  ];
+  var K = [[4, 120, 11], [16, 120, 8], [234, 120, 11]];   // land kept for the gates + spawn
+  var ARM0 = [0.35, 0.35 + 2.0944, 0.35 + 4.1888];
+  return { P:P, R:R, K:K, ARM0:ARM0 };
+})();
+function _rvPitR(p, a){ return p[2]*(1 + 0.16*Math.sin(3*a + p[3]) + 0.08*Math.sin(7*a + p[4])); }
+function _rvEdgeW(x, z){ return 7.0 + 2.0*Math.sin(x*0.19 + z*0.08) + 1.4*Math.sin(z*0.23 - x*0.06); }
+// signed field (tiles): negative = open void
+function _rvField(x, z){
+  var f = Math.min(x, z, 240 - x, 240 - z) - _rvEdgeW(x, z), i, k;
+  var dx = x - 120, dz = z - 120, dc = Math.sqrt(dx*dx + dz*dz);
+  if(dc < 68){
+    // the Maelstrom: the chasm ring + three spiral arms, crossed by causeways on the axes
+    var m = -Math.min(dc - 21, 25.5 - dc);
+    if(dc > 23 && dc < 66){ var th = Math.atan2(dz, dx);
+      for(k = 0; k < 3; k++){ var ta = _RV.ARM0[k] + (dc - 25)*0.085, d = th - ta; d = d - Math.round(d/6.283185307)*6.283185307;
+        var hw = 4.6 - (dc - 25)*0.06; m = Math.min(m, Math.max(Math.abs(d)*dc/Math.sqrt(1 + 0.007225*dc*dc) - hw, dc - 62, 23 - dc)); } }   // perpendicular width (the arm crosses the circle at a shallow angle)
+    f = Math.min(f, Math.max(m, 3.0 - Math.min(Math.abs(dx), Math.abs(dz))));
+  }
+  for(i = 0; i < _RV.P.length; i++){ var p = _RV.P[i], px = x - p[0], pz = z - p[1], dd = Math.sqrt(px*px + pz*pz);
+    if(dd > p[2]*1.4 + 3){ f = Math.min(f, dd - p[2]*1.3); continue; }
+    f = Math.min(f, dd - _rvPitR(p, Math.atan2(pz, px))); }
+  for(i = 0; i < _RV.R.length; i++){ var r = _RV.R[i], L = r[0], best = 1e9, bt = 0, tot = 0, acc = 0, j;
+    for(j = 1; j < L.length; j++) tot += Math.hypot(L[j][0] - L[j-1][0], L[j][1] - L[j-1][1]);
+    for(j = 1; j < L.length; j++){ var ax = L[j-1][0], az = L[j-1][1], bx = L[j][0], bz = L[j][1], vx = bx - ax, vz = bz - az, l2 = vx*vx + vz*vz, sl = Math.sqrt(l2);
+      var u = Math.max(0, Math.min(1, ((x - ax)*vx + (z - az)*vz)/l2)), qx = ax + vx*u - x, qz = az + vz*u - z, q = Math.sqrt(qx*qx + qz*qz);
+      if(q < best){ best = q; bt = (acc + u*sl)/tot; } acc += sl; }
+    if(best > r[1] + 4) { f = Math.min(f, best - r[1]); continue; }
+    var w = r[1]*(0.75 + 0.35*Math.sin(bt*23 + i) + 0.15*Math.sin(bt*61 + i*3))*Math.min(1, Math.min(bt, 1 - bt)*9 + 0.25);
+    var v = best - w; for(j = 0; j < r[2].length; j++) v = Math.max(v, 5.0 - Math.hypot(x - r[2][j][0], z - r[2][j][1]));
+    f = Math.min(f, v); }
+  for(i = 0; i < _RV.K.length; i++){ var kk = _RV.K[i]; f = Math.max(f, kk[2] - Math.hypot(x - kk[0], z - kk[1])); }
+  return f;
+}
+function _rvPitAt(x, z){ return _rvField(x, z) < 0; }
+function _rvWalkable(wx, wz){ return !_rvPitAt(wx/TILE, wz/TILE); }
+
 // ════════════════════════════════════════════════════════════════════════════
 // a641 — XU CITADEL layout. Shared VERBATIM by the client (70_terrain) and the
 //   server (server.js) so players and the server-run garrison collide with the same
@@ -7620,6 +7679,7 @@ function tickGame(game) {
         return;
       }
 
+      if (zoneName === 'riftvale') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7696,6 +7756,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'riftvale') { if (_rvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_rvWalkable(nx, e.z)) e.x = nx; else if (_rvWalkable(e.x, nz)) e.z = nz; }   // a645 — rift vale void
         else if (zoneName === 'citadel') { if (_ctWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_ctWalkable(nx, e.z)) e.x = nx; else if (_ctWalkable(e.x, nz)) e.z = nz; }   // a641 — citadel walls
         else if (!_mz || !e2ConvMazeWall(_mz, nx, nz, TILE)) { e.x = nx; e.z = nz; }
         else if (!e2ConvMazeWall(_mz, nx, e.z, TILE)) e.x = nx;      // slide along the wall
@@ -11209,6 +11270,13 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
+    });
+
+    // a645 — RIFT VALE: whatever moved a mob this tick (chase, rift dash, phase strike,
+    //   bespoke kits), it never ends standing over open void — slide or step back.
+    if (zoneName === 'riftvale') zone.enemies.forEach(e => {
+      if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
+      if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
 
     // Broadcast state for changed enemies (positions + HP)
