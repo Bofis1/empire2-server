@@ -325,6 +325,7 @@ const ENEMY_STATS = {
   crawler:           {hp:210,   atk:18,  spd:0.055, aggroRange:7,  reward:40,   expR:12,   dmgReduction:0},
   brute:             {hp:960,   atk:38,  spd:0.022, aggroRange:8,  reward:110,  expR:30,   dmgReduction:0},
   wraith:            {hp:480,   atk:32,  spd:0.045, aggroRange:9,  reward:80,   expR:28,   dmgReduction:0},
+  xu_ghost:          {hp:900,   atk:40,  spd:0.05,  aggroRange:11, reward:130,  expR:42,   dmgReduction:0},   // a650
   void_stalker:      {hp:660,   atk:42,  spd:0.038, aggroRange:11, reward:150,  expR:60,   dmgReduction:0},
   void_eye:          {hp:390,   atk:30,  spd:0.035, aggroRange:10, reward:110,  expR:45,   dmgReduction:0},
   iron_guard:        {hp:6500,  atk:165, spd:0.025, aggroRange:8,  reward:420,  expR:145,  dmgReduction:0},
@@ -749,9 +750,9 @@ const ZONE_SPAWNS = {
   // a538 — MULTIPLAYER MIGRATION: Xu Cemetery is now server-authoritative.
   cemetery: [
     {type:'death_knight', tx:160, tz:144},
-    {type:'death_knight', tx:157, tz:144},
-    {type:'death_knight', tx:157, tz:145},
-    {type:'death_knight', tx:158, tz:144},
+    {type:'death_knight', tx:156, tz:143},
+    {type:'death_knight', tx:156, tz:144},
+    {type:'death_knight', tx:158, tz:143},
     {type:'death_knight', tx:158, tz:146},
     {type:'death_knight', tx:157, tz:147},
     {type:'death_knight', tx:147, tz:79},
@@ -778,30 +779,30 @@ const ZONE_SPAWNS = {
     {type:'bone_mage', tx:120, tz:63},
     {type:'bone_mage', tx:119, tz:62},
     {type:'bone_mage', tx:120, tz:62},
-    {type:'bone_mage', tx:144, tz:68},
-    {type:'bone_mage', tx:148, tz:67},
-    {type:'bone_mage', tx:146, tz:68},
+    {type:'bone_mage', tx:143, tz:68},
+    {type:'bone_mage', tx:148, tz:66},
+    {type:'bone_mage', tx:145, tz:68},
     {type:'bone_mage', tx:148, tz:68},
     {type:'bone_mage', tx:142, tz:67},
-    {type:'bone_mage', tx:146, tz:66},
-    {type:'bone_mage', tx:177, tz:146},
+    {type:'bone_mage', tx:146, tz:65},
+    {type:'bone_mage', tx:176, tz:146},
     {type:'bone_mage', tx:179, tz:145},
     {type:'bone_mage', tx:179, tz:143},
     {type:'bone_mage', tx:180, tz:145},
     {type:'bone_mage', tx:177, tz:142},
-    {type:'bone_mage', tx:176, tz:144},
+    {type:'bone_mage', tx:176, tz:143},
     {type:'bone_mage', tx:176, tz:98},
     {type:'bone_mage', tx:182, tz:97},
     {type:'bone_mage', tx:177, tz:96},
     {type:'bone_mage', tx:178, tz:95},
     {type:'bone_mage', tx:180, tz:96},
     {type:'bone_mage', tx:178, tz:96},
-    {type:'bone_mage', tx:55, tz:127},
+    {type:'bone_mage', tx:55, tz:126},
     {type:'bone_mage', tx:54, tz:129},
-    {type:'bone_mage', tx:55, tz:131},
+    {type:'bone_mage', tx:55, tz:130},
     {type:'bone_mage', tx:58, tz:129},
     {type:'bone_mage', tx:52, tz:129},
-    {type:'bone_mage', tx:55, tz:132},
+    {type:'bone_mage', tx:54, tz:132},
     {type:'bone_mage', tx:87, tz:177},
     {type:'bone_mage', tx:86, tz:180},
     {type:'bone_mage', tx:85, tz:174},
@@ -814,7 +815,7 @@ const ZONE_SPAWNS = {
     {type:'bone_mage', tx:64, tz:83},
     {type:'bone_mage', tx:60, tz:85},
     {type:'bone_mage', tx:59, tz:80},
-    {type:'bone_mage', tx:96, tz:55},
+    {type:'bone_mage', tx:97, tz:55},
     {type:'bone_mage', tx:98, tz:55},
     {type:'bone_mage', tx:99, tz:52},
     {type:'bone_mage', tx:97, tz:56},
@@ -826,9 +827,9 @@ const ZONE_SPAWNS = {
     {type:'wraith', tx:50, tz:141},
     {type:'wraith', tx:159, tz:185},
     {type:'wraith', tx:155, tz:191},
-    {type:'wraith', tx:155, tz:187},
+    {type:'wraith', tx:157, tz:189},
     {type:'wraith', tx:158, tz:190},
-    {type:'wraith', tx:155, tz:188},
+    {type:'wraith', tx:155, tz:190},
     {type:'wraith', tx:176, tz:179},
     {type:'wraith', tx:175, tz:184},
     {type:'wraith', tx:174, tz:180},
@@ -844,18 +845,18 @@ const ZONE_SPAWNS = {
     {type:'wraith', tx:56, tz:66},
     {type:'wraith', tx:55, tz:69},
     {type:'wraith', tx:54, tz:66},
-    {type:'wraith', tx:31, tz:101},
+    {type:'wraith', tx:30, tz:100},
     {type:'wraith', tx:33, tz:99},
     {type:'wraith', tx:34, tz:97},
     {type:'wraith', tx:33, tz:97},
-    {type:'wraith', tx:35, tz:99},
+    {type:'wraith', tx:35, tz:98},
     {type:'wraith', tx:210, tz:123},
     {type:'wraith', tx:213, tz:120},
     {type:'wraith', tx:211, tz:119},
     {type:'wraith', tx:214, tz:119},
     {type:'wraith', tx:209, tz:121},
     {type:'wraith', tx:57, tz:186},
-    {type:'wraith', tx:54, tz:190},
+    {type:'wraith', tx:55, tz:190},
     {type:'wraith', tx:56, tz:189},
     {type:'wraith', tx:58, tz:190},
     {type:'wraith', tx:56, tz:190},
@@ -869,27 +870,27 @@ const ZONE_SPAWNS = {
     {type:'grave_crawler', tx:23, tz:119},
     {type:'grave_crawler', tx:25, tz:118},
     {type:'grave_crawler', tx:24, tz:118},
-    {type:'grave_crawler', tx:189, tz:51},
+    {type:'grave_crawler', tx:191, tz:51},
     {type:'grave_crawler', tx:191, tz:53},
-    {type:'grave_crawler', tx:188, tz:52},
-    {type:'grave_crawler', tx:188, tz:54},
-    {type:'grave_crawler', tx:186, tz:54},
+    {type:'grave_crawler', tx:190, tz:54},
+    {type:'grave_crawler', tx:188, tz:55},
+    {type:'grave_crawler', tx:186, tz:55},
     {type:'grave_crawler', tx:26, tz:143},
     {type:'grave_crawler', tx:26, tz:141},
     {type:'grave_crawler', tx:26, tz:142},
     {type:'grave_crawler', tx:24, tz:140},
     {type:'grave_crawler', tx:25, tz:144},
     {type:'grave_crawler', tx:80, tz:29},
-    {type:'grave_crawler', tx:83, tz:29},
-    {type:'grave_crawler', tx:82, tz:31},
-    {type:'grave_crawler', tx:84, tz:30},
-    {type:'grave_crawler', tx:81, tz:31},
-    {type:'grave_crawler', tx:216, tz:149},
-    {type:'grave_crawler', tx:216, tz:148},
-    {type:'grave_crawler', tx:213, tz:149},
-    {type:'grave_crawler', tx:212, tz:149},
+    {type:'grave_crawler', tx:83, tz:28},
+    {type:'grave_crawler', tx:81, tz:30},
+    {type:'grave_crawler', tx:83, tz:31},
+    {type:'grave_crawler', tx:81, tz:30},
+    {type:'grave_crawler', tx:216, tz:150},
+    {type:'grave_crawler', tx:216, tz:150},
+    {type:'grave_crawler', tx:213, tz:150},
+    {type:'grave_crawler', tx:212, tz:150},
     {type:'grave_crawler', tx:216, tz:151},
-    {type:'grave_crawler', tx:213, tz:84},
+    {type:'grave_crawler', tx:213, tz:82},
     {type:'grave_crawler', tx:217, tz:84},
     {type:'grave_crawler', tx:214, tz:80},
     {type:'grave_crawler', tx:214, tz:81},
@@ -898,72 +899,97 @@ const ZONE_SPAWNS = {
     {type:'grave_crawler', tx:94, tz:219},
     {type:'grave_crawler', tx:88, tz:222},
     {type:'grave_crawler', tx:91, tz:219},
-    {type:'grave_crawler', tx:91, tz:223},
+    {type:'grave_crawler', tx:90, tz:222},
     {type:'grave_crawler', tx:155, tz:23},
     {type:'grave_crawler', tx:154, tz:23},
     {type:'grave_crawler', tx:155, tz:18},
     {type:'grave_crawler', tx:157, tz:20},
     {type:'grave_crawler', tx:154, tz:18},
     {type:'skeleton_warrior', tx:66, tz:30},
-    {type:'skeleton_warrior', tx:66, tz:28},
+    {type:'skeleton_warrior', tx:67, tz:27},
     {type:'skeleton_warrior', tx:62, tz:28},
     {type:'skeleton_warrior', tx:66, tz:31},
-    {type:'skeleton_warrior', tx:64, tz:32},
-    {type:'skeleton_warrior', tx:27, tz:170},
+    {type:'skeleton_warrior', tx:64, tz:31},
     {type:'skeleton_warrior', tx:28, tz:169},
-    {type:'skeleton_warrior', tx:25, tz:173},
-    {type:'skeleton_warrior', tx:27, tz:174},
-    {type:'skeleton_warrior', tx:26, tz:171},
-    {type:'skeleton_warrior', tx:33, tz:63},
-    {type:'skeleton_warrior', tx:28, tz:64},
+    {type:'skeleton_warrior', tx:28, tz:169},
+    {type:'skeleton_warrior', tx:23, tz:173},
+    {type:'skeleton_warrior', tx:28, tz:176},
+    {type:'skeleton_warrior', tx:24, tz:169},
+    {type:'skeleton_warrior', tx:33, tz:62},
+    {type:'skeleton_warrior', tx:28, tz:63},
     {type:'skeleton_warrior', tx:32, tz:62},
     {type:'skeleton_warrior', tx:33, tz:61},
     {type:'skeleton_warrior', tx:29, tz:61},
-    {type:'skeleton_warrior', tx:184, tz:207},
-    {type:'skeleton_warrior', tx:183, tz:206},
+    {type:'skeleton_warrior', tx:184, tz:206},
+    {type:'skeleton_warrior', tx:182, tz:206},
     {type:'skeleton_warrior', tx:184, tz:208},
-    {type:'skeleton_warrior', tx:185, tz:207},
-    {type:'skeleton_warrior', tx:184, tz:204},
-    {type:'skeleton_warrior', tx:55, tz:204},
-    {type:'skeleton_warrior', tx:55, tz:205},
-    {type:'skeleton_warrior', tx:54, tz:207},
-    {type:'skeleton_warrior', tx:58, tz:207},
-    {type:'skeleton_warrior', tx:55, tz:210},
+    {type:'skeleton_warrior', tx:184, tz:206},
+    {type:'skeleton_warrior', tx:184, tz:203},
+    {type:'skeleton_warrior', tx:55, tz:203},
+    {type:'skeleton_warrior', tx:54, tz:204},
+    {type:'skeleton_warrior', tx:54, tz:209},
+    {type:'skeleton_warrior', tx:59, tz:207},
+    {type:'skeleton_warrior', tx:54, tz:210},
     {type:'skeleton_warrior', tx:185, tz:30},
     {type:'skeleton_warrior', tx:182, tz:33},
     {type:'skeleton_warrior', tx:182, tz:32},
-    {type:'skeleton_warrior', tx:183, tz:34},
+    {type:'skeleton_warrior', tx:183, tz:33},
     {type:'skeleton_warrior', tx:183, tz:31},
-    {type:'skeleton_warrior', tx:210, tz:56},
+    {type:'skeleton_warrior', tx:210, tz:55},
     {type:'skeleton_warrior', tx:209, tz:60},
-    {type:'skeleton_warrior', tx:207, tz:58},
+    {type:'skeleton_warrior', tx:206, tz:58},
     {type:'skeleton_warrior', tx:212, tz:60},
-    {type:'skeleton_warrior', tx:207, tz:56},
+    {type:'skeleton_warrior', tx:207, tz:55},
     {type:'skeleton_warrior', tx:210, tz:185},
     {type:'skeleton_warrior', tx:209, tz:182},
     {type:'skeleton_warrior', tx:211, tz:187},
-    {type:'skeleton_warrior', tx:211, tz:182},
-    {type:'skeleton_warrior', tx:208, tz:184},
-    {type:'skeleton_warrior', tx:211, tz:26},
+    {type:'skeleton_warrior', tx:211, tz:181},
+    {type:'skeleton_warrior', tx:208, tz:183},
+    {type:'skeleton_warrior', tx:209, tz:26},
     {type:'skeleton_warrior', tx:205, tz:27},
-    {type:'skeleton_warrior', tx:210, tz:29},
+    {type:'skeleton_warrior', tx:209, tz:29},
     {type:'skeleton_warrior', tx:206, tz:27},
     {type:'skeleton_warrior', tx:209, tz:26},
     {type:'skeleton_warrior', tx:219, tz:203},
-    {type:'skeleton_warrior', tx:220, tz:204},
-    {type:'skeleton_warrior', tx:220, tz:206},
-    {type:'skeleton_warrior', tx:221, tz:205},
-    {type:'skeleton_warrior', tx:218, tz:202},
-    {type:'skeleton_warrior', tx:22, tz:29},
-    {type:'skeleton_warrior', tx:27, tz:26},
-    {type:'skeleton_warrior', tx:25, tz:27},
-    {type:'skeleton_warrior', tx:26, tz:26},
-    {type:'skeleton_warrior', tx:26, tz:30},
+    {type:'skeleton_warrior', tx:219, tz:203},
+    {type:'skeleton_warrior', tx:219, tz:206},
+    {type:'skeleton_warrior', tx:220, tz:205},
+    {type:'skeleton_warrior', tx:217, tz:201},
+    {type:'skeleton_warrior', tx:22, tz:32},
+    {type:'skeleton_warrior', tx:30, tz:26},
+    {type:'skeleton_warrior', tx:29, tz:31},
+    {type:'skeleton_warrior', tx:30, tz:26},
+    {type:'skeleton_warrior', tx:26, tz:32},
     {type:'skeleton_warrior', tx:20, tz:221},
-    {type:'skeleton_warrior', tx:18, tz:219},
+    {type:'skeleton_warrior', tx:19, tz:219},
     {type:'skeleton_warrior', tx:19, tz:219},
     {type:'skeleton_warrior', tx:22, tz:220},
-    {type:'skeleton_warrior', tx:21, tz:221}
+    {type:'skeleton_warrior', tx:21, tz:221},
+    // a650 — XU GHOSTS
+    {type:'xu_ghost', tx:60, tz:60},
+    {type:'xu_ghost', tx:60, tz:100},
+    {type:'xu_ghost', tx:100, tz:60},
+    {type:'xu_ghost', tx:180, tz:60},
+    {type:'xu_ghost', tx:140, tz:60},
+    {type:'xu_ghost', tx:180, tz:100},
+    {type:'xu_ghost', tx:60, tz:140},
+    {type:'xu_ghost', tx:60, tz:180},
+    {type:'xu_ghost', tx:106, tz:180},
+    {type:'xu_ghost', tx:180, tz:180},
+    {type:'xu_ghost', tx:140, tz:180},
+    {type:'xu_ghost', tx:180, tz:140},
+    {type:'xu_ghost', tx:20, tz:60},
+    {type:'xu_ghost', tx:220, tz:60},
+    {type:'xu_ghost', tx:20, tz:180},
+    {type:'xu_ghost', tx:220, tz:180},
+    {type:'xu_ghost', tx:60, tz:20},
+    {type:'xu_ghost', tx:180, tz:20},
+    {type:'xu_ghost', tx:60, tz:220},
+    {type:'xu_ghost', tx:180, tz:220},
+    {type:'xu_ghost', tx:100, tz:140},
+    {type:'xu_ghost', tx:140, tz:100},
+    {type:'xu_ghost', tx:20, tz:120},
+    {type:'xu_ghost', tx:220, tz:120},
   ],
   // a531 — MULTIPLAYER MIGRATION: Void Wastes is now server-authoritative.
   void: [
@@ -4392,6 +4418,62 @@ function _vwPitAt(x, z){
   return false;
 }
 function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
+// a650 — XU CEMETERY layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js), deterministic (seeded), so players and the undead collide with
+//   the same stones and walls. Tiles. A walled graveyard: the great avenues (x = 120,
+//   z = 120, 8 wide) cross at the Lich King's ritual ground (r 32 open); lanes run at
+//   40/80/160/200. Each block between them is a PLOT: rows of graves of every shape, or
+//   one of the buildings — MAUSOLEUMS (two grand ones), COLUMBARIA, the CHAPEL with its
+//   LYCHGATES on the avenue, GRAVE HOUSES, the OSSUARY, the SEXTON'S LODGE.
+//   G = graves [x, z, kind, rot, seed]; B = buildings [x0, z0, x1, z1, kind, h, seed]; P = posts [x, z, r, kind]
+// ════════════════════════════════════════════════════════════════════════════
+var _CM = (function(){
+  var s = 0x0a650001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var SP = [[4, 38], [42, 78], [82, 114], [126, 158], [162, 198], [202, 236]];
+  var G = [], B = [], P = [];
+  var KINDS = ['round', 'round', 'square', 'gothic', 'gothic', 'cross', 'cross', 'celtic', 'broken', 'tilted', 'small', 'chest', 'ledger', 'open', 'obelisk', 'angel', 'tomb', 'round'];
+  var arenaHit = function(x, z, pad){ return Math.hypot(x - 120, z - 120) < 33 + (pad || 0); };
+  var graves = function(x0, z0, x1, z1, density){ var cx = (x0 + x1)/2, cz = (z0 + z1)/2;
+    for(var z = z0 + 1.5; z < z1 - 1; z += 2.9) for(var x = x0 + 1.5; x < x1 - 1; x += 2.1 + R()*0.6){
+      if(Math.abs(x - cx) < 2.2 || Math.abs(z - cz) < 2.0) continue;   // a cross-lane through every plot
+      if(R() > density || arenaHit(x, z, 1)) continue;
+      var k = KINDS[(R()*KINDS.length)|0]; if(k === 'chest' || k === 'tomb'){ if(x + 1.8 > x1 - 1) k = 'round'; }
+      G.push([x, z, k, (R() - 0.5)*(k === 'tilted' ? 0.6 : 0.12), (R()*1e6)|0]); if(k === 'chest' || k === 'tomb') x += 1.2; } };
+  var NAMED = { '2,4':'chapel', '3,4':'sexton', '5,3':'ossuary', '0,0':'grand', '5,0':'grand', '1,1':'mausoleums', '4,1':'mausoleums', '1,4':'mausoleums', '4,4':'mausoleums',
+                '2,1':'columbaria', '3,0':'columbaria', '0,4':'houses', '0,5':'houses', '1,5':'houses', '0,2':'tree' };
+  for(var bi = 0; bi < 6; bi++) for(var bj = 0; bj < 6; bj++){
+    var x0 = SP[bi][0] + 1, x1 = SP[bi][1] - 1, z0 = SP[bj][0] + 1, z1 = SP[bj][1] - 1, cx = (x0 + x1)/2, cz = (z0 + z1)/2, w = x1 - x0, d = z1 - z0;
+    if(bi === 0) x0 += 3; if(bi === 5) x1 -= 3; if(bj === 0) z0 += 3; if(bj === 5) z1 -= 3;
+    var kind = NAMED[bi + ',' + bj] || 'graves';
+    if(kind === 'chapel'){ B.push([cx - 7, cz - 11, cx + 7, cz + 9, 'chapel', 14, (R()*1e6)|0]); graves(x0, z0, cx - 9, z1, 0.6); graves(cx + 9, z0, x1, z1, 0.6); }
+    else if(kind === 'sexton'){ B.push([cx - 1, cz + 3, cx + 9, cz + 11, 'lodge', 6, (R()*1e6)|0]); B.push([cx + 11, cz + 5, cx + 15, cz + 9, 'shed', 3.5, (R()*1e6)|0]); graves(x0, z0, x1, cz - 1, 0.5); }
+    else if(kind === 'ossuary'){ B.push([cx - 9, cz - 7, cx + 9, cz + 7, 'ossuary', 9, (R()*1e6)|0]); graves(x0, z0, x1, cz - 10, 0.6); graves(x0, cz + 10, x1, z1, 0.6); }
+    else if(kind === 'grand'){ B.push([cx - 8, cz - 10, cx + 8, cz + 10, 'grand', 15, (R()*1e6)|0]); graves(x0, z0, cx - 10, z1, 0.7); graves(cx + 10, z0, x1, z1, 0.7); graves(cx - 9, cz + 13, cx + 9, z1, 0.7); }
+    else if(kind === 'mausoleums'){ for(var k = 0; k < 4; k++){ var mx = x0 + 2 + (k % 2)*(w/2), mz = z0 + 2 + (k > 1 ? d/2 : 0), mw = 6 + R()*3, md = 7 + R()*3; B.push([mx, mz, mx + mw, mz + md, 'mausoleum', 6 + R()*4, (R()*1e6)|0]); }
+      graves(x0, cz - 2, x1, cz + 2, 0.7); }
+    else if(kind === 'columbaria'){ for(var c = 0; c < 4; c++){ var wz = z0 + 4 + c*(d - 8)/3; B.push([x0 + 3, wz - 0.7, cx - 2.5, wz + 0.7, 'columbarium', 4.5, (R()*1e6)|0]); B.push([cx + 2.5, wz - 0.7, x1 - 3, wz + 0.7, 'columbarium', 4.5, (R()*1e6)|0]); } }
+    else if(kind === 'houses'){ for(var hz = z0 + 2; hz + 4 < z1; hz += 6.5) for(var hx = x0 + 2; hx + 3 < x1; hx += 5){ if(Math.abs(hx + 1.5 - cx) < 2.5) continue; if(R() < 0.72) B.push([hx, hz, hx + 2.6, hz + 3.6, 'gravehouse', 2.8, (R()*1e6)|0]); else G.push([hx + 1.3, hz + 1.5, KINDS[(R()*KINDS.length)|0], 0, (R()*1e6)|0]); } }
+    else if(kind === 'tree'){ P.push([cx, cz, 2.2, 'hangtree']); graves(x0, z0, x1, z1, 0.62); }
+    else graves(x0, z0, x1, z1, 0.86);
+  }
+  // lychgates over the great avenue (posts only block), braziers round the ritual ground, dead trees along the lanes
+  [[120, 34], [120, 206]].forEach(function(q){ P.push([q[0] - 4.8, q[1] - 1.5, 0.6, 'lych'], [q[0] + 4.8, q[1] - 1.5, 0.6, 'lych'], [q[0] - 4.8, q[1] + 1.5, 0.6, 'lych'], [q[0] + 4.8, q[1] + 1.5, 0.6, 'lych']); });
+  for(var b2 = 0; b2 < 8; b2++){ var a = b2/8*Math.PI*2 + Math.PI/8; P.push([120 + Math.cos(a)*30, 120 + Math.sin(a)*30, 0.8, 'brazier']); }
+  for(var t = 0; t < 70; t++){ var lx = [40, 80, 160, 200][(R()*4)|0], along = R() < 0.5, p = 8 + R()*224, tx = along ? lx + (R() < 0.5 ? -2.6 : 2.6) : p, tz = along ? p : lx + (R() < 0.5 ? -2.6 : 2.6);
+    if(arenaHit(tx, tz, 3) || Math.abs(tx - 120) < 6 || Math.abs(tz - 120) < 6) continue; P.push([tx, tz, 0.55, 'tree']); }
+  var GATES = [[120, 4], [120, 236]];
+  var M = new Uint8Array(240*240), x, z;
+  var mark = function(x, z){ x = Math.floor(x); z = Math.floor(z); if(x >= 0 && z >= 0 && x < 240 && z < 240) M[z*240 + x] = 1; };
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++){ if((x < 3 || x > 236 || z < 3 || z > 236) && !GATES.some(function(g){ return Math.abs(x + 0.5 - g[0]) < 5 && Math.abs(z + 0.5 - g[1]) < 5; })) M[z*240 + x] = 1; }
+  B.forEach(function(b){ for(z = Math.floor(b[1]); z < Math.ceil(b[3]); z++) for(x = Math.floor(b[0]); x < Math.ceil(b[2]); x++) mark(x, z); });
+  G.forEach(function(g){ if(g[2] === 'ledger' || g[2] === 'small') return; mark(g[0], g[1]); if(g[2] === 'chest' || g[2] === 'tomb'){ mark(g[0] + 1, g[1]); } if(g[2] === 'open') mark(g[0], g[1] + 1); });
+  P.forEach(function(p){ for(z = Math.floor(p[1] - p[2]); z <= Math.ceil(p[1] + p[2]); z++) for(x = Math.floor(p[0] - p[2]); x <= Math.ceil(p[0] + p[2]); x++) if(Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < p[2]) mark(x, z); });
+  return { G:G, B:B, P:P, M:M, SP:SP, GATES:GATES };
+})();
+function _cmWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _CM.M[z*240 + x] === 1; }
+function _cmWalkable(wx, wz){ return !_cmWallAt(wx/TILE, wz/TILE); }
+
 // ════════════════════════════════════════════════════════════════════════════
 // a649 — FUNGAL DEPTHS layout. Shared VERBATIM by the client (70_terrain) and the
 //   server (server.js), deterministic (seeded), so players and the server-run fungi
@@ -7850,7 +7932,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7927,6 +8009,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
         else if (zoneName === 'xumen') { if (_xcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xcWalkable(nx, e.z)) e.x = nx; else if (_xcWalkable(e.x, nz)) e.z = nz; }   // a648 — the capital's buildings
         else if (zoneName === 'void_citadel') { if (_vcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vcWalkable(nx, e.z)) e.x = nx; else if (_vcWalkable(e.x, nz)) e.z = nz; }   // a647 — citadel walls + void
@@ -8607,6 +8690,16 @@ function tickGame(game) {
             e._pulse=(e._pulse||10)+1; if(dd<8 && e._pulse>=33){ e._pulse=0; tele(e.x,e.z,6,5.0,1.3,_CMD,0,0); players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:3}); }); }
             e._uc=(e._uc||0)+1; if(dd>5 && dd<16 && e._uc>=30){ e._uc=0; e._charge='wind'; e._cst=0; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_CMD,n:6}); }
           }
+        }
+        else if(e.type==='xu_ghost'){
+          // a650 — XU GHOST (10Hz): drifts through the stones (the post-tick guard skips it) · claws · SOUL LANCE · PHASE STEP · DIRGE
+          const MS=0.30;
+          if(dd>2.2) mv(sin*0.8+pr*strafe*0.5, cos*0.8+pq*strafe*0.5, MS); else mv(pr*strafe, pq*strafe, MS*0.8);
+          e.x=Math.max(6*TILE, Math.min(234*TILE, e.x)); e.z=Math.max(6*TILE, Math.min(234*TILE, e.z));
+          if(dd<2.6 && e.attackTimer%8===0){ hit(_cmDmgS(e,0.95)); }
+          e._sl=(e._sl||Math.floor(Math.random()*10))+1; if(dd>3 && dd<14 && e._sl>=20){ e._sl=0; shoot(ang,_CMS,0.8,'plasma',0.18,3); }
+          if(e._ab>=44 && dd<16){ e._ab=0; cmBlink(); }
+          e._dg=(e._dg||Math.floor(Math.random()*25))+1; if(dd<9 && e._dg>=55){ e._dg=0; _pmShock(game,zoneName,e,e.x,e.z,5.5,_cmDmgS(e,1.05),_CMS,players,send,0.6,1600); }
         }
         else { // wraith — GRAVE WRAITH: blink + SOUL WAIL (slow)
           const MS=0.336;
@@ -11471,6 +11564,11 @@ function tickGame(game) {
       if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
       if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
+    // a650 — XU CEMETERY: the dead stay out of the stones (except the Xu ghosts, who drift through them)
+    if (zoneName === 'cemetery') zone.enemies.forEach(e => {
+      if (!e.active || e.type === 'xu_ghost' || e._rv0x === undefined || _cmWalkable(e.x, e.z)) return;
+      if (_cmWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_cmWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
     // a649 — FUNGAL DEPTHS: no fungus ever ends a tick inside a stem or a mound
     if (zoneName === 'fungal') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _fgWalkable(e.x, e.z)) return;
@@ -11586,7 +11684,7 @@ const AV_BESPOKE = { skyscout:1, beakdrone:1, wingguard:1, spiraldive:1 };
 //   grave_crawler also live in patrol, void and mirrored, so the gate is mandatory).
 //   The client's _cmDmg adds player-maxHP and player-DEF terms the server can't see; we use
 //   the same flat _CM_PWR floor it falls back to, so damage stays faithful and level-correct.
-const CM_BESPOKE = { skeleton_warrior:1, bone_mage:1, grave_crawler:1, death_knight:1, wraith:1 };
+const CM_BESPOKE = { skeleton_warrior:1, bone_mage:1, grave_crawler:1, death_knight:1, wraith:1, xu_ghost:1 };
 // a539 — THE ASHLANDS fire/volcanic AI (zone-gated to 'ashlands' — berserker/ash_wraith/
 //   lava_golem/magma_crab also appear in other zones, so the gate is mandatory). As with the
 //   cemetery, the client's _alDmg adds player-maxHP and player-DEF terms the server can't see;
@@ -12324,7 +12422,7 @@ const CD_PWR = { xu_miner:78, xu_overseer:92, blast_sapper:88, crystal_lurker:10
 function _cdDmgS(e, mult){ return Math.floor((CD_PWR[e.type] || e.atk || 85) * mult); }
 const AL_PWR = { ash_wraith:46, berserker:54, lava_golem:58, magma_crab:60 };
 function _alDmgS(e, mult){ return Math.floor((AL_PWR[e.type] || e.atk || 40) * mult); }
-const CM_PWR = { skeleton_warrior:48, bone_mage:46, grave_crawler:44, death_knight:62, wraith:40 };
+const CM_PWR = { skeleton_warrior:48, bone_mage:46, grave_crawler:44, death_knight:62, wraith:40, xu_ghost:50 };
 function _cmDmgS(e, mult){ return Math.floor((CM_PWR[e.type] || e.atk || 36) * mult); }
 function _avDmg(e, mult){ return Math.floor((e.atk || 100) * mult); }
 function _bwDmg(e, mult){ return Math.floor((BW_PWR[e.type] || e.atk || 32) * mult); }
