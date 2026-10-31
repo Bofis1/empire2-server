@@ -9421,7 +9421,9 @@ function tickGame(game) {
           // MIND SHATTER — reality warps AND the player's controls break
           if(dd<15 && e._ab>=42){ e._ab=0;
             broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'rv_mindshatter',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:2200,r:15});
-            if(dd<15){ hit(0.7); toPlayer({ eff:'confuse', dur:150 }); toPlayer({ eff:'slow', slow:0.55, root:2000 }); } }
+            // a646 — 8s immunity after a Mind Shatter lands, so a pack of horrors can't chain it forever
+            const _msNow=Date.now();
+            if(dd<15 && !(nearestPlayer._mindImm > _msNow)){ nearestPlayer._mindImm=_msNow+8000; hit(0.7); toPlayer({ eff:'confuse', dur:150 }); toPlayer({ eff:'slow', slow:0.55, root:2000 }); } }
           e._scream=(e._scream||12)+1;
           if(dd<9 && e._scream>=34){ e._scream=0;                                        // TERROR SCREAM — fear knockback
             _pmShock(game,zoneName,e,e.x,e.z,7.0,0,_RM,players,send);
@@ -11098,7 +11100,8 @@ function tickGame(game) {
             //   and your own controls veer away from you for ~2.6s.
             if(dd<12 && e._ab>=33){ e._ab=0;
               fx('fd_halluc_cast',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
-              if(dd<13){
+              if(dd<13 && !(nearestPlayer._mindImm > Date.now())){   // a646 — same 8s immunity for the spore trip
+                nearestPlayer._mindImm=Date.now()+8000;
                 hit(0.7,150);
                 toPlayer({eff:'confuse', dur:155, ang:(Math.random()<0.5?1:-1)*(1.6+Math.random()*1.0),
                           msg:'Hallucinogenic spores cloud your vision!'});
