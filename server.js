@@ -374,6 +374,7 @@ const ENEMY_STATS = {
   elder_dragon:      {hp:90000, atk:480, spd:0.040, aggroRange:14, reward:2000, expR:680,  dmgReduction:0},
   deep_wyrm:         {hp:75000, atk:440, spd:0.030, aggroRange:11, reward:1800, expR:600,  dmgReduction:0},
   xu_titan:          {hp:36000, atk:360, spd:0.042, aggroRange:12, reward:1800, expR:600,  dmgReduction:0.38},
+  xu_warframe:       {hp:40000, atk:370, spd:0.036, aggroRange:14, reward:2200, expR:700,  dmgReduction:0.40},   // a648
   xu_enforcer:       {hp:24000, atk:300, spd:0.100, aggroRange:14, reward:1500, expR:520,  dmgReduction:0.32},
   xu_annihilator:    {hp:70000, atk:420, spd:0.012, aggroRange:10, reward:2400, expR:620,  dmgReduction:0.42},
   xu_supreme:        {hp:30000, atk:340, spd:0.055, aggroRange:15, reward:2000, expR:650,  dmgReduction:0.36},
@@ -2318,152 +2319,171 @@ const ZONE_SPAWNS = {
     {type:'xu_supreme', tx:139, tz:97},
     {type:'xu_supreme', tx:87, tz:115},
     {type:'xu_supreme', tx:85, tz:118},
-    {type:'xu_supreme', tx:98, tz:143},
-    {type:'xu_supreme', tx:97, tz:146},
-    {type:'xu_supreme', tx:143, tz:146},
-    {type:'xu_supreme', tx:146, tz:145},
-    {type:'xu_supreme', tx:92, tz:98},
+    {type:'xu_supreme', tx:98, tz:142},
+    {type:'xu_supreme', tx:99, tz:146},
+    {type:'xu_supreme', tx:140, tz:146},
+    {type:'xu_supreme', tx:142, tz:141},
+    {type:'xu_supreme', tx:92, tz:99},
     {type:'xu_supreme', tx:94, tz:99},
-    {type:'xu_supreme', tx:152, tz:138},
-    {type:'xu_supreme', tx:152, tz:137},
-    {type:'xu_supreme', tx:159, tz:127},
+    {type:'xu_supreme', tx:152, tz:139},
+    {type:'xu_supreme', tx:152, tz:139},
+    {type:'xu_supreme', tx:160, tz:126},
     {type:'xu_supreme', tx:160, tz:123},
-    {type:'xu_supreme', tx:135, tz:159},
-    {type:'xu_supreme', tx:135, tz:158},
+    {type:'xu_supreme', tx:135, tz:161},
+    {type:'xu_supreme', tx:137, tz:160},
     {type:'xu_supreme', tx:111, tz:78},
-    {type:'xu_supreme', tx:113, tz:80},
-    {type:'xu_supreme', tx:137, tz:82},
+    {type:'xu_supreme', tx:113, tz:79},
+    {type:'xu_supreme', tx:139, tz:82},
     {type:'xu_supreme', tx:139, tz:83},
     {type:'xu_supreme', tx:100, tz:161},
     {type:'xu_supreme', tx:99, tz:162},
-    {type:'xu_supreme', tx:110, tz:164},
-    {type:'xu_supreme', tx:109, tz:165},
+    {type:'xu_supreme', tx:110, tz:162},
+    {type:'xu_supreme', tx:109, tz:162},
     {type:'xu_supreme', tx:78, tz:142},
     {type:'xu_supreme', tx:77, tz:141},
-    {type:'xu_supreme', tx:156, tz:90},
-    {type:'xu_supreme', tx:155, tz:93},
+    {type:'xu_supreme', tx:161, tz:90},
+    {type:'xu_supreme', tx:160, tz:97},
     {type:'xu_supreme', tx:98, tz:79},
-    {type:'xu_supreme', tx:98, tz:81},
-    {type:'xu_titan', tx:156, tz:86},
-    {type:'xu_titan', tx:155, tz:89},
-    {type:'xu_titan', tx:81, tz:152},
-    {type:'xu_titan', tx:80, tz:153},
-    {type:'xu_titan', tx:72, tz:97},
-    {type:'xu_titan', tx:75, tz:97},
+    {type:'xu_supreme', tx:98, tz:80},
+    {type:'xu_titan', tx:161, tz:86},
+    {type:'xu_titan', tx:161, tz:89},
+    {type:'xu_titan', tx:78, tz:152},
+    {type:'xu_titan', tx:78, tz:153},
+    {type:'xu_titan', tx:72, tz:99},
+    {type:'xu_titan', tx:76, tz:97},
     {type:'xu_titan', tx:115, tz:68},
-    {type:'xu_titan', tx:114, tz:67},
-    {type:'xu_titan', tx:103, tz:65},
-    {type:'xu_titan', tx:101, tz:64},
-    {type:'xu_titan', tx:65, tz:143},
-    {type:'xu_titan', tx:64, tz:142},
-    {type:'xu_titan', tx:82, tz:76},
-    {type:'xu_titan', tx:84, tz:75},
+    {type:'xu_titan', tx:115, tz:67},
+    {type:'xu_titan', tx:100, tz:65},
+    {type:'xu_titan', tx:100, tz:64},
+    {type:'xu_titan', tx:65, tz:140},
+    {type:'xu_titan', tx:64, tz:140},
+    {type:'xu_titan', tx:82, tz:77},
+    {type:'xu_titan', tx:84, tz:77},
     {type:'xu_titan', tx:59, tz:119},
     {type:'xu_titan', tx:59, tz:121},
-    {type:'xu_titan', tx:164, tz:157},
+    {type:'xu_titan', tx:162, tz:157},
     {type:'xu_titan', tx:163, tz:159},
     {type:'xu_titan', tx:180, tz:121},
     {type:'xu_titan', tx:180, tz:120},
-    {type:'xu_titan', tx:147, tz:177},
-    {type:'xu_titan', tx:146, tz:177},
+    {type:'xu_titan', tx:142, tz:182},
+    {type:'xu_titan', tx:141, tz:181},
     {type:'xu_titan', tx:140, tz:59},
-    {type:'xu_titan', tx:137, tz:61},
-    {type:'xu_titan', tx:62, tz:98},
-    {type:'xu_titan', tx:60, tz:98},
-    {type:'xu_titan', tx:155, tz:66},
-    {type:'xu_titan', tx:157, tz:68},
-    {type:'xu_titan', tx:172, tz:81},
-    {type:'xu_titan', tx:174, tz:81},
+    {type:'xu_titan', tx:139, tz:61},
+    {type:'xu_titan', tx:62, tz:99},
+    {type:'xu_titan', tx:60, tz:99},
+    {type:'xu_titan', tx:160, tz:66},
+    {type:'xu_titan', tx:160, tz:68},
+    {type:'xu_titan', tx:172, tz:79},
+    {type:'xu_titan', tx:174, tz:79},
     {type:'xu_titan', tx:98, tz:182},
-    {type:'xu_titan', tx:96, tz:178},
+    {type:'xu_titan', tx:99, tz:178},
     {type:'xu_titan', tx:122, tz:185},
     {type:'xu_titan', tx:123, tz:186},
-    {type:'xu_titan', tx:186, tz:106},
+    {type:'xu_titan', tx:184, tz:106},
     {type:'xu_titan', tx:184, tz:108},
     {type:'xu_titan', tx:186, tz:141},
     {type:'xu_titan', tx:184, tz:140},
-    {type:'xu_titan', tx:79, tz:61},
+    {type:'xu_titan', tx:78, tz:61},
     {type:'xu_titan', tx:77, tz:63},
-    {type:'xu_titan', tx:65, tz:166},
-    {type:'xu_titan', tx:65, tz:167},
+    {type:'xu_titan', tx:65, tz:162},
+    {type:'xu_titan', tx:65, tz:162},
     {type:'xu_annihilator', tx:158, tz:183},
     {type:'xu_annihilator', tx:158, tz:184},
-    {type:'xu_annihilator', tx:83, tz:181},
+    {type:'xu_annihilator', tx:83, tz:183},
     {type:'xu_annihilator', tx:82, tz:184},
-    {type:'xu_annihilator', tx:48, tz:144},
-    {type:'xu_annihilator', tx:50, tz:145},
+    {type:'xu_annihilator', tx:48, tz:140},
+    {type:'xu_annihilator', tx:53, tz:141},
     {type:'xu_annihilator', tx:45, tz:114},
-    {type:'xu_annihilator', tx:137, tz:47},
+    {type:'xu_annihilator', tx:139, tz:47},
     {type:'xu_annihilator', tx:185, tz:159},
     {type:'xu_annihilator', tx:55, tz:82},
     {type:'xu_annihilator', tx:195, tz:118},
-    {type:'xu_annihilator', tx:142, tz:194},
+    {type:'xu_annihilator', tx:141, tz:194},
     {type:'xu_annihilator', tx:119, tz:196},
-    {type:'xu_annihilator', tx:47, tz:102},
-    {type:'xu_annihilator', tx:107, tz:44},
-    {type:'xu_annihilator', tx:199, tz:105},
-    {type:'xu_annihilator', tx:176, tz:64},
-    {type:'xu_annihilator', tx:92, tz:195},
+    {type:'xu_annihilator', tx:47, tz:100},
+    {type:'xu_annihilator', tx:101, tz:44},
+    {type:'xu_annihilator', tx:203, tz:101},
+    {type:'xu_annihilator', tx:176, tz:69},
+    {type:'xu_annihilator', tx:98, tz:193},
     {type:'xu_annihilator', tx:121, tz:41},
-    {type:'xu_annihilator', tx:193, tz:151},
-    {type:'xu_annihilator', tx:191, tz:84},
-    {type:'xu_annihilator', tx:83, tz:194},
-    {type:'xu_annihilator', tx:202, tz:133},
-    {type:'xu_annihilator', tx:179, tz:177},
-    {type:'xu_annihilator', tx:59, tz:63},
-    {type:'xu_annihilator', tx:54, tz:174},
-    {type:'xu_annihilator', tx:80, tz:42},
-    {type:'xu_annihilator', tx:41, tz:82},
-    {type:'xu_annihilator', tx:172, tz:195},
-    {type:'xu_annihilator', tx:159, tz:40},
-    {type:'xu_annihilator', tx:35, tz:156},
-    {type:'xu_annihilator', tx:193, tz:176},
+    {type:'xu_annihilator', tx:185, tz:159},
+    {type:'xu_annihilator', tx:194, tz:79},
+    {type:'xu_annihilator', tx:79, tz:193},
+    {type:'xu_annihilator', tx:205, tz:133},
+    {type:'xu_annihilator', tx:183, tz:177},
+    {type:'xu_annihilator', tx:56, tz:63},
+    {type:'xu_annihilator', tx:55, tz:174},
+    {type:'xu_annihilator', tx:78, tz:42},
+    {type:'xu_annihilator', tx:43, tz:79},
+    {type:'xu_annihilator', tx:163, tz:195},
+    {type:'xu_annihilator', tx:161, tz:40},
+    {type:'xu_annihilator', tx:34, tz:156},
+    {type:'xu_annihilator', tx:193, tz:183},
     {type:'xu_annihilator', tx:99, tz:209},
-    {type:'xu_annihilator', tx:175, tz:41},
-    {type:'xu_annihilator', tx:29, tz:143},
+    {type:'xu_annihilator', tx:180, tz:36},
+    {type:'xu_annihilator', tx:31, tz:141},
     {type:'xu_annihilator', tx:163, tz:205},
     {type:'xu_annihilator', tx:23, tz:116},
-    {type:'xu_annihilator', tx:155, tz:211},
-    {type:'xu_annihilator', tx:69, tz:36},
-    {type:'xu_annihilator', tx:199, tz:61},
-    {type:'xu_annihilator', tx:219, tz:101},
-    {type:'xu_annihilator', tx:79, tz:213},
+    {type:'xu_annihilator', tx:152, tz:207},
+    {type:'xu_annihilator', tx:69, tz:34},
+    {type:'xu_annihilator', tx:196, tz:57},
+    {type:'xu_annihilator', tx:219, tz:100},
+    {type:'xu_annihilator', tx:78, tz:213},
     {type:'xu_annihilator', tx:33, tz:62},
-    {type:'xu_annihilator', tx:39, tz:185},
-    {type:'xu_annihilator', tx:52, tz:200},
+    {type:'xu_annihilator', tx:39, tz:184},
+    {type:'xu_annihilator', tx:55, tz:200},
     {type:'xu_annihilator', tx:214, tz:160},
-    {type:'xu_enforcer', tx:223, tz:130},
-    {type:'xu_enforcer', tx:219, tz:87},
-    {type:'xu_enforcer', tx:142, tz:15},
-    {type:'xu_enforcer', tx:143, tz:223},
-    {type:'xu_enforcer', tx:104, tz:15},
-    {type:'xu_enforcer', tx:197, tz:192},
-    {type:'xu_enforcer', tx:160, tz:19},
-    {type:'xu_enforcer', tx:46, tz:44},
-    {type:'xu_enforcer', tx:75, tz:22},
-    {type:'xu_enforcer', tx:27, tz:64},
-    {type:'xu_enforcer', tx:203, tz:48},
-    {type:'xu_enforcer', tx:17, tz:160},
-    {type:'xu_enforcer', tx:42, tz:200},
-    {type:'xu_enforcer', tx:174, tz:222},
-    {type:'xu_enforcer', tx:176, tz:16},
-    {type:'xu_enforcer', tx:47, tz:31},
-    {type:'xu_enforcer', tx:224, tz:175},
-    {type:'xu_enforcer', tx:53, tz:217},
+    {type:'xu_enforcer', tx:226, tz:132},
+    {type:'xu_enforcer', tx:226, tz:88},
+    {type:'xu_enforcer', tx:141, tz:14},
+    {type:'xu_enforcer', tx:141, tz:225},
+    {type:'xu_enforcer', tx:102, tz:13},
+    {type:'xu_enforcer', tx:202, tz:186},
+    {type:'xu_enforcer', tx:161, tz:19},
+    {type:'xu_enforcer', tx:54, tz:36},
+    {type:'xu_enforcer', tx:76, tz:23},
+    {type:'xu_enforcer', tx:32, tz:66},
+    {type:'xu_enforcer', tx:205, tz:48},
+    {type:'xu_enforcer', tx:17, tz:161},
+    {type:'xu_enforcer', tx:42, tz:205},
+    {type:'xu_enforcer', tx:174, tz:226},
+    {type:'xu_enforcer', tx:176, tz:13},
+    {type:'xu_enforcer', tx:47, tz:33},
+    {type:'xu_enforcer', tx:226, tz:173},
+    {type:'xu_enforcer', tx:55, tz:217},
     {type:'xu_enforcer', tx:21, tz:183},
-    {type:'xu_enforcer', tx:60, tz:19},
+    {type:'xu_enforcer', tx:56, tz:19},
     {type:'xu_enforcer', tx:225, tz:57},
-    {type:'xu_enforcer', tx:218, tz:48},
-    {type:'xu_enforcer', tx:195, tz:22},
-    {type:'xu_enforcer', tx:212, tz:202},
-    {type:'xu_enforcer', tx:25, tz:201},
-    {type:'xu_enforcer', tx:39, tz:220},
+    {type:'xu_enforcer', tx:218, tz:55},
+    {type:'xu_enforcer', tx:198, tz:25},
+    {type:'xu_enforcer', tx:212, tz:205},
+    {type:'xu_enforcer', tx:25, tz:205},
+    {type:'xu_enforcer', tx:34, tz:220},
     {type:'xu_enforcer', tx:205, tz:220},
     {type:'xu_enforcer', tx:18, tz:34},
-    {type:'xu_enforcer', tx:25, tz:219},
-    {type:'xu_enforcer', tx:18, tz:31},
-    {type:'xu_enforcer', tx:212, tz:221},
-    {type:'xu_enforcer', tx:224, tz:24}
+    {type:'xu_enforcer', tx:32, tz:215},
+    {type:'xu_enforcer', tx:18, tz:33},
+    {type:'xu_enforcer', tx:207, tz:225},
+    {type:'xu_enforcer', tx:226, tz:23},
+    // a648 — XU WARFRAMES
+    {type:'xu_warframe', tx:140, tz:34},
+    {type:'xu_warframe', tx:184, tz:34},
+    {type:'xu_warframe', tx:228, tz:56},
+    {type:'xu_warframe', tx:162, tz:78},
+    {type:'xu_warframe', tx:206, tz:78},
+    {type:'xu_warframe', tx:140, tz:100},
+    {type:'xu_warframe', tx:184, tz:100},
+    {type:'xu_warframe', tx:162, tz:140},
+    {type:'xu_warframe', tx:206, tz:140},
+    {type:'xu_warframe', tx:140, tz:162},
+    {type:'xu_warframe', tx:184, tz:184},
+    {type:'xu_warframe', tx:228, tz:184},
+    {type:'xu_warframe', tx:162, tz:206},
+    {type:'xu_warframe', tx:206, tz:206},
+    {type:'xu_warframe', tx:56, tz:56},
+    {type:'xu_warframe', tx:78, tz:184},
+    {type:'xu_warframe', tx:34, tz:140},
+    {type:'xu_warframe', tx:100, tz:34},
   ],
   // a544 — MULTIPLAYER MIGRATION: Necropolis is now server-authoritative.
   necropolis: [
@@ -4372,6 +4392,54 @@ function _vwPitAt(x, z){
   return false;
 }
 function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
+// a648 — XUMEN, CAPITAL OF THE XU: city plan. Shared VERBATIM by the client
+//   (70_terrain) and the server (server.js), and fully deterministic (seeded), so
+//   players and the capital guard collide with exactly the same buildings. Tiles.
+//   A street grid (lines every 22 tiles, 5 wide) with two great avenues (x = 120 and
+//   z = 120, 13 wide) crossing at the Overlord's plaza (r 30 kept open). Districts:
+//   'capitol' megatowers ringing the plaza, 'tower' corporate spires (west), 'neon'
+//   commerce (south, by the spawn), and the FOUNDRY WARD (east) — factories, tank
+//   farms, cooling towers and crane yards. Each building: [x0, z0, x1, z1, h, style, seed].
+// ════════════════════════════════════════════════════════════════════════════
+var _XC = (function(){
+  var s = 0x0a648001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var LINES = [12, 34, 56, 78, 100, 140, 162, 184, 206, 228], SW = 2.2, AV = 6.5;
+  var bars = LINES.map(function(v){ return [v, SW]; }).concat([[120, AV]]).sort(function(a, b){ return a[0] - b[0]; });
+  var spans = []; for(var i = 0; i < bars.length - 1; i++) spans.push([bars[i][0] + bars[i][1], bars[i+1][0] - bars[i+1][1]]);
+  var B = [], k, j;
+  var add = function(x0, z0, x1, z1, h, st){ if(x1 - x0 < 2.5 || z1 - z0 < 2.5) return; B.push([x0, z0, x1, z1, h, st, (R()*1e6)|0]); };
+  for(i = 0; i < spans.length; i++) for(j = 0; j < spans.length; j++){
+    var m = 0.8, x0 = spans[i][0] + m, x1 = spans[i][1] - m, z0 = spans[j][0] + m, z1 = spans[j][1] - m, cx = (x0 + x1)/2, cz = (z0 + z1)/2, dc = Math.hypot(cx - 120, cz - 120);
+    if(dc < 31) continue;   // the plaza
+    var w = x1 - x0, d = z1 - z0;
+    if(dc < 44){ add(x0 + 0.5, z0 + 0.5, x1 - 0.5, z1 - 0.5, 82 + R()*26, 'mega'); continue; }
+    if(cx > 130){   // FOUNDRY WARD
+      var r = R(), kind = r < 0.42 ? 'factory' : r < 0.62 ? 'tanks' : r < 0.8 ? 'cooling' : 'crane';
+      if(kind === 'factory') add(x0, z0, x1, z1, 11 + R()*6, 'factory');
+      else if(kind === 'tanks'){ var tw = (w - 2)/2, td = (d - 2)/2; for(k = 0; k < 4; k++) add(x0 + (k % 2)*(tw + 2), z0 + (k > 1 ? td + 2 : 0), x0 + (k % 2)*(tw + 2) + tw, z0 + (k > 1 ? td + 2 : 0) + td, 9 + R()*5, 'tank'); }
+      else if(kind === 'cooling') add(cx - Math.min(w, d)*0.42, cz - Math.min(w, d)*0.42, cx + Math.min(w, d)*0.42, cz + Math.min(w, d)*0.42, 28 + R()*10, 'cooling');
+      else { add(x0, z0, x0 + w*0.55, z1, 9 + R()*4, 'yard'); add(x0 + w*0.55 + 2, z0, x1, z0 + d*0.45, 14, 'depot'); }
+      continue; }
+    var neon = cz > 168 && cx > 40, hmin = neon ? 14 : 26, hmax = neon ? 38 : 72, st = neon ? 'neon' : 'tower', rr = R();
+    if(rr < 0.3) add(x0 + 0.5, z0 + 0.5, x1 - 0.5, z1 - 0.5, hmin + R()*(hmax - hmin)*1.15, st);
+    else if(rr < 0.62){ if(w > d){ var sx = x0 + w*(0.4 + R()*0.2); add(x0, z0, sx - 1, z1, hmin + R()*(hmax - hmin), st); add(sx + 1, z0, x1, z1, hmin + R()*(hmax - hmin), st); }
+      else { var sz = z0 + d*(0.4 + R()*0.2); add(x0, z0, x1, sz - 1, hmin + R()*(hmax - hmin), st); add(x0, sz + 1, x1, z1, hmin + R()*(hmax - hmin), st); } }
+    else { var mx = x0 + w*(0.42 + R()*0.16), mz = z0 + d*(0.42 + R()*0.16);
+      add(x0, z0, mx - 1, mz - 1, hmin + R()*(hmax - hmin), st); add(mx + 1, z0, x1, mz - 1, hmin + R()*(hmax - hmin), st);
+      add(x0, mz + 1, mx - 1, z1, hmin + R()*(hmax - hmin), st); add(mx + 1, mz + 1, x1, z1, hmin + R()*(hmax - hmin), st); }
+  }
+  var GATES = [[4, 90], [4, 150], [120, 4], [236, 120], [120, 236]];
+  var M = new Uint8Array(240*240), x, z;
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++){
+    var edge = x < 3 || x > 236 || z < 3 || z > 236;
+    if(edge && !GATES.some(function(g){ return Math.abs(x + 0.5 - g[0]) < 6 && Math.abs(z + 0.5 - g[1]) < 6; })) M[z*240 + x] = 1; }
+  B.forEach(function(b){ for(z = Math.floor(b[1]); z < Math.ceil(b[3]); z++) for(x = Math.floor(b[0]); x < Math.ceil(b[2]); x++) if(x >= 0 && z >= 0 && x < 240 && z < 240) M[z*240 + x] = 1; });
+  return { B:B, M:M, LINES:LINES, SW:SW, AV:AV, GATES:GATES };
+})();
+function _xcWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XC.M[z*240 + x] === 1; }
+function _xcWalkable(wx, wz){ return !_xcWallAt(wx/TILE, wz/TILE); }
+
 // ════════════════════════════════════════════════════════════════════════════
 // a647 — VOID CITADEL layout. Shared VERBATIM by the client (70_terrain) and the
 //   server (server.js) so players and the server-run garrison collide with the same
@@ -7740,7 +7808,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7817,6 +7885,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'xumen') { if (_xcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xcWalkable(nx, e.z)) e.x = nx; else if (_xcWalkable(e.x, nz)) e.z = nz; }   // a648 — the capital's buildings
         else if (zoneName === 'void_citadel') { if (_vcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vcWalkable(nx, e.z)) e.x = nx; else if (_vcWalkable(e.x, nz)) e.z = nz; }   // a647 — citadel walls + void
         else if (zoneName === 'riftvale') { if (_rvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_rvWalkable(nx, e.z)) e.x = nx; else if (_rvWalkable(e.x, nz)) e.z = nz; }   // a645 — rift vale void
         else if (zoneName === 'citadel') { if (_ctWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_ctWalkable(nx, e.z)) e.x = nx; else if (_ctWalkable(e.x, nz)) e.z = nz; }   // a641 — citadel walls
@@ -10174,6 +10243,22 @@ function tickGame(game) {
               fx('xm_baton',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),
                              tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2)}); }
           }
+          else if(e.type==='xu_warframe'){
+            // a648 — XU WARFRAME: rotary cannon, missile pods, thruster slam, piston fist (10Hz)
+            const MS=0.204*_pk;
+            if(e._slT>0){ e._slT--; }
+            else {
+              if(dd>4.5) mv(sin*0.9+pr*strafe*0.2, cos*0.9+pq*strafe*0.2, MS); else if(dd<2.5) mv(-sin*0.5, -cos*0.5, MS);
+              if(dd<3.4 && e.attackTimer%12===0){ hit(1.15); toPlayer({eff:'shake',shake:2}); }
+              e._rc=(e._rc||Math.floor(Math.random()*20))+1;
+              if(dd>3 && dd<17 && e._rc>=30){ e._rc=0; e._rcOn=6; }
+              if(e._rcOn>0){ e._rcOn--; shoot(ang+(Math.random()-0.5)*0.18, _XM_RED, 0.32, 2, 0.12, 'bolt', pr*0.5, pq*0.5); }
+              e._mp=(e._mp||Math.floor(Math.random()*40))+1;
+              if(dd>5 && dd<20 && e._mp>=70){ e._mp=0; for(let k=0;k<5;k++){ const ox=(Math.random()-0.5)*6, oz=(Math.random()-0.5)*6; tele(nearestPlayer.x+ox, nearestPlayer.z+oz, 8+k*2, 2.6, 0.9, _XM_GOLD); } }
+              e._ts=(e._ts||Math.floor(Math.random()*50))+1;
+              if(dd>6 && dd<18 && e._ts>=95){ e._ts=0; e._slT=8; blink(ang, Math.min(12, dd-1.5)); tele(e.x, e.z, 5, 3.6, 1.5, _XM_RED); toPlayer({eff:'shake',shake:3}); }
+            }
+          }
           else if(e.type==='xu_titan'){
             // HEAVY MECH — graviton singularity, sweeping chest laser, shoulder cannons
             const MS=0.228*_pk;
@@ -11343,6 +11428,11 @@ function tickGame(game) {
       if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
       if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
+    // a648 — XUMEN: no capital guard ever ends a tick inside a building
+    if (zoneName === 'xumen') zone.enemies.forEach(e => {
+      if (!e.active || e._rv0x === undefined || _xcWalkable(e.x, e.z)) return;
+      if (_xcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_xcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
     // a647 — the VOID CITADEL gets the same guarantee against its walls and its void
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
@@ -12136,8 +12226,8 @@ function _xfTickPylons(game, zoneName, zone){
     }
   }
 }
-const XM_BESPOKE = { xu_enforcer:1, xu_titan:1, xu_annihilator:1, xu_supreme:1 };
-const XM_PWR = { xu_enforcer:265, xu_titan:300, xu_annihilator:285, xu_supreme:330 };
+const XM_BESPOKE = { xu_enforcer:1, xu_titan:1, xu_annihilator:1, xu_supreme:1, xu_warframe:1 };
+const XM_PWR = { xu_enforcer:265, xu_titan:300, xu_annihilator:285, xu_supreme:330, xu_warframe:310 };
 function _xmDmgS(e, mult){ return Math.floor((XM_PWR[e.type] || e.atk || 280) * mult); }
 const _XM_CYAN=0x22e8ff, _XM_GOLD=0xffd24a, _XM_VIOLET=0x9944ff, _XM_RED=0xff3355, _XM_WHITE=0xffffff;
 const XR_BESPOKE = { corrupted_xu:1, void_marine:1, holo_wraith:1, laser_turret:1, cyber_ogre:1, shard_assassin:1 };
