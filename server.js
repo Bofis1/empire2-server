@@ -3027,114 +3027,114 @@ const ZONE_SPAWNS = {
   //   their intended health.
   void_citadel: [
     {type:'void_construct', tx:44, tz:31},
-    {type:'void_construct', tx:46, tz:35},
-    {type:'void_sentinel', tx:44, tz:39},
-    {type:'void_sentinel', tx:36, tz:44},
-    {type:'rift_stalker', tx:49, tz:42},
-    {type:'rift_stalker', tx:44, tz:46},
-    {type:'void_construct', tx:33, tz:48},
-    {type:'void_construct', tx:42, tz:41},
-    {type:'rift_weaver', tx:37, tz:36},
-    {type:'rift_weaver', tx:47, tz:48},
+    {type:'void_construct', tx:46, tz:33},
+    {type:'void_sentinel', tx:44, tz:33},
+    {type:'void_sentinel', tx:36, tz:54},
+    {type:'rift_stalker', tx:49, tz:33},
+    {type:'rift_stalker', tx:44, tz:54},
+    {type:'void_construct', tx:33, tz:54},
+    {type:'void_construct', tx:42, tz:33},
+    {type:'rift_weaver', tx:37, tz:33},
+    {type:'rift_weaver', tx:47, tz:54},
     {type:'void_construct', tx:67, tz:37},
-    {type:'void_construct', tx:79, tz:38},
-    {type:'void_sentinel', tx:73, tz:39},
+    {type:'void_construct', tx:80, tz:39},
+    {type:'void_sentinel', tx:72, tz:38},
     {type:'void_sentinel', tx:80, tz:44},
     {type:'rift_stalker', tx:81, tz:43},
     {type:'rift_stalker', tx:71, tz:33},
-    {type:'void_construct', tx:67, tz:48},
-    {type:'void_construct', tx:64, tz:49},
+    {type:'void_construct', tx:69, tz:50},
+    {type:'void_construct', tx:63, tz:47},
     {type:'rift_weaver', tx:69, tz:40},
     {type:'rift_weaver', tx:65, tz:44},
     {type:'void_construct', tx:31, tz:66},
     {type:'void_construct', tx:49, tz:78},
     {type:'void_sentinel', tx:32, tz:69},
     {type:'void_sentinel', tx:31, tz:75},
-    {type:'rift_stalker', tx:40, tz:74},
+    {type:'rift_stalker', tx:38, tz:72},
     {type:'rift_stalker', tx:48, tz:72},
-    {type:'void_construct', tx:37, tz:75},
+    {type:'void_construct', tx:36, tz:74},
     {type:'void_construct', tx:34, tz:64},
-    {type:'rift_weaver', tx:48, tz:68},
-    {type:'rift_weaver', tx:40, tz:76},
-    {type:'void_construct', tx:196, tz:44},
-    {type:'void_construct', tx:209, tz:42},
-    {type:'void_sentinel', tx:195, tz:49},
-    {type:'void_sentinel', tx:199, tz:41},
-    {type:'rift_stalker', tx:202, tz:41},
-    {type:'rift_stalker', tx:200, tz:43},
-    {type:'void_construct', tx:198, tz:48},
-    {type:'void_construct', tx:208, tz:36},
-    {type:'rift_weaver', tx:200, tz:41},
-    {type:'rift_weaver', tx:194, tz:46},
-    {type:'void_construct', tx:160, tz:37},
+    {type:'rift_weaver', tx:50, tz:69},
+    {type:'rift_weaver', tx:42, tz:77},
+    {type:'void_construct', tx:192, tz:47},
+    {type:'void_construct', tx:210, tz:43},
+    {type:'void_sentinel', tx:194, tz:49},
+    {type:'void_sentinel', tx:192, tz:47},
+    {type:'rift_stalker', tx:208, tz:46},
+    {type:'rift_stalker', tx:206, tz:48},
+    {type:'void_construct', tx:196, tz:50},
+    {type:'void_construct', tx:210, tz:36},
+    {type:'rift_weaver', tx:207, tz:47},
+    {type:'rift_weaver', tx:192, tz:47},
+    {type:'void_construct', tx:158, tz:38},
     {type:'void_construct', tx:166, tz:32},
     {type:'void_sentinel', tx:163, tz:48},
     {type:'void_sentinel', tx:164, tz:44},
     {type:'rift_stalker', tx:174, tz:31},
-    {type:'rift_stalker', tx:169, tz:46},
+    {type:'rift_stalker', tx:167, tz:47},
     {type:'void_construct', tx:173, tz:38},
     {type:'void_construct', tx:169, tz:39},
-    {type:'rift_weaver', tx:168, tz:42},
-    {type:'rift_weaver', tx:174, tz:49},
-    {type:'void_construct', tx:193, tz:68},
+    {type:'rift_weaver', tx:169, tz:40},
+    {type:'rift_weaver', tx:176, tz:47},
+    {type:'void_construct', tx:195, tz:66},
     {type:'void_construct', tx:203, tz:64},
     {type:'void_sentinel', tx:194, tz:80},
     {type:'void_sentinel', tx:194, tz:76},
-    {type:'rift_stalker', tx:206, tz:77},
+    {type:'rift_stalker', tx:206, tz:76},
     {type:'rift_stalker', tx:195, tz:79},
     {type:'void_construct', tx:196, tz:65},
-    {type:'void_construct', tx:196, tz:73},
-    {type:'rift_weaver', tx:203, tz:80},
-    {type:'rift_weaver', tx:196, tz:69},
+    {type:'void_construct', tx:194, tz:74},
+    {type:'rift_weaver', tx:201, tz:81},
+    {type:'rift_weaver', tx:197, tz:68},
     {type:'void_construct', tx:36, tz:201},
     {type:'void_construct', tx:36, tz:203},
     {type:'void_sentinel', tx:36, tz:204},
     {type:'void_sentinel', tx:49, tz:200},
-    {type:'rift_stalker', tx:43, tz:204},
-    {type:'rift_stalker', tx:39, tz:205},
-    {type:'void_construct', tx:44, tz:203},
-    {type:'void_construct', tx:42, tz:201},
+    {type:'rift_stalker', tx:44, tz:205},
+    {type:'rift_stalker', tx:38, tz:206},
+    {type:'void_construct', tx:44, tz:202},
+    {type:'void_construct', tx:42, tz:200},
     {type:'rift_weaver', tx:35, tz:209},
-    {type:'rift_weaver', tx:43, tz:194},
+    {type:'rift_weaver', tx:44, tz:194},
     {type:'void_construct', tx:69, tz:205},
     {type:'void_construct', tx:70, tz:205},
     {type:'void_sentinel', tx:80, tz:196},
-    {type:'void_sentinel', tx:65, tz:192},
+    {type:'void_sentinel', tx:64, tz:193},
     {type:'rift_stalker', tx:71, tz:205},
-    {type:'rift_stalker', tx:65, tz:193},
-    {type:'void_construct', tx:78, tz:201},
+    {type:'rift_stalker', tx:64, tz:193},
+    {type:'void_construct', tx:79, tz:199},
     {type:'void_construct', tx:70, tz:202},
-    {type:'rift_weaver', tx:79, tz:207},
+    {type:'rift_weaver', tx:76, tz:207},
     {type:'rift_weaver', tx:75, tz:205},
     {type:'void_construct', tx:44, tz:177},
     {type:'void_construct', tx:48, tz:159},
     {type:'void_sentinel', tx:36, tz:174},
     {type:'void_sentinel', tx:33, tz:171},
-    {type:'rift_stalker', tx:47, tz:169},
+    {type:'rift_stalker', tx:48, tz:168},
     {type:'rift_stalker', tx:43, tz:161},
     {type:'void_construct', tx:44, tz:163},
-    {type:'void_construct', tx:40, tz:167},
+    {type:'void_construct', tx:39, tz:168},
     {type:'rift_weaver', tx:38, tz:176},
-    {type:'rift_weaver', tx:41, tz:166},
-    {type:'void_construct', tx:200, tz:202},
+    {type:'rift_weaver', tx:39, tz:168},
+    {type:'void_construct', tx:204, tz:206},
     {type:'void_construct', tx:202, tz:209},
-    {type:'void_sentinel', tx:203, tz:197},
-    {type:'void_sentinel', tx:206, tz:198},
-    {type:'rift_stalker', tx:200, tz:195},
+    {type:'void_sentinel', tx:207, tz:193},
+    {type:'void_sentinel', tx:208, tz:197},
+    {type:'rift_stalker', tx:200, tz:190},
     {type:'rift_stalker', tx:209, tz:193},
-    {type:'void_construct', tx:198, tz:208},
-    {type:'void_construct', tx:194, tz:192},
-    {type:'rift_weaver', tx:204, tz:192},
+    {type:'void_construct', tx:198, tz:209},
+    {type:'void_construct', tx:193, tz:191},
+    {type:'rift_weaver', tx:205, tz:191},
     {type:'rift_weaver', tx:209, tz:206},
-    {type:'void_construct', tx:161, tz:209},
+    {type:'void_construct', tx:162, tz:210},
     {type:'void_construct', tx:176, tz:201},
-    {type:'void_sentinel', tx:169, tz:196},
+    {type:'void_sentinel', tx:171, tz:197},
     {type:'void_sentinel', tx:166, tz:204},
     {type:'rift_stalker', tx:171, tz:205},
     {type:'rift_stalker', tx:173, tz:205},
     {type:'void_construct', tx:176, tz:209},
     {type:'void_construct', tx:164, tz:207},
-    {type:'rift_weaver', tx:168, tz:193},
+    {type:'rift_weaver', tx:167, tz:192},
     {type:'rift_weaver', tx:176, tz:193},
     {type:'void_construct', tx:199, tz:170},
     {type:'void_construct', tx:193, tz:165},
@@ -3142,9 +3142,9 @@ const ZONE_SPAWNS = {
     {type:'void_sentinel', tx:200, tz:177},
     {type:'rift_stalker', tx:194, tz:159},
     {type:'rift_stalker', tx:203, tz:168},
-    {type:'void_construct', tx:199, tz:161},
+    {type:'void_construct', tx:199, tz:160},
     {type:'void_construct', tx:196, tz:174},
-    {type:'rift_weaver', tx:200, tz:162},
+    {type:'rift_weaver', tx:199, tz:160},
     {type:'rift_weaver', tx:204, tz:166},
     {type:'void_construct', tx:117, tz:50},
     {type:'void_construct', tx:113, tz:58},
@@ -3186,22 +3186,22 @@ const ZONE_SPAWNS = {
     {type:'void_construct', tx:181, tz:114},
     {type:'rift_weaver', tx:178, tz:127},
     {type:'rift_weaver', tx:184, tz:118},
-    {type:'void_construct', tx:148, tz:160},
-    {type:'void_sentinel', tx:140, tz:98},
+    {type:'void_construct', tx:147, tz:158},
+    {type:'void_sentinel', tx:136, tz:96},
     {type:'rift_stalker', tx:52, tz:118},
     {type:'rift_weaver', tx:218, tz:224},
     {type:'void_construct', tx:104, tz:166},
     {type:'void_sentinel', tx:182, tz:208},
-    {type:'rift_stalker', tx:109, tz:67},
-    {type:'rift_weaver', tx:121, tz:70},
-    {type:'void_sentinel', tx:94, tz:148},
+    {type:'rift_stalker', tx:109, tz:66},
+    {type:'rift_weaver', tx:120, tz:70},
+    {type:'void_sentinel', tx:92, tz:150},
     {type:'rift_stalker', tx:220, tz:39},
     {type:'void_sentinel', tx:26, tz:218},
     {type:'rift_stalker', tx:224, tz:49},
     {type:'void_sentinel', tx:182, tz:217},
     {type:'rift_stalker', tx:203, tz:149},
-    {type:'void_sentinel', tx:119, tz:161},
-    {type:'rift_stalker', tx:79, tz:150},
+    {type:'void_sentinel', tx:119, tz:166},
+    {type:'rift_stalker', tx:77, tz:152},
     {type:'void_sentinel', tx:95, tz:39},
     {type:'rift_stalker', tx:160, tz:79},
     {type:'void_sentinel', tx:21, tz:55},
@@ -3210,25 +3210,25 @@ const ZONE_SPAWNS = {
     {type:'void_sentinel', tx:108, tz:193},
     {type:'void_sentinel', tx:216, tz:160},
     {type:'void_sentinel', tx:221, tz:27},
-    {type:'void_sentinel', tx:53, tz:206},
+    {type:'void_sentinel', tx:54, tz:206},
     {type:'void_sentinel', tx:54, tz:56},
-    {type:'void_sentinel', tx:209, tz:133},
+    {type:'void_sentinel', tx:212, tz:133},
     {type:'void_sentinel', tx:96, tz:51},
-    {type:'void_sentinel', tx:91, tz:94},
+    {type:'void_sentinel', tx:89, tz:92},
     {type:'void_sentinel', tx:53, tz:134},
     {type:'void_sentinel', tx:95, tz:82},
     {type:'void_sentinel', tx:164, tz:138},
-    {type:'void_sentinel', tx:36, tz:34},
+    {type:'void_sentinel', tx:36, tz:33},
     {type:'void_sentinel', tx:138, tz:178},
-    {type:'void_sentinel', tx:204, tz:162},
+    {type:'void_sentinel', tx:205, tz:163},
     {type:'void_sentinel', tx:176, tz:65},
     {type:'void_sentinel', tx:216, tz:65},
     {type:'void_sentinel', tx:193, tz:49},
-    {type:'void_sentinel', tx:53, tz:181},
+    {type:'void_sentinel', tx:54, tz:184},
     {type:'void_sentinel', tx:26, tz:146},
-    {type:'void_sentinel', tx:76, tz:91},
-    {type:'void_sentinel', tx:137, tz:68},
-    {type:'void_sentinel', tx:124, tz:217},
+    {type:'void_sentinel', tx:75, tz:89},
+    {type:'void_sentinel', tx:136, tz:66},
+    {type:'void_sentinel', tx:125, tz:218},
     {type:'void_sentinel', tx:149, tz:177}
   ],
   // ── NEON HOLLOW — POST-CAP AA-GATED (matches client ZONE_DEFS.neon_hollow) ──
@@ -4372,6 +4372,67 @@ function _vwPitAt(x, z){
   return false;
 }
 function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
+// a647 — VOID CITADEL layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js) so players and the server-run garrison collide with the same
+//   walls and fall at the same edges. Tiles. The citadel is a floating platform over
+//   the void: an OUTER CURTAIN (octagon, apothem 88) and an INNER WARD wall (apothem
+//   50), both gated on the four axes, with pylon towers at every vertex; the KEEP
+//   (r 21) stands in a moat of void crossed by four hard-light bridges. The four
+//   corner baileys hold the alien works: the landed Seed-Ship (NW), the Star Reactor
+//   (NE), the Harvester over its pit (SE) and the Obelisk Array (SW).
+//   C = [cx, cz, r, kind, height(world)]  ·  P = void pits [cx, cz, r, ph1, ph2]
+// ════════════════════════════════════════════════════════════════════════════
+var _VC = (function(){
+  var C = [], R = [], k, a;
+  for(k = 0; k < 8; k++){ a = (22.5 + k*45)*Math.PI/180;
+    C.push([120 + Math.cos(a)*95.25, 120 + Math.sin(a)*95.25, 4.6, 'otower', 30]);
+    C.push([120 + Math.cos(a)*54.1, 120 + Math.sin(a)*54.1, 3.4, 'itower', 24]); }
+  // gate pylons flanking every gate (outer + inner)
+  [88, 50].forEach(function(ap){ [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){ [-1, 1].forEach(function(sd){
+    C.push([120 + d[0]*ap + (d[1] ? sd*5.4 : 0), 120 + d[1]*ap + (d[0] ? sd*5.4 : 0), 2.0, ap > 60 ? 'ogate' : 'igate', ap > 60 ? 22 : 18]); }); }); });
+  // the four Spires of the Architects in the inner ward
+  C.push([96, 96, 5.2, 'spire', 78], [144, 96, 5.2, 'spire', 70], [96, 144, 5.2, 'spire', 72], [144, 144, 5.2, 'spire', 84]);
+  // corner baileys
+  C.push([200, 40, 9, 'reactor', 34]);                            // NE — the Star Reactor
+  C.push([200, 200, 2.2, 'hleg', 0], [214, 186, 2.2, 'hleg', 0], [186, 214, 2.2, 'hleg', 0]);   // SE — Harvester legs (pit between)
+  for(k = 0; k < 9; k++) C.push([30 + (k % 3)*11, 182 + Math.floor(k/3)*11, 1.6, 'obelisk', 18]);   // SW — Obelisk Array
+  R.push([26, 36, 58, 52, 'seedship', 14]);                       // NW — the landed Seed-Ship's hull
+  // inner-ward conduit halls
+  R.push([104, 76, 136, 82, 'hall', 9], [104, 158, 136, 164, 'hall', 9], [76, 104, 82, 136, 'hall', 9], [158, 104, 164, 136, 'hall', 9]);
+  var P = [[170, 70, 6, 0.7, 2.1], [70, 70, 5.5, 2.3, 4.0], [70, 170, 6.5, 4.1, 0.6], [170, 170, 5.5, 1.4, 3.3], [199, 199, 6.5, 3.0, 1.0],
+           [120, 214, 4, 0.2, 5.1], [120, 26, 4, 5.5, 2.4], [214, 80, 3.5, 1.9, 0.4], [26, 160, 3.5, 3.7, 2.9]];
+  var K = [[4, 120, 11], [16, 120, 8], [234, 120, 11], [56, 120, 6]];
+  return { C:C, R:R, P:P, K:K, OA:88, IA:50 };
+})();
+function _vcOct(dx, dz){ var ax = Math.abs(dx), az = Math.abs(dz); return Math.max(ax, az, (ax + az)*0.70710678); }
+function _vcPitR(p, a){ return p[2]*(1 + 0.14*Math.sin(3*a + p[3]) + 0.07*Math.sin(7*a + p[4])); }
+function _vcEdgeW(x, z){ return 6.5 + 1.3*Math.sin(x*0.17 + z*0.05) + 0.9*Math.sin(z*0.21 - x*0.07); }
+// signed void field (tiles): negative = open void
+function _vcField(x, z){
+  var f = Math.min(x, z, 240 - x, 240 - z) - _vcEdgeW(x, z), i;
+  var dx = x - 120, dz = z - 120, dc = Math.sqrt(dx*dx + dz*dz);
+  if(dc < 30) f = Math.min(f, Math.max(-Math.min(dc - 21, 26 - dc), 3.2 - Math.min(Math.abs(dx), Math.abs(dz))));   // the keep's moat (four hard-light bridges)
+  for(i = 0; i < _VC.P.length; i++){ var p = _VC.P[i], px = x - p[0], pz = z - p[1], d = Math.sqrt(px*px + pz*pz);
+    if(d > p[2]*1.4 + 3){ f = Math.min(f, d - p[2]*1.3); continue; }
+    f = Math.min(f, d - _vcPitR(p, Math.atan2(pz, px))); }
+  for(i = 0; i < _VC.K.length; i++){ var kk = _VC.K[i]; f = Math.max(f, kk[2] - Math.hypot(x - kk[0], z - kk[1])); }
+  return f;
+}
+// true where a hard-light bridge spans the moat (walkable, but no stone underneath)
+function _vcBridgeAt(x, z){ var dx = x - 120, dz = z - 120, dc = Math.sqrt(dx*dx + dz*dz); return dc > 20.6 && dc < 26.4 && Math.min(Math.abs(dx), Math.abs(dz)) < 3.2; }
+// true where (x,z) is blocked by the citadel's walls and works
+function _vcWallAt(x, z){
+  var dx = x - 120, dz = z - 120, o = _vcOct(dx, dz), gate = Math.min(Math.abs(dx), Math.abs(dz)) < 4.2, i;
+  if(!gate && (Math.abs(o - 88) < 1.7 || Math.abs(o - 50) < 1.4)) return true;
+  var C = _VC.C; for(i = 0; i < C.length; i++){ var c = C[i], ex = x - c[0], ez = z - c[1]; if(ex*ex + ez*ez < c[2]*c[2]) return true; }
+  var R = _VC.R; for(i = 0; i < R.length; i++){ var r = R[i]; if(x >= r[0] && x < r[2] && z >= r[1] && z < r[3]) return true; }
+  return false;
+}
+function _vcPitAt(x, z){ return _vcField(x, z) < 0; }
+function _vcBlocked(x, z){ return _vcField(x, z) < 0 || _vcWallAt(x, z); }
+function _vcWalkable(wx, wz){ return !_vcBlocked(wx/TILE, wz/TILE); }
+
 // ════════════════════════════════════════════════════════════════════════════
 // a645 — RIFT VALE layout. Shared VERBATIM by the client (70_terrain) and the
 //   server (server.js) so players and the server-run rift mobs agree on where the
@@ -7679,7 +7740,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7756,6 +7817,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'void_citadel') { if (_vcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vcWalkable(nx, e.z)) e.x = nx; else if (_vcWalkable(e.x, nz)) e.z = nz; }   // a647 — citadel walls + void
         else if (zoneName === 'riftvale') { if (_rvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_rvWalkable(nx, e.z)) e.x = nx; else if (_rvWalkable(e.x, nz)) e.z = nz; }   // a645 — rift vale void
         else if (zoneName === 'citadel') { if (_ctWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_ctWalkable(nx, e.z)) e.x = nx; else if (_ctWalkable(e.x, nz)) e.z = nz; }   // a641 — citadel walls
         else if (!_mz || !e2ConvMazeWall(_mz, nx, nz, TILE)) { e.x = nx; e.z = nz; }
@@ -11280,6 +11342,11 @@ function tickGame(game) {
     if (zoneName === 'riftvale') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
       if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    // a647 — the VOID CITADEL gets the same guarantee against its walls and its void
+    if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
+      if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
+      if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
 
     // Broadcast state for changed enemies (positions + HP)
