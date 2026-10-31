@@ -2897,25 +2897,25 @@ const ZONE_SPAWNS = {
     {type:'mycelium_horror', tx:136, tz:152},
     {type:'mycelium_horror', tx:151, tz:98},
     {type:'mycelium_horror', tx:150, tz:100},
-    {type:'mycelium_horror', tx:157, tz:126},
+    {type:'mycelium_horror', tx:157, tz:125},
     {type:'mycelium_horror', tx:158, tz:124},
     {type:'mycelium_horror', tx:125, tz:159},
     {type:'mycelium_horror', tx:125, tz:162},
     {type:'mycelium_horror', tx:80, tz:108},
     {type:'mycelium_horror', tx:82, tz:108},
     {type:'mycelium_horror', tx:92, tz:86},
-    {type:'mycelium_horror', tx:95, tz:88},
-    {type:'mycelium_horror', tx:146, tz:88},
+    {type:'mycelium_horror', tx:93, tz:87},
+    {type:'mycelium_horror', tx:146, tz:87},
     {type:'mycelium_horror', tx:145, tz:84},
-    {type:'mycelium_horror', tx:96, tz:155},
-    {type:'mycelium_horror', tx:95, tz:155},
+    {type:'mycelium_horror', tx:95, tz:156},
+    {type:'mycelium_horror', tx:95, tz:156},
     {type:'mycelium_horror', tx:76, tz:123},
     {type:'mycelium_horror', tx:76, tz:124},
     {type:'mycelium_horror', tx:158, tz:139},
     {type:'mycelium_horror', tx:161, tz:141},
-    {type:'mycelium_horror', tx:81, tz:144},
-    {type:'mycelium_horror', tx:77, tz:144},
-    {type:'mycelium_horror', tx:80, tz:88},
+    {type:'mycelium_horror', tx:82, tz:144},
+    {type:'mycelium_horror', tx:79, tz:145},
+    {type:'mycelium_horror', tx:81, tz:86},
     {type:'mycelium_horror', tx:83, tz:86},
     {type:'mycelium_horror', tx:69, tz:120},
     {type:'mycelium_horror', tx:70, tz:121},
@@ -2925,7 +2925,7 @@ const ZONE_SPAWNS = {
     {type:'mycelium_horror', tx:80, tz:154},
     {type:'mycelium_horror', tx:70, tz:102},
     {type:'mycelium_horror', tx:68, tz:100},
-    {type:'fungal_shambler', tx:172, tz:137},
+    {type:'fungal_shambler', tx:173, tz:137},
     {type:'fungal_shambler', tx:171, tz:139},
     {type:'fungal_shambler', tx:127, tz:177},
     {type:'fungal_shambler', tx:126, tz:177},
@@ -2947,14 +2947,14 @@ const ZONE_SPAWNS = {
     {type:'fungal_shambler', tx:112, tz:56},
     {type:'fungal_shambler', tx:83, tz:175},
     {type:'fungal_shambler', tx:84, tz:174},
-    {type:'fungal_shambler', tx:157, tz:174},
-    {type:'fungal_shambler', tx:159, tz:171},
+    {type:'fungal_shambler', tx:156, tz:174},
+    {type:'fungal_shambler', tx:160, tz:172},
     {type:'fungal_shambler', tx:59, tz:142},
     {type:'fungal_shambler', tx:58, tz:144},
     {type:'fungal_shambler', tx:97, tz:182},
     {type:'fungal_shambler', tx:99, tz:182},
     {type:'fungal_shambler', tx:175, tz:80},
-    {type:'fungal_shambler', tx:174, tz:79},
+    {type:'fungal_shambler', tx:175, tz:79},
     {type:'fungal_shambler', tx:62, tz:156},
     {type:'fungal_shambler', tx:61, tz:157},
     {type:'fungal_shambler', tx:179, tz:161},
@@ -2963,20 +2963,20 @@ const ZONE_SPAWNS = {
     {type:'fungal_shambler', tx:81, tz:58},
     {type:'fungal_shambler', tx:116, tz:193},
     {type:'fungal_shambler', tx:118, tz:193},
-    {type:'fungal_shambler', tx:48, tz:100},
-    {type:'fungal_shambler', tx:47, tz:98},
+    {type:'fungal_shambler', tx:48, tz:98},
+    {type:'fungal_shambler', tx:47, tz:97},
     {type:'fungal_shambler', tx:100, tz:49},
     {type:'fungal_shambler', tx:100, tz:50},
     {type:'fungal_shambler', tx:142, tz:51},
-    {type:'fungal_shambler', tx:171, tz:176},
+    {type:'fungal_shambler', tx:172, tz:176},
     {type:'mushroom_man', tx:163, tz:58},
     {type:'mushroom_man', tx:196, tz:117},
-    {type:'mushroom_man', tx:195, tz:106},
+    {type:'mushroom_man', tx:194, tz:107},
     {type:'mushroom_man', tx:40, tz:127},
-    {type:'mushroom_man', tx:199, tz:134},
+    {type:'mushroom_man', tx:198, tz:134},
     {type:'mushroom_man', tx:190, tz:82},
     {type:'mushroom_man', tx:128, tz:39},
-    {type:'mushroom_man', tx:40, tz:137},
+    {type:'mushroom_man', tx:39, tz:137},
     {type:'mushroom_man', tx:141, tz:202},
     {type:'mushroom_man', tx:96, tz:201},
     {type:'mushroom_man', tx:38, tz:153},
@@ -2993,8 +2993,8 @@ const ZONE_SPAWNS = {
     {type:'mushroom_man', tx:191, tz:178},
     {type:'mushroom_man', tx:213, tz:98},
     {type:'mushroom_man', tx:165, tz:203},
-    {type:'mushroom_man', tx:97, tz:27},
-    {type:'mushroom_man', tx:25, tz:127},
+    {type:'mushroom_man', tx:97, tz:26},
+    {type:'mushroom_man', tx:24, tz:128},
     {type:'mushroom_man', tx:174, tz:40},
     {type:'mushroom_man', tx:141, tz:25},
     {type:'mushroom_man', tx:196, tz:59},
@@ -3011,34 +3011,34 @@ const ZONE_SPAWNS = {
     {type:'spore_walker', tx:30, tz:162},
     {type:'spore_walker', tx:190, tz:48},
     {type:'spore_walker', tx:215, tz:159},
-    {type:'spore_walker', tx:85, tz:218},
-    {type:'spore_walker', tx:56, tz:37},
+    {type:'spore_walker', tx:85, tz:217},
+    {type:'spore_walker', tx:56, tz:38},
     {type:'spore_walker', tx:159, tz:215},
     {type:'spore_walker', tx:136, tz:222},
-    {type:'spore_walker', tx:43, tz:195},
+    {type:'spore_walker', tx:42, tz:195},
     {type:'spore_walker', tx:221, tz:84},
-    {type:'spore_walker', tx:44, tz:44},
+    {type:'spore_walker', tx:41, tz:46},
     {type:'spore_walker', tx:172, tz:216},
-    {type:'spore_walker', tx:69, tz:24},
-    {type:'spore_walker', tx:212, tz:182},
-    {type:'spore_walker', tx:201, tz:199},
-    {type:'spore_walker', tx:23, tz:178},
-    {type:'spore_walker', tx:66, tz:222},
+    {type:'spore_walker', tx:69, tz:23},
+    {type:'spore_walker', tx:210, tz:180},
+    {type:'spore_walker', tx:200, tz:199},
+    {type:'spore_walker', tx:24, tz:176},
+    {type:'spore_walker', tx:63, tz:224},
     {type:'spore_walker', tx:24, tz:60},
     {type:'spore_walker', tx:217, tz:59},
     {type:'spore_walker', tx:174, tz:17},
-    {type:'spore_walker', tx:48, tz:215},
-    {type:'spore_walker', tx:28, tz:42},
-    {type:'spore_walker', tx:213, tz:44},
-    {type:'spore_walker', tx:30, tz:195},
+    {type:'spore_walker', tx:45, tz:218},
+    {type:'spore_walker', tx:30, tz:43},
+    {type:'spore_walker', tx:212, tz:44},
+    {type:'spore_walker', tx:29, tz:194},
     {type:'spore_walker', tx:44, tz:28},
     {type:'spore_walker', tx:191, tz:224},
     {type:'spore_walker', tx:205, tz:25},
     {type:'spore_walker', tx:222, tz:202},
-    {type:'spore_walker', tx:29, tz:23},
-    {type:'spore_walker', tx:215, tz:24},
+    {type:'spore_walker', tx:31, tz:21},
+    {type:'spore_walker', tx:217, tz:21},
     {type:'spore_walker', tx:33, tz:223},
-    {type:'spore_walker', tx:219, tz:211}
+    {type:'spore_walker', tx:218, tz:210}
   ],
   // a553 — VOID CITADEL is now SERVER-AUTHORITATIVE (was client-side since a492).
   //   204 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
@@ -4392,6 +4392,48 @@ function _vwPitAt(x, z){
   return false;
 }
 function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
+// a649 — FUNGAL DEPTHS layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js), deterministic (seeded), so players and the server-run fungi
+//   collide with the same stems and mounds. Tiles. Winding TRAILS run from every gate
+//   to the Mycelium Queen's grove (r 24 kept open) with a ring trail and side paths;
+//   off the trails grow COLOSSI (giant mushrooms, stem r 2.4-4), big mushrooms (stem
+//   r 0.8-1.6) and tangled fungal MOUNDS (clustered blobs). Spore bogs are walkable.
+//   C = [cx, cz, r, kind, h, capR, seed]  ·  BOG = [cx, cz, r]
+// ════════════════════════════════════════════════════════════════════════════
+var _FG = (function(){
+  var s = 0x0a649001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var GATES = [[120, 10], [6, 120], [234, 120], [120, 232]];
+  var TR = [];   // trail polylines
+  var wig = function(a, b, n, amp){ var pts = [a], i; for(i = 1; i < n; i++){ var u = i/n; pts.push([a[0] + (b[0] - a[0])*u + (R() - 0.5)*amp, a[1] + (b[1] - a[1])*u + (R() - 0.5)*amp]); } pts.push(b); return pts; };
+  GATES.forEach(function(g){ TR.push([wig(g, [120 + (g[0] - 120)*0.18, 120 + (g[1] - 120)*0.18], 6, 18), 3.4]); });
+  var ring = [], k; for(k = 0; k <= 24; k++){ var a = k/24*Math.PI*2, r = 62 + Math.sin(a*3 + 1)*8; ring.push([120 + Math.cos(a)*r, 120 + Math.sin(a)*r]); } TR.push([ring, 3.0]);
+  var outer = []; for(k = 0; k <= 32; k++){ var a2 = k/32*Math.PI*2, r2 = 98 + Math.sin(a2*4 + 2)*6; outer.push([120 + Math.cos(a2)*r2, 120 + Math.sin(a2)*r2]); } TR.push([outer, 2.6]);
+  for(k = 0; k < 8; k++){ var a3 = k/8*Math.PI*2 + 0.39; TR.push([wig([120 + Math.cos(a3)*62, 120 + Math.sin(a3)*62], [120 + Math.cos(a3)*100, 120 + Math.sin(a3)*100], 3, 10), 2.4]); }
+  var dTr = function(x, z){ var best = 1e9, i, j; for(i = 0; i < TR.length; i++){ var L = TR[i][0], w = TR[i][1]; for(j = 1; j < L.length; j++){ var ax = L[j-1][0], az = L[j-1][1], vx = L[j][0] - ax, vz = L[j][1] - az, l2 = vx*vx + vz*vz;
+      var u = Math.max(0, Math.min(1, ((x - ax)*vx + (z - az)*vz)/l2)), qx = ax + vx*u - x, qz = az + vz*u - z, d = Math.sqrt(qx*qx + qz*qz) - w; if(d < best) best = d; } } return best; };
+  var C = [], BOG = [];
+  var ok = function(x, z, r, pad){ if(x - r < 6 || z - r < 6 || x + r > 234 || z + r > 234) return false; if(Math.hypot(x - 120, z - 120) < 26 + r) return false;
+    if(GATES.some(function(g){ return Math.hypot(x - g[0], z - g[1]) < 12 + r; })) return false; if(dTr(x, z) < r + pad) return false;
+    for(var i = 0; i < C.length; i++){ var c = C[i]; if(Math.hypot(x - c[0], z - c[1]) < r + c[2] + pad*0.6) return false; } return true; };
+  var t, x, z, r;
+  // the Queen's crown: eight colossi ringing the grove
+  for(k = 0; k < 8; k++){ var a4 = k/8*Math.PI*2 + 0.2; x = 120 + Math.cos(a4)*31; z = 120 + Math.sin(a4)*31; if(dTr(x, z) > 3.4) C.push([x, z, 3.2, 'colossus', 34 + R()*12, 13 + R()*4, (R()*1e6)|0]); }
+  for(t = 0; t < 400 && C.filter(function(c){ return c[3] === 'colossus'; }).length < 22; t++){ x = 10 + R()*220; z = 10 + R()*220; r = 2.4 + R()*1.6; if(ok(x, z, r, 7)) C.push([x, z, r, 'colossus', 30 + R()*26, 10 + R()*8, (R()*1e6)|0]); }
+  for(t = 0; t < 3000 && C.length < 150; t++){ x = 8 + R()*224; z = 8 + R()*224; r = 0.8 + R()*0.8; if(ok(x, z, r, 2.2)) C.push([x, z, r, 'shroom', 7 + R()*11, 2.6 + R()*3.4, (R()*1e6)|0]); }
+  // tangled fungal mounds
+  for(t = 0; t < 4000 && C.filter(function(c){ return c[3] === 'mound'; }).length < 220; t++){ x = 8 + R()*224; z = 8 + R()*224; r = 1.6 + R()*2.8; if(!ok(x, z, r, 3)) continue;
+    C.push([x, z, r, 'mound', 1.5 + R()*2.5, 0, (R()*1e6)|0]); var n = 1 + ((R()*4)|0); for(k = 0; k < n; k++){ var ax2 = x + (R() - 0.5)*r*2.4, az2 = z + (R() - 0.5)*r*2.4, r3 = r*(0.5 + R()*0.4); if(ok(ax2, az2, r3, 2.6)) C.push([ax2, az2, r3, 'mound', 1.2 + R()*2.2, 0, (R()*1e6)|0]); } }
+  for(t = 0; t < 600 && BOG.length < 11; t++){ x = 20 + R()*200; z = 20 + R()*200; r = 6 + R()*8; if(Math.hypot(x - 120, z - 120) < 34 + r) continue; if(GATES.some(function(g){ return Math.hypot(x - g[0], z - g[1]) < 16 + r; })) continue;
+    if(BOG.some(function(b){ return Math.hypot(x - b[0], z - b[1]) < r + b[2] + 6; })) continue; BOG.push([x, z, r]); }
+  var M = new Uint8Array(240*240), i2, zz, xx;
+  for(zz = 0; zz < 240; zz++) for(xx = 0; xx < 240; xx++){ var edge = xx < 4 || xx > 235 || zz < 4 || zz > 235; if(edge && !GATES.some(function(g){ return Math.abs(xx + 0.5 - g[0]) < 8 && Math.abs(zz + 0.5 - g[1]) < 8; })) M[zz*240 + xx] = 1; }
+  C.forEach(function(c){ var rr = c[2]; for(zz = Math.floor(c[1] - rr); zz <= Math.ceil(c[1] + rr); zz++) for(xx = Math.floor(c[0] - rr); xx <= Math.ceil(c[0] + rr); xx++){ if(xx < 0 || zz < 0 || xx >= 240 || zz >= 240) continue; if(Math.hypot(xx + 0.5 - c[0], zz + 0.5 - c[1]) < rr) M[zz*240 + xx] = 1; } });
+  return { C:C, BOG:BOG, TR:TR, M:M, GATES:GATES, dTr:dTr };
+})();
+function _fgWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _FG.M[z*240 + x] === 1; }
+function _fgWalkable(wx, wz){ return !_fgWallAt(wx/TILE, wz/TILE); }
+
 // ════════════════════════════════════════════════════════════════════════════
 // a648 — XUMEN, CAPITAL OF THE XU: city plan. Shared VERBATIM by the client
 //   (70_terrain) and the server (server.js), and fully deterministic (seeded), so
@@ -7808,7 +7850,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7885,6 +7927,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
         else if (zoneName === 'xumen') { if (_xcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xcWalkable(nx, e.z)) e.x = nx; else if (_xcWalkable(e.x, nz)) e.z = nz; }   // a648 — the capital's buildings
         else if (zoneName === 'void_citadel') { if (_vcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vcWalkable(nx, e.z)) e.x = nx; else if (_vcWalkable(e.x, nz)) e.z = nz; }   // a647 — citadel walls + void
         else if (zoneName === 'riftvale') { if (_rvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_rvWalkable(nx, e.z)) e.x = nx; else if (_rvWalkable(e.x, nz)) e.z = nz; }   // a645 — rift vale void
@@ -11427,6 +11470,11 @@ function tickGame(game) {
     if (zoneName === 'riftvale') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
       if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    // a649 — FUNGAL DEPTHS: no fungus ever ends a tick inside a stem or a mound
+    if (zoneName === 'fungal') zone.enemies.forEach(e => {
+      if (!e.active || e._rv0x === undefined || _fgWalkable(e.x, e.z)) return;
+      if (_fgWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_fgWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     // a648 — XUMEN: no capital guard ever ends a tick inside a building
     if (zoneName === 'xumen') zone.enemies.forEach(e => {
