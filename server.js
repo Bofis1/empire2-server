@@ -420,6 +420,7 @@ const ENEMY_STATS = {
   xf_fortress_drone: {hp:39000, atk:660, spd:0.110, aggroRange:15, reward:3600, expR:1200, dmgReduction:0.36},
   xf_siege_walker:   {hp:120000,atk:900, spd:0.014, aggroRange:11, reward:5400, expR:1600, dmgReduction:0.50},
   xf_warlord:        {hp:51000, atk:720, spd:0.062, aggroRange:16, reward:4800, expR:1500, dmgReduction:0.40},
+  xf_praetorian:     {hp:84000, atk:760, spd:0.050, aggroRange:14, reward:5200, expR:1600, dmgReduction:0.42},   // a658 — the Xu elite guard
   void_spike_horror:  {hp:3600,  atk:180, spd:0.040, aggroRange:12, reward:420, expR:140,  dmgReduction:0.15},
   // sanctuary
   sanctuary_guardian:  {hp:2400,  atk:95,  spd:0.025, aggroRange:8,  reward:280, expR:90,   dmgReduction:0},
@@ -647,6 +648,81 @@ var _AV = (function(){
   return { M:M, N:N, X0:X0, P:P, AR:AR, SP:SP, EDGES:edges, CHAMB:CHAMB, POSTS:POSTS, RIVER:RIVER, SPAWNS:SPAWNS, edgePath:edgePath, vn:vn, hs:hs, cx:cx };
 })();
 function _avWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _AV.M[z*240 + x] === 1; }
+
+// ════════════════════════════════════════════════════════════════════════════
+// a658 — XUMEN FORTRESS: base plan. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js), fully deterministic, so players and the garrison collide with the
+//   same walls, hangars, mech cradles and tanks. Tiles. The Xu war machine staged for
+//   deployment: an outer rampart with one gate (west, from Xumen), two walled boulevards
+//   crossing at the APEX PYRAMID's launch complex (r 36 kept open), guarded gates into four
+//   walled sectors — the AIRFIELD (NW: runway, hangars, airship mooring masts), the MECH
+//   FOUNDRY (NE: assembly halls, two rows of mech cradles, the test range), the ARMOR PARK
+//   (SE: vehicle sheds, two rows of tanks, fuel, artillery) and the GARRISON (SW: barracks,
+//   drill yard, armory, radar, the command tower). SPAWNS are generated here too.
+//   M: 1 = blocked. Rect obstacles: [x0, z0, x1, z1, h, kind, seed]; circles: [x, z, r, kind, seed].
+// ════════════════════════════════════════════════════════════════════════════
+var _XF = (function(){
+  var s = 0x0a658001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var CX = 120, CZ = 120, RING = 36, ARENA = 22, SPAWN = [16, 120];
+  var M = new Uint8Array(240*240), x, z, i, k;
+  var inRing = function(px, pz){ return Math.hypot(px - CX, pz - CZ) < RING; };
+  // outer rampart (4 thick) with the west gate onto the boulevard
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++){ if(x < 4 || z < 4 || x > 235 || z > 235){ if(!(x < 4 && z >= 113 && z <= 126)) M[z*240 + x] = 1; } }
+  // boulevard walls: both sides of x = 120 and z = 120, broken by gates, stopping at the ring
+  var GATE_T = [34, 76, 164, 206], GW = 4;
+  var isGate = function(t){ for(var q = 0; q < GATE_T.length; q++) if(Math.abs(t + 0.5 - GATE_T[q]) < GW) return true; return false; };
+  var WALLS = [];   // [axis('x'|'z'), line, t0, t1] runs, for drawing
+  [[111, 112.5], [127.5, 129]].forEach(function(band){
+    ['x', 'z'].forEach(function(ax){ var run = -1;
+      for(var t = 4; t <= 236; t++){ var on = t < 236 && !isGate(t);
+        if(on){ for(var w = Math.floor(band[0]); w < Math.ceil(band[1]); w++){ var px = ax === 'x' ? w : t, pz = ax === 'x' ? t : w; if(inRing(px + 0.5, pz + 0.5)){ on = false; break; } } }
+        if(on){ for(var w2 = Math.floor(band[0]); w2 < Math.ceil(band[1]); w2++){ if(ax === 'x') M[t*240 + w2] = 1; else M[w2*240 + t] = 1; } if(run < 0) run = t; }
+        else if(run >= 0){ WALLS.push([ax, band[0], run, t, band[1]]); run = -1; } } }); });
+  // watch towers flanking every gate (on the wall lines)
+  var TOWERS = [];
+  GATE_T.forEach(function(g){ [g - GW - 0.6, g + GW + 0.6].forEach(function(t){ [111.75, 128.25].forEach(function(l){ TOWERS.push([l, t, 1.6]); TOWERS.push([t, l, 1.6]); }); }); });
+  TOWERS = TOWERS.filter(function(q){ return !inRing(q[0], q[1]) && !(q[0] < 6); });
+  var RECTS = [], CIRC = [];
+  var rect = function(x0, z0, x1, z1, h, kind){ RECTS.push([x0, z0, x1, z1, h, kind, (R()*1e6)|0]); };
+  var circ = function(cx, cz, r, kind){ CIRC.push([cx, cz, r, kind, (R()*1e6)|0]); };
+  // ── AIRFIELD (NW) ──
+  rect(16, 34, 38, 50, 14, 'hangar'); rect(44, 34, 66, 50, 14, 'hangar'); rect(72, 34, 94, 50, 14, 'hangar');
+  [[30, 74], [62, 74], [94, 74]].forEach(function(p){ circ(p[0], p[1], 2, 'mast'); });
+  circ(100, 96, 3, 'control'); [[16, 90], [22, 97], [15, 104]].forEach(function(p){ circ(p[0], p[1], 2.4, 'fuel'); }); circ(58, 102, 2.4, 'aa');
+  // ── MECH FOUNDRY (NE) ──
+  rect(134, 12, 172, 30, 18, 'assembly'); rect(182, 12, 222, 30, 18, 'assembly');
+  for(k = 0; k < 8; k++){ rect(134 + k*12, 42, 140 + k*12, 48, 0, 'cradle'); rect(134 + k*12, 64, 140 + k*12, 70, 0, 'cradle'); }
+  circ(226, 100, 2.4, 'aa'); circ(136, 100, 2.4, 'aa');
+  // ── ARMOR PARK (SE) ──
+  rect(188, 134, 230, 148, 10, 'shed'); rect(188, 156, 230, 170, 10, 'shed');
+  [[152, 146], [159, 140], [152, 155]].forEach(function(p){ circ(p[0], p[1], 2.4, 'fuel'); });
+  for(k = 0; k < 11; k++){ rect(134 + k*9, 184, 138 + k*9, 190, 0, 'tank'); rect(134 + k*9, 204, 138 + k*9, 210, 0, 'tank'); }
+  [146, 166, 186, 206].forEach(function(px){ circ(px, 225, 2.5, 'artillery'); });
+  // ── GARRISON (SW) ──
+  rect(12, 134, 42, 144, 8, 'barracks'); rect(12, 152, 42, 162, 8, 'barracks'); rect(12, 170, 42, 180, 8, 'barracks'); rect(52, 134, 82, 144, 8, 'barracks'); rect(52, 152, 82, 162, 8, 'barracks');
+  circ(98, 142, 5, 'radar'); rect(12, 190, 40, 206, 5, 'armory'); rect(86, 214, 106, 230, 34, 'hq'); circ(60, 225, 2.4, 'aa');
+  // ── the launch complex: four gantry pylons on the ring road diagonals ──
+  [45, 135, 225, 315].forEach(function(d){ var a = d*Math.PI/180; circ(CX + Math.cos(a)*30, CZ + Math.sin(a)*30, 2.2, 'gantry'); });
+  RECTS.forEach(function(b){ for(z = Math.floor(b[1]); z < Math.ceil(b[3]); z++) for(x = Math.floor(b[0]); x < Math.ceil(b[2]); x++) M[z*240 + x] = 1; });
+  CIRC.concat(TOWERS.map(function(q){ return [q[0], q[1], q[2]]; })).forEach(function(c){ for(z = Math.floor(c[1] - c[2]); z <= Math.ceil(c[1] + c[2]); z++) for(x = Math.floor(c[0] - c[2]); x <= Math.ceil(c[0] + c[2]); x++){ if(x < 0 || z < 0 || x >= 240 || z >= 240) continue; if(Math.hypot(x + 0.5 - c[0], z + 0.5 - c[1]) < c[2]) M[z*240 + x] = 1; } });
+  // ── the garrison ──
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= 240 || zz >= 240 || M[zz*240 + xx]) return false; } return Math.hypot(px - CX, pz - CZ) > ARENA + 2; };
+  var SPAWNS = [];
+  var put = function(px, pz, type){ for(var tr = 0; tr < 14; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*0.9 : 0)), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*0.9 : 0)); if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type, camp:true }); return; } } };
+  var POOL = { air:['xf_fortress_drone', 'xf_fortress_drone', 'xf_warlord', 'xf_titan_elite', 'xf_fortress_drone'], mech:['xf_titan_elite', 'xf_titan_elite', 'xf_siege_walker', 'xf_fortress_drone', 'xf_warlord'],
+               armor:['xf_siege_walker', 'xf_siege_walker', 'xf_titan_elite', 'xf_fortress_drone', 'xf_titan_elite'], garrison:['xf_warlord', 'xf_praetorian', 'xf_titan_elite', 'xf_warlord', 'xf_fortress_drone'] };
+  var CAMPS = [[28, 62, 'air'], [60, 58, 'air'], [88, 60, 'air'], [40, 88, 'air'], [76, 88, 'air'], [58, 20, 'air'],
+               [150, 37, 'mech'], [200, 37, 'mech'], [152, 57, 'mech'], [188, 57, 'mech'], [214, 57, 'mech'], [150, 92, 'mech'], [184, 94, 'mech'], [214, 88, 'mech'],
+               [172, 151, 'armor'], [150, 172, 'armor'], [176, 197, 'armor'], [212, 197, 'armor'], [150, 217], [200, 217, 'armor'], [210, 178, 'armor'],
+               [47, 148, 'garrison'], [47, 166, 'garrison'], [95, 162, 'garrison'], [78, 190, 'garrison'], [64, 206, 'garrison'], [96, 198, 'garrison'], [28, 214, 'garrison'], [60, 216, 'garrison']];
+  CAMPS.forEach(function(c){ var pool = POOL[c[2] || 'armor']; for(var m = 0; m < 5; m++){ var a = m/5*6.283 + R(), d = m === 0 ? 0 : 2.4 + R()*1.6; put(c[0] + Math.cos(a)*d, c[1] + Math.sin(a)*d, m === 0 && c[2] === 'garrison' ? 'xf_praetorian' : pool[(R()*pool.length)|0]); } });
+  // praetorian gate guards (not the gates by the way in), and the honour guard on the ring road
+  GATE_T.forEach(function(g){ put(117, g, 'xf_praetorian'); put(123, g, 'xf_praetorian'); if(g > 50){ put(g, 117, 'xf_praetorian'); put(g, 123, 'xf_praetorian'); } });
+  for(k = 0; k < 8; k++){ var a2 = k/8*6.283 + 0.39; put(CX + Math.cos(a2)*31, CZ + Math.sin(a2)*31, 'xf_praetorian'); }
+  return { M:M, CX:CX, CZ:CZ, RING:RING, ARENA:ARENA, SPAWN:SPAWN, GATE_T:GATE_T, GW:GW, WALLS:WALLS, TOWERS:TOWERS, RECTS:RECTS, CIRC:CIRC, SPAWNS:SPAWNS };
+})();
+function _xfWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XF.M[z*240 + x] === 1; }
+function _xfWalkable(wx, wz){ return !_xfWallAt(wx/TILE, wz/TILE); }
 
 const ZONE_SPAWNS = {
   outpost: [],
@@ -2769,208 +2845,7 @@ const ZONE_SPAWNS = {
   // a552 — XUMEN FORTRESS is now SERVER-AUTHORITATIVE (was client-side since a490).
   //   200 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
   //   HP intentionally UNCHANGED. All four types are py:0, so no altitude sync.
-  xumen_fortress: [
-    {type:'xf_titan_elite', tx:38, tz:49},
-    {type:'xf_titan_elite', tx:46, tz:32},
-    {type:'xf_warlord', tx:38, tz:40},
-    {type:'xf_warlord', tx:42, tz:47},
-    {type:'xf_siege_walker', tx:35, tz:43},
-    {type:'xf_siege_walker', tx:39, tz:49},
-    {type:'xf_titan_elite', tx:34, tz:33},
-    {type:'xf_titan_elite', tx:46, tz:47},
-    {type:'xf_fortress_drone', tx:38, tz:36},
-    {type:'xf_fortress_drone', tx:37, tz:48},
-    {type:'xf_titan_elite', tx:69, tz:32},
-    {type:'xf_titan_elite', tx:69, tz:31},
-    {type:'xf_warlord', tx:74, tz:35},
-    {type:'xf_warlord', tx:64, tz:35},
-    {type:'xf_siege_walker', tx:79, tz:35},
-    {type:'xf_siege_walker', tx:76, tz:34},
-    {type:'xf_titan_elite', tx:73, tz:37},
-    {type:'xf_titan_elite', tx:79, tz:41},
-    {type:'xf_fortress_drone', tx:76, tz:36},
-    {type:'xf_fortress_drone', tx:75, tz:36},
-    {type:'xf_titan_elite', tx:46, tz:65},
-    {type:'xf_titan_elite', tx:38, tz:64},
-    {type:'xf_warlord', tx:42, tz:75},
-    {type:'xf_warlord', tx:36, tz:78},
-    {type:'xf_siege_walker', tx:49, tz:79},
-    {type:'xf_siege_walker', tx:48, tz:63},
-    {type:'xf_titan_elite', tx:46, tz:78},
-    {type:'xf_titan_elite', tx:42, tz:79},
-    {type:'xf_fortress_drone', tx:36, tz:76},
-    {type:'xf_fortress_drone', tx:32, tz:64},
-    {type:'xf_titan_elite', tx:198, tz:33},
-    {type:'xf_titan_elite', tx:192, tz:34},
-    {type:'xf_warlord', tx:204, tz:39},
-    {type:'xf_warlord', tx:200, tz:37},
-    {type:'xf_siege_walker', tx:192, tz:40},
-    {type:'xf_siege_walker', tx:205, tz:33},
-    {type:'xf_titan_elite', tx:195, tz:35},
-    {type:'xf_titan_elite', tx:200, tz:33},
-    {type:'xf_fortress_drone', tx:192, tz:38},
-    {type:'xf_fortress_drone', tx:191, tz:35},
-    {type:'xf_titan_elite', tx:167, tz:37},
-    {type:'xf_titan_elite', tx:166, tz:42},
-    {type:'xf_warlord', tx:169, tz:31},
-    {type:'xf_warlord', tx:162, tz:34},
-    {type:'xf_siege_walker', tx:159, tz:41},
-    {type:'xf_siege_walker', tx:177, tz:40},
-    {type:'xf_titan_elite', tx:170, tz:33},
-    {type:'xf_titan_elite', tx:159, tz:32},
-    {type:'xf_fortress_drone', tx:172, tz:41},
-    {type:'xf_fortress_drone', tx:171, tz:40},
-    {type:'xf_titan_elite', tx:195, tz:81},
-    {type:'xf_titan_elite', tx:193, tz:81},
-    {type:'xf_warlord', tx:202, tz:65},
-    {type:'xf_warlord', tx:198, tz:76},
-    {type:'xf_siege_walker', tx:206, tz:76},
-    {type:'xf_siege_walker', tx:194, tz:64},
-    {type:'xf_titan_elite', tx:193, tz:70},
-    {type:'xf_titan_elite', tx:207, tz:72},
-    {type:'xf_fortress_drone', tx:197, tz:72},
-    {type:'xf_fortress_drone', tx:194, tz:63},
-    {type:'xf_titan_elite', tx:45, tz:204},
-    {type:'xf_titan_elite', tx:33, tz:195},
-    {type:'xf_warlord', tx:38, tz:195},
-    {type:'xf_warlord', tx:35, tz:204},
-    {type:'xf_siege_walker', tx:31, tz:203},
-    {type:'xf_siege_walker', tx:41, tz:201},
-    {type:'xf_titan_elite', tx:48, tz:201},
-    {type:'xf_titan_elite', tx:45, tz:197},
-    {type:'xf_fortress_drone', tx:44, tz:201},
-    {type:'xf_fortress_drone', tx:31, tz:205},
-    {type:'xf_titan_elite', tx:70, tz:196},
-    {type:'xf_titan_elite', tx:80, tz:196},
-    {type:'xf_warlord', tx:76, tz:197},
-    {type:'xf_warlord', tx:75, tz:191},
-    {type:'xf_siege_walker', tx:63, tz:196},
-    {type:'xf_siege_walker', tx:72, tz:199},
-    {type:'xf_titan_elite', tx:65, tz:207},
-    {type:'xf_titan_elite', tx:65, tz:201},
-    {type:'xf_fortress_drone', tx:76, tz:204},
-    {type:'xf_fortress_drone', tx:68, tz:191},
-    {type:'xf_titan_elite', tx:45, tz:167},
-    {type:'xf_titan_elite', tx:46, tz:168},
-    {type:'xf_warlord', tx:32, tz:165},
-    {type:'xf_warlord', tx:40, tz:175},
-    {type:'xf_siege_walker', tx:48, tz:159},
-    {type:'xf_siege_walker', tx:44, tz:174},
-    {type:'xf_titan_elite', tx:35, tz:174},
-    {type:'xf_titan_elite', tx:33, tz:172},
-    {type:'xf_fortress_drone', tx:42, tz:162},
-    {type:'xf_fortress_drone', tx:43, tz:175},
-    {type:'xf_titan_elite', tx:200, tz:202},
-    {type:'xf_titan_elite', tx:208, tz:199},
-    {type:'xf_warlord', tx:196, tz:197},
-    {type:'xf_warlord', tx:209, tz:194},
-    {type:'xf_siege_walker', tx:202, tz:208},
-    {type:'xf_siege_walker', tx:199, tz:207},
-    {type:'xf_titan_elite', tx:203, tz:199},
-    {type:'xf_titan_elite', tx:197, tz:206},
-    {type:'xf_fortress_drone', tx:203, tz:206},
-    {type:'xf_fortress_drone', tx:192, tz:208},
-    {type:'xf_titan_elite', tx:162, tz:206},
-    {type:'xf_titan_elite', tx:160, tz:206},
-    {type:'xf_warlord', tx:160, tz:199},
-    {type:'xf_warlord', tx:170, tz:196},
-    {type:'xf_siege_walker', tx:174, tz:206},
-    {type:'xf_siege_walker', tx:175, tz:194},
-    {type:'xf_titan_elite', tx:173, tz:208},
-    {type:'xf_titan_elite', tx:160, tz:191},
-    {type:'xf_fortress_drone', tx:176, tz:195},
-    {type:'xf_fortress_drone', tx:177, tz:195},
-    {type:'xf_titan_elite', tx:196, tz:170},
-    {type:'xf_titan_elite', tx:209, tz:161},
-    {type:'xf_warlord', tx:208, tz:171},
-    {type:'xf_warlord', tx:199, tz:167},
-    {type:'xf_siege_walker', tx:205, tz:168},
-    {type:'xf_siege_walker', tx:209, tz:160},
-    {type:'xf_titan_elite', tx:193, tz:175},
-    {type:'xf_titan_elite', tx:193, tz:163},
-    {type:'xf_fortress_drone', tx:200, tz:166},
-    {type:'xf_fortress_drone', tx:209, tz:173},
-    {type:'xf_titan_elite', tx:128, tz:56},
-    {type:'xf_titan_elite', tx:126, tz:57},
-    {type:'xf_warlord', tx:111, tz:60},
-    {type:'xf_warlord', tx:118, tz:44},
-    {type:'xf_siege_walker', tx:119, tz:50},
-    {type:'xf_siege_walker', tx:125, tz:52},
-    {type:'xf_titan_elite', tx:111, tz:53},
-    {type:'xf_titan_elite', tx:127, tz:54},
-    {type:'xf_fortress_drone', tx:119, tz:44},
-    {type:'xf_fortress_drone', tx:124, tz:57},
-    {type:'xf_titan_elite', tx:120, tz:182},
-    {type:'xf_titan_elite', tx:122, tz:191},
-    {type:'xf_warlord', tx:126, tz:194},
-    {type:'xf_warlord', tx:114, tz:196},
-    {type:'xf_siege_walker', tx:119, tz:182},
-    {type:'xf_siege_walker', tx:125, tz:179},
-    {type:'xf_titan_elite', tx:112, tz:180},
-    {type:'xf_titan_elite', tx:115, tz:190},
-    {type:'xf_fortress_drone', tx:118, tz:190},
-    {type:'xf_fortress_drone', tx:114, tz:190},
-    {type:'xf_titan_elite', tx:61, tz:116},
-    {type:'xf_titan_elite', tx:53, tz:111},
-    {type:'xf_warlord', tx:50, tz:127},
-    {type:'xf_warlord', tx:48, tz:112},
-    {type:'xf_siege_walker', tx:60, tz:114},
-    {type:'xf_siege_walker', tx:49, tz:123},
-    {type:'xf_titan_elite', tx:50, tz:128},
-    {type:'xf_titan_elite', tx:51, tz:113},
-    {type:'xf_fortress_drone', tx:65, tz:112},
-    {type:'xf_fortress_drone', tx:65, tz:115},
-    {type:'xf_titan_elite', tx:189, tz:119},
-    {type:'xf_titan_elite', tx:178, tz:125},
-    {type:'xf_warlord', tx:176, tz:127},
-    {type:'xf_warlord', tx:180, tz:118},
-    {type:'xf_siege_walker', tx:180, tz:129},
-    {type:'xf_siege_walker', tx:187, tz:119},
-    {type:'xf_fortress_drone', tx:183, tz:115},
-    {type:'xf_fortress_drone', tx:177, tz:119},
-    {type:'xf_siege_walker', tx:98, tz:68},
-    {type:'xf_warlord', tx:157, tz:161},
-    {type:'xf_fortress_drone', tx:203, tz:52},
-    {type:'xf_siege_walker', tx:72, tz:127},
-    {type:'xf_warlord', tx:36, tz:176},
-    {type:'xf_fortress_drone', tx:20, tz:84},
-    {type:'xf_siege_walker', tx:117, tz:155},
-    {type:'xf_warlord', tx:98, tz:98},
-    {type:'xf_fortress_drone', tx:215, tz:146},
-    {type:'xf_siege_walker', tx:71, tz:186},
-    {type:'xf_warlord', tx:203, tz:132},
-    {type:'xf_fortress_drone', tx:155, tz:145},
-    {type:'xf_siege_walker', tx:222, tz:38},
-    {type:'xf_warlord', tx:118, tz:26},
-    {type:'xf_fortress_drone', tx:188, tz:157},
-    {type:'xf_siege_walker', tx:70, tz:172},
-    {type:'xf_warlord', tx:66, tz:72},
-    {type:'xf_fortress_drone', tx:188, tz:28},
-    {type:'xf_siege_walker', tx:223, tz:125},
-    {type:'xf_warlord', tx:205, tz:40},
-    {type:'xf_siege_walker', tx:100, tz:143},
-    {type:'xf_warlord', tx:66, tz:37},
-    {type:'xf_siege_walker', tx:188, tz:117},
-    {type:'xf_warlord', tx:175, tz:163},
-    {type:'xf_siege_walker', tx:186, tz:97},
-    {type:'xf_warlord', tx:102, tz:188},
-    {type:'xf_siege_walker', tx:144, tz:97},
-    {type:'xf_warlord', tx:57, tz:131},
-    {type:'xf_siege_walker', tx:161, tz:86},
-    {type:'xf_warlord', tx:126, tz:206},
-    {type:'xf_siege_walker', tx:162, tz:203},
-    {type:'xf_warlord', tx:170, tz:217},
-    {type:'xf_siege_walker', tx:99, tz:28},
-    {type:'xf_warlord', tx:35, tz:126},
-    {type:'xf_siege_walker', tx:142, tz:161},
-    {type:'xf_warlord', tx:25, tz:97},
-    {type:'xf_siege_walker', tx:67, tz:98},
-    {type:'xf_warlord', tx:132, tz:87},
-    {type:'xf_warlord', tx:132, tz:51},
-    {type:'xf_warlord', tx:97, tz:39},
-    {type:'xf_warlord', tx:156, tz:56},
-    {type:'xf_warlord', tx:208, tz:192}
-  ],
+  xumen_fortress: _XF.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a658 — generated by the shared base plan
   // a558 — FUNGAL DEPTHS is now SERVER-AUTHORITATIVE (client-side since a471).
   //   150 spawns lifted verbatim from the client's enemySpawns. HP is NOT unchanged:
   //   the kit applies a zone-local x3 at first tick, mirrored via ZONE_HP_MULT above.
@@ -8219,7 +8094,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8302,6 +8177,7 @@ function tickGame(game) {
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
+        else if (zoneName === 'xumen_fortress') { if (_xfWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xfWalkable(nx, e.z)) e.x = nx; else if (_xfWalkable(e.x, nz)) e.z = nz; }   // a658 — the fortress walls, hangars, cradles, tanks
         else if (zoneName === 'xumen') { if (_xcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xcWalkable(nx, e.z)) e.x = nx; else if (_xcWalkable(e.x, nz)) e.z = nz; }   // a648 — the capital's buildings
         else if (zoneName === 'void_citadel') { if (_vcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vcWalkable(nx, e.z)) e.x = nx; else if (_vcWalkable(e.x, nz)) e.z = nz; }   // a647 — citadel walls + void
         else if (zoneName === 'riftvale') { if (_rvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_rvWalkable(nx, e.z)) e.x = nx; else if (_rvWalkable(e.x, nz)) e.z = nz; }   // a645 — rift vale void
@@ -10992,6 +10868,35 @@ function tickGame(game) {
                 zone._xfPylons.push({pid:pid, x:e.x, z:e.z, t:0, life:60, dmg:_xfDmgS(e,0.4)});
                 fx('xf_pylon',{pid:pid,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),ms:6000}); } }
           }
+          else if(e.type==='xf_praetorian'){
+            // a658 — XU PRAETORIAN: greatsword cleaves, SHIELD WALL, DOMINION CHARGE, ORBITAL DECREE, WAR CRY
+            const MS=0.30;
+            if(e._chg>0){ e._chg--; mv(Math.sin(e._chgDir),Math.cos(e._chgDir),MS*3.4);
+              const cdx=nearestPlayer.x-e.x, cdz=nearestPlayer.z-e.z;
+              if(!e._chgHit && cdx*cdx+cdz*cdz<6.76){ e._chgHit=1; hit(1.5);
+                toPlayer({eff:'push',px:+e.x.toFixed(2),pz:+e.z.toFixed(2),push:2.4}); toPlayer({eff:'shake',shake:3}); }
+            } else {
+              if(dd>3.0) mv(sin*(e._aegOn?0.5:1), cos*(e._aegOn?0.5:1), MS);
+              if(dd<3.8 && e.attackTimer%11===0){ hit(1.2); toPlayer({eff:'shake',shake:2}); }
+              e._cc=(e._cc||Math.floor(Math.random()*20))+1;
+              if(dd>5 && dd<14 && e._cc>=45){ e._cc=0; e._chg=4; e._chgDir=ang; e._chgHit=0; fx('xf_pr_charge',{eid:e.id,dir:+ang.toFixed(3)}); }
+            }
+            // SHIELD WALL — plating hardens for 3s behind a burning hex dome
+            if(e._aegOn){ e._aegT=(e._aegT||0)+1; if(e._aegT>=30){ e._aegOn=0; e._aegT=0; if(e._aegBase!=null) e.dmgReduction=e._aegBase; } }
+            else { e._sw=(e._sw||Math.floor(Math.random()*35))+1;
+              if(dd<14 && e._sw>=70){ e._sw=0; e._aegOn=1; e._aegT=0; if(e._aegBase==null) e._aegBase=e.dmgReduction||0;
+                e.dmgReduction=Math.min(0.9, e._aegBase+0.35); fx('xf_pr_aegis',{eid:e.id,ms:3000}); } }
+            // ORBITAL DECREE — five strikes walking down a line through you
+            e._od=(e._od||Math.floor(Math.random()*40))+1;
+            if(dd>3 && dd<18 && e._od>=80){ e._od=0; fx('xf_pr_decree',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              for(let k=0;k<5;k++){ const d0=Math.max(1.5,dd*0.45)+k*2.2; tele(e.x+Math.sin(ang)*d0, e.z+Math.cos(ang)*d0, 7+k*2, 2.2, 0.9, _XF_PR); } }
+            // WAR CRY — every fortress unit within 12u fights 20% harder for 8s
+            e._wc=(e._wc||Math.floor(Math.random()*60))+1;
+            if(dd<16 && e._wc>=120){ e._wc=0; const until=Date.now()+8000; let n=0;
+              for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i]; if(!o||!o.active||!XF_BESPOKE[o.type]) continue;
+                const odx=o.x-e.x, odz=o.z-e.z; if(odx*odx+odz*odz>144) continue; o._rallyUntil=until; o.aggroed=true; n++; }
+              fx('xf_pr_rally',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),n:n}); }
+          }
           else {
             // xf_titan_elite — ELITE JUGGERNAUT: teleporting armour with energy veins
             const MS=0.264;
@@ -11895,6 +11800,10 @@ function tickGame(game) {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
+    if (zoneName === 'xumen_fortress') zone.enemies.forEach(e => {   // a658 — nothing ends a tick inside the base's walls
+      if (!e.active || e._rv0x === undefined || _xfWalkable(e.x, e.z)) return;
+      if (_xfWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_xfWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
 
     // Broadcast state for changed enemies (positions + HP)
     if (changed.length > 0 && hasPlayers) {
@@ -12653,10 +12562,11 @@ const VC_BESPOKE = { void_construct:1, void_sentinel:1, rift_stalker:1, rift_wea
 const VC_PWR = { void_construct:230, void_sentinel:240, rift_stalker:245, rift_weaver:250 };
 function _vcDmgS(e, mult){ return Math.floor((VC_PWR[e.type] || e.atk || 235) * mult); }
 const _VC_NULL=0x0a0016, _VC_EDGE=0xb44dff, _VC_CRIM=0xff2050, _VC_PALE=0xcfc8ff;
-const XF_BESPOKE = { xf_fortress_drone:1, xf_siege_walker:1, xf_warlord:1, xf_titan_elite:1 };
-const XF_PWR = { xf_fortress_drone:285, xf_siege_walker:315, xf_warlord:320, xf_titan_elite:335 };
-function _xfDmgS(e, mult){ return Math.floor((XF_PWR[e.type] || e.atk || 300) * mult); }
-const _XF_CYAN=0x00ffff, _XF_RED=0xff2233, _XF_GOLD=0xffc832, _XF_LIME=0x9dff00;
+const XF_BESPOKE = { xf_fortress_drone:1, xf_siege_walker:1, xf_warlord:1, xf_titan_elite:1, xf_praetorian:1 };
+const XF_PWR = { xf_fortress_drone:285, xf_siege_walker:315, xf_warlord:320, xf_titan_elite:335, xf_praetorian:330 };
+// a658 — a Praetorian's WAR CRY drives the garrison around it to hit 20% harder for 8s
+function _xfDmgS(e, mult){ return Math.floor((XF_PWR[e.type] || e.atk || 300) * mult * ((e._rallyUntil || 0) > Date.now() ? 1.2 : 1)); }
+const _XF_CYAN=0x00ffff, _XF_RED=0xff2233, _XF_GOLD=0xffc832, _XF_LIME=0x9dff00, _XF_PR=0x66ff33;
 
 // Autonomous sentry pylons. Held on the zone rather than the owner, because the client
 // kit deliberately lets them outlive the warlord that deployed them.
