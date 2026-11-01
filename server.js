@@ -1735,24 +1735,24 @@ const ZONE_SPAWNS = {
     {type:'stone_sentinel', tx:42, tz:64},
     {type:'stone_sentinel', tx:45, tz:63},
     {type:'vine_horror', tx:40, tz:77},
-    {type:'vine_horror', tx:36, tz:65},
+    {type:'vine_horror', tx:37, tz:65},
     {type:'ancient_guardian', tx:31, tz:71},
-    {type:'ancient_guardian', tx:32, tz:64},
+    {type:'ancient_guardian', tx:31, tz:64},
     {type:'void_stalker', tx:35, tz:79},
     {type:'void_stalker', tx:41, tz:75},
-    {type:'ancient_guardian', tx:69, tz:36},
-    {type:'ancient_guardian', tx:81, tz:32},
+    {type:'ancient_guardian', tx:64, tz:36},
+    {type:'ancient_guardian', tx:81, tz:33},
     {type:'stone_sentinel', tx:80, tz:47},
     {type:'stone_sentinel', tx:69, tz:46},
-    {type:'vine_horror', tx:71, tz:38},
+    {type:'vine_horror', tx:74, tz:41},
     {type:'vine_horror', tx:79, tz:48},
     {type:'ancient_guardian', tx:69, tz:42},
     {type:'ancient_guardian', tx:81, tz:39},
-    {type:'void_stalker', tx:70, tz:40},
+    {type:'void_stalker', tx:70, tz:42},
     {type:'void_stalker', tx:74, tz:42},
-    {type:'ancient_guardian', tx:63, tz:74},
+    {type:'ancient_guardian', tx:62, tz:73},
     {type:'ancient_guardian', tx:81, tz:73},
-    {type:'stone_sentinel', tx:78, tz:63},
+    {type:'stone_sentinel', tx:78, tz:62},
     {type:'stone_sentinel', tx:67, tz:72},
     {type:'vine_horror', tx:73, tz:66},
     {type:'vine_horror', tx:77, tz:70},
@@ -1761,151 +1761,151 @@ const ZONE_SPAWNS = {
     {type:'void_stalker', tx:67, tz:71},
     {type:'void_stalker', tx:79, tz:78},
     {type:'ancient_guardian', tx:192, tz:64},
-    {type:'ancient_guardian', tx:203, tz:67},
+    {type:'ancient_guardian', tx:203, tz:66},
     {type:'stone_sentinel', tx:191, tz:66},
     {type:'stone_sentinel', tx:209, tz:75},
-    {type:'vine_horror', tx:204, tz:80},
+    {type:'vine_horror', tx:202, tz:78},
     {type:'vine_horror', tx:191, tz:64},
     {type:'ancient_guardian', tx:206, tz:74},
     {type:'ancient_guardian', tx:197, tz:71},
     {type:'void_stalker', tx:193, tz:69},
     {type:'void_stalker', tx:193, tz:80},
-    {type:'ancient_guardian', tx:165, tz:48},
+    {type:'ancient_guardian', tx:166, tz:48},
     {type:'ancient_guardian', tx:165, tz:34},
     {type:'stone_sentinel', tx:168, tz:42},
     {type:'stone_sentinel', tx:167, tz:40},
     {type:'vine_horror', tx:161, tz:48},
-    {type:'vine_horror', tx:173, tz:45},
+    {type:'vine_horror', tx:172, tz:44},
     {type:'ancient_guardian', tx:176, tz:38},
     {type:'ancient_guardian', tx:169, tz:47},
     {type:'void_stalker', tx:159, tz:35},
     {type:'void_stalker', tx:177, tz:45},
-    {type:'ancient_guardian', tx:165, tz:63},
-    {type:'ancient_guardian', tx:162, tz:63},
-    {type:'stone_sentinel', tx:160, tz:78},
-    {type:'stone_sentinel', tx:177, tz:68},
-    {type:'vine_horror', tx:163, tz:76},
-    {type:'vine_horror', tx:159, tz:68},
-    {type:'ancient_guardian', tx:173, tz:75},
-    {type:'ancient_guardian', tx:167, tz:78},
-    {type:'void_stalker', tx:168, tz:72},
-    {type:'void_stalker', tx:177, tz:67},
-    {type:'ancient_guardian', tx:41, tz:162},
+    {type:'ancient_guardian', tx:165, tz:54},
+    {type:'ancient_guardian', tx:154, tz:63},
+    {type:'stone_sentinel', tx:154, tz:78},
+    {type:'stone_sentinel', tx:185, tz:68},
+    {type:'vine_horror', tx:155, tz:84},
+    {type:'vine_horror', tx:154, tz:68},
+    {type:'ancient_guardian', tx:173, tz:85},
+    {type:'ancient_guardian', tx:167, tz:85},
+    {type:'void_stalker', tx:168, tz:85},
+    {type:'void_stalker', tx:185, tz:67},
+    {type:'ancient_guardian', tx:39, tz:162},
     {type:'ancient_guardian', tx:39, tz:170},
-    {type:'stone_sentinel', tx:45, tz:164},
-    {type:'stone_sentinel', tx:35, tz:173},
+    {type:'stone_sentinel', tx:49, tz:168},
+    {type:'stone_sentinel', tx:36, tz:174},
     {type:'vine_horror', tx:47, tz:175},
     {type:'vine_horror', tx:36, tz:164},
-    {type:'ancient_guardian', tx:31, tz:173},
-    {type:'ancient_guardian', tx:33, tz:160},
-    {type:'void_stalker', tx:42, tz:160},
-    {type:'void_stalker', tx:47, tz:162},
+    {type:'ancient_guardian', tx:30, tz:173},
+    {type:'ancient_guardian', tx:33, tz:159},
+    {type:'void_stalker', tx:42, tz:158},
+    {type:'void_stalker', tx:50, tz:162},
     {type:'ancient_guardian', tx:74, tz:205},
     {type:'ancient_guardian', tx:80, tz:200},
     {type:'stone_sentinel', tx:74, tz:206},
     {type:'stone_sentinel', tx:70, tz:200},
-    {type:'vine_horror', tx:79, tz:193},
-    {type:'vine_horror', tx:69, tz:191},
+    {type:'vine_horror', tx:80, tz:193},
+    {type:'vine_horror', tx:69, tz:190},
     {type:'ancient_guardian', tx:64, tz:208},
     {type:'ancient_guardian', tx:71, tz:200},
-    {type:'void_stalker', tx:75, tz:192},
+    {type:'void_stalker', tx:75, tz:190},
     {type:'void_stalker', tx:66, tz:206},
-    {type:'ancient_guardian', tx:75, tz:171},
-    {type:'ancient_guardian', tx:70, tz:162},
-    {type:'stone_sentinel', tx:74, tz:163},
-    {type:'stone_sentinel', tx:76, tz:172},
-    {type:'vine_horror', tx:76, tz:176},
-    {type:'vine_horror', tx:68, tz:169},
-    {type:'ancient_guardian', tx:78, tz:166},
-    {type:'ancient_guardian', tx:78, tz:168},
-    {type:'void_stalker', tx:68, tz:166},
-    {type:'void_stalker', tx:81, tz:160},
-    {type:'ancient_guardian', tx:201, tz:175},
+    {type:'ancient_guardian', tx:85, tz:171},
+    {type:'ancient_guardian', tx:70, tz:154},
+    {type:'stone_sentinel', tx:74, tz:154},
+    {type:'stone_sentinel', tx:85, tz:172},
+    {type:'vine_horror', tx:84, tz:184},
+    {type:'vine_horror', tx:54, tz:169},
+    {type:'ancient_guardian', tx:85, tz:166},
+    {type:'ancient_guardian', tx:85, tz:168},
+    {type:'void_stalker', tx:68, tz:154},
+    {type:'void_stalker', tx:85, tz:160},
+    {type:'ancient_guardian', tx:201, tz:176},
     {type:'ancient_guardian', tx:197, tz:176},
-    {type:'stone_sentinel', tx:206, tz:167},
+    {type:'stone_sentinel', tx:206, tz:166},
     {type:'stone_sentinel', tx:205, tz:161},
     {type:'vine_horror', tx:203, tz:160},
     {type:'vine_horror', tx:205, tz:176},
     {type:'ancient_guardian', tx:191, tz:160},
     {type:'ancient_guardian', tx:196, tz:177},
     {type:'void_stalker', tx:194, tz:175},
-    {type:'void_stalker', tx:201, tz:167},
+    {type:'void_stalker', tx:201, tz:165},
     {type:'ancient_guardian', tx:166, tz:201},
     {type:'ancient_guardian', tx:176, tz:198},
     {type:'stone_sentinel', tx:167, tz:201},
-    {type:'stone_sentinel', tx:168, tz:191},
-    {type:'vine_horror', tx:174, tz:196},
+    {type:'stone_sentinel', tx:168, tz:189},
+    {type:'vine_horror', tx:174, tz:198},
     {type:'vine_horror', tx:165, tz:202},
-    {type:'ancient_guardian', tx:169, tz:193},
+    {type:'ancient_guardian', tx:166, tz:190},
     {type:'ancient_guardian', tx:168, tz:207},
     {type:'void_stalker', tx:171, tz:209},
-    {type:'void_stalker', tx:173, tz:206},
-    {type:'ancient_guardian', tx:176, tz:159},
-    {type:'ancient_guardian', tx:163, tz:177},
-    {type:'stone_sentinel', tx:165, tz:164},
-    {type:'stone_sentinel', tx:163, tz:168},
-    {type:'vine_horror', tx:172, tz:163},
-    {type:'vine_horror', tx:164, tz:172},
-    {type:'ancient_guardian', tx:172, tz:161},
-    {type:'ancient_guardian', tx:164, tz:169},
-    {type:'void_stalker', tx:169, tz:160},
-    {type:'void_stalker', tx:171, tz:175},
+    {type:'void_stalker', tx:173, tz:205},
+    {type:'ancient_guardian', tx:176, tz:154},
+    {type:'ancient_guardian', tx:163, tz:185},
+    {type:'stone_sentinel', tx:165, tz:154},
+    {type:'stone_sentinel', tx:154, tz:168},
+    {type:'vine_horror', tx:172, tz:154},
+    {type:'vine_horror', tx:154, tz:172},
+    {type:'ancient_guardian', tx:172, tz:154},
+    {type:'ancient_guardian', tx:154, tz:169},
+    {type:'void_stalker', tx:169, tz:154},
+    {type:'void_stalker', tx:171, tz:185},
     {type:'ancient_guardian', tx:87, tz:97},
-    {type:'ancient_guardian', tx:94, tz:103},
+    {type:'ancient_guardian', tx:93, tz:101},
     {type:'stone_sentinel', tx:102, tz:91},
     {type:'stone_sentinel', tx:87, tz:89},
-    {type:'vine_horror', tx:101, tz:101},
-    {type:'vine_horror', tx:97, tz:100},
+    {type:'vine_horror', tx:97, tz:97},
+    {type:'vine_horror', tx:96, tz:98},
     {type:'ancient_guardian', tx:94, tz:90},
-    {type:'ancient_guardian', tx:104, tz:92},
+    {type:'ancient_guardian', tx:104, tz:91},
     {type:'void_stalker', tx:95, tz:88},
     {type:'void_stalker', tx:91, tz:104},
-    {type:'ancient_guardian', tx:140, tz:101},
-    {type:'ancient_guardian', tx:135, tz:98},
-    {type:'stone_sentinel', tx:143, tz:92},
-    {type:'stone_sentinel', tx:137, tz:96},
-    {type:'vine_horror', tx:142, tz:104},
+    {type:'ancient_guardian', tx:143, tz:97},
+    {type:'ancient_guardian', tx:138, tz:93},
+    {type:'stone_sentinel', tx:142, tz:92},
+    {type:'stone_sentinel', tx:138, tz:93},
+    {type:'vine_horror', tx:146, tz:101},
     {type:'vine_horror', tx:137, tz:89},
-    {type:'ancient_guardian', tx:146, tz:91},
-    {type:'ancient_guardian', tx:144, tz:94},
-    {type:'void_stalker', tx:148, tz:105},
-    {type:'void_stalker', tx:148, tz:92},
+    {type:'ancient_guardian', tx:142, tz:91},
+    {type:'ancient_guardian', tx:142, tz:94},
+    {type:'void_stalker', tx:148, tz:104},
+    {type:'void_stalker', tx:152, tz:96},
     {type:'ancient_guardian', tx:90, tz:137},
-    {type:'ancient_guardian', tx:98, tz:143},
+    {type:'ancient_guardian', tx:97, tz:143},
     {type:'stone_sentinel', tx:98, tz:145},
     {type:'stone_sentinel', tx:94, tz:142},
-    {type:'vine_horror', tx:97, tz:140},
-    {type:'vine_horror', tx:100, tz:137},
+    {type:'vine_horror', tx:95, tz:141},
+    {type:'vine_horror', tx:95, tz:141},
     {type:'ancient_guardian', tx:97, tz:145},
     {type:'ancient_guardian', tx:88, tz:142},
     {type:'void_stalker', tx:90, tz:153},
-    {type:'void_stalker', tx:92, tz:144},
-    {type:'stone_sentinel', tx:147, tz:150},
-    {type:'stone_sentinel', tx:151, tz:148},
+    {type:'void_stalker', tx:92, tz:142},
+    {type:'stone_sentinel', tx:147, tz:153},
+    {type:'stone_sentinel', tx:153, tz:148},
     {type:'vine_horror', tx:147, tz:138},
-    {type:'vine_horror', tx:142, tz:143},
+    {type:'vine_horror', tx:143, tz:143},
     {type:'void_stalker', tx:141, tz:152},
-    {type:'void_stalker', tx:143, tz:141},
+    {type:'void_stalker', tx:144, tz:142},
     {type:'stone_sentinel', tx:157, tz:115},
     {type:'void_stalker', tx:103, tz:223},
     {type:'vine_horror', tx:114, tz:178},
     {type:'stone_sentinel', tx:28, tz:163},
     {type:'void_stalker', tx:40, tz:205},
-    {type:'vine_horror', tx:144, tz:159},
-    {type:'stone_sentinel', tx:176, tz:80},
+    {type:'vine_horror', tx:144, tz:156},
+    {type:'stone_sentinel', tx:176, tz:85},
     {type:'void_stalker', tx:55, tz:117},
-    {type:'vine_horror', tx:132, tz:155},
-    {type:'void_stalker', tx:132, tz:144},
+    {type:'vine_horror', tx:134, tz:153},
+    {type:'void_stalker', tx:136, tz:148},
     {type:'vine_horror', tx:98, tz:20},
     {type:'stone_sentinel', tx:155, tz:24},
     {type:'vine_horror', tx:37, tz:156},
     {type:'stone_sentinel', tx:161, tz:36},
-    {type:'vine_horror', tx:201, tz:53},
-    {type:'stone_sentinel', tx:113, tz:56},
-    {type:'vine_horror', tx:96, tz:101},
+    {type:'vine_horror', tx:201, tz:51},
+    {type:'stone_sentinel', tx:114, tz:56},
+    {type:'vine_horror', tx:94, tz:99},
     {type:'stone_sentinel', tx:35, tz:67},
     {type:'vine_horror', tx:26, tz:72},
-    {type:'stone_sentinel', tx:84, tz:175},
+    {type:'stone_sentinel', tx:85, tz:175},
     {type:'vine_horror', tx:20, tz:35},
     {type:'stone_sentinel', tx:80, tz:144},
     {type:'vine_horror', tx:218, tz:115},
@@ -1913,20 +1913,20 @@ const ZONE_SPAWNS = {
     {type:'vine_horror', tx:65, tz:42},
     {type:'stone_sentinel', tx:178, tz:38},
     {type:'vine_horror', tx:43, tz:171},
-    {type:'stone_sentinel', tx:208, tz:43},
+    {type:'stone_sentinel', tx:208, tz:44},
     {type:'vine_horror', tx:68, tz:80},
-    {type:'stone_sentinel', tx:36, tz:188},
-    {type:'vine_horror', tx:204, tz:81},
+    {type:'stone_sentinel', tx:36, tz:190},
+    {type:'vine_horror', tx:202, tz:78},
     {type:'stone_sentinel', tx:24, tz:223},
-    {type:'vine_horror', tx:55, tz:218},
-    {type:'stone_sentinel', tx:215, tz:193},
+    {type:'vine_horror', tx:53, tz:216},
+    {type:'stone_sentinel', tx:212, tz:190},
     {type:'vine_horror', tx:133, tz:80},
-    {type:'stone_sentinel', tx:101, tz:158},
+    {type:'stone_sentinel', tx:100, tz:157},
     {type:'vine_horror', tx:114, tz:37},
     {type:'stone_sentinel', tx:207, tz:112},
     {type:'vine_horror', tx:54, tz:65},
     {type:'stone_sentinel', tx:22, tz:116},
-    {type:'stone_sentinel', tx:189, tz:222},
+    {type:'stone_sentinel', tx:187, tz:222},
     {type:'stone_sentinel', tx:73, tz:205},
     {type:'stone_sentinel', tx:208, tz:130},
     {type:'stone_sentinel', tx:67, tz:103}
@@ -4454,6 +4454,64 @@ function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
 //   loops the inner city on iron pillars.
 //   B = buildings [x0, z0, x1, z1, kind, h, seed, face]  P = posts [x, z, r, kind, seed]  Y = yards [x0, z0, x1, z1, kind, seed]
 // ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// a653 — THE ANCIENT REALM layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js), deterministic, so players and the guardians collide with the
+//   same ruins. Tiles. The lost temple-city of the Architects, swallowed by jungle:
+//   four processional avenues run from the enclosure's gate-towers to the Elder
+//   Architect's sunken plaza (r 24), ringed by a moat crossed by five bridges; long
+//   reflecting pools (barays) flank the avenues; seated colossi guard the approaches;
+//   three great step-pyramids stand on the diagonals, face-towers between them, and the
+//   Architect's Gate — a ring of floating stone — spans the old road in from the
+//   north-west. The quadrants are a ruined city: shrines, stupas, broken walls,
+//   toppled heads, and giant trees whose roots have split it all apart.
+//   B = rect solids [x0, z0, x1, z1, kind, h, seed]   P = round solids [x, z, r, kind, seed]   W = water rects/rings (see water())
+// ════════════════════════════════════════════════════════════════════════════
+var _AN = (function(){
+  var s = 0x0a653001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var avenue = function(x, z){ return Math.abs(x - 120) < 5 || Math.abs(z - 120) < 5; };
+  var diagD = function(x, z){ var t = Math.max(0, Math.min(1, ((x - 12) + (z - 12))/(2*92))), px = 12 + t*92, pz = 12 + t*92; return Math.hypot(x - px, z - pz); };   // the old road in from the north-west (12,12) -> (104,104)
+  var road = function(x, z){ return avenue(x, z) || diagD(x, z) < 3.5; };
+  var rc = function(x, z){ return Math.hypot(x - 120, z - 120); };
+  var POOLS = [[106, 36, 113, 76], [127, 36, 134, 76], [106, 164, 113, 204], [127, 164, 134, 204], [36, 106, 76, 113], [36, 127, 76, 134], [164, 106, 204, 113], [164, 127, 204, 134]];
+  var water = function(x, z){ var r = rc(x, z); if(r > 27 && r < 31.5 && !road(x, z)) return true;
+    for(var i = 0; i < POOLS.length; i++){ var p = POOLS[i]; if(x >= p[0] && x < p[2] && z >= p[1] && z < p[3]) return true; } return false; };
+  var PYR = [[70, 170, 14, 30], [170, 170, 14, 30], [170, 70, 14, 30]];   // cx, cz, half-size, height
+  var TOWERS = [[148, 92], [92, 148], [148, 148]];
+  var COLOSSI = [[109, 84, 0], [131, 84, 0], [109, 156, 2], [131, 156, 2], [84, 109, 3], [84, 131, 3], [156, 109, 1], [156, 131, 1]];   // facing the avenue they guard
+  var B = [], P = [];
+  var Occ = new Uint8Array(240*240);
+  var occ = function(x0, z0, x1, z1){ for(var z = Math.max(0, Math.floor(z0)); z < Math.min(240, Math.ceil(z1)); z++) for(var x = Math.max(0, Math.floor(x0)); x < Math.min(240, Math.ceil(x1)); x++) Occ[z*240 + x] = 1; };
+  var freeRect = function(x0, z0, x1, z1){ if(x0 < 6 || z0 < 6 || x1 > 234 || z1 > 234) return false; for(var z = Math.floor(z0); z < Math.ceil(z1); z++) for(var x = Math.floor(x0); x < Math.ceil(x1); x++){ if(Occ[z*240 + x]) return false; } return true; };
+  // reserve the open ground: roads (+ a verge), the plaza + moat, the pools, the gates, the spawn
+  for(var z = 0; z < 240; z++) for(var x = 0; x < 240; x++){ var xc = x + 0.5, zc = z + 0.5;
+    if(Math.abs(xc - 120) < 7.5 || Math.abs(zc - 120) < 7.5 || diagD(xc, zc) < 6 || rc(xc, zc) < 34 || water(xc, zc) || Math.hypot(xc - 40, zc - 40) < 9) Occ[z*240 + x] = 1;
+    for(var i = 0; i < POOLS.length; i++){ var p = POOLS[i]; if(xc > p[0] - 2 && xc < p[2] + 2 && zc > p[1] - 2 && zc < p[3] + 2) Occ[z*240 + x] = 1; } }
+  PYR.forEach(function(p, i){ B.push([p[0] - p[2], p[1] - p[2], p[0] + p[2], p[1] + p[2], 'pyramid', p[3], 6530 + i]); occ(p[0] - p[2] - 5, p[1] - p[2] - 5, p[0] + p[2] + 5, p[1] + p[2] + 5); });
+  TOWERS.forEach(function(t, i){ B.push([t[0] - 4, t[1] - 4, t[0] + 4, t[1] + 4, 'facetower', 22, 6540 + i]); occ(t[0] - 7, t[1] - 7, t[0] + 7, t[1] + 7); });
+  COLOSSI.forEach(function(c, i){ P.push([c[0], c[1], 3.2, 'colossus', c[2]*10 + i]); occ(c[0] - 4, c[1] - 4, c[0] + 4, c[1] + 4); });
+  // the Architect's Gate: two pylons either side of the old road, the ring floats between them
+  [[70 - 6, 70 + 6], [70 + 6, 70 - 6]].forEach(function(q, i){ P.push([q[0], q[1], 1.8, 'gatepylon', 6550 + i]); occ(q[0] - 3, q[1] - 3, q[0] + 3, q[1] + 3); });
+  var post = function(n, kind, r0, r1, pad){ for(var t = 0, c = 0; t < n*12 && c < n; t++){ var x = 8 + R()*224, z = 8 + R()*224, r = r0 + R()*(r1 - r0); if(!freeRect(x - r - pad, z - r - pad, x + r + pad, z + r + pad)) continue; P.push([x, z, r, kind, (R()*1e6)|0]); occ(x - r - pad*0.5, z - r - pad*0.5, x + r + pad*0.5, z + r + pad*0.5); c++; } };
+  post(55, 'bigtree', 2.2, 3.0, 2.5);
+  // ruined shrines, stupas, walls, fallen heads, broken pillars in the quadrants
+  for(var t = 0; t < 900; t++){ var w = 6 + ((R()*5)|0), d = 5 + ((R()*5)|0), x0 = 8 + R()*(224 - w), z0 = 8 + R()*(224 - d); if(B.length > 70) break;
+    if(!freeRect(x0 - 2, z0 - 2, x0 + w + 2, z0 + d + 2)) continue; var k = R(); B.push([x0, z0, x0 + w, z0 + d, k < 0.45 ? 'shrine' : k < 0.75 ? 'ruinhall' : 'terrace', 0, (R()*1e6)|0]); occ(x0 - 2, z0 - 2, x0 + w + 2, z0 + d + 2); }
+  post(14, 'stupa', 1.8, 2.6, 2); post(10, 'head', 2.0, 2.6, 2); post(34, 'wall', 1.0, 1.0, 1.5); post(46, 'brokenpillar', 0.7, 0.8, 1.2); post(300, 'tree', 0.9, 1.2, 1.4);
+  var M = new Uint8Array(240*240);
+  var mark = function(x, z){ x = Math.floor(x); z = Math.floor(z); if(x >= 0 && z >= 0 && x < 240 && z < 240) M[z*240 + x] = 1; };
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++){ var xc2 = x + 0.5, zc2 = z + 0.5, gate = (Math.abs(xc2 - 120) < 6 && (z < 8 || z > 231)) || (Math.abs(zc2 - 120) < 6 && (x < 8 || x > 231));
+    if((x < 4 || x > 235 || z < 4 || z > 235) && !gate) M[z*240 + x] = 1; if(water(xc2, zc2)) M[z*240 + x] = 1; }
+  B.forEach(function(b){ var pad = b[4] === 'terrace' ? 0 : 0; for(z = Math.floor(b[1]); z < Math.ceil(b[3]); z++) for(x = Math.floor(b[0]); x < Math.ceil(b[2]); x++){
+    if(b[4] === 'ruinhall'){ var edge = (x === Math.floor(b[0]) || x === Math.ceil(b[2]) - 1 || z === Math.floor(b[1]) || z === Math.ceil(b[3]) - 1), door = Math.abs(x + 0.5 - (b[0] + b[2])/2) < 1.5 || Math.abs(z + 0.5 - (b[1] + b[3])/2) < 1.5; if(edge && !door) mark(x, z); }
+    else mark(x, z); } });
+  P.forEach(function(p){ var r = p[3] === 'wall' ? 0 : p[2]; if(p[3] === 'wall'){ var a = (p[4] % 4)*Math.PI/4, L = 5 + p[4] % 4; for(var u = -L/2; u <= L/2; u += 0.5) mark(p[0] + Math.cos(a)*u, p[1] + Math.sin(a)*u); return; }
+    for(z = Math.floor(p[1] - r); z <= Math.ceil(p[1] + r); z++) for(x = Math.floor(p[0] - r); x <= Math.ceil(p[0] + r); x++) if(Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < r) mark(x, z); });
+  return { M:M, B:B, P:P, POOLS:POOLS, PYR:PYR, TOWERS:TOWERS, COLOSSI:COLOSSI, water:water, road:road, avenue:avenue, diagD:diagD, rc:rc };
+})();
+function _anWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _AN.M[z*240 + x] === 1; }
+function _anWalkable(wx, wz){ return !_anWallAt(wx/TILE, wz/TILE); }
+
 var _NP = (function(){
   var s = 0x0a652001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
   var XS = [32, 62, 92, 120, 148, 178, 208], SW = function(v){ return v === 120 ? 6 : 3; };   // street centre-lines + half-widths
@@ -8073,7 +8131,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8150,6 +8208,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'ancient') { if (_anWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_anWalkable(nx, e.z)) e.x = nx; else if (_anWalkable(e.x, nz)) e.z = nz; }   // a653 — ruins, trees, water
         else if (zoneName === 'necropolis') { if (_npWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_npWalkable(nx, e.z)) e.x = nx; else if (_npWalkable(e.x, nz)) e.z = nz; }   // a652 — the city's walls, canal, pillars
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
@@ -11706,6 +11765,11 @@ function tickGame(game) {
     if (zoneName === 'riftvale') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
       if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    // a653 — ANCIENT REALM: the guardians stay out of the ruins, the trees and the water
+    if (zoneName === 'ancient') zone.enemies.forEach(e => {
+      if (!e.active || e._rv0x === undefined || _anWalkable(e.x, e.z)) return;
+      if (_anWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_anWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     // a652 — NECROPOLIS: the dead stay out of the houses, the canal and the rail pillars
     if (zoneName === 'necropolis') zone.enemies.forEach(e => {
