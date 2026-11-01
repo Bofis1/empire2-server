@@ -1546,41 +1546,41 @@ const ZONE_SPAWNS = {
   //   ZONE_DEFS.sunken_sands.enemySpawns (150 mobs). The client sv_zone_snapshot
   //   fallback self-disables once this snapshot arrives non-empty.
   sunken_sands: [
-    {tx:153,tz:80,type:'sand_worm'}, {tx:109,tz:82,type:'sand_worm'}, {tx:119,tz:86,type:'sand_worm'}, {tx:139,tz:88,type:'sand_worm'},
+    {tx:149,tz:83,type:'sand_worm'}, {tx:109,tz:82,type:'sand_worm'}, {tx:119,tz:93,type:'sand_worm'}, {tx:139,tz:88,type:'sand_worm'},
     {tx:83,tz:96,type:'sand_worm'}, {tx:157,tz:106,type:'sand_worm'}, {tx:171,tz:114,type:'sand_worm'}, {tx:65,tz:117,type:'sand_worm'},
-    {tx:154,tz:121,type:'sand_worm'}, {tx:85,tz:125,type:'sand_worm'}, {tx:88,tz:136,type:'sand_worm'}, {tx:156,tz:140,type:'sand_worm'},
-    {tx:143,tz:141,type:'sand_worm'}, {tx:100,tz:145,type:'sand_worm'}, {tx:142,tz:157,type:'sand_worm'}, {tx:84,tz:158,type:'sand_worm'},
-    {tx:120,tz:159,type:'sand_worm'}, {tx:103,tz:167,type:'sand_worm'}, {tx:100,tz:46,type:'sand_mummy'}, {tx:137,tz:48,type:'sand_mummy'},
+    {tx:154,tz:121,type:'sand_worm'}, {tx:86,tz:124,type:'sand_worm'}, {tx:91,tz:137,type:'sand_worm'}, {tx:154,tz:140,type:'sand_worm'},
+    {tx:143,tz:141,type:'sand_worm'}, {tx:99,tz:144,type:'sand_worm'}, {tx:142,tz:157,type:'sand_worm'}, {tx:84,tz:157,type:'sand_worm'},
+    {tx:120,tz:159,type:'sand_worm'}, {tx:103,tz:167,type:'sand_worm'}, {tx:96,tz:46,type:'sand_mummy'}, {tx:143,tz:48,type:'sand_mummy'},
     {tx:80,tz:49,type:'sand_mummy'}, {tx:142,tz:60,type:'sand_mummy'}, {tx:101,tz:61,type:'sand_mummy'}, {tx:165,tz:62,type:'sand_mummy'},
-    {tx:76,tz:63,type:'sand_mummy'}, {tx:64,tz:77,type:'sand_mummy'}, {tx:177,tz:79,type:'sand_mummy'}, {tx:80,tz:82,type:'sand_mummy'},
-    {tx:48,tz:97,type:'sand_mummy'}, {tx:64,tz:100,type:'sand_mummy'}, {tx:178,tz:101,type:'sand_mummy'}, {tx:196,tz:116,type:'sand_mummy'},
-    {tx:60,tz:137,type:'sand_mummy'}, {tx:181,tz:138,type:'sand_mummy'}, {tx:196,tz:141,type:'sand_mummy'}, {tx:179,tz:151,type:'sand_mummy'},
-    {tx:60,tz:163,type:'sand_mummy'}, {tx:165,tz:166,type:'sand_mummy'}, {tx:137,tz:172,type:'sand_mummy'}, {tx:155,tz:174,type:'sand_mummy'},
-    {tx:87,tz:175,type:'sand_mummy'}, {tx:102,tz:177,type:'sand_mummy'}, {tx:61,tz:178,type:'sand_mummy'}, {tx:122,tz:182,type:'sand_mummy'},
-    {tx:141,tz:196,type:'sand_mummy'}, {tx:106,tz:201,type:'sand_mummy'}, {tx:116,tz:24,type:'dune_skeleton'}, {tx:105,tz:26,type:'dune_skeleton'},
-    {tx:121,tz:37,type:'dune_skeleton'}, {tx:179,tz:40,type:'dune_skeleton'}, {tx:159,tz:46,type:'dune_skeleton'}, {tx:184,tz:59,type:'dune_skeleton'},
+    {tx:76,tz:63,type:'sand_mummy'}, {tx:67,tz:79,type:'sand_mummy'}, {tx:177,tz:79,type:'sand_mummy'}, {tx:80,tz:82,type:'sand_mummy'},
+    {tx:48,tz:97,type:'sand_mummy'}, {tx:64,tz:100,type:'sand_mummy'}, {tx:178,tz:100,type:'sand_mummy'}, {tx:196,tz:116,type:'sand_mummy'},
+    {tx:61,tz:137,type:'sand_mummy'}, {tx:181,tz:137,type:'sand_mummy'}, {tx:199,tz:142,type:'sand_mummy'}, {tx:179,tz:151,type:'sand_mummy'},
+    {tx:60,tz:162,type:'sand_mummy'}, {tx:165,tz:166,type:'sand_mummy'}, {tx:137,tz:171,type:'sand_mummy'}, {tx:155,tz:172,type:'sand_mummy'},
+    {tx:87,tz:175,type:'sand_mummy'}, {tx:102,tz:177,type:'sand_mummy'}, {tx:61,tz:177,type:'sand_mummy'}, {tx:122,tz:182,type:'sand_mummy'},
+    {tx:141,tz:196,type:'sand_mummy'}, {tx:104,tz:199,type:'sand_mummy'}, {tx:116,tz:10,type:'dune_skeleton'}, {tx:96,tz:26,type:'dune_skeleton'},
+    {tx:121,tz:57,type:'dune_skeleton'}, {tx:188,tz:31,type:'dune_skeleton'}, {tx:159,tz:46,type:'dune_skeleton'}, {tx:184,tz:59,type:'dune_skeleton'},
     {tx:64,tz:63,type:'dune_skeleton'}, {tx:196,tz:80,type:'dune_skeleton'}, {tx:44,tz:87,type:'dune_skeleton'}, {tx:198,tz:97,type:'dune_skeleton'},
     {tx:31,tz:99,type:'dune_skeleton'}, {tx:37,tz:115,type:'dune_skeleton'}, {tx:218,tz:115,type:'dune_skeleton'}, {tx:29,tz:119,type:'dune_skeleton'},
-    {tx:208,tz:134,type:'dune_skeleton'}, {tx:24,tz:138,type:'dune_skeleton'}, {tx:41,tz:143,type:'dune_skeleton'}, {tx:212,tz:154,type:'dune_skeleton'},
-    {tx:39,tz:156,type:'dune_skeleton'}, {tx:199,tz:164,type:'dune_skeleton'}, {tx:181,tz:177,type:'dune_skeleton'}, {tx:67,tz:190,type:'dune_skeleton'},
-    {tx:85,tz:196,type:'dune_skeleton'}, {tx:155,tz:198,type:'dune_skeleton'}, {tx:114,tz:201,type:'dune_skeleton'}, {tx:101,tz:212,type:'dune_skeleton'},
-    {tx:134,tz:18,type:'desert_snake'}, {tx:43,tz:21,type:'desert_snake'}, {tx:60,tz:23,type:'desert_snake'}, {tx:181,tz:24,type:'desert_snake'},
-    {tx:165,tz:25,type:'desert_snake'}, {tx:82,tz:29,type:'desert_snake'}, {tx:59,tz:41,type:'desert_snake'}, {tx:195,tz:43,type:'desert_snake'},
-    {tx:42,tz:45,type:'desert_snake'}, {tx:216,tz:50,type:'desert_snake'}, {tx:41,tz:57,type:'desert_snake'}, {tx:224,tz:57,type:'desert_snake'},
-    {tx:200,tz:63,type:'desert_snake'}, {tx:26,tz:67,type:'desert_snake'}, {tx:221,tz:76,type:'desert_snake'}, {tx:29,tz:78,type:'desert_snake'},
-    {tx:217,tz:94,type:'desert_snake'}, {tx:28,tz:164,type:'desert_snake'}, {tx:19,tz:178,type:'desert_snake'}, {tx:219,tz:184,type:'desert_snake'},
-    {tx:201,tz:185,type:'desert_snake'}, {tx:39,tz:187,type:'desert_snake'}, {tx:23,tz:197,type:'desert_snake'}, {tx:201,tz:197,type:'desert_snake'},
-    {tx:48,tz:199,type:'desert_snake'}, {tx:210,tz:199,type:'desert_snake'}, {tx:180,tz:201,type:'desert_snake'}, {tx:181,tz:212,type:'desert_snake'},
+    {tx:209,tz:135,type:'dune_skeleton'}, {tx:24,tz:138,type:'dune_skeleton'}, {tx:41,tz:143,type:'dune_skeleton'}, {tx:212,tz:154,type:'dune_skeleton'},
+    {tx:39,tz:156,type:'dune_skeleton'}, {tx:199,tz:165,type:'dune_skeleton'}, {tx:181,tz:177,type:'dune_skeleton'}, {tx:67,tz:190,type:'dune_skeleton'},
+    {tx:85,tz:196,type:'dune_skeleton'}, {tx:155,tz:198,type:'dune_skeleton'}, {tx:114,tz:201,type:'dune_skeleton'}, {tx:106,tz:215,type:'dune_skeleton'},
+    {tx:134,tz:10,type:'desert_snake'}, {tx:43,tz:21,type:'desert_snake'}, {tx:60,tz:23,type:'desert_snake'}, {tx:181,tz:24,type:'desert_snake'},
+    {tx:165,tz:25,type:'desert_snake'}, {tx:82,tz:29,type:'desert_snake'}, {tx:50,tz:41,type:'desert_snake'}, {tx:195,tz:43,type:'desert_snake'},
+    {tx:42,tz:45,type:'desert_snake'}, {tx:216,tz:50,type:'desert_snake'}, {tx:44,tz:57,type:'desert_snake'}, {tx:224,tz:57,type:'desert_snake'},
+    {tx:200,tz:63,type:'desert_snake'}, {tx:25,tz:67,type:'desert_snake'}, {tx:221,tz:76,type:'desert_snake'}, {tx:35,tz:75,type:'desert_snake'},
+    {tx:217,tz:94,type:'desert_snake'}, {tx:28,tz:164,type:'desert_snake'}, {tx:19,tz:177,type:'desert_snake'}, {tx:219,tz:184,type:'desert_snake'},
+    {tx:200,tz:183,type:'desert_snake'}, {tx:39,tz:187,type:'desert_snake'}, {tx:23,tz:197,type:'desert_snake'}, {tx:201,tz:197,type:'desert_snake'},
+    {tx:48,tz:199,type:'desert_snake'}, {tx:210,tz:199,type:'desert_snake'}, {tx:178,tz:201,type:'desert_snake'}, {tx:181,tz:212,type:'desert_snake'},
     {tx:84,tz:215,type:'desert_snake'}, {tx:156,tz:215,type:'desert_snake'}, {tx:194,tz:217,type:'desert_snake'}, {tx:44,tz:218,type:'desert_snake'},
-    {tx:69,tz:221,type:'desert_snake'}, {tx:139,tz:221,type:'desert_snake'}, {tx:210,tz:21,type:'sand_scorpion'}, {tx:203,tz:22,type:'sand_scorpion'},
-    {tx:21,tz:27,type:'sand_scorpion'}, {tx:23,tz:40,type:'sand_scorpion'}, {tx:133,tz:49,type:'sand_scorpion'}, {tx:102,tz:59,type:'sand_scorpion'},
-    {tx:142,tz:59,type:'sand_scorpion'}, {tx:166,tz:60,type:'sand_scorpion'}, {tx:78,tz:63,type:'sand_scorpion'}, {tx:63,tz:76,type:'sand_scorpion'},
-    {tx:177,tz:77,type:'sand_scorpion'}, {tx:106,tz:81,type:'sand_scorpion'}, {tx:78,tz:82,type:'sand_scorpion'}, {tx:153,tz:82,type:'sand_scorpion'},
-    {tx:119,tz:85,type:'sand_scorpion'}, {tx:140,tz:88,type:'sand_scorpion'}, {tx:86,tz:98,type:'sand_scorpion'}, {tx:64,tz:103,type:'sand_scorpion'},
-    {tx:178,tz:103,type:'sand_scorpion'}, {tx:158,tz:105,type:'sand_scorpion'}, {tx:175,tz:115,type:'sand_scorpion'}, {tx:70,tz:118,type:'sand_scorpion'},
-    {tx:155,tz:124,type:'sand_scorpion'}, {tx:88,tz:127,type:'sand_scorpion'}, {tx:61,tz:138,type:'sand_scorpion'}, {tx:87,tz:139,type:'sand_scorpion'},
-    {tx:183,tz:139,type:'sand_scorpion'}, {tx:153,tz:140,type:'sand_scorpion'}, {tx:146,tz:142,type:'sand_scorpion'}, {tx:98,tz:143,type:'sand_scorpion'},
-    {tx:177,tz:153,type:'sand_scorpion'}, {tx:121,tz:158,type:'sand_scorpion'}, {tx:139,tz:158,type:'sand_scorpion'}, {tx:84,tz:160,type:'sand_scorpion'},
+    {tx:69,tz:221,type:'desert_snake'}, {tx:139,tz:221,type:'desert_snake'}, {tx:210,tz:21,type:'sand_scorpion'}, {tx:201,tz:24,type:'sand_scorpion'},
+    {tx:21,tz:27,type:'sand_scorpion'}, {tx:23,tz:40,type:'sand_scorpion'}, {tx:133,tz:57,type:'sand_scorpion'}, {tx:102,tz:59,type:'sand_scorpion'},
+    {tx:142,tz:59,type:'sand_scorpion'}, {tx:166,tz:60,type:'sand_scorpion'}, {tx:78,tz:63,type:'sand_scorpion'}, {tx:67,tz:79,type:'sand_scorpion'},
+    {tx:177,tz:77,type:'sand_scorpion'}, {tx:106,tz:81,type:'sand_scorpion'}, {tx:78,tz:82,type:'sand_scorpion'}, {tx:153,tz:85,type:'sand_scorpion'},
+    {tx:119,tz:93,type:'sand_scorpion'}, {tx:140,tz:88,type:'sand_scorpion'}, {tx:86,tz:98,type:'sand_scorpion'}, {tx:64,tz:103,type:'sand_scorpion'},
+    {tx:178,tz:104,type:'sand_scorpion'}, {tx:158,tz:105,type:'sand_scorpion'}, {tx:175,tz:115,type:'sand_scorpion'}, {tx:70,tz:118,type:'sand_scorpion'},
+    {tx:155,tz:124,type:'sand_scorpion'}, {tx:88,tz:127,type:'sand_scorpion'}, {tx:61,tz:138,type:'sand_scorpion'}, {tx:84,tz:139,type:'sand_scorpion'},
+    {tx:183,tz:137,type:'sand_scorpion'}, {tx:153,tz:140,type:'sand_scorpion'}, {tx:146,tz:142,type:'sand_scorpion'}, {tx:98,tz:143,type:'sand_scorpion'},
+    {tx:177,tz:153,type:'sand_scorpion'}, {tx:121,tz:158,type:'sand_scorpion'}, {tx:139,tz:158,type:'sand_scorpion'}, {tx:84,tz:162,type:'sand_scorpion'},
     {tx:106,tz:164,type:'sand_scorpion'}, {tx:165,tz:165,type:'sand_scorpion'}, {tx:134,tz:170,type:'sand_scorpion'}, {tx:101,tz:173,type:'sand_scorpion'},
     {tx:88,tz:174,type:'sand_scorpion'}, {tx:155,tz:177,type:'sand_scorpion'}, {tx:123,tz:181,type:'sand_scorpion'}, {tx:139,tz:195,type:'sand_scorpion'},
     {tx:21,tz:212,type:'sand_scorpion'}, {tx:214,tz:219,type:'sand_scorpion'}
@@ -4467,6 +4467,94 @@ function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
 //   toppled heads, and giant trees whose roots have split it all apart.
 //   B = rect solids [x0, z0, x1, z1, kind, h, seed]   P = round solids [x, z, r, kind, seed]   W = water rects/rings (see water())
 // ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// a655 — THE SUNKEN SANDS layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js), deterministic, so players and the desert's killers collide with
+//   the same dunes and stone. Tiles. A scorching dune sea over a buried empire: the
+//   GREAT PYRAMID and its two queens stand along the north, the GREAT SPHINX lies before
+//   Khepri's sun-court at the centre (r 24) and stares down the AVENUE OF RAMS that runs
+//   up from the southern camp; the sun road crosses west to east between the gates. The
+//   sunken temple's hypostyle hall breaks the sand in the east, the broken colossus of a
+//   forgotten king lies in the west, sandstone spire fields rise in the south-west and
+//   north-east, a buried city's walls crumble in the south-east, and sinkholes yawn
+//   where the worms have been. Great dune ridges (impassable) wall it all into valleys.
+//   dune(x,z) > 0.5 = ridge   P = round solids [x, z, r, kind, seed]   B = rect solids [x0, z0, x1, z1, kind, h, seed]
+// ════════════════════════════════════════════════════════════════════════════
+var _SN = (function(){
+  var s = 0x0a655001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  function vn(x, z){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; fx = fx*fx*(3 - 2*fx); fz = fz*fz*(3 - 2*fz);
+    var a = hs(ix, iz), b = hs(ix + 1, iz), c = hs(ix, iz + 1), d = hs(ix + 1, iz + 1); return a + (b - a)*fx + (c - a)*fz + (a - b - c + d)*fx*fz; }
+  var B = [], P = [];
+  var PYR = [[120, 34, 22, 40], [64, 44, 12, 22], [176, 44, 12, 22]];          // cx, cz, half, height
+  var SPHINX = [112, 70, 128, 92];                                             // body rect; the head looks south over the court
+  var TEMPLE = [176, 84, 214, 112];                                             // the hypostyle hall
+  var COLOSSUS = [42, 92, 64, 112];                                             // the broken king
+  var CITY = [150, 150, 214, 206];                                              // the buried city
+  var SPIRES = [[46, 176, 22], [210, 66, 13]];                                  // spire fields: cx, cz, r
+  // the open ground: the sun-court, the roads, the camp, the gates, a margin round each monument
+  var keep = function(x, z){
+    if(Math.hypot(x - 120, z - 120) < 31) return 1;
+    if(Math.abs(x - 120) < 9 && z > 100) return 1;                                // the avenue of rams
+    if(Math.abs(z - 120) < 7) return 1;                                         // the sun road
+    if(Math.hypot(x - 120, z - 222) < 16) return 1;                             // the camp
+    if(x > SPHINX[0] - 12 && x < SPHINX[2] + 12 && z > SPHINX[1] - 8 && z < SPHINX[3] + 4) return 1;
+    for(var i = 0; i < PYR.length; i++){ var p = PYR[i]; if(Math.abs(x - p[0]) < p[2] + 9 && Math.abs(z - p[1]) < p[2] + 9) return 1; }
+    if(x > TEMPLE[0] - 7 && x < TEMPLE[2] + 7 && z > TEMPLE[1] - 7 && z < TEMPLE[3] + 7) return 1;
+    if(x > COLOSSUS[0] - 7 && x < COLOSSUS[2] + 7 && z > COLOSSUS[1] - 7 && z < COLOSSUS[3] + 7) return 1;
+    if(x > CITY[0] - 4 && x < CITY[2] + 4 && z > CITY[1] - 4 && z < CITY[3] + 4) return 1;
+    for(var j = 0; j < SPIRES.length; j++){ if(Math.hypot(x - SPIRES[j][0], z - SPIRES[j][1]) < SPIRES[j][2] + 5) return 1; }
+    return 0; };
+  // dune ridges: long crescent crests drawn across the open desert by layered noise
+  var dune = function(x, z){
+    var e = Math.min(x, z, 239 - x, 239 - z), edge = (6 - e)/3;
+    var gate = Math.abs(z - 120) < 8 && (x < 14 || x > 225);
+    if(gate) edge = Math.min(edge, (3 - e)/3);
+    var w = vn(x*0.035 + 3.1, z*0.05 - 1.7)*0.65 + vn(x*0.09 - 4.4, z*0.11 + 8.2)*0.35;
+    var ridge = 1 - Math.abs(Math.sin((x*0.06 + z*0.11) + w*5.2))*1.02 - (vn(x*0.02, z*0.02) - 0.5)*0.7;
+    var k = keep(x, z) ? -1 : 0;
+    return Math.max(edge, k ? Math.min(ridge, -0.5) : ridge - 0.12); };
+  PYR.forEach(function(p, i){ B.push([p[0] - p[2], p[1] - p[2], p[0] + p[2], p[1] + p[2], 'pyramid', p[3], 6550 + i]); });
+  B.push([SPHINX[0], SPHINX[1], SPHINX[2], SPHINX[3], 'sphinx', 14, 6560]);
+  // the hypostyle hall: a forest of columns (solid) inside a broken enclosure, open aisles between
+  for(var cx = TEMPLE[0] + 4; cx < TEMPLE[2] - 2; cx += 5) for(var cz = TEMPLE[1] + 4; cz < TEMPLE[3] - 2; cz += 5){ if(Math.abs(cz - (TEMPLE[1] + TEMPLE[3])/2) < 3) continue; P.push([cx, cz, 1.4, 'column', (R()*1e6)|0]); }
+  [[TEMPLE[0], TEMPLE[1], TEMPLE[2], TEMPLE[1] + 1.5], [TEMPLE[0], TEMPLE[3] - 1.5, TEMPLE[2], TEMPLE[3]], [TEMPLE[2] - 1.5, TEMPLE[1], TEMPLE[2], TEMPLE[3]]].forEach(function(w, i){ B.push([w[0], w[1], w[2], w[3], 'templewall', 8, 6570 + i]); });
+  B.push([TEMPLE[0] - 1, TEMPLE[1] + 8, TEMPLE[0] + 2, TEMPLE[1] + 11, 'pylon', 16, 6575]); B.push([TEMPLE[0] - 1, TEMPLE[3] - 11, TEMPLE[0] + 2, TEMPLE[3] - 8, 'pylon', 16, 6576]);
+  // the broken colossus: the legs still stand on the throne, the head and torso lie in the sand
+  B.push([COLOSSUS[0] + 8, COLOSSUS[1] + 4, COLOSSUS[0] + 16, COLOSSUS[1] + 10, 'throne', 12, 6580]);
+  P.push([COLOSSUS[0] + 6, COLOSSUS[3] - 3, 4.2, 'kinghead', 6581]); P.push([COLOSSUS[2] - 3, COLOSSUS[3] - 4, 2.6, 'kinghand', 6582]);
+  // the buried city: mudbrick house walls in blocks, half drowned in sand
+  for(var bx = CITY[0] + 2; bx < CITY[2] - 8; bx += 11) for(var bz = CITY[1] + 2; bz < CITY[3] - 8; bz += 11){ if(R() < 0.18) continue; var w2 = 6 + R()*3, d2 = 6 + R()*3; B.push([bx, bz, bx + w2, bz + d2, 'house', 3 + R()*3, (R()*1e6)|0]); }
+  // the spire fields: sandstone hoodoos and wind-carved needles
+  SPIRES.forEach(function(f, fi){ for(var t = 0, c = 0; t < 400 && c < (fi ? 16 : 24); t++){ var a = R()*6.283, r = Math.sqrt(R())*f[2], x = f[0] + Math.cos(a)*r, z = f[1] + Math.sin(a)*r, rr2 = 1.2 + R()*2.4;
+    if(P.some(function(q){ return Math.hypot(q[0] - x, q[1] - z) < q[2] + rr2 + 2.5; })) continue; P.push([x, z, rr2, 'spire', (R()*1e6)|0]); c++; } });
+  // the avenue of rams: criosphinxes in pairs either side of the processional way
+  for(var az = 150; az <= 206; az += 7){ P.push([111.5, az, 1.5, 'ram', az]); P.push([128.5, az, 1.5, 'ram', az + 1]); }
+  // obelisks before the sphinx and at the gates of the sun road
+  [[104, 96], [136, 96], [22, 113], [22, 127], [218, 113], [218, 127], [104, 214], [136, 214]].forEach(function(q, i){ P.push([q[0], q[1], 1.2, 'obelisk', 6590 + i]); });
+  // the sun-court: jackal guardians in a ring (gaps on the roads)
+  for(var k = 0; k < 8; k++){ var a2 = (k + 0.5)/8*Math.PI*2; P.push([120 + Math.cos(a2)*27.5, 120 + Math.sin(a2)*27.5, 1.6, 'jackal', k]); }
+  // sinkholes where the worms surfaced, a dead beast's ribs, scattered half-buried blocks
+  var free = function(x, z, r){ if(keep(x, z) || dune(x, z) > -0.1) return false; for(var i = 0; i < P.length; i++){ var q = P[i]; if(Math.hypot(q[0] - x, q[1] - z) < q[2] + r + 3) return false; } return true; };
+  for(var t2 = 0, c2 = 0; t2 < 600 && c2 < 9; t2++){ var x3 = 12 + R()*216, z3 = 12 + R()*216, r3 = 3 + R()*2.5; if(!free(x3, z3, r3)) continue; P.push([x3, z3, r3, 'sinkhole', (R()*1e6)|0]); c2++; }
+  for(var t3 = 0, c3 = 0; t3 < 600 && c3 < 4; t3++){ var x4 = 12 + R()*216, z4 = 12 + R()*216; if(!free(x4, z4, 4)) continue; P.push([x4, z4, 2.0, 'ribs', (R()*1e6)|0]); c3++; }
+  for(var t4 = 0, c4 = 0; t4 < 900 && c4 < 40; t4++){ var x5 = 10 + R()*220, z5 = 10 + R()*220, r5 = 0.9 + R()*1.4; if(!free(x5, z5, r5)) continue; P.push([x5, z5, r5, R() < 0.5 ? 'block' : 'rock', (R()*1e6)|0]); c4++; }
+  var M = new Uint8Array(240*240), x, z;
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++) if(dune(x + 0.5, z + 0.5) > 0.5) M[z*240 + x] = 1;
+  var mark = function(x, z){ x = Math.floor(x); z = Math.floor(z); if(x >= 0 && z >= 0 && x < 240 && z < 240) M[z*240 + x] = 1; };
+  B.forEach(function(b){ for(z = Math.floor(b[1]); z < Math.ceil(b[3]); z++) for(x = Math.floor(b[0]); x < Math.ceil(b[2]); x++){
+    if(b[4] === 'house'){ var edge = (x === Math.floor(b[0]) || x === Math.ceil(b[2]) - 1 || z === Math.floor(b[1]) || z === Math.ceil(b[3]) - 1), door = Math.abs(x + 0.5 - (b[0] + b[2])/2) < 1.2; if(edge && !(door && z === Math.ceil(b[3]) - 1)) mark(x, z); }
+    else mark(x, z); } });
+  P.forEach(function(p){ if(p[3] === 'ribs') return; for(z = Math.floor(p[1] - p[2]); z <= Math.ceil(p[1] + p[2]); z++) for(x = Math.floor(p[0] - p[2]); x <= Math.ceil(p[0] + p[2]); x++) if(Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < p[2]) mark(x, z); });
+  // seal any pocket the dunes cut off, so nothing spawns where it can never be reached
+  var seen = new Uint8Array(240*240), q = [222*240 + 120]; seen[q[0]] = 1;
+  while(q.length){ var i0 = q.pop(), qx = i0 % 240, qz = (i0/240)|0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(d){ var X = qx + d[0], Z = qz + d[1]; if(X < 0 || Z < 0 || X >= 240 || Z >= 240) return; var j = Z*240 + X; if(!seen[j] && !M[j]){ seen[j] = 1; q.push(j); } }); }
+  for(var i1 = 0; i1 < 240*240; i1++) if(!M[i1] && !seen[i1]) M[i1] = 1;
+  return { M:M, B:B, P:P, PYR:PYR, SPHINX:SPHINX, TEMPLE:TEMPLE, COLOSSUS:COLOSSUS, CITY:CITY, SPIRES:SPIRES, dune:dune, keep:keep, vn:vn, hs:hs };
+})();
+function _snWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _SN.M[z*240 + x] === 1; }
+function _snWalkable(wx, wz){ return !_snWallAt(wx/TILE, wz/TILE); }
+
 var _AN = (function(){
   var s = 0x0a653001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
   var avenue = function(x, z){ return Math.abs(x - 120) < 5 || Math.abs(z - 120) < 5; };
@@ -8131,7 +8219,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8208,6 +8296,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'sunken_sands') { if (_snWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_snWalkable(nx, e.z)) e.x = nx; else if (_snWalkable(e.x, nz)) e.z = nz; }   // a655 — dunes, monuments, sinkholes
         else if (zoneName === 'ancient') { if (_anWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_anWalkable(nx, e.z)) e.x = nx; else if (_anWalkable(e.x, nz)) e.z = nz; }   // a653 — ruins, trees, water
         else if (zoneName === 'necropolis') { if (_npWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_npWalkable(nx, e.z)) e.x = nx; else if (_npWalkable(e.x, nz)) e.z = nz; }   // a652 — the city's walls, canal, pillars
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
@@ -11765,6 +11854,11 @@ function tickGame(game) {
     if (zoneName === 'riftvale') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
       if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    // a655 — SUNKEN SANDS: nothing ends a tick inside a dune ridge, a monument or a sinkhole
+    if (zoneName === 'sunken_sands') zone.enemies.forEach(e => {
+      if (!e.active || e._rv0x === undefined || _snWalkable(e.x, e.z)) return;
+      if (_snWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_snWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     // a653 — ANCIENT REALM: the guardians stay out of the ruins, the trees and the water
     if (zoneName === 'ancient') zone.enemies.forEach(e => {
