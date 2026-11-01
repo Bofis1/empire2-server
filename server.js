@@ -1619,22 +1619,22 @@ const ZONE_SPAWNS = {
     {type:'frost_wraith', tx:81, tz:34},
     {type:'frost_wraith', tx:81, tz:35},
     {type:'frost_wraith', tx:80, tz:39},
-    {type:'frost_wraith', tx:214, tz:130},
+    {type:'frost_wraith', tx:215, tz:130},
     {type:'frost_wraith', tx:214, tz:126},
     {type:'frost_wraith', tx:215, tz:131},
-    {type:'frost_wraith', tx:64, tz:43},
+    {type:'frost_wraith', tx:64, tz:41},
     {type:'frost_wraith', tx:68, tz:42},
     {type:'frost_wraith', tx:66, tz:41},
     {type:'frost_wraith', tx:72, tz:202},
-    {type:'frost_wraith', tx:69, tz:203},
+    {type:'frost_wraith', tx:68, tz:202},
     {type:'frost_wraith', tx:68, tz:201},
-    {type:'frost_wraith', tx:139, tz:18},
+    {type:'frost_wraith', tx:138, tz:18},
     {type:'frost_wraith', tx:140, tz:21},
     {type:'frost_wraith', tx:138, tz:21},
     {type:'frost_wraith', tx:25, tz:79},
     {type:'frost_wraith', tx:24, tz:80},
     {type:'frost_wraith', tx:27, tz:78},
-    {type:'frost_wraith', tx:144, tz:218},
+    {type:'frost_wraith', tx:143, tz:217},
     {type:'frost_wraith', tx:148, tz:216},
     {type:'frost_wraith', tx:147, tz:217},
     {type:'frost_wraith', tx:19, tz:154},
@@ -1658,12 +1658,12 @@ const ZONE_SPAWNS = {
     {type:'polar_bear', tx:40, tz:194},
     {type:'polar_bear', tx:38, tz:193},
     {type:'polar_bear', tx:40, tz:192},
-    {type:'polar_bear', tx:83, tz:17},
+    {type:'polar_bear', tx:82, tz:16},
     {type:'polar_bear', tx:83, tz:14},
-    {type:'polar_bear', tx:82, tz:18},
-    {type:'polar_bear', tx:159, tz:15},
-    {type:'polar_bear', tx:158, tz:15},
-    {type:'polar_bear', tx:161, tz:15},
+    {type:'polar_bear', tx:81, tz:18},
+    {type:'polar_bear', tx:157, tz:14},
+    {type:'polar_bear', tx:157, tz:14},
+    {type:'polar_bear', tx:157, tz:14},
     {type:'polar_bear', tx:199, tz:38},
     {type:'polar_bear', tx:197, tz:36},
     {type:'polar_bear', tx:198, tz:40},
@@ -1674,7 +1674,7 @@ const ZONE_SPAWNS = {
     {type:'polar_bear', tx:61, tz:23},
     {type:'polar_bear', tx:59, tz:24},
     {type:'polar_bear', tx:20, tz:62},
-    {type:'polar_bear', tx:18, tz:63},
+    {type:'polar_bear', tx:18, tz:62},
     {type:'polar_bear', tx:21, tz:66},
     {type:'polar_bear', tx:189, tz:26},
     {type:'polar_bear', tx:190, tz:29},
@@ -1685,15 +1685,15 @@ const ZONE_SPAWNS = {
     {type:'polar_bear', tx:222, tz:181},
     {type:'polar_bear', tx:220, tz:181},
     {type:'polar_bear', tx:222, tz:178},
-    {type:'frost_specter', tx:60, tz:223},
-    {type:'frost_specter', tx:61, tz:223},
-    {type:'frost_specter', tx:61, tz:222},
+    {type:'frost_specter', tx:61, tz:224},
+    {type:'frost_specter', tx:62, tz:223},
+    {type:'frost_specter', tx:62, tz:223},
     {type:'frost_specter', tx:226, tz:64},
-    {type:'frost_specter', tx:226, tz:66},
-    {type:'frost_specter', tx:224, tz:65},
-    {type:'frost_specter', tx:179, tz:15},
-    {type:'frost_specter', tx:176, tz:17},
-    {type:'frost_specter', tx:176, tz:16},
+    {type:'frost_specter', tx:227, tz:66},
+    {type:'frost_specter', tx:224, tz:64},
+    {type:'frost_specter', tx:183, tz:16},
+    {type:'frost_specter', tx:182, tz:19},
+    {type:'frost_specter', tx:182, tz:19},
     {type:'frost_specter', tx:49, tz:214},
     {type:'frost_specter', tx:48, tz:218},
     {type:'frost_specter', tx:50, tz:215},
@@ -1725,7 +1725,7 @@ const ZONE_SPAWNS = {
     {type:'frost_specter', tx:221, tz:21},
     {type:'frost_specter', tx:217, tz:24},
     {type:'frost_specter', tx:15, tz:17},
-    {type:'frost_specter', tx:15, tz:19},
+    {type:'frost_specter', tx:15, tz:18},
     {type:'frost_specter', tx:15, tz:16}
   ],
   // a543 — MULTIPLAYER MIGRATION: Ancient Realm is now server-authoritative.
@@ -4428,6 +4428,75 @@ function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
 //   LYCHGATES on the avenue, GRAVE HOUSES, the OSSUARY, the SEXTON'S LODGE.
 //   G = graves [x, z, kind, rot, seed]; B = buildings [x0, z0, x1, z1, kind, h, seed]; P = posts [x, z, r, kind]
 // ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// a651 — FROSTVEIL TUNDRA layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js), deterministic, so players and the frozen dead collide with the
+//   same ice. Tiles. An open arctic tundra (the old icewall maze is gone): the great
+//   GLACIER massif in the north-west, a glacier tongue calving from the north edge into
+//   the FROZEN SOUND (open black water, icebergs) in the north-east, a walkable FROZEN
+//   LAKE with breathing holes in the south-west, a frosted pine forest around frozen
+//   Architect ruins in the south-east, ice cliffs ringing the world, and the Colossus's
+//   frozen plateau in the centre ringed by ice-bound pillars. Four clear trails run from
+//   the edge portals and the south camp to the plateau.
+//   gl(x,z) > 0 glacier/cliff · sea(x,z) > 0 open water · lake(x,z) > 0 frozen lake (walkable)
+//   P = posts [x, z, r, kind, seed]
+// ════════════════════════════════════════════════════════════════════════════
+var _FV = (function(){
+  var s = 0x0a651001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  function vn(x, z){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; fx = fx*fx*(3 - 2*fx); fz = fz*fz*(3 - 2*fz);
+    var a = hs(ix, iz), b = hs(ix + 1, iz), c = hs(ix, iz + 1), d = hs(ix + 1, iz + 1); return a + (b - a)*fx + (c - a)*fz + (a - b - c + d)*fx*fz; }
+  function fbm(x, z){ return vn(x, z)*0.55 + vn(x*2.1 + 7.3, z*2.1 - 3.1)*0.3 + vn(x*4.3 - 1.7, z*4.3 + 9.2)*0.15; }
+  var trail = function(x, z){   // distance (tiles) to the nearest trail centre-line
+    var d = Math.min(Math.abs(x - 120) + (Math.abs(z - 120) < 24 ? 99 : 0), Math.abs(z - 120) + (Math.abs(x - 120) < 24 ? 99 : 0));
+    return Math.min(Math.abs(x - 120), Math.abs(z - 120)); };
+  // GLACIERS: the north-west massif, the northern tongue, the ice cliffs round the edge
+  var gl = function(x, z){
+    var e = Math.min(x, z, 239 - x, 239 - z), edge = (4.2 + fbm(x*0.08, z*0.08)*2.2) - e;
+    var portal = [[14, 120], [226, 120], [120, 14], [120, 226]].some(function(p){ return Math.abs(x - p[0]) < 9 && Math.abs(z - p[1]) < 9; });
+    if(portal) edge = Math.min(edge, 3 - e);
+    var dx = (x - 74)/31, dz = (z - 70)/26, n = fbm(x*0.06, z*0.06);
+    var mass = 1 - Math.sqrt(dx*dx + dz*dz) - (n - 0.5)*0.55 + Math.max(0, 0.18 - Math.hypot((x - 58)/14, (z - 96)/10))*1.2;
+    var tz = Math.max(0, Math.min(1, z/50)), tx = 168 - tz*6 + Math.sin(z*0.09)*4, tw = 13 - tz*4 + (fbm(x*0.1, z*0.1) - 0.5)*5;
+    var tongue = z < 50 + (fbm(x*0.2, 3.3) - 0.5)*6 ? (tw - Math.abs(x - tx))/tw : -1;
+    var m = Math.max(mass*6, tongue*5, edge);
+    if(Math.abs(x - 120) < 9 || Math.abs(z - 120) < 9) m = Math.min(m, edge);   // the trails never close
+    return m; };
+  // THE FROZEN SOUND — open black water under the tongue's calving face
+  var sea = function(x, z){ var dx = (x - 164)/35, dz = (z - 80)/29, n = fbm(x*0.07 + 11, z*0.07 + 5);
+    var v = 1 - Math.sqrt(dx*dx + dz*dz) - (n - 0.5)*0.5; if(Math.abs(x - 120) < 10 || Math.abs(z - 120) < 10) v = -1; return v; };
+  // THE FROZEN LAKE — walkable ice; the breathing holes are open water
+  var lake = function(x, z){ var dx = (x - 74)/31, dz = (z - 166)/25, n = fbm(x*0.08 + 31, z*0.08 + 17); return 1 - Math.sqrt(dx*dx + dz*dz) - (n - 0.5)*0.4; };
+  var HOLES = [], P = [];
+  for(var k = 0; k < 7; k++){ var a = R()*6.28, r = R()*0.7, hx = 74 + Math.cos(a)*r*26, hz = 166 + Math.sin(a)*r*20; if(Math.abs(hz - 120) < 12 || Math.abs(hx - 120) < 12) continue; HOLES.push([hx, hz, 1.6 + R()*2.4]); }
+  var clearOf = function(x, z, pad){ if(Math.hypot(x - 120, z - 120) < 30 + pad) return false; if(trail(x, z) < 8 + pad) return false;
+    if(gl(x, z) > -1.5 - pad || sea(x, z) > -0.06 - pad*0.03) return false; if(Math.hypot(x - 120, z - 226) < 12) return false;
+    for(var i = 0; i < P.length; i++){ var q = P[i]; if(Math.abs(q[0] - x) < q[2] + pad + 1 && Math.abs(q[1] - z) < q[2] + pad + 1 && Math.hypot(q[0] - x, q[1] - z) < q[2] + pad + 1) return false; } return true; };
+  // the Colossus's plateau: ice-bound Architect pillars, the trails come in between them
+  for(var k = 0; k < 8; k++){ var a = (k + 0.5)/8*Math.PI*2; P.push([120 + Math.cos(a)*25, 120 + Math.sin(a)*25, 1.4, 'pillar', k]); }
+  // the south-east: frozen Architect ruins in a frosted pine forest
+  [[156, 156, 'obelisk'], [172, 150, 'pillar'], [150, 172, 'pillar'], [178, 168, 'arch'], [164, 182, 'pillar'], [186, 186, 'colossus'], [146, 146, 'pillar'], [190, 158, 'pillar'], [158, 192, 'pillar']].forEach(function(q, i){
+    P.push([q[0], q[1], q[2] === 'colossus' ? 4.5 : q[2] === 'arch' ? 2.2 : q[2] === 'obelisk' ? 1.8 : 1.3, q[2], i]); });
+  for(var t = 0; t < 900 && P.length < 150; t++){ var x = 134 + R()*96, z = 134 + R()*96; if(lake(x, z) > -0.1) continue; if(clearOf(x, z, 0.6)) P.push([x, z, 0.7 + R()*0.3, 'pine', (R()*1e6)|0]); }
+  // groves and lone pines across the open tundra
+  for(var g = 0; g < 16; g++){ var gx = 14 + R()*212, gz = 14 + R()*212, n2 = 3 + ((R()*7)|0); for(var j = 0; j < n2; j++){ var x = gx + (R() - 0.5)*12, z = gz + (R() - 0.5)*12; if(lake(x, z) > -0.1) continue; if(clearOf(x, z, 0.8)) P.push([x, z, 0.7 + R()*0.3, 'pine', (R()*1e6)|0]); } }
+  // snow-capped rock outcrops, ice spires, frozen boulders
+  for(var t = 0; t < 600 && P.length < 330; t++){ var x = 8 + R()*224, z = 8 + R()*224, k2 = R(); if(lake(x, z) > -0.1) continue;
+    var kind = k2 < 0.55 ? 'rock' : k2 < 0.8 ? 'spire' : 'boulder', r = kind === 'rock' ? 1.3 + R()*2.2 : kind === 'spire' ? 0.8 + R()*0.6 : 0.9 + R()*0.6;
+    if(clearOf(x, z, r + 1.5)) P.push([x, z, r, kind, (R()*1e6)|0]); }
+  // the expedition's camp by the south gate, the ice-fishers' huts on the lake shore, a mammoth's bones
+  [[106, 212, 'tent'], [134, 212, 'tent'], [104, 200, 'tent'], [137, 198, 'crates'], [108, 186, 'sled'], [96, 150, 'hut'], [56, 140, 'hut'], [40, 98, 'mammoth'], [200, 214, 'mammoth']].forEach(function(q, i){
+    P.push([q[0], q[1], q[2] === 'mammoth' ? 2.5 : q[2] === 'tent' ? 2.0 : q[2] === 'hut' ? 2.0 : 1.4, q[2], i]); });
+  var M = new Uint8Array(240*240), x, z, GLH = new Float32Array(240*240);
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++){ var gv = gl(x + 0.5, z + 0.5); GLH[z*240 + x] = gv;
+    if(gv > 0 || sea(x + 0.5, z + 0.5) > 0) M[z*240 + x] = 1; }
+  HOLES.forEach(function(h){ for(z = Math.floor(h[1] - h[2]); z <= Math.ceil(h[1] + h[2]); z++) for(x = Math.floor(h[0] - h[2]); x <= Math.ceil(h[0] + h[2]); x++) if(x >= 0 && z >= 0 && x < 240 && z < 240 && Math.hypot(x + 0.5 - h[0], z + 0.5 - h[1]) < h[2]) M[z*240 + x] = 1; });
+  P.forEach(function(p){ if(p[3] === 'mammoth') return; for(z = Math.floor(p[1] - p[2]); z <= Math.ceil(p[1] + p[2]); z++) for(x = Math.floor(p[0] - p[2]); x <= Math.ceil(p[0] + p[2]); x++) if(x >= 0 && z >= 0 && x < 240 && z < 240 && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < p[2]) M[z*240 + x] = 1; });
+  return { M:M, GLH:GLH, P:P, HOLES:HOLES, gl:gl, sea:sea, lake:lake, fbm:fbm, trail:trail, hs:hs };
+})();
+function _fvWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _FV.M[z*240 + x] === 1; }
+function _fvWalkable(wx, wz){ return !_fvWallAt(wx/TILE, wz/TILE); }
+
 var _CM = (function(){
   var s = 0x0a650001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
   var SP = [[4, 38], [42, 78], [82, 114], [126, 158], [162, 198], [202, 236]];
@@ -7932,7 +8001,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8009,6 +8078,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
         else if (zoneName === 'xumen') { if (_xcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xcWalkable(nx, e.z)) e.x = nx; else if (_xcWalkable(e.x, nz)) e.z = nz; }   // a648 — the capital's buildings
@@ -11563,6 +11633,11 @@ function tickGame(game) {
     if (zoneName === 'riftvale') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
       if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    // a651 — FROSTVEIL: nothing ends a tick inside the glaciers, the open water or the rocks
+    if (zoneName === 'frostveil') zone.enemies.forEach(e => {
+      if (!e.active || e._rv0x === undefined || _fvWalkable(e.x, e.z)) return;
+      if (_fvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_fvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     // a650 — XU CEMETERY: the dead stay out of the stones (except the Xu ghosts, who drift through them)
     if (zoneName === 'cemetery') zone.enemies.forEach(e => {
