@@ -434,6 +434,7 @@ const ENEMY_STATS = {
   hollow_enforcer:     {hp:140000, atk:640, spd:0.032, aggroRange:12, reward:3200, expR:2400, dmgReduction:0.15},
   neon_wraith:         {hp:80000,  atk:620, spd:0.060, aggroRange:13, reward:2600, expR:1900, dmgReduction:0},
   crash_car:           {hp:110000, atk:450, spd:0.085, aggroRange:15, reward:2400, expR:1800, dmgReduction:0},
+  shadow_xu:           {hp:72000,  atk:660, spd:0.070, aggroRange:13, reward:3000, expR:2100, dmgReduction:0.10},   // a661 — the city's living shadow
   // ── VEILED SANCTUARY (v92.41) ──
   veiled_acolyte:      {hp:42000,  atk:280, spd:0.052, aggroRange:11, reward:900,  expR:680,  dmgReduction:0},
   censer_bearer:       {hp:62000,  atk:380, spd:0.040, aggroRange:10, reward:1200, expR:900,  dmgReduction:0.10},
@@ -780,6 +781,93 @@ var _XR = (function(){
 })();
 function _xrWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XR.M[z*240 + x] === 1; }
 function _xrWalkable(wx, wz){ return !_xrWallAt(wx/TILE, wz/TILE); }
+
+// ════════════════════════════════════════════════════════════════════════════
+// a661 — NEON HOLLOW: city plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), fully deterministic, so players and the city's machines collide with the
+//   same buildings. Tiles. A walled grid city: nine streets each way (the E–W and N–S
+//   avenues through the middle are the widest, the 68/172 lines are the boulevards the
+//   monorail loop runs over), every block ringed by a 2-tile sidewalk and cut by 3-tile
+//   alleys into lots. The four blocks round the centre are gone — the Curator's square.
+//   Two blocks are night markets. Lots: [x0, z0, x1, z1, kind, seed] (inclusive tiles).
+//   CLS is a per-tile class map the street shader reads: 0 street, 1 sidewalk, 2 alley,
+//   3 the square, 4 market, 5 building, 6 wall, 7 gate road. SPAWNS: the old machine mix
+//   plus the Shadow Xu, who keep to the alleys.
+// ════════════════════════════════════════════════════════════════════════════
+var _NH = (function(){
+  var s = 0x0a661001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var N = 240, LINES = [20, 44, 68, 92, 120, 148, 172, 196, 220], HW = [2.8, 2.8, 4.5, 2.8, 6.5, 2.8, 4.5, 2.8, 2.8];
+  var WALL0 = 8, WALL1 = 231, GATE_HW = 6.5, CX = 120, CZ = 120, SPAWN = [16, 120], SQUARE = 26;
+  var M = new Uint8Array(N*N), CLS = new Uint8Array(N*N), x, z, i, k;
+  var lineOf = function(v){ for(var q = 0; q < LINES.length; q++) if(Math.abs(v + 0.5 - LINES[q]) < HW[q]) return q; return -1; };
+  var inGate = function(tx, tz){ return Math.abs(tz + 0.5 - 120) < GATE_HW && (tx < WALL0 + 1 || tx > WALL1 - 1); };
+  // base classes: wall, street, block interior (filled below)
+  for(z = 0; z < N; z++) for(x = 0; x < N; x++){ var c;
+    if(inGate(x, z)) c = 7;
+    else if(x < WALL0 || z < WALL0 || x > WALL1 || z > WALL1) c = 6;
+    else if(lineOf(x) >= 0 || lineOf(z) >= 0) c = 0;
+    else c = 1;
+    CLS[z*N + x] = c; }
+  // blocks: integer tile ranges between streets (and the wall)
+  var spans = [], st = -1;
+  for(x = WALL0; x <= WALL1 + 1; x++){ var ns = x <= WALL1 && lineOf(x) < 0; if(ns && st < 0) st = x; if(!ns && st >= 0){ spans.push([st, x - 1]); st = -1; } }
+  var B = [], MARKETS = [], ALLEYS = [], SQ = [], PILL = [];
+  var isMarket = function(bi, bj){ return (bi === 2 && bj === 6) || (bi === 7 && bj === 3); };
+  var KINDS_BIG = ['arco', 'mega', 'arco', 'mega', 'pagoda'], KINDS_HALF = ['tier', 'pagoda', 'spire', 'tier', 'screen', 'tier'], KINDS_Q = ['tier', 'slum', 'pagoda', 'screen', 'tier', 'slum', 'spire'];
+  var setR = function(x0, z0, x1, z1, cls, wall){ for(var zz = z0; zz <= z1; zz++) for(var xx = x0; xx <= x1; xx++){ if(xx < 0 || zz < 0 || xx >= N || zz >= N) continue; CLS[zz*N + xx] = cls; if(wall !== undefined) M[zz*N + xx] = wall; } };
+  for(var bj = 0; bj < spans.length; bj++) for(var bi = 0; bi < spans.length; bi++){
+    var X0 = spans[bi][0], X1 = spans[bi][1], Z0 = spans[bj][0], Z1 = spans[bj][1];
+    if(X1 - X0 < 6 || Z1 - Z0 < 6) continue;
+    var bcx = (X0 + X1 + 1)/2, bcz = (Z0 + Z1 + 1)/2;
+    var nx = Math.max(X0, Math.min(CX, X1 + 1)), nz = Math.max(Z0, Math.min(CZ, Z1 + 1));
+    if(Math.hypot(nx - CX, nz - CZ) < SQUARE){ setR(X0, Z0, X1, Z1, 3); SQ.push([X0, Z0, X1, Z1]); continue; }
+    if(isMarket(bi, bj)){ setR(X0, Z0, X1, Z1, 4); MARKETS.push([X0, Z0, X1, Z1]); continue; }
+    // the lot area inside the 2-tile sidewalk
+    var lx0 = X0 + 2, lx1 = X1 - 2, lz0 = Z0 + 2, lz1 = Z1 - 2, w = lx1 - lx0 + 1, d = lz1 - lz0 + 1;
+    var edge = bi === 0 || bj === 0 || bi === spans.length - 1 || bj === spans.length - 1;
+    var r = R(), sx = false, sz = false;
+    if(edge){ if(w > d) sx = w > 12; else sz = d > 12; if(w > 12 && d > 12){ sx = true; sz = R() < 0.6; } }
+    else if(r < 0.22){ }                       // one great building fills the block
+    else if(r < 0.47) sx = true; else if(r < 0.72) sz = true; else { sx = true; sz = true; }
+    var xs = [[lx0, lx1]], zs = [[lz0, lz1]];
+    if(sx){ var ax = lx0 + Math.floor(w/2) - 1 + ((R()*3)|0) - 1; xs = [[lx0, ax - 2], [ax + 2, lx1]]; setR(ax - 1, Z0, ax + 1, Z1, 2); ALLEYS.push([ax, Z0, ax, Z1, 0]); }
+    if(sz){ var az = lz0 + Math.floor(d/2) - 1 + ((R()*3)|0) - 1; zs = [[lz0, az - 2], [az + 2, lz1]]; setR(X0, az - 1, X1, az + 1, 2); ALLEYS.push([X0, az, X1, az, 1]); }
+    var n = xs.length*zs.length;
+    xs.forEach(function(xr){ zs.forEach(function(zr){ var kind = n === 1 ? KINDS_BIG[(R()*KINDS_BIG.length)|0] : n === 2 ? KINDS_HALF[(R()*KINDS_HALF.length)|0] : KINDS_Q[(R()*KINDS_Q.length)|0];
+      if(edge) kind = R() < 0.5 ? 'slum' : 'tier';
+      B.push([xr[0], zr[0], xr[1], zr[1], kind, (R()*1e6)|0]); setR(xr[0], zr[0], xr[1], zr[1], 5, 1); }); });
+  }
+  // the outer wall (and the void beyond it) blocks; the gate roads do not
+  for(z = 0; z < N; z++) for(x = 0; x < N; x++){ var cc = CLS[z*N + x]; if(cc === 6) M[z*N + x] = 1; }
+  // the monorail loop's pylons stand on the centre line of the 68 / 172 boulevards
+  [68, 172].forEach(function(L){ for(var t = 74; t <= 166; t += 14){ if(lineOf(t) >= 0) continue; PILL.push([L, t]); PILL.push([t, L]); } });
+  PILL.forEach(function(p){ var px = Math.floor(p[0]), pz = Math.floor(p[1]); M[pz*N + px] = 1; M[pz*N + px - 1] = 1; M[(pz - 1)*N + px] = 1; M[(pz - 1)*N + px - 1] = 1; });
+  // ── the machines ──
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
+    return Math.hypot(px - CX, pz - CZ) > 24 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 16 && Math.hypot(px - 56, pz - 120) > 6 && px > WALL0 + 2 && px < WALL1 - 2; };
+  var SPAWNS = [];
+  var put = function(px, pz, type){ for(var tr = 0; tr < 24; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*0.8 : 0)), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*0.8 : 0)); if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); return true; } } return false; };
+  // the Shadow Xu wait in the alleys
+  var nShadow = 0;
+  for(i = 0; i < ALLEYS.length && nShadow < 22; i++){ var al = ALLEYS[(i*7) % ALLEYS.length]; if(R() < 0.25) continue; var u = 0.3 + R()*0.4;
+    if(al[4] === 0){ if(put(al[0], al[1] + (al[3] - al[1])*u, 'shadow_xu')) nShadow++; } else { if(put(al[0] + (al[2] - al[0])*u, al[1], 'shadow_xu')) nShadow++; } }
+  while(nShadow < 22){ var al2 = ALLEYS[(R()*ALLEYS.length)|0]; if(put(al2[4] ? al2[0] + (al2[2] - al2[0])*R() : al2[0], al2[4] ? al2[1] : al2[1] + (al2[3] - al2[1])*R(), 'shadow_xu')) nShadow++; }
+  var POOL = [], add = function(t, n){ for(var q = 0; q < n; q++) POOL.push(t); };
+  add('sentinel_drone', 48); add('neon_wraith', 40); add('hollow_enforcer', 36); add('maintenance_striker', 32); add('skybridge_sniper', 28); add('crash_car', 12);
+  for(var i2 = POOL.length - 1; i2 > 0; i2--){ var j2 = (R()*(i2 + 1))|0, tmp = POOL[i2]; POOL[i2] = POOL[j2]; POOL[j2] = tmp; }
+  // camps of five at the crossings (off the centre), down the streets, and in the markets
+  var CAMPS = [];
+  for(i = 0; i < LINES.length; i++) for(k = 0; k < LINES.length; k++){ if(LINES[i] === 120 && LINES[k] === 120) continue; if((i + k) % 2) continue; CAMPS.push([LINES[i], LINES[k]]); }
+  for(i = 0; i < LINES.length - 1; i++) for(k = 0; k < LINES.length; k++){ if((i*3 + k) % 4) continue; var mid = (LINES[i] + LINES[i + 1])/2; CAMPS.push([mid, LINES[k]]); CAMPS.push([LINES[k], mid]); }
+  MARKETS.forEach(function(m){ CAMPS.push([(m[0] + m[2])/2 - 4, (m[1] + m[3])/2]); CAMPS.push([(m[0] + m[2])/2 + 4, (m[1] + m[3])/2]); });
+  for(i = CAMPS.length - 1; i > 0; i--){ var j3 = (R()*(i + 1))|0, t3 = CAMPS[i]; CAMPS[i] = CAMPS[j3]; CAMPS[j3] = t3; }
+  var pi = 0;
+  for(var ci = 0; ci < CAMPS.length && pi < POOL.length; ci++){ var cp = CAMPS[ci]; for(var m2 = 0; m2 < 5 && pi < POOL.length; m2++){ var a3 = m2/5*6.283 + R(), d3 = m2 === 0 ? 0 : 2.2 + R()*1.8; if(put(cp[0] + Math.cos(a3)*d3, cp[1] + Math.sin(a3)*d3, POOL[pi])) pi++; } }
+  while(pi < POOL.length){ var L1 = LINES[(R()*LINES.length)|0], tt = 12 + R()*216; if(put(R() < 0.5 ? L1 : tt, R() < 0.5 ? tt : L1, POOL[pi])) pi++; }
+  return { N:N, M:M, CLS:CLS, LINES:LINES, HW:HW, WALL0:WALL0, WALL1:WALL1, CX:CX, CZ:CZ, SPAWN:SPAWN, SQUARE:SQUARE, B:B, MARKETS:MARKETS, ALLEYS:ALLEYS, SQ:SQ, PILL:PILL, SPAWNS:SPAWNS, lineOf:lineOf };
+})();
+function _nhWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _NH.M[z*240 + x] === 1; }
+function _nhWalkable(wx, wz){ return !_nhWallAt(wx/TILE, wz/TILE); }
 
 const ZONE_SPAWNS = {
   outpost: [],
@@ -3276,204 +3364,7 @@ const ZONE_SPAWNS = {
   //   the E12 values and the client kit applies no bump. Altitude needs no sync here:
   //   the drone/wraith/crash-car hover heights are STATIC py values applied by the
   //   client at mesh creation, and nothing in the kit animates Y.
-  neon_hollow: [
-    {type:'hollow_enforcer', tx:33, tz:34},
-    {type:'hollow_enforcer', tx:34, tz:37},
-    {type:'maintenance_striker', tx:45, tz:46},
-    {type:'maintenance_striker', tx:37, tz:36},
-    {type:'sentinel_drone', tx:47, tz:41},
-    {type:'sentinel_drone', tx:41, tz:33},
-    {type:'neon_wraith', tx:31, tz:36},
-    {type:'neon_wraith', tx:49, tz:41},
-    {type:'skybridge_sniper', tx:44, tz:46},
-    {type:'skybridge_sniper', tx:37, tz:39},
-    {type:'hollow_enforcer', tx:73, tz:47},
-    {type:'hollow_enforcer', tx:76, tz:38},
-    {type:'maintenance_striker', tx:66, tz:37},
-    {type:'maintenance_striker', tx:63, tz:44},
-    {type:'sentinel_drone', tx:67, tz:47},
-    {type:'sentinel_drone', tx:68, tz:42},
-    {type:'neon_wraith', tx:74, tz:49},
-    {type:'neon_wraith', tx:76, tz:42},
-    {type:'skybridge_sniper', tx:78, tz:37},
-    {type:'skybridge_sniper', tx:67, tz:43},
-    {type:'hollow_enforcer', tx:41, tz:76},
-    {type:'hollow_enforcer', tx:49, tz:72},
-    {type:'maintenance_striker', tx:40, tz:76},
-    {type:'maintenance_striker', tx:34, tz:81},
-    {type:'sentinel_drone', tx:38, tz:77},
-    {type:'sentinel_drone', tx:33, tz:81},
-    {type:'neon_wraith', tx:33, tz:63},
-    {type:'neon_wraith', tx:38, tz:73},
-    {type:'skybridge_sniper', tx:44, tz:63},
-    {type:'skybridge_sniper', tx:37, tz:67},
-    {type:'hollow_enforcer', tx:196, tz:33},
-    {type:'hollow_enforcer', tx:206, tz:35},
-    {type:'maintenance_striker', tx:193, tz:38},
-    {type:'maintenance_striker', tx:194, tz:37},
-    {type:'sentinel_drone', tx:191, tz:35},
-    {type:'sentinel_drone', tx:199, tz:35},
-    {type:'neon_wraith', tx:208, tz:36},
-    {type:'neon_wraith', tx:208, tz:42},
-    {type:'skybridge_sniper', tx:203, tz:32},
-    {type:'skybridge_sniper', tx:207, tz:45},
-    {type:'hollow_enforcer', tx:169, tz:45},
-    {type:'hollow_enforcer', tx:173, tz:38},
-    {type:'maintenance_striker', tx:169, tz:34},
-    {type:'maintenance_striker', tx:171, tz:42},
-    {type:'sentinel_drone', tx:171, tz:44},
-    {type:'sentinel_drone', tx:173, tz:37},
-    {type:'neon_wraith', tx:167, tz:44},
-    {type:'neon_wraith', tx:176, tz:45},
-    {type:'skybridge_sniper', tx:177, tz:44},
-    {type:'skybridge_sniper', tx:160, tz:31},
-    {type:'hollow_enforcer', tx:202, tz:79},
-    {type:'hollow_enforcer', tx:203, tz:78},
-    {type:'maintenance_striker', tx:205, tz:70},
-    {type:'maintenance_striker', tx:194, tz:74},
-    {type:'sentinel_drone', tx:193, tz:74},
-    {type:'sentinel_drone', tx:208, tz:75},
-    {type:'neon_wraith', tx:207, tz:69},
-    {type:'neon_wraith', tx:200, tz:71},
-    {type:'skybridge_sniper', tx:196, tz:67},
-    {type:'skybridge_sniper', tx:196, tz:65},
-    {type:'hollow_enforcer', tx:37, tz:201},
-    {type:'hollow_enforcer', tx:40, tz:192},
-    {type:'maintenance_striker', tx:39, tz:198},
-    {type:'maintenance_striker', tx:44, tz:206},
-    {type:'sentinel_drone', tx:43, tz:194},
-    {type:'sentinel_drone', tx:49, tz:208},
-    {type:'neon_wraith', tx:40, tz:199},
-    {type:'neon_wraith', tx:44, tz:205},
-    {type:'skybridge_sniper', tx:48, tz:201},
-    {type:'skybridge_sniper', tx:48, tz:206},
-    {type:'hollow_enforcer', tx:74, tz:200},
-    {type:'hollow_enforcer', tx:71, tz:203},
-    {type:'maintenance_striker', tx:81, tz:202},
-    {type:'maintenance_striker', tx:70, tz:205},
-    {type:'sentinel_drone', tx:69, tz:206},
-    {type:'sentinel_drone', tx:78, tz:204},
-    {type:'neon_wraith', tx:74, tz:201},
-    {type:'neon_wraith', tx:65, tz:209},
-    {type:'skybridge_sniper', tx:64, tz:200},
-    {type:'skybridge_sniper', tx:72, tz:203},
-    {type:'hollow_enforcer', tx:49, tz:164},
-    {type:'hollow_enforcer', tx:40, tz:165},
-    {type:'maintenance_striker', tx:48, tz:168},
-    {type:'maintenance_striker', tx:41, tz:162},
-    {type:'sentinel_drone', tx:32, tz:167},
-    {type:'sentinel_drone', tx:40, tz:168},
-    {type:'neon_wraith', tx:44, tz:163},
-    {type:'neon_wraith', tx:35, tz:172},
-    {type:'skybridge_sniper', tx:45, tz:177},
-    {type:'skybridge_sniper', tx:41, tz:176},
-    {type:'hollow_enforcer', tx:203, tz:194},
-    {type:'hollow_enforcer', tx:199, tz:201},
-    {type:'maintenance_striker', tx:199, tz:203},
-    {type:'maintenance_striker', tx:199, tz:199},
-    {type:'sentinel_drone', tx:200, tz:200},
-    {type:'sentinel_drone', tx:194, tz:202},
-    {type:'neon_wraith', tx:202, tz:199},
-    {type:'neon_wraith', tx:202, tz:201},
-    {type:'skybridge_sniper', tx:201, tz:192},
-    {type:'skybridge_sniper', tx:206, tz:194},
-    {type:'hollow_enforcer', tx:159, tz:209},
-    {type:'hollow_enforcer', tx:175, tz:199},
-    {type:'maintenance_striker', tx:169, tz:209},
-    {type:'maintenance_striker', tx:166, tz:196},
-    {type:'sentinel_drone', tx:172, tz:198},
-    {type:'sentinel_drone', tx:173, tz:209},
-    {type:'neon_wraith', tx:171, tz:201},
-    {type:'neon_wraith', tx:165, tz:196},
-    {type:'skybridge_sniper', tx:162, tz:203},
-    {type:'skybridge_sniper', tx:170, tz:205},
-    {type:'hollow_enforcer', tx:209, tz:163},
-    {type:'hollow_enforcer', tx:207, tz:164},
-    {type:'maintenance_striker', tx:192, tz:162},
-    {type:'maintenance_striker', tx:205, tz:168},
-    {type:'sentinel_drone', tx:198, tz:168},
-    {type:'sentinel_drone', tx:196, tz:177},
-    {type:'neon_wraith', tx:197, tz:177},
-    {type:'neon_wraith', tx:203, tz:161},
-    {type:'skybridge_sniper', tx:202, tz:167},
-    {type:'skybridge_sniper', tx:209, tz:159},
-    {type:'hollow_enforcer', tx:117, tz:58},
-    {type:'hollow_enforcer', tx:129, tz:54},
-    {type:'maintenance_striker', tx:126, tz:59},
-    {type:'maintenance_striker', tx:125, tz:49},
-    {type:'sentinel_drone', tx:121, tz:56},
-    {type:'sentinel_drone', tx:114, tz:47},
-    {type:'neon_wraith', tx:125, tz:51},
-    {type:'neon_wraith', tx:115, tz:59},
-    {type:'skybridge_sniper', tx:124, tz:56},
-    {type:'skybridge_sniper', tx:124, tz:45},
-    {type:'hollow_enforcer', tx:121, tz:181},
-    {type:'hollow_enforcer', tx:129, tz:194},
-    {type:'maintenance_striker', tx:123, tz:192},
-    {type:'maintenance_striker', tx:115, tz:196},
-    {type:'sentinel_drone', tx:129, tz:182},
-    {type:'sentinel_drone', tx:114, tz:196},
-    {type:'neon_wraith', tx:121, tz:186},
-    {type:'neon_wraith', tx:115, tz:184},
-    {type:'skybridge_sniper', tx:114, tz:189},
-    {type:'skybridge_sniper', tx:125, tz:196},
-    {type:'hollow_enforcer', tx:65, tz:115},
-    {type:'hollow_enforcer', tx:47, tz:114},
-    {type:'maintenance_striker', tx:65, tz:128},
-    {type:'maintenance_striker', tx:61, tz:112},
-    {type:'sentinel_drone', tx:51, tz:111},
-    {type:'sentinel_drone', tx:65, tz:116},
-    {type:'neon_wraith', tx:64, tz:117},
-    {type:'neon_wraith', tx:58, tz:118},
-    {type:'hollow_enforcer', tx:191, tz:118},
-    {type:'hollow_enforcer', tx:183, tz:112},
-    {type:'maintenance_striker', tx:189, tz:117},
-    {type:'maintenance_striker', tx:192, tz:121},
-    {type:'sentinel_drone', tx:190, tz:121},
-    {type:'sentinel_drone', tx:175, tz:128},
-    {type:'neon_wraith', tx:177, tz:129},
-    {type:'neon_wraith', tx:180, tz:123},
-    {type:'sentinel_drone', tx:155, tz:170},
-    {type:'neon_wraith', tx:56, tz:117},
-    {type:'hollow_enforcer', tx:52, tz:169},
-    {type:'crash_car', tx:148, tz:199},
-    {type:'sentinel_drone', tx:103, tz:213},
-    {type:'neon_wraith', tx:42, tz:52},
-    {type:'hollow_enforcer', tx:181, tz:169},
-    {type:'crash_car', tx:213, tz:54},
-    {type:'sentinel_drone', tx:135, tz:20},
-    {type:'neon_wraith', tx:138, tz:165},
-    {type:'hollow_enforcer', tx:204, tz:220},
-    {type:'crash_car', tx:41, tz:101},
-    {type:'sentinel_drone', tx:107, tz:149},
-    {type:'neon_wraith', tx:24, tz:59},
-    {type:'hollow_enforcer', tx:58, tz:184},
-    {type:'crash_car', tx:181, tz:26},
-    {type:'sentinel_drone', tx:218, tz:124},
-    {type:'neon_wraith', tx:169, tz:186},
-    {type:'crash_car', tx:70, tz:184},
-    {type:'sentinel_drone', tx:68, tz:153},
-    {type:'neon_wraith', tx:182, tz:90},
-    {type:'crash_car', tx:204, tz:166},
-    {type:'sentinel_drone', tx:218, tz:101},
-    {type:'neon_wraith', tx:181, tz:70},
-    {type:'crash_car', tx:151, tz:100},
-    {type:'sentinel_drone', tx:119, tz:91},
-    {type:'neon_wraith', tx:187, tz:58},
-    {type:'crash_car', tx:108, tz:187},
-    {type:'sentinel_drone', tx:86, tz:133},
-    {type:'crash_car', tx:87, tz:154},
-    {type:'sentinel_drone', tx:153, tz:75},
-    {type:'crash_car', tx:168, tz:36},
-    {type:'sentinel_drone', tx:219, tz:180},
-    {type:'crash_car', tx:204, tz:40},
-    {type:'sentinel_drone', tx:84, tz:100},
-    {type:'crash_car', tx:183, tz:105},
-    {type:'sentinel_drone', tx:20, tz:103},
-    {type:'sentinel_drone', tx:57, tz:26},
-    {type:'sentinel_drone', tx:69, tz:102},
-    {type:'sentinel_drone', tx:149, tz:155}
-  ],
+  neon_hollow: _NH.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a661 — generated by the shared grid-city plan (the old 196 + 22 Shadow Xu)
   // ── VEILED SANCTUARY (v92.41) — matches client ZONE_DEFS.veiled_sanctuary ──
   // a545 — MULTIPLAYER MIGRATION: The Veiled Sanctuary is now server-authoritative.
   veiled_sanctuary: [
@@ -7950,7 +7841,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8033,6 +7924,7 @@ function tickGame(game) {
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
+        else if (zoneName === 'neon_hollow') { if (_nhWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_nhWalkable(nx, e.z)) e.x = nx; else if (_nhWalkable(e.x, nz)) e.z = nz; }   // a661 — the city's buildings, wall and monorail pylons
         else if (zoneName === 'xeron') { if (_xrWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xrWalkable(nx, e.z)) e.x = nx; else if (_xrWalkable(e.x, nz)) e.z = nz; }   // a660 — the towers and the edge of the disc
         else if (zoneName === 'xumen_fortress') { if (_xfWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xfWalkable(nx, e.z)) e.x = nx; else if (_xfWalkable(e.x, nz)) e.z = nz; }   // a658 — the fortress walls, hangars, cradles, tanks
         else if (zoneName === 'xumen') { if (_xcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xcWalkable(nx, e.z)) e.x = nx; else if (_xcWalkable(e.x, nz)) e.z = nz; }   // a648 — the capital's buildings
@@ -9931,7 +9823,7 @@ function tickGame(game) {
           // broadcast as a SNAP cue or the machine visibly slides instead of glitching.
           const blink=(a,dist,toward)=>{ const sg=toward?1:-1;
             const nx=e.x+sg*Math.sin(a)*dist, nz=e.z+sg*Math.cos(a)*dist;
-            if(nx>2 && nx<358 && nz>2 && nz<358){ e.x=nx; e.z=nz; _moved=true; }
+            if(nx>2 && nx<358 && nz>2 && nz<358 && _nhWalkable(nx,nz)){ e.x=nx; e.z=nz; _moved=true; }   // a661 — never into a building
             fx('nh_blink',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); };
 
           if(e.type==='sentinel_drone'){
@@ -10090,7 +9982,7 @@ function tickGame(game) {
                 e._rgX=nearestPlayer.x; e._rgZ=nearestPlayer.z; }
             }
           }
-          else {
+          else if(e.type==='crash_car'){   // a661 — named now that the Shadow Xu follows it
             // crash_car — KAMIKAZE UNIT. Circles the block, strobes, then RAMS.
             const MS=0.48;
             if(e._kmode==='strobe'){
@@ -10114,6 +10006,49 @@ function tickGame(game) {
                 fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_NH_CHROME,n:4}); }
               e._kr=(e._kr||Math.floor(Math.random()*23))+1;
               if(dd>5 && dd<18 && e._kr>=42){ e._kr=0; e._kmode='strobe'; e._kt=0; }
+            }
+          }
+          else if(e.type==='shadow_xu'){
+            // a661 — SHADOW XU. A Xu-shaped hole in the light that stalks the alleys. It closes
+            //   to claw range, and every few seconds it SHADOW KICKS — a crouch, then a flying
+            //   kick straight through you that leaves a trail of its own afterimages — or it
+            //   SHADE STEPS, vanishing and reappearing at your back to strike. Up close it
+            //   drops an ECLIPSE: the light around it collapses into a violet ring that bursts.
+            const MS=0.44, _SXV=0x8a2cff;
+            if(e._sxm==='kwind'){
+              e._sxt=(e._sxt||0)+1;
+              if(e._sxt>=4){ e._sxm='krun'; e._sxt=0; e._sxhit=0; fx('nh_sx_kick',{eid:e.id,ph:1,dir:+e._sxdir.toFixed(3),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            } else if(e._sxm==='krun'){
+              e._sxt=(e._sxt||0)+1;
+              const sx0=e.x, sz0=e.z; mv(Math.sin(e._sxdir),Math.cos(e._sxdir),MS*4.6);
+              if(!_nhWalkable(e.x,e.z)){ e.x=sx0; e.z=sz0; e._sxt=99; }   // hit a wall: the kick ends there
+              const kdx=nearestPlayer.x-e.x, kdz=nearestPlayer.z-e.z;
+              if(!e._sxhit && kdx*kdx+kdz*kdz<2.8*2.8){ e._sxhit=1; hit(1.6);
+                players.forEach((p,ws)=>{ if(p===nearestPlayer){ send(ws,{type:'sv_player_fx',zone:zoneName,eff:'push',px:+e.x.toFixed(2),pz:+e.z.toFixed(2),push:6});
+                  send(ws,{type:'sv_player_fx',zone:zoneName,eff:'shake',shake:4}); } });
+                fx('sd_shock',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_SXV,r:2.6}); }
+              if(e._sxt>=5){ e._sxm=0; e._sxt=0; fx('nh_sx_kick',{eid:e.id,ph:2,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            } else {
+              if(dd>2.0) mv(sin*0.85+pr*strafe*0.35, cos*0.85+pq*strafe*0.35, MS);
+              else mv(pr*strafe, pq*strafe, MS*0.6);
+              // shadow claws
+              if(dd<2.7 && e.attackTimer%8===0){ hit(0.8); fx('nh_sx_claw',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+              // SHADOW KICK
+              e._sxk=(e._sxk||Math.floor(Math.random()*25))+1;
+              if(dd>3.5 && dd<13 && e._sxk>=48){ e._sxk=0; e._sxm='kwind'; e._sxt=0; e._sxdir=ang;
+                fx('nh_sx_kick',{eid:e.id,ph:0,dir:+ang.toFixed(3),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+              // SHADE STEP — reappear at the player's back
+              e._sxs=(e._sxs||Math.floor(Math.random()*30))+1;
+              if(e._sxm!=='kwind' && dd>2.5 && dd<12 && e._sxs>=64){
+                const bx=nearestPlayer.x+sin*2.2, bz=nearestPlayer.z+cos*2.2;
+                if(_nhWalkable(bx,bz)){ e._sxs=0; const fx0=e.x, fz0=e.z; e.x=bx; e.z=bz; _moved=true;
+                  fx('nh_sx_step',{eid:e.id,fx:+fx0.toFixed(2),fz:+fz0.toFixed(2),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+                  e._sxStrike=3; } }
+              if(e._sxStrike>0){ e._sxStrike--; if(e._sxStrike===0){ const q=nearestPlayer.x-e.x, w=nearestPlayer.z-e.z; if(q*q+w*w<3.4*3.4){ hit(1.25); fx('nh_sx_claw',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),big:1}); } } }
+              // ECLIPSE
+              e._sxe=(e._sxe||Math.floor(Math.random()*40))+1;
+              if(dd<6 && e._sxe>=90){ e._sxe=0; tele(e.x,e.z,12,4.6,1.5,_SXV,0,0.45,1500);
+                fx('nh_sx_pulse',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),r:4.6}); }
             }
           }
 
@@ -11657,6 +11592,10 @@ function tickGame(game) {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
+    if (zoneName === 'neon_hollow') zone.enemies.forEach(e => {   // a661 — nothing ends a tick inside a building (blinks and the Shadow Xu's dash included)
+      if (!e.active || e._rv0x === undefined || _nhWalkable(e.x, e.z)) return;
+      if (_nhWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_nhWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
     if (zoneName === 'xeron') zone.enemies.forEach(e => {   // a660 — nothing ends a tick inside a tower or off the edge of the disc
       if (!e.active || e._rv0x === undefined || _xrWalkable(e.x, e.z)) return;
       if (_xrWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_xrWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
@@ -12462,8 +12401,8 @@ const XR_BESPOKE = { corrupted_xu:1, void_marine:1, holo_wraith:1, laser_turret:
 const XR_PWR = { corrupted_xu:300, holo_wraith:290, void_marine:320, laser_turret:330, shard_assassin:340, cyber_ogre:355 };
 function _xrDmgS(e, mult){ return Math.floor((XR_PWR[e.type] || e.atk || 310) * mult); }
 const _XR_STAR=0xfff6c8, _XR_CYAN=0x30e0ff, _XR_PURPLE=0x8a30ff, _XR_PINK=0xff40c8, _XR_WHITE=0xffffff;
-const NH_BESPOKE = { sentinel_drone:1, maintenance_striker:1, hollow_enforcer:1, neon_wraith:1, skybridge_sniper:1, crash_car:1 };
-const NH_PWR = { sentinel_drone:240, maintenance_striker:260, hollow_enforcer:280, neon_wraith:250, skybridge_sniper:300, crash_car:270 };
+const NH_BESPOKE = { sentinel_drone:1, maintenance_striker:1, hollow_enforcer:1, neon_wraith:1, skybridge_sniper:1, crash_car:1, shadow_xu:1 };   // a661 — + the Shadow Xu
+const NH_PWR = { sentinel_drone:240, maintenance_striker:260, hollow_enforcer:280, neon_wraith:250, skybridge_sniper:300, crash_car:270, shadow_xu:290 };
 const NH_TAG_MS = 6000;
 function _nhIsTagged(p){ return !!(p && p._nhTagUntil && Date.now() < p._nhTagUntil); }
 function _nhDmgS(e, mult, tgt){
