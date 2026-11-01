@@ -724,6 +724,63 @@ var _XF = (function(){
 function _xfWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XF.M[z*240 + x] === 1; }
 function _xfWalkable(wx, wz){ return !_xfWallAt(wx/TILE, wz/TILE); }
 
+// ════════════════════════════════════════════════════════════════════════════
+// a660 — XERON: city plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), fully deterministic, so players and the dominion's garrison collide with
+//   the same towers. Tiles. Xeron is a disc of deck floating in open space (r 116 — beyond
+//   it is nothing but the void), with a docking pier on the west where the Neon Hollow gate
+//   arrives. Three ring boulevards (r 40, 74, 104) and eight radial avenues cut it into
+//   districts round OVERSEER ZERO's command arena (r 22). The alien towers stand in the
+//   districts; monoliths ring the inner plaza. Footprints are circles: [x, z, r, kind, seed].
+//   SPAWNS are generated here too (the same 200-strong garrison mix as before).
+// ════════════════════════════════════════════════════════════════════════════
+var _XR = (function(){
+  var s = 0x0a660001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var CX = 120, CZ = 120, DISC = 115.5, ARENA = 22, RINGS = [[40, 4], [74, 4], [104, 3.5]], RAD_W = 4.2, SPAWN = [16, 120];
+  var M = new Uint8Array(240*240), x, z, k;
+  var polar = function(px, pz){ var dx = px - CX, dz = pz - CZ; return [Math.sqrt(dx*dx + dz*dz), Math.atan2(dz, dx)]; };
+  var onPier = function(px, pz){ return px < 14 && Math.abs(pz - 120) < 7; };
+  var onRing = function(r){ for(var i = 0; i < RINGS.length; i++) if(Math.abs(r - RINGS[i][0]) < RINGS[i][1]) return true; return false; };
+  var onRadial = function(px, pz){ var p = polar(px, pz); if(p[0] < ARENA) return false; for(var i = 0; i < 8; i++){ var a = i*Math.PI/4, d = Math.abs(-(px - CX)*Math.sin(a) + (pz - CZ)*Math.cos(a)), t = (px - CX)*Math.cos(a) + (pz - CZ)*Math.sin(a); if(t > 0 && d < RAD_W) return true; } return false; };
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++){ var r0 = polar(x + 0.5, z + 0.5)[0]; if(r0 > DISC && !onPier(x + 0.5, z + 0.5)) M[z*240 + x] = 1; }
+  var B = [];
+  var free = function(px, pz, r){ var p = polar(px, pz); if(p[0] - r < ARENA + 4 || p[0] + r > DISC - 4) return false;
+    for(var i = 0; i < RINGS.length; i++) if(Math.abs(p[0] - RINGS[i][0]) < RINGS[i][1] + r + 1) return false;
+    for(var j = 0; j < 8; j++){ var a = j*Math.PI/4, d = Math.abs(-(px - CX)*Math.sin(a) + (pz - CZ)*Math.cos(a)), t = (px - CX)*Math.cos(a) + (pz - CZ)*Math.sin(a); if(t > 0 && d < RAD_W + r + 1) return false; }
+    if(Math.hypot(px - SPAWN[0], pz - SPAWN[1]) < 16 + r) return false;
+    for(var q = 0; q < B.length; q++) if(Math.hypot(B[q][0] - px, B[q][1] - pz) < B[q][2] + r + 2.2) return false; return true; };
+  // inner plaza: eight data monoliths between the avenues
+  for(k = 0; k < 8; k++){ var a0 = (k + 0.5)*Math.PI/4; B.push([CX + Math.cos(a0)*30, CZ + Math.sin(a0)*30, 1.6, 'monolith', (R()*1e6)|0]); }
+  // the districts: each sector of each band gets its landmark first, then smaller towers
+  var BANDS = [[46, 68, ['lotus', 'ring', 'dome', 'lotus', 'shard', 'ring']], [80, 98, ['shard', 'dome', 'ring', 'lotus', 'shard', 'monolith', 'dome', 'ring']], [108, 112, []]];
+  var SIZE = { lotus:[4.2, 6], ring:[3.4, 4.6], dome:[6.5, 9], shard:[3.5, 5], monolith:[1.6, 2.2] };
+  for(var b = 0; b < 2; b++){ var band = BANDS[b];
+    for(var sct = 0; sct < 8; sct++){ var tries = 0, placed = 0, want = b === 0 ? 6 : 10;
+      while(placed < want && tries < 400){ tries++; var kind = placed === 0 ? (b === 0 ? (sct % 2 ? 'dome' : 'lotus') : (sct % 2 ? 'shard' : 'ring')) : band[2][(R()*band[2].length)|0];
+        var sz = SIZE[kind], r = sz[0] + R()*(sz[1] - sz[0]), rad = band[0] + R()*(band[1] - band[0]), ang = (sct + 0.12 + R()*0.76)*Math.PI/4;
+        var px = CX + Math.cos(ang)*rad, pz = CZ + Math.sin(ang)*rad; if(!free(px, pz, r)) continue; B.push([px, pz, r, kind, (R()*1e6)|0]); placed++; } } }
+  B.forEach(function(c){ for(z = Math.floor(c[1] - c[2]); z <= Math.ceil(c[1] + c[2]); z++) for(x = Math.floor(c[0] - c[2]); x <= Math.ceil(c[0] + c[2]); x++){ if(x < 0 || z < 0 || x >= 240 || z >= 240) continue; if(Math.hypot(x + 0.5 - c[0], z + 0.5 - c[1]) < c[2]) M[z*240 + x] = 1; } });
+  // ── the garrison ──
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= 240 || zz >= 240 || M[zz*240 + xx]) return false; }
+    return Math.hypot(px - CX, pz - CZ) > ARENA + 2 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 14; };
+  var SPAWNS = [];
+  var put = function(px, pz, type){ for(var tr = 0; tr < 18; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr : 0)), qz = Math.round(pz + (tr ? (R() - 0.5)*tr : 0)); if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); return true; } } return false; };
+  // laser turrets hold the 24 crossings of the rings and avenues (just off the centre line)
+  RINGS.forEach(function(rg){ for(var i = 0; i < 8; i++){ var a = i*Math.PI/4 + 0.06; put(CX + Math.cos(a)*rg[0], CZ + Math.sin(a)*rg[0], 'laser_turret'); } });
+  // 176 more in two camps per district: the old mix of the garrison, shuffled
+  var POOL = [], add = function(t, n){ for(var i = 0; i < n; i++) POOL.push(t); };
+  add('corrupted_xu', 64); add('void_marine', 44); add('holo_wraith', 36); add('shard_assassin', 18); add('cyber_ogre', 14);
+  for(var i2 = POOL.length - 1; i2 > 0; i2--){ var j2 = (R()*(i2 + 1))|0, tmp = POOL[i2]; POOL[i2] = POOL[j2]; POOL[j2] = tmp; }
+  var pi = 0;
+  for(var b2 = 0; b2 < 2; b2++) for(var s2 = 0; s2 < 8; s2++) for(var c2 = 0; c2 < 2; c2++){
+    var ang2 = (s2 + 0.3 + c2*0.4)*Math.PI/4, rad2 = b2 === 0 ? 57 : 89, cx2 = CX + Math.cos(ang2)*rad2, cz2 = CZ + Math.sin(ang2)*rad2;
+    for(var m = 0; m < 6 && pi < POOL.length; m++){ var a3 = m/6*6.283 + R(), d3 = m === 0 ? 0 : 2.5 + R()*2; if(put(cx2 + Math.cos(a3)*d3, cz2 + Math.sin(a3)*d3, POOL[pi])) pi++; } }
+  while(pi < POOL.length){ var ra = R()*6.283, rr2 = 30 + R()*80; if(put(CX + Math.cos(ra)*rr2, CZ + Math.sin(ra)*rr2, POOL[pi])) pi++; }
+  return { M:M, CX:CX, CZ:CZ, DISC:DISC, ARENA:ARENA, RINGS:RINGS, RAD_W:RAD_W, SPAWN:SPAWN, B:B, SPAWNS:SPAWNS, polar:polar, onRing:onRing, onRadial:onRadial, onPier:onPier };
+})();
+function _xrWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XR.M[z*240 + x] === 1; }
+function _xrWalkable(wx, wz){ return !_xrWallAt(wx/TILE, wz/TILE); }
+
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
@@ -3627,208 +3684,7 @@ const ZONE_SPAWNS = {
   //   200 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
   //   HP intentionally UNCHANGED (no ZONE_HP_MULT entry). No altitude sync needed:
   //   the hover heights are static py values applied at mesh creation.
-  xeron: [
-    {type:'laser_turret', tx:96, tz:108},
-    {type:'laser_turret', tx:96, tz:132},
-    {type:'laser_turret', tx:144, tz:108},
-    {type:'laser_turret', tx:144, tz:132},
-    {type:'laser_turret', tx:108, tz:96},
-    {type:'laser_turret', tx:132, tz:96},
-    {type:'laser_turret', tx:108, tz:144},
-    {type:'laser_turret', tx:132, tz:144},
-    {type:'laser_turret', tx:40, tz:40},
-    {type:'laser_turret', tx:200, tz:40},
-    {type:'laser_turret', tx:40, tz:200},
-    {type:'laser_turret', tx:200, tz:200},
-    {type:'laser_turret', tx:80, tz:120},
-    {type:'laser_turret', tx:160, tz:120},
-    {type:'laser_turret', tx:120, tz:80},
-    {type:'laser_turret', tx:120, tz:160},
-    {type:'laser_turret', tx:60, tz:60},
-    {type:'laser_turret', tx:180, tz:60},
-    {type:'laser_turret', tx:60, tz:180},
-    {type:'laser_turret', tx:180, tz:180},
-    {type:'laser_turret', tx:40, tz:160},
-    {type:'laser_turret', tx:200, tz:80},
-    {type:'laser_turret', tx:80, tz:200},
-    {type:'laser_turret', tx:160, tz:40},
-    {type:'void_marine', tx:53, tz:55},
-    {type:'void_marine', tx:54, tz:41},
-    {type:'corrupted_xu', tx:40, tz:41},
-    {type:'corrupted_xu', tx:50, tz:44},
-    {type:'cyber_ogre', tx:54, tz:52},
-    {type:'cyber_ogre', tx:46, tz:43},
-    {type:'void_marine', tx:48, tz:46},
-    {type:'void_marine', tx:55, tz:47},
-    {type:'corrupted_xu', tx:53, tz:51},
-    {type:'corrupted_xu', tx:42, tz:54},
-    {type:'void_marine', tx:78, tz:47},
-    {type:'void_marine', tx:71, tz:47},
-    {type:'corrupted_xu', tx:79, tz:47},
-    {type:'corrupted_xu', tx:72, tz:35},
-    {type:'cyber_ogre', tx:64, tz:46},
-    {type:'cyber_ogre', tx:65, tz:39},
-    {type:'void_marine', tx:78, tz:39},
-    {type:'void_marine', tx:73, tz:46},
-    {type:'corrupted_xu', tx:69, tz:35},
-    {type:'corrupted_xu', tx:80, tz:40},
-    {type:'void_marine', tx:43, tz:71},
-    {type:'void_marine', tx:35, tz:70},
-    {type:'corrupted_xu', tx:43, tz:77},
-    {type:'corrupted_xu', tx:37, tz:75},
-    {type:'cyber_ogre', tx:39, tz:80},
-    {type:'cyber_ogre', tx:32, tz:65},
-    {type:'void_marine', tx:44, tz:74},
-    {type:'void_marine', tx:40, tz:65},
-    {type:'corrupted_xu', tx:35, tz:77},
-    {type:'corrupted_xu', tx:46, tz:67},
-    {type:'void_marine', tx:189, tz:48},
-    {type:'void_marine', tx:195, tz:47},
-    {type:'corrupted_xu', tx:187, tz:55},
-    {type:'corrupted_xu', tx:195, tz:52},
-    {type:'cyber_ogre', tx:185, tz:41},
-    {type:'cyber_ogre', tx:187, tz:43},
-    {type:'void_marine', tx:195, tz:45},
-    {type:'void_marine', tx:184, tz:42},
-    {type:'corrupted_xu', tx:195, tz:50},
-    {type:'corrupted_xu', tx:189, tz:45},
-    {type:'void_marine', tx:173, tz:35},
-    {type:'void_marine', tx:169, tz:47},
-    {type:'corrupted_xu', tx:164, tz:35},
-    {type:'corrupted_xu', tx:166, tz:36},
-    {type:'cyber_ogre', tx:176, tz:34},
-    {type:'cyber_ogre', tx:165, tz:43},
-    {type:'void_marine', tx:164, tz:40},
-    {type:'void_marine', tx:174, tz:40},
-    {type:'corrupted_xu', tx:171, tz:46},
-    {type:'corrupted_xu', tx:174, tz:41},
-    {type:'void_marine', tx:192, tz:64},
-    {type:'void_marine', tx:208, tz:65},
-    {type:'corrupted_xu', tx:194, tz:66},
-    {type:'corrupted_xu', tx:195, tz:72},
-    {type:'cyber_ogre', tx:197, tz:80},
-    {type:'cyber_ogre', tx:206, tz:71},
-    {type:'void_marine', tx:203, tz:70},
-    {type:'void_marine', tx:207, tz:66},
-    {type:'corrupted_xu', tx:192, tz:76},
-    {type:'corrupted_xu', tx:204, tz:67},
-    {type:'void_marine', tx:44, tz:186},
-    {type:'void_marine', tx:40, tz:190},
-    {type:'corrupted_xu', tx:56, tz:187},
-    {type:'corrupted_xu', tx:56, tz:186},
-    {type:'cyber_ogre', tx:56, tz:196},
-    {type:'cyber_ogre', tx:50, tz:196},
-    {type:'void_marine', tx:56, tz:188},
-    {type:'void_marine', tx:55, tz:198},
-    {type:'corrupted_xu', tx:50, tz:194},
-    {type:'corrupted_xu', tx:44, tz:187},
-    {type:'void_marine', tx:79, tz:200},
-    {type:'void_marine', tx:69, tz:194},
-    {type:'corrupted_xu', tx:77, tz:197},
-    {type:'corrupted_xu', tx:77, tz:204},
-    {type:'void_marine', tx:75, tz:207},
-    {type:'void_marine', tx:79, tz:207},
-    {type:'corrupted_xu', tx:66, tz:207},
-    {type:'corrupted_xu', tx:73, tz:196},
-    {type:'void_marine', tx:48, tz:170},
-    {type:'void_marine', tx:48, tz:160},
-    {type:'corrupted_xu', tx:38, tz:163},
-    {type:'corrupted_xu', tx:41, tz:163},
-    {type:'void_marine', tx:35, tz:163},
-    {type:'void_marine', tx:42, tz:163},
-    {type:'corrupted_xu', tx:47, tz:168},
-    {type:'corrupted_xu', tx:41, tz:175},
-    {type:'void_marine', tx:193, tz:186},
-    {type:'void_marine', tx:190, tz:192},
-    {type:'corrupted_xu', tx:197, tz:198},
-    {type:'corrupted_xu', tx:194, tz:196},
-    {type:'void_marine', tx:188, tz:184},
-    {type:'void_marine', tx:188, tz:194},
-    {type:'corrupted_xu', tx:186, tz:198},
-    {type:'corrupted_xu', tx:184, tz:193},
-    {type:'void_marine', tx:168, tz:203},
-    {type:'void_marine', tx:161, tz:202},
-    {type:'corrupted_xu', tx:176, tz:205},
-    {type:'corrupted_xu', tx:161, tz:199},
-    {type:'void_marine', tx:169, tz:195},
-    {type:'void_marine', tx:168, tz:205},
-    {type:'corrupted_xu', tx:176, tz:206},
-    {type:'corrupted_xu', tx:168, tz:208},
-    {type:'corrupted_xu', tx:204, tz:163},
-    {type:'corrupted_xu', tx:202, tz:165},
-    {type:'corrupted_xu', tx:204, tz:164},
-    {type:'corrupted_xu', tx:207, tz:163},
-    {type:'corrupted_xu', tx:120, tz:46},
-    {type:'corrupted_xu', tx:116, tz:48},
-    {type:'corrupted_xu', tx:112, tz:59},
-    {type:'corrupted_xu', tx:118, tz:55},
-    {type:'corrupted_xu', tx:124, tz:186},
-    {type:'corrupted_xu', tx:113, tz:191},
-    {type:'corrupted_xu', tx:122, tz:187},
-    {type:'corrupted_xu', tx:112, tz:185},
-    {type:'corrupted_xu', tx:61, tz:124},
-    {type:'corrupted_xu', tx:53, tz:127},
-    {type:'corrupted_xu', tx:62, tz:128},
-    {type:'corrupted_xu', tx:59, tz:118},
-    {type:'corrupted_xu', tx:179, tz:124},
-    {type:'corrupted_xu', tx:183, tz:120},
-    {type:'corrupted_xu', tx:192, tz:125},
-    {type:'corrupted_xu', tx:180, tz:128},
-    {type:'holo_wraith', tx:136, tz:153},
-    {type:'shard_assassin', tx:134, tz:41},
-    {type:'holo_wraith', tx:135, tz:203},
-    {type:'holo_wraith', tx:138, tz:166},
-    {type:'shard_assassin', tx:41, tz:70},
-    {type:'holo_wraith', tx:58, tz:171},
-    {type:'holo_wraith', tx:200, tz:106},
-    {type:'shard_assassin', tx:217, tz:149},
-    {type:'holo_wraith', tx:100, tz:212},
-    {type:'holo_wraith', tx:122, tz:149},
-    {type:'shard_assassin', tx:185, tz:140},
-    {type:'holo_wraith', tx:28, tz:26},
-    {type:'holo_wraith', tx:218, tz:74},
-    {type:'shard_assassin', tx:156, tz:215},
-    {type:'holo_wraith', tx:215, tz:204},
-    {type:'holo_wraith', tx:150, tz:70},
-    {type:'shard_assassin', tx:28, tz:153},
-    {type:'holo_wraith', tx:170, tz:212},
-    {type:'holo_wraith', tx:219, tz:92},
-    {type:'shard_assassin', tx:92, tz:84},
-    {type:'holo_wraith', tx:21, tz:58},
-    {type:'holo_wraith', tx:220, tz:212},
-    {type:'shard_assassin', tx:88, tz:42},
-    {type:'holo_wraith', tx:58, tz:25},
-    {type:'holo_wraith', tx:23, tz:168},
-    {type:'shard_assassin', tx:92, tz:20},
-    {type:'holo_wraith', tx:43, tz:100},
-    {type:'holo_wraith', tx:89, tz:68},
-    {type:'shard_assassin', tx:84, tz:168},
-    {type:'holo_wraith', tx:187, tz:217},
-    {type:'holo_wraith', tx:216, tz:24},
-    {type:'shard_assassin', tx:154, tz:107},
-    {type:'holo_wraith', tx:214, tz:54},
-    {type:'holo_wraith', tx:72, tz:172},
-    {type:'shard_assassin', tx:91, tz:122},
-    {type:'holo_wraith', tx:154, tz:88},
-    {type:'holo_wraith', tx:196, tz:216},
-    {type:'shard_assassin', tx:20, tz:88},
-    {type:'holo_wraith', tx:171, tz:90},
-    {type:'holo_wraith', tx:213, tz:104},
-    {type:'shard_assassin', tx:151, tz:139},
-    {type:'holo_wraith', tx:187, tz:53},
-    {type:'holo_wraith', tx:213, tz:118},
-    {type:'shard_assassin', tx:57, tz:200},
-    {type:'holo_wraith', tx:196, tz:138},
-    {type:'holo_wraith', tx:132, tz:90},
-    {type:'shard_assassin', tx:104, tz:87},
-    {type:'holo_wraith', tx:202, tz:186},
-    {type:'holo_wraith', tx:152, tz:149},
-    {type:'shard_assassin', tx:152, tz:187},
-    {type:'holo_wraith', tx:88, tz:215},
-    {type:'holo_wraith', tx:71, tz:119},
-    {type:'shard_assassin', tx:218, tz:171},
-    {type:'holo_wraith', tx:59, tz:54}
-  ],
+  xeron: _XR.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a660 — generated by the shared disc-city plan
   // ── v93.0 phase 3 — THE CONVERGENCE ──
   // Empty array marker. createZoneEnemies() special-cases 'convergence' and
   // generates ~100 procedural spawns at game-create time via generateConvergenceSpawns().
@@ -8094,7 +7950,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8177,6 +8033,7 @@ function tickGame(game) {
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
+        else if (zoneName === 'xeron') { if (_xrWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xrWalkable(nx, e.z)) e.x = nx; else if (_xrWalkable(e.x, nz)) e.z = nz; }   // a660 — the towers and the edge of the disc
         else if (zoneName === 'xumen_fortress') { if (_xfWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xfWalkable(nx, e.z)) e.x = nx; else if (_xfWalkable(e.x, nz)) e.z = nz; }   // a658 — the fortress walls, hangars, cradles, tanks
         else if (zoneName === 'xumen') { if (_xcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xcWalkable(nx, e.z)) e.x = nx; else if (_xcWalkable(e.x, nz)) e.z = nz; }   // a648 — the capital's buildings
         else if (zoneName === 'void_citadel') { if (_vcWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vcWalkable(nx, e.z)) e.x = nx; else if (_vcWalkable(e.x, nz)) e.z = nz; }   // a647 — citadel walls + void
@@ -11799,6 +11656,10 @@ function tickGame(game) {
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    if (zoneName === 'xeron') zone.enemies.forEach(e => {   // a660 — nothing ends a tick inside a tower or off the edge of the disc
+      if (!e.active || e._rv0x === undefined || _xrWalkable(e.x, e.z)) return;
+      if (_xrWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_xrWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     if (zoneName === 'xumen_fortress') zone.enemies.forEach(e => {   // a658 — nothing ends a tick inside the base's walls
       if (!e.active || e._rv0x === undefined || _xfWalkable(e.x, e.z)) return;
