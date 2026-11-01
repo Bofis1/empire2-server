@@ -588,6 +588,66 @@ const WORLD_BOSS_RESPAWN_MS = 2 * 60 * 1000; // 2 min
 // Auto-despawn an active boss that's been idle (no hits) for this long (ms)
 const WORLD_BOSS_IDLE_MS = 5 * 60 * 1000; // 5 min
 
+// ════════════════════════════════════════════════════════════════════════════
+// a656 — AVIA CANYON layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js), deterministic, so players and the flock collide with the same
+//   cliffs. Tiles. Still a maze — but a canyon maze: a randomized-DFS labyrinth (with a
+//   few loops) whose passages are carved as winding slot canyons and washes of varying
+//   width, opening into side chambers, from the trailhead camp in the south to the one
+//   gap into XUBERRY'S AERIE (r 30) in the north. Everything not carved is mesa.
+//   SPAWNS are generated here too so the client and the server place the same flock.
+//   M: 1 = cliff. RIVER = polyline (tiles) of the creek down the solution path.
+// ════════════════════════════════════════════════════════════════════════════
+var _AV = (function(){
+  var s = 0x0a656001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  function vn(x, z){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; fx = fx*fx*(3 - 2*fx); fz = fz*fz*(3 - 2*fz);
+    var a = hs(ix, iz), b = hs(ix + 1, iz), c = hs(ix, iz + 1), d = hs(ix + 1, iz + 1); return a + (b - a)*fx + (c - a)*fz + (a - b - c + d)*fx*fz; }
+  var N = 11, X0 = 20, P = 20, AR = [120, 42, 30], SP = [120, 222];
+  var cx = function(i){ return X0 + i*P; };
+  var arenaCell = function(i, j){ return Math.hypot(cx(i) - AR[0], cx(j) - AR[1]) < 36; };
+  var vis = [], par = [], edges = [];
+  for(var c = 0; c < N*N; c++){ vis[c] = 0; par[c] = -1; }
+  var start = 10*N + 5; vis[start] = 1; var st = [start];
+  while(st.length){ var cur = st[st.length - 1], ci = cur % N, cj = (cur/N)|0, nb = [];
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(d){ var ni = ci + d[0], nj = cj + d[1]; if(ni < 0 || nj < 0 || ni >= N || nj >= N) return; var n = nj*N + ni; if(!vis[n] && !arenaCell(ni, nj)) nb.push(n); });
+    if(!nb.length){ st.pop(); continue; } var nx = nb[(R()*nb.length)|0]; vis[nx] = 1; par[nx] = cur; edges.push([cur, nx]); st.push(nx); }
+  // a few extra loops so it isn't a pure tree
+  for(var j = 0; j < N; j++) for(var i = 0; i < N; i++){ if(arenaCell(i, j)) continue; var a = j*N + i;
+    if(i + 1 < N && !arenaCell(i + 1, j) && R() < 0.1 && !edges.some(function(e){ return (e[0] === a && e[1] === a + 1) || (e[1] === a && e[0] === a + 1); })) edges.push([a, a + 1]);
+    if(j + 1 < N && !arenaCell(i, j + 1) && R() < 0.1 && !edges.some(function(e){ return (e[0] === a && e[1] === a + N) || (e[1] === a && e[0] === a + N); })) edges.push([a, a + N]); }
+  var M = new Uint8Array(240*240); for(var k = 0; k < M.length; k++) M[k] = 1;
+  var stamp = function(x, z, r){ for(var zz = Math.floor(z - r); zz <= Math.ceil(z + r); zz++) for(var xx = Math.floor(x - r); xx <= Math.ceil(x + r); xx++){ if(xx < 3 || zz < 3 || xx > 236 || zz > 236) continue; if(Math.hypot(xx + 0.5 - x, zz + 0.5 - z) < r) M[zz*240 + xx] = 0; } };
+  var jit = {};   // midpoint jitter per edge, so the river can follow the same bends
+  var edgePath = function(a, b){ var key = Math.min(a, b) + ':' + Math.max(a, b); var ax = cx(a % N), az = cx((a/N)|0), bx = cx(b % N), bz = cx((b/N)|0);
+    if(!jit[key]){ var hor = az === bz; jit[key] = hor ? [0, (hs(a, b) - 0.5)*9] : [(hs(b, a) - 0.5)*9, 0]; }
+    var mx = (ax + bx)/2 + jit[key][0], mz = (az + bz)/2 + jit[key][1]; return [[ax, az], [mx, mz], [bx, bz]]; };
+  var carve = function(pts){ for(var q = 0; q < pts.length - 1; q++){ var A = pts[q], B = pts[q + 1], L = Math.hypot(B[0] - A[0], B[1] - A[1]);
+      for(var t = 0; t <= L; t += 0.6){ var u = t/L, x = A[0] + (B[0] - A[0])*u, z = A[1] + (B[1] - A[1])*u; stamp(x, z, 3.8 + vn(x*0.13, z*0.13)*3.0); } } };
+  edges.forEach(function(e){ carve(edgePath(e[0], e[1])); });
+  // chambers at some junctions, the trailhead camp, the aerie and its single gate
+  var CHAMB = [];
+  for(var c2 = 0; c2 < N*N; c2++){ var ii = c2 % N, jj = (c2/N)|0; if(arenaCell(ii, jj) || !vis[c2]) continue; var deg = edges.filter(function(e){ return e[0] === c2 || e[1] === c2; }).length;
+    if((deg >= 3 && R() < 0.55) || (deg === 1 && R() < 0.35)){ var rr = 6.5 + R()*3.5; stamp(cx(ii), cx(jj), rr); CHAMB.push([cx(ii), cx(jj), rr]); } }
+  stamp(SP[0], SP[1], 10); carve([[SP[0], SP[1]], [SP[0], 234]]);
+  stamp(AR[0], AR[1], AR[2]); carve([[120, cx(3)], [121, (cx(3) + AR[1] + AR[2])/2], [120, AR[1] + AR[2] - 2]]);
+  // posts: hoodoos in the big chambers (off-centre), boulders in the wide washes
+  var POSTS = [];
+  CHAMB.forEach(function(ch, i){ if(ch[2] < 8.5) return; var a = R()*6.28, d = ch[2]*0.45; POSTS.push([ch[0] + Math.cos(a)*d, ch[1] + Math.sin(a)*d, 1.6, 'hoodoo', i]); });
+  POSTS.forEach(function(p){ for(var zz = Math.floor(p[1] - p[2]); zz <= Math.ceil(p[1] + p[2]); zz++) for(var xx = Math.floor(p[0] - p[2]); xx <= Math.ceil(p[0] + p[2]); xx++) if(Math.hypot(xx + 0.5 - p[0], zz + 0.5 - p[1]) < p[2]) M[zz*240 + xx] = 1; });
+  // the creek runs down the solution path, aerie gate -> trailhead
+  var goal = 3*N + 5, path = [], u = goal; while(u !== -1){ path.push(u); u = par[u]; }
+  var RIVER = [[120, AR[1] + AR[2] - 4]]; for(var p2 = 0; p2 < path.length - 1; p2++){ var pp = edgePath(path[p2], path[p2 + 1]); if(p2 === 0) RIVER.push(pp[0]); RIVER.push(pp[1], pp[2]); } RIVER.push([SP[0], SP[1]]);
+  // the flock: one bird per corridor cell (thinned), a guard ring in the aerie
+  var TYPES = ['skyscout', 'beakdrone', 'spiraldive', 'skyscout', 'beakdrone', 'wingguard', 'spiraldive', 'skyscout'], SPAWNS = [];
+  for(var c3 = 0; c3 < N*N; c3++){ var i3 = c3 % N, j3 = (c3/N)|0; if(arenaCell(i3, j3) || !vis[c3]) continue; var x3 = cx(i3), z3 = cx(j3); if(Math.hypot(x3 - SP[0], z3 - SP[1]) < 18) continue; if(hs(i3, j3) < 0.56) continue;
+    var ox = 0, oz = 0; for(var tr = 0; tr < 12; tr++){ if(!M[(z3 + oz)*240 + (x3 + ox)]) break; ox = ((hs(c3, tr)*7)|0) - 3; oz = ((hs(tr, c3)*7)|0) - 3; } if(M[(z3 + oz)*240 + (x3 + ox)]) continue;
+    SPAWNS.push({ tx:x3 + ox, tz:z3 + oz, type:TYPES[(c3*7 + j3) % TYPES.length] }); }
+  [['beakdrone', 104, 32], ['beakdrone', 136, 32], ['wingguard', 100, 48], ['wingguard', 140, 48], ['skyscout', 114, 26], ['skyscout', 126, 26], ['spiraldive', 110, 56], ['spiraldive', 130, 56], ['skyscout', 120, 62], ['wingguard', 120, 22]].forEach(function(g){ if(!M[g[2]*240 + g[1]]) SPAWNS.push({ tx:g[1], tz:g[2], type:g[0] }); });
+  return { M:M, N:N, X0:X0, P:P, AR:AR, SP:SP, EDGES:edges, CHAMB:CHAMB, POSTS:POSTS, RIVER:RIVER, SPAWNS:SPAWNS, edgePath:edgePath, vn:vn, hs:hs, cx:cx };
+})();
+function _avWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _AV.M[z*240 + x] === 1; }
+
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
@@ -3687,67 +3747,7 @@ const ZONE_SPAWNS = {
   // a537 — MULTIPLAYER MIGRATION: Avia Canyon birds are now server-authoritative WITH maze
   //   collision (see _aviaWalkable). Spawn tiles generated from the deterministic maze grid;
   //   every tile verified walkable. XUBERRY stays server-authoritative via ZONE_BOSS_HP.
-  aviacanyon: [
-    {type:'skyscout', tx:99, tz:18},
-    {type:'beakdrone', tx:58, tz:26},
-    {type:'spiraldive', tx:146, tz:26},
-    {type:'skyscout', tx:42, tz:34},
-    {type:'beakdrone', tx:130, tz:34},
-    {type:'wingguard', tx:26, tz:42},
-    {type:'spiraldive', tx:130, tz:42},
-    {type:'skyscout', tx:26, tz:50},
-    {type:'skyscout', tx:114, tz:50},
-    {type:'beakdrone', tx:202, tz:50},
-    {type:'spiraldive', tx:98, tz:58},
-    {type:'skyscout', tx:186, tz:58},
-    {type:'beakdrone', tx:82, tz:66},
-    {type:'wingguard', tx:170, tz:66},
-    {type:'spiraldive', tx:66, tz:74},
-    {type:'skyscout', tx:154, tz:74},
-    {type:'skyscout', tx:50, tz:82},
-    {type:'beakdrone', tx:138, tz:82},
-    {type:'spiraldive', tx:33, tz:89},
-    {type:'skyscout', tx:122, tz:90},
-    {type:'beakdrone', tx:210, tz:90},
-    {type:'wingguard', tx:106, tz:98},
-    {type:'spiraldive', tx:194, tz:98},
-    {type:'skyscout', tx:87, tz:103},
-    {type:'skyscout', tx:177, tz:105},
-    {type:'beakdrone', tx:76, tz:112},
-    {type:'spiraldive', tx:159, tz:112},
-    {type:'skyscout', tx:58, tz:122},
-    {type:'beakdrone', tx:146, tz:122},
-    {type:'wingguard', tx:42, tz:130},
-    {type:'spiraldive', tx:130, tz:130},
-    {type:'skyscout', tx:26, tz:138},
-    {type:'skyscout', tx:114, tz:138},
-    {type:'beakdrone', tx:202, tz:138},
-    {type:'spiraldive', tx:98, tz:146},
-    {type:'skyscout', tx:186, tz:146},
-    {type:'beakdrone', tx:82, tz:154},
-    {type:'wingguard', tx:170, tz:154},
-    {type:'spiraldive', tx:63, tz:159},
-    {type:'skyscout', tx:151, tz:159},
-    {type:'skyscout', tx:50, tz:170},
-    {type:'beakdrone', tx:138, tz:170},
-    {type:'spiraldive', tx:33, tz:177},
-    {type:'skyscout', tx:121, tz:177},
-    {type:'beakdrone', tx:210, tz:178},
-    {type:'wingguard', tx:106, tz:186},
-    {type:'spiraldive', tx:194, tz:186},
-    {type:'skyscout', tx:90, tz:194},
-    {type:'skyscout', tx:178, tz:194},
-    {type:'beakdrone', tx:104, tz:32},
-    {type:'beakdrone', tx:136, tz:32},
-    {type:'wingguard', tx:100, tz:48},
-    {type:'wingguard', tx:140, tz:48},
-    {type:'skyscout', tx:114, tz:26},
-    {type:'skyscout', tx:126, tz:26},
-    {type:'spiraldive', tx:110, tz:56},
-    {type:'spiraldive', tx:130, tz:56},
-    {type:'skyscout', tx:120, tz:60},
-    {type:'beakdrone', tx:120, tz:28}
-  ],
+  aviacanyon: _AV.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a656 — generated by the shared canyon plan
   // a550 — XERON is now SERVER-AUTHORITATIVE (was client-side since a491).
   //   200 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
   //   HP intentionally UNCHANGED (no ZONE_HP_MULT entry). No altitude sync needed:
@@ -4367,8 +4367,8 @@ const ZONE_HP_MULT = { veiled_sanctuary: 3.0, sunken_sands: 6, void: 1.15, bloom
 //   can collide birds against the cliffs exactly like the client's walkableR. Built by
 //   the offline gen script (faithful port of the carve). See _aviaWalkable below.
 const _AVIA_W = 240, _AVIA_TILE = 1.5;
-const _aviaBits = Buffer.from('////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////HwAAAADw////////////////////////////////DwAAAADg////////////////////////////////BwAAAADA////////////////////////////////AwAAAACA////////////////////////////////AQAAAAAA////////////////////////////////AAAAAAAA/v////////////////8/AAAAAADADwAAAAAAAAAADAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAACAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/AAAAAADADwAAAAAAAAAAAAAAAAAA8APA//////8/APwA8APA//8BAAAAAAAAAAD///8A8APA//////8/APwA8APA//8BAAAAAAAAAAD///8A8APA//////8/APwA8APA//8BAAAAAAAAAAD///8A8APA//////8/APwA8APA//8AAAAAAAAAAAD///8A8APA//////8/APwA8APA//8AAAAAAAAAAAD///8A8APA//////8/APwA8APA//8AAAAAAAAAAAD///8A8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAAAAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAABAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAABAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAABAAAAAAAAAAA/APwA8APA//////8/AAAA8AMAAAABAAAAAAAAAAA/APwA8APA//////////8A8P//DwADAAAAAAAAgP8/APwA8APA//////////8A8P//DwADAAAAAAAAgP8/APwA8APA//////////8A8P//DwADAAAAAAAAgP8/APwA8APA//////////8A8P//DwAHAAAAAAAAwP8/APwA8APA//////////8A8P//DwAHAAAAAAAAwP8/APwA8APA//////////8A8P//DwAPAAAAAAAA4P8/APwA8APA//////8/AAAAAAAAAAAPAAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAAfAAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAAfAAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/AAAAAAAAAAA/AAAAAAAAAAAAAPwAAADA//////8/APz//wPADwA/AAAAAAD+DwA/APwA8APA//////8/APz//wPADwA/AAAAAID/DwA/APwA8APA//////8/APz//wPADwA/AAwAAOD/DwA/APwA8APA//////8/APz//wPADwA/AHwAAPz/DwA/APwA8APA//////8/APz//wPADwA/APwAgP//DwA/APwA8APA//////8/APz//wPADwA/APwAgP//DwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwAAAPwAgAPADwA/APwA8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8AgAPADwD///8A8APA//////8/APwA8APADwD///8A8APADwD///8A8APA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APwAAADADwA/AAAAAADADwAAAAAAAADA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/APz//wPADwD//////wPA//8/APwA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/AAAA8APADwAAAPwAAAAAAAA/AAAA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/APwA8APA//8/APwA8P////8/APwA8APA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////8/AAAAAAAAAAA/APwAAAAAAAA/APwAAADA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////////8A8P//DwA/APwA8P//DwA/APwA8APA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/AAAA8AMAAAAAAPwA8AMAAAA/APwAAADA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/APwA8P////////8A8APA//8/APz//wPA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/AAAA8AMAAAAAAAAAAADADwAAAAAAAADA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/APz//wPADwD//////wPADwA/APwA8APA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////8/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAADA//////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP////////////////////////////////////8DgP//////////////////', 'base64');
-function _aviaWall(tx, tz){ if(tx<0||tz<0||tx>=_AVIA_W||tz>=_AVIA_W) return true; const idx=tz*_AVIA_W+tx; return (_aviaBits[idx>>3] & (1<<(idx&7)))!==0; }
+// a656 — the old embedded wall bitmap (_aviaBits) is gone: the canyon maze is the shared _AV plan above.
+function _aviaWall(tx, tz){ if(tx<0||tz<0||tx>=_AVIA_W||tz>=_AVIA_W) return true; return _AV.M[tz*_AVIA_W+tx]===1; }   // a656 — the canyon maze comes from _AV now
 function _aviaWalkable(wx, wz, r){ r=r||0.3;
   return !_aviaWall(((wx-r)/_AVIA_TILE)|0, ((wz-r)/_AVIA_TILE)|0)
       && !_aviaWall(((wx+r)/_AVIA_TILE)|0, ((wz-r)/_AVIA_TILE)|0)
