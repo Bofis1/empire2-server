@@ -2519,71 +2519,71 @@ const ZONE_SPAWNS = {
     {type:'necro_abomination', tx:28, tz:41},
     {type:'necro_lich_mage', tx:25, tz:30},
     {type:'necro_lich_mage', tx:29, tz:33},
-    {type:'necro_specter', tx:28, tz:23},
+    {type:'necro_specter', tx:29, tz:23},
     {type:'necro_specter', tx:24, tz:38},
     {type:'necro_wight', tx:34, tz:29},
     {type:'necro_wight', tx:30, tz:34},
     {type:'necro_wight', tx:56, tz:48},
     {type:'necro_wight', tx:58, tz:46},
-    {type:'necro_abomination', tx:72, tz:35},
+    {type:'necro_abomination', tx:72, tz:34},
     {type:'necro_abomination', tx:60, tz:32},
-    {type:'necro_lich_mage', tx:66, tz:47},
+    {type:'necro_lich_mage', tx:65, tz:46},
     {type:'necro_lich_mage', tx:64, tz:44},
-    {type:'necro_specter', tx:67, tz:35},
-    {type:'necro_specter', tx:71, tz:40},
+    {type:'necro_specter', tx:67, tz:34},
+    {type:'necro_specter', tx:71, tz:45},
     {type:'necro_wight', tx:63, tz:32},
     {type:'necro_wight', tx:61, tz:49},
-    {type:'necro_wight', tx:38, tz:73},
-    {type:'necro_wight', tx:38, tz:67},
+    {type:'necro_wight', tx:38, tz:75},
+    {type:'necro_wight', tx:38, tz:64},
     {type:'necro_abomination', tx:46, tz:62},
     {type:'necro_abomination', tx:45, tz:67},
-    {type:'necro_lich_mage', tx:48, tz:65},
+    {type:'necro_lich_mage', tx:48, tz:64},
     {type:'necro_lich_mage', tx:32, tz:75},
     {type:'necro_specter', tx:45, tz:64},
-    {type:'necro_specter', tx:40, tz:73},
+    {type:'necro_specter', tx:40, tz:75},
     {type:'necro_wight', tx:45, tz:63},
     {type:'necro_wight', tx:37, tz:64},
-    {type:'necro_wight', tx:202, tz:24},
-    {type:'necro_wight', tx:199, tz:25},
+    {type:'necro_wight', tx:205, tz:24},
+    {type:'necro_wight', tx:199, tz:29},
     {type:'necro_abomination', tx:203, tz:40},
     {type:'necro_abomination', tx:199, tz:38},
     {type:'necro_lich_mage', tx:213, tz:37},
     {type:'necro_lich_mage', tx:210, tz:25},
-    {type:'necro_specter', tx:216, tz:24},
+    {type:'necro_specter', tx:216, tz:29},
     {type:'necro_specter', tx:209, tz:40},
-    {type:'necro_wight', tx:214, tz:27},
+    {type:'necro_wight', tx:214, tz:29},
     {type:'necro_wight', tx:214, tz:39},
     {type:'necro_wight', tx:177, tz:62},
-    {type:'necro_wight', tx:186, tz:49},
-    {type:'necro_abomination', tx:189, tz:49},
+    {type:'necro_wight', tx:184, tz:49},
+    {type:'necro_abomination', tx:186, tz:52},
     {type:'necro_abomination', tx:181, tz:53},
     {type:'necro_lich_mage', tx:177, tz:56},
     {type:'necro_lich_mage', tx:181, tz:52},
     {type:'necro_specter', tx:193, tz:64},
     {type:'necro_specter', tx:183, tz:58},
-    {type:'necro_wight', tx:189, tz:47},
+    {type:'necro_wight', tx:185, tz:51},
     {type:'necro_wight', tx:189, tz:62},
-    {type:'necro_wight', tx:219, tz:78},
+    {type:'necro_wight', tx:221, tz:76},
     {type:'necro_wight', tx:209, tz:73},
     {type:'necro_abomination', tx:202, tz:69},
-    {type:'necro_abomination', tx:211, tz:72},
-    {type:'necro_lich_mage', tx:215, tz:72},
-    {type:'necro_lich_mage', tx:213, tz:80},
-    {type:'necro_specter', tx:213, tz:69},
+    {type:'necro_abomination', tx:210, tz:72},
+    {type:'necro_lich_mage', tx:215, tz:75},
+    {type:'necro_lich_mage', tx:210, tz:80},
+    {type:'necro_specter', tx:210, tz:69},
     {type:'necro_specter', tx:205, tz:83},
-    {type:'necro_wight', tx:201, tz:83},
+    {type:'necro_wight', tx:205, tz:83},
     {type:'necro_wight', tx:201, tz:72},
     {type:'necro_wight', tx:29, tz:209},
     {type:'necro_wight', tx:37, tz:208},
-    {type:'necro_abomination', tx:25, tz:211},
-    {type:'necro_abomination', tx:35, tz:203},
-    {type:'necro_lich_mage', tx:40, tz:214},
+    {type:'necro_abomination', tx:25, tz:210},
+    {type:'necro_abomination', tx:34, tz:203},
+    {type:'necro_lich_mage', tx:40, tz:210},
     {type:'necro_lich_mage', tx:33, tz:204},
     {type:'necro_specter', tx:25, tz:207},
-    {type:'necro_specter', tx:24, tz:201},
+    {type:'necro_specter', tx:24, tz:205},
     {type:'necro_wight', tx:39, tz:208},
-    {type:'necro_wight', tx:36, tz:204},
-    {type:'necro_wight', tx:55, tz:185},
+    {type:'necro_wight', tx:35, tz:204},
+    {type:'necro_wight', tx:59, tz:185},
     {type:'necro_wight', tx:60, tz:187},
     {type:'necro_abomination', tx:59, tz:181},
     {type:'necro_abomination', tx:59, tz:176},
@@ -2594,37 +2594,37 @@ const ZONE_SPAWNS = {
     {type:'necro_wight', tx:55, tz:177},
     {type:'necro_wight', tx:50, tz:177},
     {type:'necro_wight', tx:35, tz:210},
-    {type:'necro_wight', tx:37, tz:219},
-    {type:'necro_abomination', tx:44, tz:212},
+    {type:'necro_wight', tx:34, tz:219},
+    {type:'necro_abomination', tx:44, tz:210},
     {type:'necro_abomination', tx:48, tz:205},
-    {type:'necro_lich_mage', tx:40, tz:202},
-    {type:'necro_lich_mage', tx:43, tz:217},
+    {type:'necro_lich_mage', tx:40, tz:205},
+    {type:'necro_lich_mage', tx:47, tz:217},
     {type:'necro_specter', tx:34, tz:209},
     {type:'necro_specter', tx:43, tz:208},
     {type:'necro_wight', tx:49, tz:208},
-    {type:'necro_wight', tx:46, tz:212},
+    {type:'necro_wight', tx:46, tz:211},
     {type:'necro_wight', tx:209, tz:205},
     {type:'necro_wight', tx:200, tz:199},
-    {type:'necro_abomination', tx:215, tz:211},
+    {type:'necro_abomination', tx:215, tz:210},
     {type:'necro_abomination', tx:209, tz:216},
     {type:'necro_lich_mage', tx:206, tz:212},
     {type:'necro_lich_mage', tx:205, tz:217},
-    {type:'necro_specter', tx:217, tz:201},
-    {type:'necro_specter', tx:215, tz:213},
+    {type:'necro_specter', tx:217, tz:205},
+    {type:'necro_specter', tx:215, tz:210},
     {type:'necro_wight', tx:202, tz:206},
     {type:'necro_wight', tx:207, tz:214},
     {type:'necro_wight', tx:182, tz:189},
     {type:'necro_wight', tx:171, tz:195},
-    {type:'necro_abomination', tx:167, tz:191},
+    {type:'necro_abomination', tx:170, tz:193},
     {type:'necro_abomination', tx:184, tz:193},
     {type:'necro_lich_mage', tx:174, tz:192},
     {type:'necro_lich_mage', tx:183, tz:195},
-    {type:'necro_specter', tx:171, tz:181},
-    {type:'necro_specter', tx:167, tz:185},
+    {type:'necro_specter', tx:171, tz:179},
+    {type:'necro_specter', tx:164, tz:185},
     {type:'necro_wight', tx:173, tz:195},
     {type:'necro_wight', tx:178, tz:177},
     {type:'necro_wight', tx:218, tz:176},
-    {type:'necro_wight', tx:201, tz:171},
+    {type:'necro_wight', tx:202, tz:172},
     {type:'necro_abomination', tx:207, tz:170},
     {type:'necro_abomination', tx:201, tz:173},
     {type:'necro_lich_mage', tx:208, tz:166},
@@ -2637,7 +2637,7 @@ const ZONE_SPAWNS = {
     {type:'necro_wight', tx:112, tz:45},
     {type:'necro_abomination', tx:122, tz:39},
     {type:'necro_abomination', tx:122, tz:43},
-    {type:'necro_lich_mage', tx:127, tz:39},
+    {type:'necro_lich_mage', tx:125, tz:39},
     {type:'necro_lich_mage', tx:120, tz:38},
     {type:'necro_specter', tx:118, tz:42},
     {type:'necro_specter', tx:116, tz:48},
@@ -2650,61 +2650,61 @@ const ZONE_SPAWNS = {
     {type:'necro_lich_mage', tx:117, tz:199},
     {type:'necro_lich_mage', tx:115, tz:190},
     {type:'necro_specter', tx:129, tz:195},
-    {type:'necro_specter', tx:113, tz:196},
-    {type:'necro_wight', tx:112, tz:203},
+    {type:'necro_specter', tx:113, tz:195},
+    {type:'necro_wight', tx:113, tz:204},
     {type:'necro_wight', tx:123, tz:201},
     {type:'necro_abomination', tx:79, tz:124},
     {type:'necro_abomination', tx:80, tz:124},
     {type:'necro_lich_mage', tx:77, tz:126},
-    {type:'necro_lich_mage', tx:63, tz:125},
-    {type:'necro_specter', tx:65, tz:121},
-    {type:'necro_specter', tx:80, tz:127},
+    {type:'necro_lich_mage', tx:64, tz:126},
+    {type:'necro_specter', tx:66, tz:121},
+    {type:'necro_specter', tx:79, tz:126},
     {type:'necro_abomination', tx:164, tz:123},
     {type:'necro_abomination', tx:166, tz:119},
     {type:'necro_lich_mage', tx:159, tz:116},
     {type:'necro_lich_mage', tx:172, tz:125},
     {type:'necro_specter', tx:168, tz:128},
-    {type:'necro_specter', tx:159, tz:111},
+    {type:'necro_specter', tx:156, tz:111},
     {type:'necro_specter', tx:91, tz:180},
-    {type:'necro_lich_mage', tx:72, tz:42},
+    {type:'necro_lich_mage', tx:72, tz:45},
     {type:'necro_abomination', tx:117, tz:88},
-    {type:'necro_specter', tx:219, tz:52},
+    {type:'necro_specter', tx:224, tz:52},
     {type:'necro_lich_mage', tx:132, tz:148},
-    {type:'necro_abomination', tx:168, tz:52},
-    {type:'necro_specter', tx:21, tz:169},
-    {type:'necro_lich_mage', tx:105, tz:86},
+    {type:'necro_abomination', tx:164, tz:52},
+    {type:'necro_specter', tx:16, tz:174},
+    {type:'necro_lich_mage', tx:105, tz:88},
     {type:'necro_abomination', tx:133, tz:89},
     {type:'necro_specter', tx:92, tz:134},
     {type:'necro_lich_mage', tx:21, tz:36},
     {type:'necro_abomination', tx:152, tz:100},
-    {type:'necro_specter', tx:204, tz:87},
+    {type:'necro_specter', tx:205, tz:87},
     {type:'necro_lich_mage', tx:43, tz:123},
     {type:'necro_abomination', tx:182, tz:42},
-    {type:'necro_specter', tx:212, tz:70},
+    {type:'necro_specter', tx:210, tz:70},
     {type:'necro_lich_mage', tx:181, tz:212},
-    {type:'necro_abomination', tx:215, tz:166},
+    {type:'necro_abomination', tx:215, tz:163},
     {type:'necro_specter', tx:169, tz:136},
     {type:'necro_lich_mage', tx:73, tz:60},
     {type:'necro_abomination', tx:118, tz:40},
     {type:'necro_specter', tx:180, tz:105},
     {type:'necro_lich_mage', tx:69, tz:164},
     {type:'necro_abomination', tx:135, tz:164},
-    {type:'necro_specter', tx:84, tz:54},
+    {type:'necro_specter', tx:88, tz:58},
     {type:'necro_lich_mage', tx:180, tz:166},
-    {type:'necro_abomination', tx:75, tz:186},
+    {type:'necro_abomination', tx:76, tz:186},
     {type:'necro_specter', tx:57, tz:104},
-    {type:'necro_lich_mage', tx:196, tz:27},
+    {type:'necro_lich_mage', tx:196, tz:29},
     {type:'necro_abomination', tx:58, tz:165},
     {type:'necro_specter', tx:41, tz:59},
-    {type:'necro_lich_mage', tx:167, tz:183},
-    {type:'necro_abomination', tx:105, tz:201},
-    {type:'necro_specter', tx:71, tz:72},
+    {type:'necro_lich_mage', tx:165, tz:182},
+    {type:'necro_abomination', tx:103, tz:201},
+    {type:'necro_specter', tx:71, tz:77},
     {type:'necro_lich_mage', tx:155, tz:150},
-    {type:'necro_abomination', tx:165, tz:36},
-    {type:'necro_abomination', tx:108, tz:40},
-    {type:'necro_abomination', tx:137, tz:70},
-    {type:'necro_abomination', tx:188, tz:22},
-    {type:'necro_abomination', tx:138, tz:140}
+    {type:'necro_abomination', tx:163, tz:34},
+    {type:'necro_abomination', tx:104, tz:44},
+    {type:'necro_abomination', tx:141, tz:70},
+    {type:'necro_abomination', tx:192, tz:18},
+    {type:'necro_abomination', tx:139, tz:141}
   ],
   // a552 — XUMEN FORTRESS is now SERVER-AUTHORITATIVE (was client-side since a490).
   //   200 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
@@ -4441,6 +4441,78 @@ function _vwWalkable(wx, wz){ return !_vwPitAt(wx/TILE, wz/TILE); }
 //   gl(x,z) > 0 glacier/cliff · sea(x,z) > 0 open water · lake(x,z) > 0 frozen lake (walkable)
 //   P = posts [x, z, r, kind, seed]
 // ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// a652 — THE NECROPOLIS layout. Shared VERBATIM by the client (70_terrain) and the
+//   server (server.js), deterministic, so players and the dead collide with the same
+//   city. Tiles. A walled Victorian city of the dead wired with necro-tech: the Via
+//   Mortis (z = 120) runs gate to gate through the Reaper's Court (56,120) and the
+//   Colossus's Ossuary Square (120,120); the Avenue of Bones (x = 120) crosses it and
+//   ends at the BLACK CATHEDRAL. Streets every ~30 tiles cut terraces of tall townhouses,
+//   mansions, spired houses and reactor houses into blocks with alley-crossed courts.
+//   Landmarks: the LICH SPIRE, the CLOCKTOWER, the SOUL FOUNDRY. The Styx Canal winds
+//   north–south through the east (bridged at every street) and an elevated necro-rail
+//   loops the inner city on iron pillars.
+//   B = buildings [x0, z0, x1, z1, kind, h, seed, face]  P = posts [x, z, r, kind, seed]  Y = yards [x0, z0, x1, z1, kind, seed]
+// ════════════════════════════════════════════════════════════════════════════
+var _NP = (function(){
+  var s = 0x0a652001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var XS = [32, 62, 92, 120, 148, 178, 208], SW = function(v){ return v === 120 ? 6 : 3; };   // street centre-lines + half-widths
+  var EDGE = [5, 235];
+  var cuts = [EDGE[0]]; XS.forEach(function(v){ cuts.push(v - SW(v), v + SW(v)); }); cuts.push(EDGE[1]);
+  var SPANS = []; for(var i = 0; i < cuts.length; i += 2) SPANS.push([cuts[i], cuts[i + 1]]);   // 8 block spans per axis
+  var canalX = function(z){ return 164 + Math.sin(z*0.045)*5 + Math.sin(z*0.11 + 1.3)*2; };
+  var CANAL_W = 3.2;
+  var onBridge = function(z){ return XS.some(function(v){ return Math.abs(z - v) < SW(v) + 0.5; }); };
+  var canalAt = function(x, z){ return Math.abs(x - canalX(z)) < CANAL_W && !onBridge(z); };
+  var nearCanal = function(x0, z0, x1, z1, pad){ for(var z = z0; z <= z1; z += 1){ var c = canalX(z); if(c + CANAL_W + pad > x0 && c - CANAL_W - pad < x1) return true; } return false; };
+  var ARENA = [120, 120, 27], COURT = [56, 120, 15], GATEW = [16, 120, 10], GATEE = [226, 120, 10];
+  var circHit = function(c, x0, z0, x1, z1, pad){ var cx = Math.max(x0, Math.min(c[0], x1)), cz = Math.max(z0, Math.min(c[1], z1)); return Math.hypot(cx - c[0], cz - c[1]) < c[2] + (pad || 0); };
+  var openHit = function(x0, z0, x1, z1){ return circHit(ARENA, x0, z0, x1, z1) || circHit(COURT, x0, z0, x1, z1) || circHit(GATEW, x0, z0, x1, z1) || circHit(GATEE, x0, z0, x1, z1); };
+  var B = [], P = [], Y = [];
+  var LAND = { '3,2':'cathedral', '4,2':'cathedral', '6,1':'lichspire', '1,5':'clocktower', '6,5':'foundry', '6,6':'foundry' };
+  var KINDS = ['townhouse', 'townhouse', 'mansard', 'mansard', 'spired', 'reactor', 'terrace', 'townhouse', 'spired', 'mansard'];
+  for(var bi = 0; bi < 8; bi++) for(var bj = 0; bj < 8; bj++){
+    var x0 = SPANS[bi][0] + 1, x1 = SPANS[bi][1] - 1, z0 = SPANS[bj][0] + 1, z1 = SPANS[bj][1] - 1, cx = (x0 + x1)/2, cz = (z0 + z1)/2;
+    var land = LAND[bi + ',' + bj];
+    if(land === 'cathedral'){ if(bi === 3) B.push([100, z0 + 1, 140, z1 - 1, 'cathedral', 34, 6501, 1]); continue; }
+    if(land === 'lichspire'){ P.push([cx, cz, 7.5, 'lichspire', 6502]); Y.push([x0, z0, x1, z1, 'spireplaza', 6502]); continue; }
+    if(land === 'clocktower'){ B.push([cx - 5, cz - 5, cx + 5, cz + 5, 'clocktower', 48, 6503, 1]); Y.push([x0, z0, x1, z1, 'clocksquare', 6503]); continue; }
+    if(land === 'foundry'){ if(bj === 5){ B.push([x0 + 1, z0 + 2, x1 - 1, z0 + 15, 'foundry', 18, 6504, 1]);
+        [[x0 + 5, z1 + 12], [x0 + 12, z1 + 12], [x1 - 5, z1 + 12]].forEach(function(q, k){ P.push([q[0], q[1], 3.2, 'gasometer', 6510 + k]); });
+        [[x0 + 4, z0 + 19], [x1 - 4, z0 + 19]].forEach(function(q, k){ P.push([q[0], q[1], 1.8, 'stack', 6520 + k]); });
+        Y.push([x0, z0, x1, SPANS[6][1] - 1, 'foundryyard', 6504]); } continue; }
+    // ordinary blocks: four lots round an alley cross, each a building or a yard
+    var ax = cx + (R() - 0.5)*3, az = cz + (R() - 0.5)*3, AW = 1.6;
+    [[x0, z0, ax - AW, az - AW, -1, -1], [ax + AW, z0, x1, az - AW, 1, -1], [x0, az + AW, ax - AW, z1, -1, 1], [ax + AW, az + AW, x1, z1, 1, 1]].forEach(function(l){
+      if(l[2] - l[0] < 4 || l[3] - l[1] < 4) return;
+      if(openHit(l[0], l[1], l[2], l[3])) return;
+      if(nearCanal(l[0], l[1], l[2], l[3], 1.2)) return;
+      var r = R(), sd = (R()*1e6)|0;
+      if(r < 0.16){ Y.push([l[0], l[1], l[2], l[3], ['graveyard', 'vats', 'gallows', 'graveyard', 'garden'][(R()*5)|0], sd]); return; }
+      var k = KINDS[(R()*KINDS.length)|0], h = k === 'terrace' ? 11 + R()*5 : k === 'spired' ? 16 + R()*12 : k === 'mansard' ? 14 + R()*8 : k === 'reactor' ? 10 + R()*6 : 13 + R()*9;
+      var face = R() < 0.5 ? (l[5] < 0 ? 2 : 0) : (l[4] < 0 ? 3 : 1);   // 0:+z 1:+x 2:-z 3:-x — the facade looks onto a street
+      B.push([l[0] + 0.4, l[1] + 0.4, l[2] - 0.4, l[3] - 0.4, k, h, sd, face]); });
+  }
+  // the elevated necro-rail: a loop on iron pillars down the middle of four streets
+  var RAIL = [[92, 62], [148, 62], [148, 178], [92, 178]];
+  for(var e = 0; e < 4; e++){ var a = RAIL[e], b = RAIL[(e + 1) % 4], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    for(var t = 0; t < L; t += 8){ var px = a[0] + (b[0] - a[0])*t/L, pz = a[1] + (b[1] - a[1])*t/L; if(Math.abs(px - 120) < 7 || Math.abs(pz - 120) < 7) continue; P.push([px, pz, 0.8, 'railpillar', e*100 + t]); } }
+  // the squares: reaper statues and soul pylons round the Ossuary Square and the Reaper's Court
+  for(var k2 = 0; k2 < 8; k2++){ var a2 = (k2 + 0.5)/8*Math.PI*2; P.push([120 + Math.cos(a2)*29, 120 + Math.sin(a2)*29, 1.3, k2 % 2 ? 'pylon' : 'reaper', k2]); }
+  for(var k3 = 0; k3 < 6; k3++){ var a3 = (k3 + 0.5)/6*Math.PI*2; if(Math.abs(Math.sin(a3)) < 0.35) continue; P.push([56 + Math.cos(a3)*16.5, 120 + Math.sin(a3)*16.5, 1.1, 'obelisk', 20 + k3]); }
+  var M = new Uint8Array(240*240), x, z;
+  var mark = function(x, z){ x = Math.floor(x); z = Math.floor(z); if(x >= 0 && z >= 0 && x < 240 && z < 240) M[z*240 + x] = 1; };
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++){
+    var gate = Math.abs(z + 0.5 - 120) < 6 && (x < 8 || x > 231);
+    if((x < 4 || x > 235 || z < 4 || z > 235) && !gate) M[z*240 + x] = 1;
+    if(canalAt(x + 0.5, z + 0.5)) M[z*240 + x] = 1; }
+  B.forEach(function(b){ for(z = Math.floor(b[1]); z < Math.ceil(b[3]); z++) for(x = Math.floor(b[0]); x < Math.ceil(b[2]); x++) mark(x, z); });
+  P.forEach(function(p){ for(z = Math.floor(p[1] - p[2]); z <= Math.ceil(p[1] + p[2]); z++) for(x = Math.floor(p[0] - p[2]); x <= Math.ceil(p[0] + p[2]); x++) if(Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < p[2]) mark(x, z); });
+  return { M:M, B:B, P:P, Y:Y, XS:XS, SW:SW, SPANS:SPANS, canalX:canalX, CANAL_W:CANAL_W, canalAt:canalAt, onBridge:onBridge, RAIL:RAIL, ARENA:ARENA, COURT:COURT };
+})();
+function _npWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _NP.M[z*240 + x] === 1; }
+function _npWalkable(wx, wz){ return !_npWallAt(wx/TILE, wz/TILE); }
+
 var _FV = (function(){
   var s = 0x0a651001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
   function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
@@ -8001,7 +8073,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8078,6 +8150,7 @@ function tickGame(game) {
         const _sp = e.spd * (_mz ? 6 : 1.6);
         const nx = e.x + (dx/len) * _sp, nz = e.z + (dz/len) * _sp; // 1.6 = server tick scale
         if (zoneName === 'void') { if (_vwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vwWalkable(nx, e.z)) e.x = nx; else if (_vwWalkable(e.x, nz)) e.z = nz; }   // a640 — void pits
+        else if (zoneName === 'necropolis') { if (_npWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_npWalkable(nx, e.z)) e.x = nx; else if (_npWalkable(e.x, nz)) e.z = nz; }   // a652 — the city's walls, canal, pillars
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
@@ -11633,6 +11706,11 @@ function tickGame(game) {
     if (zoneName === 'riftvale') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _rvWalkable(e.x, e.z)) return;
       if (_rvWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_rvWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    // a652 — NECROPOLIS: the dead stay out of the houses, the canal and the rail pillars
+    if (zoneName === 'necropolis') zone.enemies.forEach(e => {
+      if (!e.active || e._rv0x === undefined || _npWalkable(e.x, e.z)) return;
+      if (_npWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_npWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     // a651 — FROSTVEIL: nothing ends a tick inside the glaciers, the open water or the rocks
     if (zoneName === 'frostveil') zone.enemies.forEach(e => {
