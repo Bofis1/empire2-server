@@ -1100,7 +1100,8 @@ var _RE = (function(){
   (function(){ for(var t = 0; t < 4000; t++){ var px = 30 + R()*180, pz = 30 + R()*180, a = R()*6.2832; var ok = true;
       for(var k2 = -2; k2 <= 3; k2++){ var qx = px + Math.cos(a)*k2*7, qz = pz + Math.sin(a)*k2*7; if(!keepOpen(qx, qz, 6) || !openAt(qx, qz, 6) || !farP(qx, qz, 5, 2)) { ok = false; break; } } if(!ok) continue;
       P.push([px, pz, 0, 'colossus', (R()*1e6)|0, a, 0]);
-      [[-12, 3.2], [-6, 4.6], [0, 4.4], [6, 3.0], [12, 2.6], [18, 2.4]].forEach(function(q){ P.push([px + Math.cos(a)*q[0], pz + Math.sin(a)*q[0], q[1], 'colpart', 0, a, 0]); }); break; } })();
+      [[-14, 0, 3.4], [-9, -2.2, 3.4], [-9, 2.2, 3.4], [-4, -2.2, 3.4], [-4, 2.2, 3.4], [0.5, 0, 4.0], [6, -1.6, 2.6], [6, 1.6, 2.6], [11, -1.6, 2.2], [11, 1.8, 2.2], [16, -1.6, 2.0], [16, 1.8, 2.0], [-5.5, 5.5, 1.8], [-6, -5.5, 1.6], [-6, -9, 1.6], [-19, 0, 1.6]].forEach(function(q){
+        P.push([px + Math.cos(a)*q[0] - Math.sin(a)*q[1], pz + Math.sin(a)*q[0] + Math.cos(a)*q[1], q[2], 'colpart', 0, a, 0]); }); break; } })();
   // megastructure ribs arching over the ground (only their feet collide)
   place('ribs', 3, 0, 0, 8, function(e){ e[6] = 10 + R()*4; });
   P.filter(function(p){ return p[3] === 'ribs'; }).forEach(function(p){ var a = p[5]; for(var k3 = -3; k3 <= 3; k3++){ var cx = p[0] + Math.cos(a)*k3*4.2, cz = p[1] + Math.sin(a)*k3*4.2, w = p[6]*(1 - Math.abs(k3)*0.08);
@@ -1113,7 +1114,8 @@ var _RE = (function(){
   place('spike', 50, 0.7, 1.5, 1.5);
   place('pillar', 26, 1.0, 1.8, 2);
   // stamp collision
-  P.forEach(function(p){ if(!p[2]) return; for(z = Math.floor(p[1] - p[2]); z <= Math.ceil(p[1] + p[2]); z++) for(x = Math.floor(p[0] - p[2]); x <= Math.ceil(p[0] + p[2]); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < p[2]) M[z*N + x] = 1; });
+  // (every footprint is a little wider than its circle: nothing may stand inside a work's walls)
+  P.forEach(function(p){ if(!p[2]) return; var rc = p[2]*(p[3] === 'spire' ? 1.3 : p[3] === 'wreck' ? 1.15 : 1.0) + 0.3; for(z = Math.floor(p[1] - rc); z <= Math.ceil(p[1] + rc); z++) for(x = Math.floor(p[0] - rc); x <= Math.ceil(p[0] + rc); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < rc) M[z*N + x] = 1; });
   // the apex itself: the cube hangs over open ground, but its crater's heart is a pit
   for(z = APEX[1] - 4; z <= APEX[1] + 4; z++) for(x = APEX[0] - 4; x <= APEX[0] + 4; x++) if(Math.hypot(x + 0.5 - APEX[0], z + 0.5 - APEX[1]) < 3.4) M[z*N + x] = 1;
   // seal what the wasteland can't reach
@@ -11665,6 +11667,10 @@ function tickGame(game) {
     const keep = [];
     for (const pr of game._sdProj) {
       pr.x += pr.vx; pr.z += pr.vz; pr.life--;
+      // a666 — in The Reach a shot stops when it hits a ruin (not when it crosses a rift), so nothing
+      //   can wear you down from behind a spire or out of a wreck you can't see into
+      if (pr.zone === 'the_reach') { const tx = Math.floor(pr.x/TILE), tz = Math.floor(pr.z/TILE);
+        if (tx >= 0 && tz >= 0 && tx < 240 && tz < 240 && _RE.M[tz*240 + tx] === 1 && _RE.RF[tz*240 + tx] !== 1) continue; }
       let hit = false;
       players.forEach((p, ws) => {
         if (hit || p.gameId !== game.id || p.zone !== pr.zone || p.x === undefined) return;
