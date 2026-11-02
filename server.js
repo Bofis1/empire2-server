@@ -1288,6 +1288,95 @@ var _DL = (function(){
 function _dlWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 80 || z >= 80) return true; return _DL.M[z*80 + x] === 1; }
 function _dlWalkable(wx, wz){ return !_dlWallAt(wx/TILE, wz/TILE); }
 // ════════════════════════════════════════════════════════════════════════════
+// a670 — THE VEILED SANCTUARY: plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), deterministic. Tiles (80 × 80). The monastery of the Forsaken Order, now its
+//   whole cathedral: the NARTHEX at the west door (the portal home), the long NAVE with its
+//   colonnades and pews running east into the CROSSING, the CARDINAL'S TRANSEPT north and the
+//   FORSAKEN TRANSEPT south, the CLOISTER and its frozen garden behind the north wall, the
+//   SCRIPTORIUM behind the south wall, the OSSUARY (north-east) and the CRYPT (south-east), and
+//   at the head of it all the ROTUNDA — the Final Abbot's arena, a round hall 22 tiles across
+//   with the failed seal inlaid in its floor, reached through the choir gate. CLS codes the
+//   rooms (the client paves each its own way); P: [x, z, r, kind, seed, ang, hw, hd] — a circle
+//   of radius r, or (r = 0, hw > 0) a box of half-extents hw × hd; r = hw = 0 decorates only.
+// ════════════════════════════════════════════════════════════════════════════
+var _VS = (function(){
+  var s = 0x0a670001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  var N = 80, ARENA = [67, 40, 11], SPAWN = [12, 40], GATE = [8, 40], WALLH = 7.5;
+  var M = new Uint8Array(N*N), CLS = new Uint8Array(N*N), x, z, k;
+  for(k = 0; k < N*N; k++) M[k] = 1;
+  // CLS: 0 masonry, 1 narthex, 2 nave, 3 crossing, 4 north transept, 5 south transept, 6 rotunda, 7 cloister walk,
+  //      8 cloister garden, 9 scriptorium, 10 ossuary, 11 crypt, 12 choir gate, 13 doorway
+  var room = function(x0, x1, z0, z1, c){ for(z = z0; z < z1; z++) for(x = x0; x < x1; x++){ M[z*N + x] = 0; CLS[z*N + x] = c; } };
+  var ROOMS = { narthex:[4, 15, 31, 50], nave:[16, 45, 29, 52], crossing:[45, 55, 29, 52], ntrans:[45, 55, 5, 28], strans:[45, 55, 53, 76], cloister:[5, 44, 5, 28], scrip:[5, 44, 53, 76], ossuary:[57, 77, 5, 27], crypt:[57, 77, 54, 76] };
+  room(4, 15, 31, 50, 1); room(16, 45, 29, 52, 2); room(45, 55, 29, 52, 3); room(45, 55, 5, 28, 4); room(45, 55, 53, 76, 5);
+  room(5, 44, 5, 28, 7); room(5, 44, 53, 76, 9); room(57, 77, 5, 27, 10); room(57, 77, 54, 76, 11);
+  for(z = 11; z < 22; z++) for(x = 12; x < 37; x++) CLS[z*N + x] = 8;      // the garden inside the cloister walk
+  // the rotunda (with the altar's apse behind it) and the choir gate into it
+  for(z = 26; z < 55; z++) for(x = 54; x < 80; x++){ var d = Math.hypot(x + 0.5 - ARENA[0], z + 0.5 - ARENA[1]); if(d < ARENA[2]){ M[z*N + x] = 0; CLS[z*N + x] = 6; } }
+  room(76, 79, 37, 44, 6);
+  room(55, 58, 36, 45, 12);
+  // the doorways
+  var DOORS = [[15, 16, 35, 46, 'w'], [22, 26, 28, 29, 'n'], [34, 38, 28, 29, 'n'], [22, 26, 52, 53, 's'], [34, 38, 52, 53, 's'], [46, 54, 28, 29, 'n'], [46, 54, 52, 53, 's'],
+    [44, 45, 14, 18, 'w'], [44, 45, 62, 66, 'w'], [55, 57, 13, 18, 'w'], [55, 57, 62, 67, 'w']];
+  DOORS.forEach(function(d){ for(z = d[2]; z < d[3]; z++) for(x = d[0]; x < d[1]; x++){ M[z*N + x] = 0; CLS[z*N + x] = 13; } });
+  // ── the furnishings ──
+  var P = [];
+  // nave colonnades (and the crossing's four great piers)
+  for(var cx = 19; cx <= 41; cx += 5){ P.push([cx + 0.5, 32.5, 0.9, 'column', cx, 0, 0, 0]); P.push([cx + 0.5, 48.5, 0.9, 'column', cx + 1, 0, 0, 0]); }
+  [[46.5, 32.5], [53.5, 32.5], [46.5, 48.5], [53.5, 48.5]].forEach(function(q, i){ P.push([q[0], q[1], 1.3, 'pier', i, 0, 0, 0]); });
+  // pews: two banks either side of the centre aisle, with gaps to walk through
+  for(var px = 18; px <= 41; px += 2.5){ if(Math.round((px - 18)/2.5) % 4 === 3) continue; [35.6, 44.4].forEach(function(pz){ P.push([px + 0.5, pz, 0, "pew", Math.round(px*7), 0, 0.5, 2.3]); }); }
+  // transepts: the Cardinal's seat and the Forsaken's chained pulpit; columns in each
+  [[47, 9], [53, 9], [47, 22], [53, 22]].forEach(function(q, i){ P.push([q[0], q[1], 0.7, 'column', 40 + i, 0, 0, 0]); P.push([q[0], 81 - q[1], 0.7, 'column', 50 + i, 0, 0, 0]); });
+  P.push([50, 7, 0, 'throne', 1, 0, 1.6, 1.0]); P.push([50, 73, 0, 'pulpit', 2, 0, 1.6, 1.0]);
+  // the cloister: an arcade round the garden, a frozen fountain, pale trees
+  for(var ax = 12; ax <= 36; ax += 3){ P.push([ax + 0.5, 10.5, 0.45, 'arcade', ax, 0, 0, 0]); P.push([ax + 0.5, 21.5, 0.45, 'arcade', ax + 1, 0, 0, 0]); }
+  for(var az = 13.5; az <= 19.5; az += 3){ P.push([11.5, az, 0.45, 'arcade', az*3, 0, 0, 0]); P.push([36.5, az, 0.45, 'arcade', az*3 + 1, 0, 0, 0]); }
+  P.push([24.5, 16, 2.4, 'fountain', 3, 0, 0, 0]);
+  [[16, 13.5], [32, 13.5], [16, 19], [32, 19]].forEach(function(q, i){ P.push([q[0], q[1], 0.5, 'ptree', i*17 + 3, 0, 0, 0]); });
+  // the scriptorium: rows of shelves, lecterns, the great reading table
+  for(var sz = 57; sz <= 72; sz += 5){ [9, 17, 31, 39].forEach(function(sx, i){ if(sz === 67 && (i === 1 || i === 2)) return; P.push([sx, sz, 0, 'shelf', sx*3 + sz, 0, 3.0, 0.5]); }); }
+  P.push([24.5, 64.5, 0, 'table', 4, 0, 1.2, 4.0]);
+  [[20, 59], [29, 59], [20, 70], [29, 70]].forEach(function(q, i){ P.push([q[0], q[1], 0.5, 'lectern', i, 0, 0, 0]); });
+  // the ossuary: walls of skulls round a bone chandelier, bone piles
+  [[61, 9], [73, 9], [61, 22], [73, 22], [67, 15.5]].forEach(function(q, i){ P.push([q[0], q[1], i === 4 ? 1.8 : 1.1, i === 4 ? 'bonepillar' : 'bonepile', i, 0, 0, 0]); });
+  // the crypt: sarcophagi in rows, the founder's tomb
+  for(var tx = 61; tx <= 73; tx += 6) for(var tz = 58; tz <= 72; tz += 7) P.push([tx, tz, 0, 'sarcophagus', tx + tz, 0, 1.4, 0.75]);
+  P.push([67, 65, 0, 'tomb', 9, 0, 1.8, 1.2]);
+  // the narthex: the font
+  P.push([9, 34, 1.3, 'font', 1, 0, 0, 0]); P.push([9, 46, 1.0, 'bell', 2, 0, 0, 0]);
+  // the rotunda: the altar in the apse, four kneeling brothers frozen round the seal
+  P.push([77.6, 40.5, 0, 'altar', 1, 0, 1.0, 1.6]);
+  [0.785, 2.356, 3.927, 5.498].forEach(function(a, i){ P.push([ARENA[0] + Math.cos(a)*8.6, ARENA[1] + Math.sin(a)*8.6, 0.6, 'monk', i, a + Math.PI, 0, 0]); });
+  // stamp collision
+  P.forEach(function(p){ if(p[2]){ var rc = p[2] + 0.15; for(z = Math.floor(p[1] - rc); z <= Math.ceil(p[1] + rc); z++) for(x = Math.floor(p[0] - rc); x <= Math.ceil(p[0] + rc); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < rc) M[z*N + x] = 1; }
+    else if(p[6]){ var hw = p[6] + 0.1, hd = p[7] + 0.1; for(z = Math.floor(p[1] - hd); z <= Math.ceil(p[1] + hd); z++) for(x = Math.floor(p[0] - hw); x <= Math.ceil(p[0] + hw); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.abs(x + 0.5 - p[0]) < hw && Math.abs(z + 0.5 - p[1]) < hd) M[z*N + x] = 1; } });
+  // seal what the west door can't reach
+  var seen = new Uint8Array(N*N), Q = [SPAWN[1]*N + SPAWN[0]]; seen[Q[0]] = 1;
+  while(Q.length){ var q = Q.pop(), qx = q % N, qz = (q/N)|0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(o){ var X = qx + o[0], Z = qz + o[1]; if(X < 0 || Z < 0 || X >= N || Z >= N) return; var kk = Z*N + X; if(seen[kk] || M[kk]) return; seen[kk] = 1; Q.push(kk); }); }
+  var SEALED = 0; for(k = 0; k < N*N; k++) if(!M[k] && !seen[k]){ M[k] = 1; SEALED++; }
+  // ── the congregation, room by room (the rotunda is the Abbot's alone) ──
+  var SPAWNS = [];
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
+    return Math.hypot(px - ARENA[0], pz - ARENA[1]) > ARENA[2] + 1 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 6; };
+  var put = function(type, rm, sp, at){ for(var t = 0; t < 4000; t++){ var px = at ? at[0] + (t ? (R() - 0.5)*Math.min(8, t*0.2) : 0) : rm[0] + R()*(rm[1] - rm[0]), pz = at ? at[1] + (t ? (R() - 0.5)*Math.min(8, t*0.2) : 0) : rm[2] + R()*(rm[3] - rm[2]); var qx = Math.floor(px), qz = Math.floor(pz); if(!clear(qx + 0.5, qz + 0.5)) continue;
+      var ok = true; for(var i = 0; i < SPAWNS.length; i++) if(Math.hypot(SPAWNS[i].tx - qx, SPAWNS[i].tz - qz) < sp) ok = false; if(!ok) continue; SPAWNS.push({ tx:qx, tz:qz, type:type }); return true; } return false; };
+  var RO = ROOMS;
+  ['veiled_acolyte', 'veiled_acolyte', 'censer_bearer'].forEach(function(t){ put(t, [11, 15, 31, 50], 3); });
+  ['veiled_acolyte', 'censer_bearer', 'penitent_striker', 'choir_wraith', 'stone_inquisitor', 'veiled_acolyte', 'ritual_guardian', 'censer_bearer', 'penitent_striker', 'choir_wraith'].forEach(function(t){ put(t, RO.nave, 4.5); });
+  ['choir_wraith', 'penitent_striker', 'veiled_acolyte', 'stone_inquisitor'].forEach(function(t){ put(t, RO.cloister, 6); });
+  ['stone_inquisitor', 'censer_bearer', 'choir_wraith', 'veiled_acolyte'].forEach(function(t){ put(t, RO.scrip, 6); });
+  put('veiled_cardinal', null, 3, [50, 11]); ['ritual_guardian', 'ritual_guardian', 'veiled_acolyte'].forEach(function(t){ put(t, RO.ntrans, 3.5); });
+  put('forsaken_abbot', null, 3, [50, 69]); ['stone_inquisitor', 'stone_inquisitor', 'choir_wraith'].forEach(function(t){ put(t, RO.strans, 3.5); });
+  ['choir_wraith', 'penitent_striker', 'stone_inquisitor'].forEach(function(t){ put(t, RO.ossuary, 5); });
+  ['ritual_guardian', 'choir_wraith', 'penitent_striker'].forEach(function(t){ put(t, RO.crypt, 5); });
+  put('ritual_guardian', null, 2.5, [52, 37]); put('ritual_guardian', null, 2.5, [52, 44]);
+  return { N:N, M:M, CLS:CLS, P:P, SPAWNS:SPAWNS, ROOMS:ROOMS, DOORS:DOORS, ARENA:ARENA, SPAWN:SPAWN, GATE:GATE, WALLH:WALLH, SEALED:SEALED, hs:hs };
+})();
+function _vsWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 80 || z >= 80) return true; return _VS.M[z*80 + x] === 1; }
+function _vsWalkable(wx, wz){ return !_vsWallAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
 // a665 — THE REACH: plan. Shared VERBATIM by the client (70_terrain) and the server
 //   (server.js), fully deterministic, so players and the elites collide with the same ruins.
 //   Tiles. An alien wasteland at the end of creation, with no order to it: broken cliffs
@@ -3653,39 +3742,7 @@ const ZONE_SPAWNS = {
   neon_hollow: _NH.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a661 — generated by the shared grid-city plan (the old 196 + 22 Shadow Xu)
   // ── VEILED SANCTUARY (v92.41) — matches client ZONE_DEFS.veiled_sanctuary ──
   // a545 — MULTIPLAYER MIGRATION: The Veiled Sanctuary is now server-authoritative.
-  veiled_sanctuary: [
-    {type:'veiled_acolyte', tx:14, tz:36},
-    {type:'veiled_acolyte', tx:16, tz:42},
-    {type:'censer_bearer', tx:18, tz:38},
-    {type:'penitent_striker', tx:20, tz:44},
-    {type:'veiled_acolyte', tx:22, tz:36},
-    {type:'choir_wraith', tx:24, tz:42},
-    {type:'stone_inquisitor', tx:28, tz:30},
-    {type:'censer_bearer', tx:30, tz:36},
-    {type:'choir_wraith', tx:32, tz:42},
-    {type:'penitent_striker', tx:34, tz:48},
-    {type:'ritual_guardian', tx:36, tz:30},
-    {type:'veiled_acolyte', tx:38, tz:42},
-    {type:'stone_inquisitor', tx:40, tz:36},
-    {type:'censer_bearer', tx:42, tz:48},
-    {type:'choir_wraith', tx:44, tz:30},
-    {type:'penitent_striker', tx:46, tz:42},
-    {type:'veiled_cardinal', tx:50, tz:40},
-    {type:'veiled_acolyte', tx:52, tz:34},
-    {type:'veiled_acolyte', tx:52, tz:46},
-    {type:'ritual_guardian', tx:54, tz:38},
-    {type:'ritual_guardian', tx:54, tz:42},
-    {type:'choir_wraith', tx:60, tz:34},
-    {type:'choir_wraith', tx:60, tz:46},
-    {type:'forsaken_abbot', tx:62, tz:40},
-    {type:'stone_inquisitor', tx:64, tz:36},
-    {type:'stone_inquisitor', tx:64, tz:44},
-    {type:'penitent_striker', tx:66, tz:38},
-    {type:'penitent_striker', tx:66, tz:42},
-    {type:'ritual_guardian', tx:70, tz:38},
-    {type:'ritual_guardian', tx:70, tz:42},
-    {type:'censer_bearer', tx:72, tz:40}
-  ],
+  veiled_sanctuary: _VS.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a670 — the congregation, hall by hall, from the shared plan
   // ── BLOOMING WILDS (v92.49+v92.50) — matches client ZONE_DEFS.blooming_wilds ──
   // a535 — MULTIPLAYER MIGRATION: The Blooming Wilds is now server-authoritative.
   blooming_wilds: [
@@ -5705,7 +5762,7 @@ const ZBOSS_SERVER = {
     // a614 — the Sanctuary is still the compact monastery (tiles 4-76 x 22-58); its
     //   apse is tile (74,40). a561 placed the Abbot at the 240-map centre like the
     //   rebuilt zones, so he spawned outside the walls and fought from across the map.
-    x: 111, z: 60,
+    x: 100.5, z: 60,                                   // a670 — tile (67,40), the heart of the rotunda
     spd:    [0, 0.016, 0.020, 0.024, 0.030, 0.036],
     dmg:    [0, 1.0,   1.3,   1.7,   2.2,   2.8],       // faMul
     phases: [0.80, 0.60, 0.40, 0.20],
@@ -8039,7 +8096,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach' || zoneName === 'forge' || zoneName === 'dragonlair') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach' || zoneName === 'forge' || zoneName === 'dragonlair' || zoneName === 'veiled_sanctuary') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8134,6 +8191,7 @@ function tickGame(game) {
         else if (zoneName === 'the_reach') { if (_reWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_reWalkable(nx, e.z)) e.x = nx; else if (_reWalkable(e.x, nz)) e.z = nz; }   // a665 — the cliffs, the rifts, the dead works
         else if (zoneName === 'forge') { if (_foWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_foWalkable(nx, e.z)) e.x = nx; else if (_foWalkable(e.x, nz)) e.z = nz; }   // a668 — the works, the lava, the walls
         else if (zoneName === 'dragonlair') { if (_dlWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_dlWalkable(nx, e.z)) e.x = nx; else if (_dlWalkable(e.x, nz)) e.z = nz; }   // a669 — the caldera wall, the volcano, the lava, the nest's rim
+        else if (zoneName === 'veiled_sanctuary') { if (_vsWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vsWalkable(nx, e.z)) e.x = nx; else if (_vsWalkable(e.x, nz)) e.z = nz; }   // a670 — the cathedral's walls, columns and pews
         else if (zoneName === 'xulcan') { if (_xuWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xuWalkable(nx, e.z)) e.x = nx; else if (_xuWalkable(e.x, nz)) e.z = nz; }   // a664 — the golden towers, the outpost walls
         else if (zoneName === 'wyvernwastes') { if (_wwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_wwWalkable(nx, e.z)) e.x = nx; else if (_wwWalkable(e.x, nz)) e.z = nz; }   // a663 — the ranges, crevasses, nest rims and crags
         else if (zoneName === 'neon_hollow') { if (_nhWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_nhWalkable(nx, e.z)) e.x = nx; else if (_nhWalkable(e.x, nz)) e.z = nz; }   // a661 — the city's buildings, wall and monorail pylons
@@ -11803,6 +11861,10 @@ function tickGame(game) {
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    if (zoneName === 'veiled_sanctuary') zone.enemies.forEach(e => {   // a670 — nothing ends a tick inside the masonry
+      if (!e.active || e._rv0x === undefined || _vsWalkable(e.x, e.z)) return;
+      if (_vsWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vsWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     if (zoneName === 'dragonlair') zone.enemies.forEach(e => {   // a669 — nothing ends a tick in the lava or inside the rock
       if (!e.active || e._rv0x === undefined || _dlWalkable(e.x, e.z)) return;
