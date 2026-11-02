@@ -869,6 +869,109 @@ var _NH = (function(){
 function _nhWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _NH.M[z*240 + x] === 1; }
 function _nhWalkable(wx, wz){ return !_nhWallAt(wx/TILE, wz/TILE); }
 
+// ════════════════════════════════════════════════════════════════════════════
+// a663 — WYVERN WASTES: plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), fully deterministic, so players and the wyverns collide with the same
+//   mountains. Tiles. A frozen high country walled in by jagged ranges: ridges run through
+//   it, three valleys carry the old trails (the W–E spine and loops north and south), and
+//   three crevasses split the snowfields, crossed by ice bridges. Cryothar's caldera sits
+//   in the middle. CAMPS are the wyverns' NESTS (rimmed hollows with two ways in, a clutch
+//   of eggs in the middle), the deep wyrms' BURROWS and the elder dragons' frost SHRINES.
+//   P (props, [x, z, r, kind, seed]) collide: pinnacles (with nests on top), crags, ice
+//   crystal clusters, spires, dead trees, the bone giants and the hunters' camp.
+// ════════════════════════════════════════════════════════════════════════════
+var _WW = (function(){
+  var s = 0x0a663001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  function vn(x, z){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; fx = fx*fx*(3 - 2*fx); fz = fz*fz*(3 - 2*fz);
+    var a = hs(ix, iz), b = hs(ix + 1, iz), c = hs(ix, iz + 1), d = hs(ix + 1, iz + 1); return a + (b - a)*fx + (c - a)*fz + (a - b - c + d)*fx*fz; }
+  function fbm(x, z){ return vn(x, z)*0.55 + vn(x*2.1 + 7.3, z*2.1 - 3.1)*0.3 + vn(x*4.3 - 1.7, z*4.3 + 9.2)*0.15; }
+  var CX = 120, CZ = 120, ARENA = 24, SPAWN = [16, 120];
+  var TRAILS = [
+    [[0, 120], [40, 118], [70, 126], [96, 120], [144, 120], [170, 114], [200, 122], [240, 120]],
+    [[40, 118], [46, 82], [62, 48], [100, 34], [140, 30], [176, 44], [196, 80], [200, 122]],
+    [[70, 126], [58, 160], [72, 196], [110, 208], [150, 204], [184, 186], [200, 122]],
+    [[120, 96], [112, 66], [100, 34]], [[120, 144], [116, 176], [110, 208]] ];
+  var segD = function(px, pz, a, b){ var dx = b[0] - a[0], dz = b[1] - a[1], t = ((px - a[0])*dx + (pz - a[1])*dz)/(dx*dx + dz*dz); t = Math.max(0, Math.min(1, t)); var qx = a[0] + dx*t - px, qz = a[1] + dz*t - pz; return Math.sqrt(qx*qx + qz*qz); };
+  var trail = function(x, z){ var d = 1e9; for(var i = 0; i < TRAILS.length; i++){ var T = TRAILS[i]; for(var j = 0; j < T.length - 1; j++){ var v = segD(x, z, T[j], T[j + 1]); if(v < d) d = v; } } return d; };
+  // the mountains: a broken rim round the edge, ridges through the middle, the valleys cut through
+  var mtn = function(x, z){
+    var e = Math.min(x, z, 239 - x, 239 - z), edge = 13 + (fbm(x*0.07, z*0.07) - 0.5)*12 - e;
+    var r1 = 1 - Math.abs(2*fbm(x*0.021 + 3.1, z*0.021 - 1.7) - 1), r2 = 1 - Math.abs(2*fbm(x*0.043 - 5.2, z*0.043 + 2.2) - 1);
+    var ridge = (r1 - 0.8)*28 + (r2 - 0.86)*10 + (fbm(x*0.12, z*0.12) - 0.5)*4;
+    var m = Math.max(edge, ridge);
+    var tr = trail(x, z), cw = 6.5 + (fbm(x*0.09 + 11, z*0.09) - 0.5)*4; if(tr < cw + 4) m = Math.min(m, (tr - cw)*1.2);
+    var dc = Math.hypot(x - CX, z - CZ); if(dc < 36) m = Math.min(m, (dc - 36)*0.6);
+    if(Math.abs(z - 120) < 7 && (x < 22 || x > 218)) m = Math.min(m, -1);
+    return m; };
+  // the crevasses: three blue cracks across the snowfields
+  var CREV = [ function(x){ return [x, 72 + Math.sin(x*0.05)*12 + Math.sin(x*0.13)*3]; }, function(x){ return [x, 168 + Math.sin(x*0.04 + 1)*13 + Math.sin(x*0.11)*3]; }, function(z){ return [158 + Math.sin(z*0.05)*9 + Math.sin(z*0.17)*2, z]; } ];
+  var crev = function(x, z){ var d = 1e9, w = 1.2 + fbm(x*0.1 + 40, z*0.1)*1.4;
+    if(x > 26 && x < 214){ var a = 72 + Math.sin(x*0.05)*12 + Math.sin(x*0.13)*3, b = 168 + Math.sin(x*0.04 + 1)*13 + Math.sin(x*0.11)*3; d = Math.min(d, Math.abs(z - a), Math.abs(z - b)); }
+    if(z > 130 && z < 226){ var c = 158 + Math.sin(z*0.05)*9 + Math.sin(z*0.17)*2; d = Math.min(d, Math.abs(x - c)); }
+    return d - w; };
+  var bridge = function(x, z){ return trail(x, z) < 4.2; };
+  var M = new Uint8Array(240*240), x, z, k, MT = new Float32Array(240*240), CR = new Uint8Array(240*240);
+  for(z = 0; z < 240; z++) for(x = 0; x < 240; x++){ var mv = mtn(x + 0.5, z + 0.5); MT[z*240 + x] = mv;
+    if(mv > 0) M[z*240 + x] = 1; else if(crev(x + 0.5, z + 0.5) < 0){ if(bridge(x + 0.5, z + 0.5)) CR[z*240 + x] = 2; else { CR[z*240 + x] = 1; M[z*240 + x] = 1; } } }
+  var open = function(px, pz, r){ for(var dz = -r; dz <= r; dz += 2) for(var dx = -r; dx <= r; dx += 2){ var xx = Math.floor(px + dx), zz = Math.floor(pz + dz); if(xx < 1 || zz < 1 || xx > 238 || zz > 238 || M[zz*240 + xx] || CR[zz*240 + xx]) return false; } return true; };
+  var P = [], CAMPS = [];
+  var farFrom = function(px, pz, list, d){ for(var i = 0; i < list.length; i++) if(Math.hypot(list[i][0] - px, list[i][1] - pz) < d + (list[i][2] || 0)) return false; return true; };
+  // ── the camps: 16 nests, 12 burrows, 9 shrines ──
+  var want = [['shrine', 9, 6], ['nest', 16, 6], ['burrow', 12, 4]];
+  want.forEach(function(w){ var n = 0; for(var t = 0; t < 12000 && n < w[1]; t++){ var px = 18 + R()*204, pz = 18 + R()*204;
+      if(Math.hypot(px - CX, pz - CZ) < 44 || Math.hypot(px - SPAWN[0], pz - SPAWN[1]) < 32 || Math.hypot(px - 56, pz - 120) < 10) continue;
+      if(!open(px, pz, w[2])) continue; if(!farFrom(px, pz, CAMPS, 15)) continue; if(trail(px, pz) < w[2] - 1) continue;
+      CAMPS.push([px, pz, 0, w[0], (R()*1e6)|0]); n++; } });
+  // ── props ──
+  var clearOf = function(px, pz, r){ if(Math.hypot(px - CX, pz - CZ) < 38 + r) return false; if(trail(px, pz) < 4 + r*0.5) return false; if(!open(px, pz, Math.ceil(r + 1))) return false;
+    if(!farFrom(px, pz, CAMPS, 8.5 + r)) return false; if(!farFrom(px, pz, P, r + 1.2)) return false; if(Math.hypot(px - SPAWN[0], pz - SPAWN[1]) < 22) return false; return true; };
+  // the hunters' camp round the west gate: tents, ballistae aimed at the sky, a watchtower
+  [[24, 108, 'tent', 2.0], [32, 106, 'tent', 2.0], [24, 133, 'tent', 2.0], [34, 135, 'ballista', 1.3], [40, 108, 'ballista', 1.3], [14, 106, 'tower', 2.0], [14, 134, 'tower', 2.0], [30, 112, 'crates', 1.2]].forEach(function(q, i){ P.push([q[0], q[1], q[3], q[2], i]); });
+  // the bone giants: three fallen elder wyverns
+  for(var t = 0; t < 3000 && P.filter(function(p){ return p[3] === 'bones'; }).length < 3; t++){ var px = 30 + R()*180, pz = 30 + R()*180; if(clearOf(px, pz, 3.5)) P.push([px, pz, 2.2, 'bones', (R()*1e6)|0]); }
+  // roost pinnacles: towering stacks with nests on top
+  for(var t = 0; t < 2000 && P.filter(function(p){ return p[3] === 'pinnacle'; }).length < 14; t++){ var px = 14 + R()*212, pz = 14 + R()*212, r = 2.2 + R()*1.4; if(clearOf(px, pz, r + 0.5)) P.push([px, pz, r, 'pinnacle', (R()*1e6)|0]); }
+  // crags, ice crystal clusters, spires, frozen dead trees
+  for(var t = 0; t < 9000 && P.length < 300; t++){ var px = 8 + R()*224, pz = 8 + R()*224, k2 = R();
+    var kind = k2 < 0.38 ? 'crag' : k2 < 0.62 ? 'crystal' : k2 < 0.8 ? 'spire' : 'deadtree', r = kind === 'crag' ? 1.4 + R()*2.0 : kind === 'crystal' ? 1.0 + R()*1.0 : kind === 'spire' ? 0.8 + R()*0.6 : 0.5;
+    if(clearOf(px, pz, r + 0.6)) P.push([px, pz, r, kind, (R()*1e6)|0]); }
+  // stamp collision
+  P.forEach(function(p){ if(p[3] === 'crates') return; var rc = p[3] === 'bones' ? 2.2 : p[2];
+    for(z = Math.floor(p[1] - rc); z <= Math.ceil(p[1] + rc); z++) for(x = Math.floor(p[0] - rc); x <= Math.ceil(p[0] + rc); x++) if(x >= 0 && z >= 0 && x < 240 && z < 240 && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < rc) M[z*240 + x] = 1; });
+  // nest rims (two gaps), burrow holes, shrine altars + pillars
+  CAMPS.forEach(function(c){ var cx = c[0], cz = c[1];
+    if(c[3] === 'nest'){ var ga = Math.atan2(CZ - cz, CX - cx); c[5] = ga;
+      for(z = Math.floor(cz - 7); z <= Math.ceil(cz + 7); z++) for(x = Math.floor(cx - 7); x <= Math.ceil(cx + 7); x++){ var d = Math.hypot(x + 0.5 - cx, z + 0.5 - cz); if(d < 5.0 || d > 6.4) continue;
+        var a = Math.atan2(z + 0.5 - cz, x + 0.5 - cx), da = Math.abs(((a - ga) % 6.283 + 9.425) % 6.283 - 3.1416), db = Math.abs(((a - ga - 3.1416) % 6.283 + 9.425) % 6.283 - 3.1416);
+        if(da < 0.42 || db < 0.42) continue; M[z*240 + x] = 1; } }
+    else if(c[3] === 'burrow'){ for(z = Math.floor(cz - 2); z <= Math.ceil(cz + 2); z++) for(x = Math.floor(cx - 2); x <= Math.ceil(cx + 2); x++) if(Math.hypot(x + 0.5 - cx, z + 0.5 - cz) < 1.7) M[z*240 + x] = 1; }
+    else { var pin = function(px, pz, r){ for(z = Math.floor(pz - r - 1); z <= Math.ceil(pz + r); z++) for(x = Math.floor(px - r - 1); x <= Math.ceil(px + r); x++) if(Math.hypot(x + 0.5 - px, z + 0.5 - pz) < r) M[z*240 + x] = 1; };
+      pin(cx, cz, 1.6); for(k = 0; k < 6; k++){ var a2 = k/6*6.283 + 0.3; pin(cx + Math.cos(a2)*6, cz + Math.sin(a2)*6, 0.9); } } });
+  // anything the valleys can't reach (sealed pockets) becomes mountain
+  var seen = new Uint8Array(240*240), Q = [SPAWN[1]*240 + SPAWN[0]]; seen[Q[0]] = 1;
+  while(Q.length){ var q = Q.pop(), qx = q % 240, qz = (q/240)|0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(o){ var X = qx + o[0], Z = qz + o[1]; if(X < 0 || Z < 0 || X > 239 || Z > 239) return; var kk = Z*240 + X; if(seen[kk] || M[kk]) return; seen[kk] = 1; Q.push(kk); }); }
+  var SEALED = 0; for(k = 0; k < 240*240; k++) if(!M[k] && !seen[k]){ M[k] = 1; if(!CR[k]) MT[k] = Math.max(MT[k], 0.5); SEALED++; }
+  // ── the wyverns ──
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= 240 || zz >= 240 || M[zz*240 + xx]) return false; }
+    return Math.hypot(px - CX, pz - CZ) > ARENA + 4 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 18; };
+  var SPAWNS = [], cnt = { wyvern_warlord:0, deep_wyrm:0, elder_dragon:0 }, CAP = { wyvern_warlord:72, deep_wyrm:64, elder_dragon:54 };
+  var put = function(px, pz, type, jit){ if(cnt[type] >= CAP[type]) return false; for(var tr = 0; tr < 20; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
+      if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type]++; return true; } } return false; };
+  CAMPS.forEach(function(c, ci){ var cx = c[0], cz = c[1];
+    if(c[3] === 'nest'){ for(k = 0; k < 4; k++){ var a = k/4*6.283 + 0.4; put(cx + Math.cos(a)*2.6, cz + Math.sin(a)*2.6, 'wyvern_warlord', 0.3); } if(ci % 3 === 0) put(cx + Math.cos(c[5])*8, cz + Math.sin(c[5])*8, 'elder_dragon'); }
+    else if(c[3] === 'burrow'){ for(k = 0; k < 5; k++){ var a = k/5*6.283; put(cx + Math.cos(a)*3.6, cz + Math.sin(a)*3.6, 'deep_wyrm', 0.4); } }
+    else { for(k = 0; k < 5; k++){ var a = k/5*6.283 + 0.9; put(cx + Math.cos(a)*3.4, cz + Math.sin(a)*3.4, 'elder_dragon', 0.3); } } });
+  // the rest hunt the trails and the snowfields in pairs
+  var types = ['wyvern_warlord', 'deep_wyrm', 'elder_dragon'];
+  for(var t = 0; t < 6000 && SPAWNS.length < 190; t++){ var ty = types[t % 3]; if(cnt[ty] >= CAP[ty]) continue; var px = 14 + R()*212, pz = 14 + R()*212; if(!farFrom(px, pz, CAMPS, 9)) continue;
+    if(put(px, pz, ty)){ put(px + 2, pz + 1, ty); } }
+  return { M:M, MT:MT, CR:CR, P:P, CAMPS:CAMPS, SPAWNS:SPAWNS, TRAILS:TRAILS, CX:CX, CZ:CZ, ARENA:ARENA, SPAWN:SPAWN, SEALED:SEALED, trail:trail, mtn:mtn, crev:crev, fbm:fbm, hs:hs };
+})();
+function _wwWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _WW.M[z*240 + x] === 1; }
+
+function _wwWalkable(wx, wz){ return !_wwWallAt(wx/TILE, wz/TILE); }
+
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
@@ -2426,198 +2529,8 @@ const ZONE_SPAWNS = {
   //   190 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
   //   HP is intentionally UNCHANGED (no ZONE_HP_MULT entry) — ENEMY_STATS already
   //   carries the E11.5 values (55k/75k/90k) and the client kit applies no bump.
-  wyvernwastes: [
-    {type:'wyvern_warlord', tx:43, tz:49},
-    {type:'wyvern_warlord', tx:43, tz:36},
-    {type:'deep_wyrm', tx:37, tz:43},
-    {type:'deep_wyrm', tx:39, tz:39},
-    {type:'elder_dragon', tx:32, tz:35},
-    {type:'elder_dragon', tx:38, tz:41},
-    {type:'wyvern_warlord', tx:42, tz:48},
-    {type:'wyvern_warlord', tx:38, tz:32},
-    {type:'deep_wyrm', tx:36, tz:39},
-    {type:'deep_wyrm', tx:35, tz:36},
-    {type:'wyvern_warlord', tx:66, tz:38},
-    {type:'wyvern_warlord', tx:81, tz:46},
-    {type:'deep_wyrm', tx:73, tz:38},
-    {type:'deep_wyrm', tx:72, tz:43},
-    {type:'elder_dragon', tx:67, tz:31},
-    {type:'elder_dragon', tx:73, tz:43},
-    {type:'wyvern_warlord', tx:71, tz:37},
-    {type:'wyvern_warlord', tx:75, tz:45},
-    {type:'deep_wyrm', tx:74, tz:39},
-    {type:'deep_wyrm', tx:75, tz:46},
-    {type:'wyvern_warlord', tx:37, tz:73},
-    {type:'wyvern_warlord', tx:37, tz:81},
-    {type:'deep_wyrm', tx:41, tz:71},
-    {type:'deep_wyrm', tx:42, tz:65},
-    {type:'elder_dragon', tx:32, tz:65},
-    {type:'elder_dragon', tx:40, tz:79},
-    {type:'wyvern_warlord', tx:37, tz:78},
-    {type:'wyvern_warlord', tx:37, tz:67},
-    {type:'deep_wyrm', tx:47, tz:63},
-    {type:'deep_wyrm', tx:47, tz:79},
-    {type:'wyvern_warlord', tx:207, tz:35},
-    {type:'wyvern_warlord', tx:204, tz:39},
-    {type:'deep_wyrm', tx:194, tz:33},
-    {type:'deep_wyrm', tx:209, tz:43},
-    {type:'elder_dragon', tx:193, tz:39},
-    {type:'elder_dragon', tx:192, tz:48},
-    {type:'wyvern_warlord', tx:195, tz:45},
-    {type:'wyvern_warlord', tx:200, tz:39},
-    {type:'deep_wyrm', tx:198, tz:39},
-    {type:'deep_wyrm', tx:201, tz:32},
-    {type:'wyvern_warlord', tx:166, tz:40},
-    {type:'wyvern_warlord', tx:177, tz:34},
-    {type:'deep_wyrm', tx:168, tz:39},
-    {type:'deep_wyrm', tx:173, tz:42},
-    {type:'elder_dragon', tx:171, tz:39},
-    {type:'elder_dragon', tx:174, tz:48},
-    {type:'wyvern_warlord', tx:171, tz:49},
-    {type:'wyvern_warlord', tx:169, tz:44},
-    {type:'deep_wyrm', tx:159, tz:46},
-    {type:'deep_wyrm', tx:173, tz:36},
-    {type:'wyvern_warlord', tx:205, tz:73},
-    {type:'wyvern_warlord', tx:194, tz:76},
-    {type:'deep_wyrm', tx:192, tz:66},
-    {type:'deep_wyrm', tx:205, tz:78},
-    {type:'elder_dragon', tx:206, tz:73},
-    {type:'elder_dragon', tx:202, tz:66},
-    {type:'wyvern_warlord', tx:203, tz:70},
-    {type:'wyvern_warlord', tx:192, tz:70},
-    {type:'deep_wyrm', tx:204, tz:70},
-    {type:'deep_wyrm', tx:203, tz:68},
-    {type:'wyvern_warlord', tx:34, tz:204},
-    {type:'wyvern_warlord', tx:49, tz:206},
-    {type:'deep_wyrm', tx:47, tz:200},
-    {type:'deep_wyrm', tx:31, tz:201},
-    {type:'elder_dragon', tx:42, tz:204},
-    {type:'elder_dragon', tx:42, tz:199},
-    {type:'wyvern_warlord', tx:43, tz:191},
-    {type:'wyvern_warlord', tx:35, tz:208},
-    {type:'deep_wyrm', tx:49, tz:207},
-    {type:'deep_wyrm', tx:37, tz:198},
-    {type:'wyvern_warlord', tx:70, tz:202},
-    {type:'wyvern_warlord', tx:66, tz:203},
-    {type:'deep_wyrm', tx:63, tz:200},
-    {type:'deep_wyrm', tx:70, tz:207},
-    {type:'elder_dragon', tx:64, tz:209},
-    {type:'elder_dragon', tx:65, tz:202},
-    {type:'wyvern_warlord', tx:67, tz:206},
-    {type:'wyvern_warlord', tx:65, tz:192},
-    {type:'deep_wyrm', tx:75, tz:194},
-    {type:'deep_wyrm', tx:79, tz:193},
-    {type:'wyvern_warlord', tx:38, tz:171},
-    {type:'wyvern_warlord', tx:36, tz:165},
-    {type:'deep_wyrm', tx:46, tz:161},
-    {type:'deep_wyrm', tx:35, tz:166},
-    {type:'elder_dragon', tx:41, tz:170},
-    {type:'elder_dragon', tx:45, tz:176},
-    {type:'wyvern_warlord', tx:31, tz:172},
-    {type:'wyvern_warlord', tx:39, tz:168},
-    {type:'deep_wyrm', tx:31, tz:160},
-    {type:'deep_wyrm', tx:31, tz:171},
-    {type:'wyvern_warlord', tx:204, tz:203},
-    {type:'wyvern_warlord', tx:195, tz:205},
-    {type:'deep_wyrm', tx:194, tz:197},
-    {type:'deep_wyrm', tx:202, tz:203},
-    {type:'elder_dragon', tx:198, tz:205},
-    {type:'elder_dragon', tx:203, tz:203},
-    {type:'wyvern_warlord', tx:196, tz:199},
-    {type:'wyvern_warlord', tx:209, tz:204},
-    {type:'deep_wyrm', tx:202, tz:202},
-    {type:'deep_wyrm', tx:195, tz:207},
-    {type:'wyvern_warlord', tx:177, tz:207},
-    {type:'wyvern_warlord', tx:176, tz:201},
-    {type:'deep_wyrm', tx:169, tz:192},
-    {type:'deep_wyrm', tx:168, tz:208},
-    {type:'elder_dragon', tx:177, tz:194},
-    {type:'elder_dragon', tx:163, tz:194},
-    {type:'wyvern_warlord', tx:177, tz:193},
-    {type:'wyvern_warlord', tx:175, tz:209},
-    {type:'deep_wyrm', tx:160, tz:203},
-    {type:'deep_wyrm', tx:175, tz:192},
-    {type:'wyvern_warlord', tx:200, tz:162},
-    {type:'wyvern_warlord', tx:208, tz:161},
-    {type:'deep_wyrm', tx:205, tz:166},
-    {type:'deep_wyrm', tx:194, tz:172},
-    {type:'elder_dragon', tx:195, tz:162},
-    {type:'elder_dragon', tx:209, tz:177},
-    {type:'wyvern_warlord', tx:192, tz:174},
-    {type:'wyvern_warlord', tx:192, tz:177},
-    {type:'deep_wyrm', tx:208, tz:164},
-    {type:'deep_wyrm', tx:193, tz:159},
-    {type:'wyvern_warlord', tx:123, tz:54},
-    {type:'wyvern_warlord', tx:125, tz:51},
-    {type:'deep_wyrm', tx:113, tz:51},
-    {type:'deep_wyrm', tx:124, tz:52},
-    {type:'elder_dragon', tx:120, tz:58},
-    {type:'elder_dragon', tx:127, tz:45},
-    {type:'wyvern_warlord', tx:120, tz:51},
-    {type:'wyvern_warlord', tx:128, tz:54},
-    {type:'deep_wyrm', tx:111, tz:56},
-    {type:'deep_wyrm', tx:127, tz:44},
-    {type:'wyvern_warlord', tx:114, tz:179},
-    {type:'wyvern_warlord', tx:112, tz:188},
-    {type:'deep_wyrm', tx:115, tz:186},
-    {type:'deep_wyrm', tx:125, tz:186},
-    {type:'elder_dragon', tx:115, tz:180},
-    {type:'elder_dragon', tx:112, tz:194},
-    {type:'wyvern_warlord', tx:119, tz:193},
-    {type:'wyvern_warlord', tx:124, tz:192},
-    {type:'deep_wyrm', tx:125, tz:191},
-    {type:'deep_wyrm', tx:116, tz:187},
-    {type:'wyvern_warlord', tx:59, tz:122},
-    {type:'wyvern_warlord', tx:63, tz:117},
-    {type:'deep_wyrm', tx:64, tz:111},
-    {type:'deep_wyrm', tx:61, tz:115},
-    {type:'elder_dragon', tx:61, tz:113},
-    {type:'elder_dragon', tx:50, tz:127},
-    {type:'wyvern_warlord', tx:64, tz:116},
-    {type:'wyvern_warlord', tx:47, tz:111},
-    {type:'deep_wyrm', tx:54, tz:116},
-    {type:'deep_wyrm', tx:47, tz:117},
-    {type:'wyvern_warlord', tx:186, tz:118},
-    {type:'wyvern_warlord', tx:192, tz:116},
-    {type:'deep_wyrm', tx:183, tz:128},
-    {type:'deep_wyrm', tx:181, tz:129},
-    {type:'elder_dragon', tx:182, tz:114},
-    {type:'elder_dragon', tx:175, tz:111},
-    {type:'wyvern_warlord', tx:181, tz:120},
-    {type:'wyvern_warlord', tx:183, tz:119},
-    {type:'deep_wyrm', tx:185, tz:127},
-    {type:'deep_wyrm', tx:179, tz:115},
-    {type:'wyvern_warlord', tx:53, tz:197},
-    {type:'elder_dragon', tx:187, tz:86},
-    {type:'wyvern_warlord', tx:150, tz:43},
-    {type:'wyvern_warlord', tx:216, tz:21},
-    {type:'elder_dragon', tx:70, tz:212},
-    {type:'wyvern_warlord', tx:39, tz:101},
-    {type:'wyvern_warlord', tx:56, tz:28},
-    {type:'elder_dragon', tx:42, tz:152},
-    {type:'wyvern_warlord', tx:41, tz:58},
-    {type:'wyvern_warlord', tx:148, tz:59},
-    {type:'elder_dragon', tx:87, tz:119},
-    {type:'wyvern_warlord', tx:171, tz:200},
-    {type:'elder_dragon', tx:180, tz:56},
-    {type:'elder_dragon', tx:58, tz:87},
-    {type:'elder_dragon', tx:120, tz:151},
-    {type:'elder_dragon', tx:197, tz:135},
-    {type:'elder_dragon', tx:100, tz:40},
-    {type:'elder_dragon', tx:118, tz:184},
-    {type:'elder_dragon', tx:148, tz:27},
-    {type:'elder_dragon', tx:133, tz:53},
-    {type:'elder_dragon', tx:107, tz:54},
-    {type:'elder_dragon', tx:154, tz:172},
-    {type:'elder_dragon', tx:86, tz:22},
-    {type:'elder_dragon', tx:187, tz:138},
-    {type:'elder_dragon', tx:90, tz:105},
-    {type:'elder_dragon', tx:197, tz:24},
-    {type:'elder_dragon', tx:169, tz:148},
-    {type:'elder_dragon', tx:44, tz:72},
-    {type:'elder_dragon', tx:214, tz:52},
-    {type:'elder_dragon', tx:37, tz:200}
-  ],
+  wyvernwastes: _WW.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a663 — nests, burrows and shrines from the shared plan
+
   // a551 — XUMEN is now SERVER-AUTHORITATIVE (was client-side since a489).
   //   150 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
   //   HP intentionally UNCHANGED. All four types are py:0, so no altitude sync.
@@ -7841,7 +7754,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7924,6 +7837,7 @@ function tickGame(game) {
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
+        else if (zoneName === 'wyvernwastes') { if (_wwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_wwWalkable(nx, e.z)) e.x = nx; else if (_wwWalkable(e.x, nz)) e.z = nz; }   // a663 — the ranges, crevasses, nest rims and crags
         else if (zoneName === 'neon_hollow') { if (_nhWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_nhWalkable(nx, e.z)) e.x = nx; else if (_nhWalkable(e.x, nz)) e.z = nz; }   // a661 — the city's buildings, wall and monorail pylons
         else if (zoneName === 'xeron') { if (_xrWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xrWalkable(nx, e.z)) e.x = nx; else if (_xrWalkable(e.x, nz)) e.z = nz; }   // a660 — the towers and the edge of the disc
         else if (zoneName === 'xumen_fortress') { if (_xfWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xfWalkable(nx, e.z)) e.x = nx; else if (_xfWalkable(e.x, nz)) e.z = nz; }   // a658 — the fortress walls, hangars, cradles, tanks
@@ -11591,6 +11505,10 @@ function tickGame(game) {
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    if (zoneName === 'wyvernwastes') zone.enemies.forEach(e => {   // a663 — no dive or leap ends inside a mountain or down a crevasse
+      if (!e.active || e._rv0x === undefined || _wwWalkable(e.x, e.z)) return;
+      if (_wwWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_wwWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     if (zoneName === 'neon_hollow') zone.enemies.forEach(e => {   // a661 — nothing ends a tick inside a building (blinks and the Shadow Xu's dash included)
       if (!e.active || e._rv0x === undefined || _nhWalkable(e.x, e.z)) return;
