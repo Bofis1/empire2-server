@@ -1054,6 +1054,87 @@ var _XU = (function(){
 function _xuWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XU.M[z*240 + x] === 1; }
 function _xuWalkable(wx, wz){ return !_xuWallAt(wx/TILE, wz/TILE); }
 
+// ════════════════════════════════════════════════════════════════════════════
+// a665 — THE REACH: plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), fully deterministic, so players and the elites collide with the same ruins.
+//   Tiles. An alien wasteland at the end of creation, with no order to it: broken cliffs
+//   round the edge, four void rifts torn across the ground, the Apex crater in the north
+//   (the Keeper's ground), and everywhere the dead works of whatever built this place —
+//   needle spires firing lasers into the sky, standing ring gates, the fallen spheres, a
+//   toppled colossus, megastructure ribs arching over the ground, crashed hulls, monolith
+//   fields, sentinel eyes sweeping death-lasers across the ground, laser pylons, crystal
+//   growths and black thorns. P: [x, z, r, kind, seed, ang, R] — r is the collision
+//   radius (0 = no collision, decoration only).
+// ════════════════════════════════════════════════════════════════════════════
+var _RE = (function(){
+  var s = 0x0a665001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  function vn(x, z){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; fx = fx*fx*(3 - 2*fx); fz = fz*fz*(3 - 2*fz);
+    var a = hs(ix, iz), b = hs(ix + 1, iz), c = hs(ix, iz + 1), d = hs(ix + 1, iz + 1); return a + (b - a)*fx + (c - a)*fz + (a - b - c + d)*fx*fz; }
+  function fbm(x, z){ return vn(x, z)*0.55 + vn(x*2.1 + 7.3, z*2.1 - 3.1)*0.3 + vn(x*4.3 - 1.7, z*4.3 + 9.2)*0.15; }
+  var N = 240, APEX = [120, 78], ARENA = 26, SPAWN = [30, 120], BOSS = [120, 96];
+  // the cliffs round the edge of the world
+  var cliff = function(x, z){ var e = Math.min(x, z, 239 - x, 239 - z); return 9 + (fbm(x*0.06, z*0.06) - 0.5)*12 + (fbm(x*0.2, z*0.2) - 0.5)*3 - e; };
+  // the rifts: four jagged tears of void (wavy polylines, ragged width)
+  var RIFTS = [[[34, 30], [60, 44], [78, 40], [96, 58]], [[150, 150], [172, 168], [200, 176], [214, 204]], [[48, 178], [70, 168], [86, 190], [96, 214]], [[176, 30], [186, 58], [212, 70], [222, 96]]];
+  var segD = function(px, pz, a, b){ var dx = b[0] - a[0], dz = b[1] - a[1], t = ((px - a[0])*dx + (pz - a[1])*dz)/(dx*dx + dz*dz); t = Math.max(0, Math.min(1, t)); var qx = a[0] + dx*t - px, qz = a[1] + dz*t - pz; return [Math.sqrt(qx*qx + qz*qz), t]; };
+  var rift = function(x, z){ var best = 1e9; for(var i = 0; i < RIFTS.length; i++){ var L = RIFTS[i]; for(var j = 0; j < L.length - 1; j++){ var r = segD(x, z, L[j], L[j + 1]), end = (j === 0 && r[1] < 0.15) ? r[1]/0.15 : (j === L.length - 2 && r[1] > 0.85) ? (1 - r[1])/0.15 : 1;
+      var w = (1.2 + fbm(x*0.12 + i*9, z*0.12)*3.2)*Math.max(0.15, end); var v = r[0] - w; if(v < best) best = v; } } return best; };
+  var M = new Uint8Array(N*N), x, z, k, RF = new Uint8Array(N*N);
+  for(z = 0; z < N; z++) for(x = 0; x < N; x++){ var px = x + 0.5, pz = z + 0.5;
+    if(cliff(px, pz) > 0){ M[z*N + x] = 1; continue; }
+    if(rift(px, pz) < 0){ M[z*N + x] = 1; RF[z*N + x] = 1; } }
+  var P = [];
+  var keepOpen = function(px, pz, r){ if(Math.hypot(px - APEX[0], pz - APEX[1]) < ARENA + 4 + r) return false; if(Math.hypot(px - BOSS[0], pz - BOSS[1]) < 14 + r) return false; if(Math.hypot(px - SPAWN[0], pz - SPAWN[1]) < 16 + r) return false; return true; };
+  var openAt = function(px, pz, r){ for(var dz = -r; dz <= r; dz += 1.5) for(var dx = -r; dx <= r; dx += 1.5){ if(dx*dx + dz*dz > r*r) continue; var xx = Math.floor(px + dx), zz = Math.floor(pz + dz); if(xx < 1 || zz < 1 || xx > 238 || zz > 238 || M[zz*N + xx]) return false; } return true; };
+  var farP = function(px, pz, r, pad){ for(var i = 0; i < P.length; i++){ var q = P[i], qr = q[6] && q[3] !== 'ring' ? q[6] : q[2]; if(Math.hypot(q[0] - px, q[1] - pz) < qr + r + pad) return false; } return true; };
+  var place = function(kind, n, r0, r1, pad, extra){ var c = 0; for(var t = 0; t < 6000 && c < n; t++){ var px = 14 + R()*212, pz = 14 + R()*212, r = r0 + R()*(r1 - r0);
+      if(!keepOpen(px, pz, r) || !openAt(px, pz, r + pad) || !farP(px, pz, r, pad)) continue; var e = [px, pz, r, kind, (R()*1e6)|0, R()*6.2832, 0]; if(extra) extra(e); P.push(e); c++; } return c; };
+  // the landmarks first: the fallen spheres where they always were, then the rest wherever they fell
+  [[60, 60, 13], [178, 100, 10], [150, 52, 7]].forEach(function(q, i){ P.push([q[0], q[1], q[2], 'sphere', i*977 + 5, R()*6.28, 0]); });
+  place('spire', 6, 3.0, 4.5, 6);
+  // ring gates stand on two feet: the decoration entry holds the ring, the feet collide
+  place('ring', 4, 0, 0, 3, function(e){ e[6] = 9 + R()*5; e[2] = 0; });
+  P.filter(function(p){ return p[3] === 'ring'; }).forEach(function(p){ var a = p[5]; [-1, 1].forEach(function(sg){ P.push([p[0] + Math.cos(a)*p[6]*sg, p[1] + Math.sin(a)*p[6]*sg, 2.2, 'ringfoot', p[4], a, 0]); }); });
+  // the toppled colossus: a body lying along its angle, in collidable parts
+  (function(){ for(var t = 0; t < 4000; t++){ var px = 30 + R()*180, pz = 30 + R()*180, a = R()*6.2832; var ok = true;
+      for(var k2 = -2; k2 <= 3; k2++){ var qx = px + Math.cos(a)*k2*7, qz = pz + Math.sin(a)*k2*7; if(!keepOpen(qx, qz, 6) || !openAt(qx, qz, 6) || !farP(qx, qz, 5, 2)) { ok = false; break; } } if(!ok) continue;
+      P.push([px, pz, 0, 'colossus', (R()*1e6)|0, a, 0]);
+      [[-12, 3.2], [-6, 4.6], [0, 4.4], [6, 3.0], [12, 2.6], [18, 2.4]].forEach(function(q){ P.push([px + Math.cos(a)*q[0], pz + Math.sin(a)*q[0], q[1], 'colpart', 0, a, 0]); }); break; } })();
+  // megastructure ribs arching over the ground (only their feet collide)
+  place('ribs', 3, 0, 0, 8, function(e){ e[6] = 10 + R()*4; });
+  P.filter(function(p){ return p[3] === 'ribs'; }).forEach(function(p){ var a = p[5]; for(var k3 = -3; k3 <= 3; k3++){ var cx = p[0] + Math.cos(a)*k3*4.2, cz = p[1] + Math.sin(a)*k3*4.2, w = p[6]*(1 - Math.abs(k3)*0.08);
+    [-1, 1].forEach(function(sg){ P.push([cx - Math.sin(a)*w*sg, cz + Math.cos(a)*w*sg, 1.2, 'ribfoot', 0, a, 0]); }); } });
+  place('wreck', 5, 3.5, 6.0, 3);
+  place('eye', 8, 1.6, 1.6, 12);
+  place('pylon', 16, 1.1, 1.1, 5);
+  place('monolith', 34, 1.0, 2.0, 2.5);
+  place('crystal', 40, 1.0, 2.6, 2);
+  place('spike', 50, 0.7, 1.5, 1.5);
+  place('pillar', 26, 1.0, 1.8, 2);
+  // stamp collision
+  P.forEach(function(p){ if(!p[2]) return; for(z = Math.floor(p[1] - p[2]); z <= Math.ceil(p[1] + p[2]); z++) for(x = Math.floor(p[0] - p[2]); x <= Math.ceil(p[0] + p[2]); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < p[2]) M[z*N + x] = 1; });
+  // the apex itself: the cube hangs over open ground, but its crater's heart is a pit
+  for(z = APEX[1] - 4; z <= APEX[1] + 4; z++) for(x = APEX[0] - 4; x <= APEX[0] + 4; x++) if(Math.hypot(x + 0.5 - APEX[0], z + 0.5 - APEX[1]) < 3.4) M[z*N + x] = 1;
+  // seal what the wasteland can't reach
+  var seen = new Uint8Array(N*N), Q = [SPAWN[1]*N + SPAWN[0]]; seen[Q[0]] = 1;
+  while(Q.length){ var q = Q.pop(), qx = q % N, qz = (q/N)|0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(o){ var X = qx + o[0], Z = qz + o[1]; if(X < 0 || Z < 0 || X >= N || Z >= N) return; var kk = Z*N + X; if(seen[kk] || M[kk]) return; seen[kk] = 1; Q.push(kk); }); }
+  var SEALED = 0, SL = new Uint8Array(N*N); for(k = 0; k < N*N; k++) if(!M[k] && !seen[k]){ M[k] = 1; SL[k] = 1; SEALED++; }
+  // ── the elites: each holds a piece of the wasteland ──
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -2; dz <= 2; dz++) for(var dx = -2; dx <= 2; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
+    return Math.hypot(px - APEX[0], pz - APEX[1]) > ARENA + 2 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 22; };
+  var ROSTER = []; [['void_cube_warden', 5], ['cubic_annihilator', 5], ['sphere_disruptor', 5], ['harbinger_sphere', 5], ['omega_observer', 1]].forEach(function(q){ for(var i = 0; i < q[1]; i++) ROSTER.push(q[0]); });
+  for(var i2 = ROSTER.length - 1; i2 > 0; i2--){ var j2 = (R()*(i2 + 1))|0, tmp = ROSTER[i2]; ROSTER[i2] = ROSTER[j2]; ROSTER[j2] = tmp; }
+  var SPAWNS = [], anchors = P.filter(function(p){ return p[3] === 'spire' || p[3] === 'ring' || p[3] === 'sphere' || p[3] === 'wreck' || p[3] === 'eye' || p[3] === 'colossus' || p[3] === 'ribs'; });
+  var spread = function(px, pz){ for(var i = 0; i < SPAWNS.length; i++) if(Math.hypot(SPAWNS[i].tx - px, SPAWNS[i].tz - pz) < 22) return false; return true; };
+  var ri = 0;
+  for(var t = 0; t < 20000 && ri < ROSTER.length; t++){ var an = anchors[(R()*anchors.length)|0], useA = t < 8000 && an, px = useA ? an[0] + (R() - 0.5)*30 : 16 + R()*208, pz = useA ? an[1] + (R() - 0.5)*30 : 16 + R()*208;
+    var qx = Math.floor(px), qz = Math.floor(pz); if(!clear(qx + 0.5, qz + 0.5) || !spread(qx, qz)) continue; SPAWNS.push({ tx:qx, tz:qz, type:ROSTER[ri++] }); }
+  return { N:N, M:M, RF:RF, SL:SL, P:P, RIFTS:RIFTS, SPAWNS:SPAWNS, APEX:APEX, ARENA:ARENA, SPAWN:SPAWN, BOSS:BOSS, SEALED:SEALED, cliff:cliff, rift:rift, fbm:fbm, hs:hs };
+})();
+function _reWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _RE.M[z*240 + x] === 1; }
+function _reWalkable(wx, wz){ return !_reWallAt(wx/TILE, wz/TILE); }
+
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
@@ -3578,30 +3659,8 @@ const ZONE_SPAWNS = {
   // ── a220 — THE REACH — 5 elite "mini-boss" mobs spread across the regions,
   //   plus a few duplicates so the zone isn't empty after a kill. Kept clear of
   //   the apex boss arena (~22 tiles of 120,78).
-  the_reach: [
-    // a223 — ~20 elite spawns spread across all regions. Clear of the apex boss
-    //   arena (~18 tiles of 120,78) and the west spawn lane (~30,120). One Omega
-    //   Observer (the "ultimate" — strongest, so only one).
-    // West — The Expanse
-    {tx:48,tz:120, type:'void_cube_warden'},  {tx:55,tz:95,  type:'cubic_annihilator'},
-    {tx:40,tz:150, type:'sphere_disruptor'},  {tx:65,tz:135, type:'harbinger_sphere'},
-    // NW — The Fallen Spheres
-    {tx:60,tz:55,  type:'sphere_disruptor'},  {tx:85,tz:45,  type:'void_cube_warden'},
-    {tx:45,tz:40,  type:'harbinger_sphere'},
-    // N — mid-north
-    {tx:115,tz:35, type:'cubic_annihilator'}, {tx:150,tz:50, type:'sphere_disruptor'},
-    // E — The Overgrowth
-    {tx:175,tz:90, type:'harbinger_sphere'},  {tx:200,tz:70, type:'void_cube_warden'},
-    {tx:195,tz:120,type:'sphere_disruptor'},  {tx:215,tz:150,type:'cubic_annihilator'},
-    // S — The Collapse
-    {tx:115,tz:170,type:'cubic_annihilator'}, {tx:90,tz:185, type:'harbinger_sphere'},
-    {tx:150,tz:180,type:'void_cube_warden'},
-    // SE — deep end (the ultimate watcher)
-    {tx:185,tz:160,type:'omega_observer'},    {tx:205,tz:195,type:'harbinger_sphere'},
-    // mid-fill
-    {tx:95,tz:140, type:'sphere_disruptor'},  {tx:160,tz:135,type:'cubic_annihilator'},
-    {tx:70,tz:75,  type:'void_cube_warden'},
-  ],
+  the_reach: _RE.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a665 — the elites hold the wasteland's ruins, from the shared plan
+
   // a554 — LUCIDWILDE is now SERVER-AUTHORITATIVE (was deliberately client-side since
   //   a299, which is why this zone had no ZONE_SPAWNS entry at all until now).
   //   52 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
@@ -7802,7 +7861,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7885,6 +7944,7 @@ function tickGame(game) {
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
+        else if (zoneName === 'the_reach') { if (_reWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_reWalkable(nx, e.z)) e.x = nx; else if (_reWalkable(e.x, nz)) e.z = nz; }   // a665 — the cliffs, the rifts, the dead works
         else if (zoneName === 'xulcan') { if (_xuWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xuWalkable(nx, e.z)) e.x = nx; else if (_xuWalkable(e.x, nz)) e.z = nz; }   // a664 — the golden towers, the outpost walls
         else if (zoneName === 'wyvernwastes') { if (_wwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_wwWalkable(nx, e.z)) e.x = nx; else if (_wwWalkable(e.x, nz)) e.z = nz; }   // a663 — the ranges, crevasses, nest rims and crags
         else if (zoneName === 'neon_hollow') { if (_nhWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_nhWalkable(nx, e.z)) e.x = nx; else if (_nhWalkable(e.x, nz)) e.z = nz; }   // a661 — the city's buildings, wall and monorail pylons
@@ -11554,6 +11614,10 @@ function tickGame(game) {
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    if (zoneName === 'the_reach') zone.enemies.forEach(e => {   // a665 — nothing ends a tick down a rift or inside a ruin
+      if (!e.active || e._rv0x === undefined || _reWalkable(e.x, e.z)) return;
+      if (_reWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_reWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     if (zoneName === 'xulcan') zone.enemies.forEach(e => {   // a664 — no blink or charge ends inside a tower
       if (!e.active || e._rv0x === undefined || _xuWalkable(e.x, e.z)) return;
