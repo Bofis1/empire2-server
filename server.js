@@ -1055,6 +1055,153 @@ function _xuWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 
 function _xuWalkable(wx, wz){ return !_xuWallAt(wx/TILE, wz/TILE); }
 
 // ════════════════════════════════════════════════════════════════════════════
+// a668 — THE FORGE: plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), fully deterministic, so players and the foundry's machines collide with the
+//   same works. Tiles. Xu's industrial heart: a molten river runs east–west across the middle
+//   (fed by two channels out of the Furnace Core's moat), crossed by causeways; a haul road
+//   loops the districts with the spine running from the receiving yard (south) to the core
+//   arena (north). West: the SMELTERS (blast furnaces, pouring crucibles, slag pools, cooling
+//   towers). East: FABRICATION (machine halls, mech assembly cells, presses, conveyor lines).
+//   South: the RECEIVING YARD (container stacks, yard cranes, tanks, silos, the station under
+//   the elevated rail). Between the river and the core: casting lines and cyan power
+//   substations. North corners: the power works (reactors, turbines, stacks). An elevated
+//   mag-rail loops the whole foundry on pillars. P: [x, z, r, kind, seed, ang, hw, hd] — a
+//   circle of radius r, or (r = 0, hw > 0) an axis-aligned box of half-extents hw × hd;
+//   r = hw = 0 is decoration only.
+// ════════════════════════════════════════════════════════════════════════════
+var _FO = (function(){
+  var s = 0x0a668001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  function vn(x, z){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; fx = fx*fx*(3 - 2*fx); fz = fz*fz*(3 - 2*fz);
+    var a = hs(ix, iz), b = hs(ix + 1, iz), c = hs(ix, iz + 1), d = hs(ix + 1, iz + 1); return a + (b - a)*fx + (c - a)*fz + (a - b - c + d)*fx*fz; }
+  function fbm(x, z){ return vn(x, z)*0.55 + vn(x*2.1 + 7.3, z*2.1 - 3.1)*0.3 + vn(x*4.3 - 1.7, z*4.3 + 9.2)*0.15; }
+  var N = 240, SPAWN = [120, 220], ARENA = [120, 40, 24], PLAZA = [120, 150, 16], WALL = 7, MOAT = [25.5, 28.8];
+  var segD = function(px, pz, a, b){ var dx = b[0] - a[0], dz = b[1] - a[1], t = ((px - a[0])*dx + (pz - a[1])*dz)/(dx*dx + dz*dz); t = Math.max(0, Math.min(1, t)); var qx = a[0] + dx*t - px, qz = a[1] + dz*t - pz; return Math.sqrt(qx*qx + qz*qz); };
+  var lineD = function(px, pz, L){ var b = 1e9; for(var j = 0; j < L.length - 1; j++){ var d = segD(px, pz, L[j], L[j + 1]); if(d < b) b = d; } return b; };
+  // the molten river, its two feeders out of the core's moat, the slag pools
+  var RIVER = [[-6, 100], [26, 108], [58, 99], [92, 106], [120, 102], [150, 96], [182, 107], [212, 99], [246, 104]];
+  var TRIBS = [[[101, 60], [96, 72], [101, 86], [96, 101]], [[139, 60], [144, 72], [139, 86], [144, 99]]];
+  var POOLS = [[52, 140, 6.5], [28, 156, 4.5], [84, 128, 4], [192, 138, 4.5], [168, 46, 5], [72, 44, 5], [30, 196, 3.5]];
+  var river = function(x, z){ return lineD(x, z, RIVER) - (3.4 + fbm(x*0.07, z*0.07)*2.4); };
+  var trib = function(x, z){ var b = 1e9; for(var i = 0; i < TRIBS.length; i++){ var d = lineD(x, z, TRIBS[i]) - (1.5 + fbm(x*0.11 + i*7, z*0.11)*0.9); if(d < b) b = d; } return b; };
+  var pool = function(x, z){ var b = 1e9; for(var i = 0; i < POOLS.length; i++){ var p = POOLS[i], d = Math.hypot(x - p[0], z - p[1]) - p[2]*(0.8 + fbm(x*0.2 + i, z*0.2)*0.45); if(d < b) b = d; } return b; };
+  var moat = function(x, z){ var dx = x - ARENA[0], dz = z - ARENA[1], r = Math.sqrt(dx*dx + dz*dz); if(r < MOAT[0] || r > MOAT[1]) return false; var a = Math.atan2(dz, dx); return Math.abs(Math.cos(a)) < 0.95 && Math.abs(Math.sin(a)) < 0.95; };
+  // one signed field for every hot surface (negative inside the lava) — the client shapes the banks with it
+  var lavaF = function(x, z){ var dx = x - ARENA[0], dz = z - ARENA[1], r = Math.sqrt(dx*dx + dz*dz), a = Math.atan2(dz, dx);
+    var fm = Math.max(Math.max(r - MOAT[1], MOAT[0] - r), (Math.max(Math.abs(Math.cos(a)), Math.abs(Math.sin(a))) - 0.95)*r*3.2);
+    return Math.min(river(x, z), trib(x, z), pool(x, z), fm); };
+  // roads: the spine, the haul loop (z 78 / z 176 / x 40 / x 200)
+  var ROADS = [[[120, 66], [120, 214]], [[36, 78], [204, 78]], [[36, 176], [204, 176]], [[40, 74], [40, 180]], [[200, 74], [200, 180]]];
+  var road = function(x, z){ if(Math.abs(x - 120) < 4 && z > 62 && z < 216) return 1; for(var i = 1; i < ROADS.length; i++){ if(segD(x, z, ROADS[i][0], ROADS[i][1]) < 2.6) return 1; } return 0; };
+  // the elevated mag-rail loop (rounded rectangle)
+  var RL = [24, 72, 216, 204], RC = 14;
+  var railPath = function(){ var pts = [], x0 = RL[0], z0 = RL[1], x1 = RL[2], z1 = RL[3];
+    var arc = function(cx, cz, a0){ for(var k = 0; k <= 8; k++){ var a = a0 + k/8*Math.PI/2; pts.push([cx + Math.cos(a)*RC, cz + Math.sin(a)*RC]); } };
+    arc(x1 - RC, z1 - RC, 0); arc(x0 + RC, z1 - RC, Math.PI/2); arc(x0 + RC, z0 + RC, Math.PI); arc(x1 - RC, z0 + RC, Math.PI*1.5); pts.push(pts[0].slice()); return pts; };
+  var RAIL = railPath();
+  var M = new Uint8Array(N*N), CLS = new Uint8Array(N*N), LV = new Uint8Array(N*N), x, z, k;
+  // CLS: 0 deck, 1 road, 2 spawn plaza, 3 arena, 4 assembly plaza, 5 causeway, 6 lava, 7 wall, 8 yard, 9 works
+  for(z = 0; z < N; z++) for(x = 0; x < N; x++){ var px = x + 0.5, pz = z + 0.5, e = Math.min(px, pz, N - px, N - pz), c = 0, i = z*N + x;
+    if(e < WALL){ M[i] = 1; CLS[i] = 7; continue; }
+    var rd = road(px, pz), hot = river(px, pz) < 0 || trib(px, pz) < 0 || pool(px, pz) < 0 || moat(px, pz);
+    if(hot && rd){ CLS[i] = 5; continue; }
+    if(hot){ M[i] = 1; LV[i] = 1; CLS[i] = 6; continue; }
+    if(Math.hypot(px - ARENA[0], pz - ARENA[1]) < ARENA[2]) c = 3;
+    else if(Math.hypot(px - SPAWN[0], pz - SPAWN[1]) < 12) c = 2;
+    else if(Math.hypot(px - PLAZA[0], pz - PLAZA[1]) < PLAZA[2]) c = 4;
+    else if(rd) c = 1;
+    else if(pz > 182) c = 8;
+    CLS[i] = c; }
+  var P = [];
+  var keepOpen = function(px, pz, r){ if(Math.hypot(px - ARENA[0], pz - ARENA[1]) < MOAT[1] + 2 + r) return false; if(Math.hypot(px - PLAZA[0], pz - PLAZA[1]) < PLAZA[2] + 2 + r) return false; if(Math.hypot(px - SPAWN[0], pz - SPAWN[1]) < 15 + r) return false; return true; };
+  var openAt = function(px, pz, r, hd){ var rx = r, rz = hd === undefined ? r : hd, box = hd !== undefined; for(var dz = -rz; dz <= rz + 0.01; dz += 1) for(var dx = -rx; dx <= rx + 0.01; dx += 1){ if(!box && dx*dx + dz*dz > r*r) continue; var xx = Math.floor(px + dx), zz = Math.floor(pz + dz); if(xx < 1 || zz < 1 || xx > 238 || zz > 238) return false; var q = zz*N + xx; if(M[q] || CLS[q] === 1 || CLS[q] === 5) return false; } return true; };
+  var ext = function(q){ return q[2] ? [q[2], q[2]] : [q[6] || 0, q[7] || 0]; };
+  var farP = function(px, pz, hw, hd, pad){ for(var i = 0; i < P.length; i++){ var q = P[i], e2 = ext(q); if(!e2[0]) continue; if(Math.abs(q[0] - px) < e2[0] + hw + pad && Math.abs(q[1] - pz) < e2[1] + hd + pad) return false; } return true; };
+  var railNear = function(px, pz, r){ return lineD(px, pz, RAIL) < r; };
+  var place = function(kind, n, r0, r1, pad, reg, box, extra){ var c = 0; for(var t = 0; t < 9000 && c < n; t++){ var px = reg[0] + R()*(reg[2] - reg[0]), pz = reg[1] + R()*(reg[3] - reg[1]);
+      var hw, hd, r; if(box){ hw = r0 + R()*(r1 - r0); hd = box[0] + R()*(box[1] - box[0]); if(box[2] && R() < 0.5){ var tq = hw; hw = hd; hd = tq; } r = 0; } else { r = r0 + R()*(r1 - r0); hw = hd = r; }
+      if(!keepOpen(px, pz, Math.max(hw, hd)) || !(box ? openAt(px, pz, hw + pad, hd + pad) : openAt(px, pz, r + pad)) || !farP(px, pz, hw, hd, pad)) continue;
+      if(kind !== 'crate' && kind !== 'barrel' && kind !== 'pallet' && railNear(px, pz, Math.max(hw, hd) + 1.6)) continue;
+      var e = [px, pz, r, kind, (R()*1e6)|0, box ? (hw >= hd ? 0 : Math.PI/2) : R()*6.2832, box ? hw : 0, box ? hd : 0]; if(extra) extra(e); P.push(e); c++; } return c; };
+  // ── rail pillars first, every 9 tiles round the loop (none in the moat, the arena, on a road or a plaza) ──
+  (function(){ var acc = 9; for(var j = 0; j < RAIL.length - 1; j++){ var a = RAIL[j], b = RAIL[j + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]); for(var u = 0; u < L; u += 0.5){ acc += 0.5; if(acc < 9) continue; var px = a[0] + (b[0] - a[0])*u/L, pz = a[1] + (b[1] - a[1])*u/L, q = Math.floor(pz)*N + Math.floor(px);
+      if(Math.hypot(px - ARENA[0], pz - ARENA[1]) < MOAT[1] + 1.5 || CLS[q] === 1 || CLS[q] === 5 || CLS[q] === 2 || CLS[q] === 4 || road(px, pz) || road(px + 1.5, pz) || road(px - 1.5, pz) || road(px, pz + 1.5) || road(px, pz - 1.5)) continue; acc = 0; P.push([px, pz, 1.1, 'rpillar', (R()*1e6)|0, Math.atan2(b[1] - a[1], b[0] - a[0]), 0, 0]); } } })();
+  // the station over the receiving yard (its posts stand on the yard side)
+  P.push([120, RL[3], 0, 'station', 7, 0, 0, 0]); for(var sx2 = 104; sx2 <= 136; sx2 += 8) if(Math.abs(sx2 - 120) > 5) P.push([sx2, RL[3] - 2.4, 0.6, 'spost', 0, 0, 0, 0]);
+  // the core's guard pylons beyond its moat, and the floodlight masts round the assembly plaza
+  for(var ka = 0; ka < 16; ka++){ var aa = (ka + 0.5)/16*6.2832, ax = ARENA[0] + Math.cos(aa)*31.5, az = ARENA[1] + Math.sin(aa)*31.5; if(Math.abs(Math.cos(aa)) > 0.9 || Math.abs(Math.sin(aa)) > 0.9 || ax < 9 || az < 9 || road(ax, az)) continue; P.push([ax, az, 1.2, 'apylon', ka, aa, 0, 0]); }
+  [0.785, 2.356, 3.927, 5.498].forEach(function(aa, i){ P.push([PLAZA[0] + Math.cos(aa)*(PLAZA[2] + 1.6), PLAZA[1] + Math.sin(aa)*(PLAZA[2] + 1.6), 0.8, 'flood', i, aa, 0, 0]); });
+  // the cranes over the river: two portal gantries astride it, feet on both banks
+  [70, 166].forEach(function(cx, i){ var zc = 0, zz; for(zz = 80; zz < 124; zz++) if(river(cx, zz) < 0 && river(cx + 4.2, zz) < 0 && river(cx - 4.2, zz) < 0){ zc = zz; break; } var z1 = zc; for(zz = zc; zz < 130; zz++) if(river(cx, zz) < 0 || river(cx + 4.2, zz) < 0 || river(cx - 4.2, zz) < 0) z1 = zz + 1;
+    var z0 = zc - 3.5; z1 += 2.5;
+    P.push([cx, (z0 + z1)/2, 0, 'rcrane', i*31 + 3, 0, 0, (z1 - z0)/2]); [-1, 1].forEach(function(sx){ [z0, z1].forEach(function(fz){ P.push([cx + sx*4.2, fz, 1.0, 'cfoot', 0, 0, 0, 0]); }); }); });
+  // ── the districts ──
+  var WEST = [12, 114, 112, 170], EAST = [128, 114, 228, 170], YARD = [12, 182, 228, 214], NBAND = [12, 82, 228, 96], NB2 = [12, 60, 228, 74], NW = [12, 12, 88, 60], NE = [152, 12, 228, 60];
+  place('blast', 4, 5.0, 6.2, 2.5, WEST);
+  place('cooling', 2, 5.0, 6.0, 2.5, WEST);
+  place('crucible', 6, 2.6, 3.0, 2.0, WEST);
+  place('hall', 3, 9, 12, 2.0, EAST, [6, 7.5, 0]);
+  place('mechcell', 4, 4.0, 4.4, 2.0, EAST);
+  place('press', 4, 2.6, 3.0, 1.6, EAST);
+  place('conveyor', 3, 7, 10, 1.2, EAST, [0.9, 0.9, 1]);
+  place('conveyor', 2, 7, 10, 1.2, WEST, [0.9, 0.9, 1]);
+  place('cooling', 1, 5.0, 5.5, 2.5, EAST);
+  place('yardcrane', 3, 7.5, 7.5, 1.0, YARD, [5, 5, 0]);
+  place('stackc', 40, 4.0, 7.0, 1.0, YARD, [1.6, 2.5, 1]);
+  place('tank', 5, 2.8, 3.6, 1.6, YARD);
+  place('silo', 6, 2.0, 2.4, 1.4, YARD);
+  place('caster', 4, 6, 8, 1.6, NBAND, [2.2, 2.6, 0]);
+  place('substation', 5, 3.2, 3.6, 1.6, NBAND);
+  place('substation', 4, 3.2, 3.6, 1.6, NB2);
+  place('caster', 2, 6, 8, 1.6, NB2, [2.2, 2.6, 0]);
+  place('reactor', 1, 6.5, 7.0, 3, NW); place('reactor', 1, 6.5, 7.0, 3, NE);
+  place('turbine', 2, 3.6, 4.2, 2, NW); place('turbine', 2, 3.6, 4.2, 2, NE);
+  place('stack', 4, 2.4, 3.2, 2, NW); place('stack', 4, 2.4, 3.2, 2, NE);
+  place('tank', 3, 3.0, 3.6, 2, NW); place('tank', 3, 3.0, 3.6, 2, NE); place('cooling', 1, 5.0, 5.5, 2.5, NW); place('cooling', 1, 5.0, 5.5, 2.5, NE);
+  place('stack', 2, 2.6, 3.0, 2, WEST); place('stack', 2, 2.6, 3.0, 2, EAST);
+  // clutter everywhere the works left room: crates, ingot pallets, barrels
+  place('crate', 70, 0.8, 1.3, 0.8, [10, 10, 230, 230]);
+  place('pallet', 40, 0.9, 1.1, 0.8, [10, 60, 230, 230]);
+  place('barrel', 50, 0.5, 0.6, 0.6, [10, 10, 230, 230]);
+  // lamp masts along the road verges (their bases collide)
+  (function(){ for(var i = 1; i < ROADS.length; i++){ var L = ROADS[i], a = L[0], b = L[1], len = Math.hypot(b[0] - a[0], b[1] - a[1]), nx = -(b[1] - a[1])/len, nz = (b[0] - a[0])/len;
+      for(var u = 6; u < len - 4; u += 14){ [-1, 1].forEach(function(sg){ var px = a[0] + (b[0] - a[0])*u/len + nx*3.4*sg, pz = a[1] + (b[1] - a[1])*u/len + nz*3.4*sg;
+        var q = Math.floor(pz)*N + Math.floor(px); if(M[q] || CLS[q] === 1 || CLS[q] === 5 || !keepOpen(px, pz, 0) || !farP(px, pz, 0.5, 0.5, 0.6)) return; P.push([px, pz, 0.45, 'lamp', (R()*1e6)|0, 0, 0, 0]); }); } }
+    for(var zz = 72; zz < 210; zz += 12){ [-1, 1].forEach(function(sg){ var px = 120 + sg*4.9, q = Math.floor(zz)*N + Math.floor(px); if(M[q] || CLS[q] === 5 || !keepOpen(px, zz, 0) || !farP(px, zz, 0.5, 0.5, 0.6)) return; P.push([px, zz, 0.45, 'lamp', (R()*1e6)|0, 0, 0, 0]); }); } })();
+  // stamp collision (footprints a touch wider than the drawn works)
+  P.forEach(function(p){ var pad = p[3] === 'crate' || p[3] === 'barrel' || p[3] === 'pallet' || p[3] === 'lamp' ? 0.1 : 0.35;
+    if(p[2]){ var rc = p[2] + pad; for(z = Math.floor(p[1] - rc); z <= Math.ceil(p[1] + rc); z++) for(x = Math.floor(p[0] - rc); x <= Math.ceil(p[0] + rc); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < rc){ M[z*N + x] = 1; if(CLS[z*N + x] !== 6) CLS[z*N + x] = 9; } }
+    else if(p[6] && p[3] !== 'yardcrane'){ var hw = p[6] + pad, hd = p[7] + pad; for(z = Math.floor(p[1] - hd); z <= Math.ceil(p[1] + hd); z++) for(x = Math.floor(p[0] - hw); x <= Math.ceil(p[0] + hw); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.abs(x + 0.5 - p[0]) < hw && Math.abs(z + 0.5 - p[1]) < hd){ M[z*N + x] = 1; if(CLS[z*N + x] !== 6) CLS[z*N + x] = 9; } } });
+  // the yard cranes stand on four feet
+  P.filter(function(p){ return p[3] === 'yardcrane'; }).forEach(function(p){ [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function(o){ var fx = p[0] + o[0]*p[6], fz = p[1] + o[1]*p[7]; for(z = Math.floor(fz - 1); z <= Math.floor(fz + 1); z++) for(x = Math.floor(fx - 1); x <= Math.floor(fx + 1); x++) if(Math.hypot(x + 0.5 - fx, z + 0.5 - fz) < 1.0){ M[z*N + x] = 1; CLS[z*N + x] = 9; } }); });
+  // seal what can't be reached from the gate
+  var seen = new Uint8Array(N*N), Q = [SPAWN[1]*N + SPAWN[0]]; seen[Q[0]] = 1;
+  while(Q.length){ var q = Q.pop(), qx = q % N, qz = (q/N)|0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(o){ var X = qx + o[0], Z = qz + o[1]; if(X < 0 || Z < 0 || X >= N || Z >= N) return; var kk = Z*N + X; if(seen[kk] || M[kk]) return; seen[kk] = 1; Q.push(kk); }); }
+  var SEALED = 0; for(k = 0; k < N*N; k++) if(!M[k] && !seen[k]){ M[k] = 1; SEALED++; }
+  // ── the foundry's crews: work gangs at the works, patrols on the roads ──
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
+    return Math.hypot(px - ARENA[0], pz - ARENA[1]) > MOAT[1] + 2 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 22 && Math.hypot(px - PLAZA[0], pz - PLAZA[1]) > PLAZA[2] + 3; };
+  var SPAWNS = [], CAP = { molten_crawler:16, lava_forged_sentinel:10, forge_technician:10, industrial_devastator:8 }, cnt = {};
+  var put = function(px, pz, type){ if((cnt[type] || 0) >= CAP[type]) return false; for(var tr = 0; tr < 24; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*0.7 : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*0.7 : 0) - 0.5);
+      if(!clear(qx + 0.5, qz + 0.5)) continue; var near = false; for(var i = 0; i < SPAWNS.length; i++) if(Math.hypot(SPAWNS[i].tx - qx, SPAWNS[i].tz - qz) < 2.5) near = true; if(near) continue;
+      SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type] = (cnt[type] || 0) + 1; return true; } return false; };
+  var GANG = { blast:['lava_forged_sentinel', 'molten_crawler', 'molten_crawler'], crucible:['molten_crawler', 'forge_technician'], cooling:['molten_crawler', 'lava_forged_sentinel'],
+    hall:['forge_technician', 'industrial_devastator', 'forge_technician'], mechcell:['industrial_devastator', 'forge_technician'], press:['forge_technician', 'molten_crawler'],
+    caster:['lava_forged_sentinel', 'molten_crawler'], substation:['forge_technician', 'industrial_devastator'], reactor:['industrial_devastator', 'lava_forged_sentinel', 'molten_crawler'],
+    turbine:['lava_forged_sentinel', 'forge_technician'], yardcrane:['molten_crawler', 'industrial_devastator'], tank:['molten_crawler'] };
+  var gangs = [];
+  P.forEach(function(p){ if(!GANG[p[3]]) return; var e2 = ext(p), rr = Math.max(e2[0], e2[1]) + 2.5;
+    for(var t = 0; t < 30; t++){ var a = R()*6.2832, gx = p[0] + Math.cos(a)*rr, gz = p[1] + Math.sin(a)*rr; if(!clear(gx, gz)) continue; var ok = true; for(var i = 0; i < gangs.length; i++) if(Math.hypot(gangs[i][0] - gx, gangs[i][1] - gz) < 14) ok = false; if(!ok) continue;
+      gangs.push([gx, gz]); GANG[p[3]].forEach(function(ty, j){ var b = a + (j - 1)*0.45; put(gx + Math.cos(b)*j*0.6, gz + Math.sin(b)*j*0.6, ty); }); break; } });
+  // the gate to the core: sentinels hold the causeway
+  put(116, 74, 'lava_forged_sentinel'); put(124, 74, 'lava_forged_sentinel'); put(120, 72, 'industrial_devastator');
+  var ty2 = Object.keys(CAP);
+  for(var t3 = 0; t3 < 4000 && SPAWNS.length < 46; t3++){ var ty = ty2[t3 % 4], L2 = ROADS[1 + (t3 % 4)], u2 = R(); put(L2[0][0] + (L2[1][0] - L2[0][0])*u2, L2[0][1] + (L2[1][1] - L2[0][1])*u2, ty); }
+  return { N:N, M:M, CLS:CLS, LV:LV, P:P, RIVER:RIVER, TRIBS:TRIBS, POOLS:POOLS, ROADS:ROADS, RAIL:RAIL, RL:RL, SPAWNS:SPAWNS, ARENA:ARENA, PLAZA:PLAZA, SPAWN:SPAWN, MOAT:MOAT, SEALED:SEALED, lavaF:lavaF, river:river, trib:trib, pool:pool, fbm:fbm, hs:hs, lineD:lineD };
+})();
+function _foWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _FO.M[z*240 + x] === 1; }
+function _foWalkable(wx, wz){ return !_foWallAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
 // a665 — THE REACH: plan. Shared VERBATIM by the client (70_terrain) and the server
 //   (server.js), fully deterministic, so players and the elites collide with the same ruins.
 //   Tiles. An alien wasteland at the end of creation, with no order to it: broken cliffs
@@ -3735,39 +3882,7 @@ const ZONE_SPAWNS = {
   //   which is why this zone had no ZONE_SPAWNS entry). 31 spawns lifted verbatim from the
   //   client's enemySpawns. ENEMY_STATS entries for all four types were ADDED in the same
   //   patch — they did not exist at all. See the note there.
-  forge: [
-    {type:'molten_crawler', tx:108, tz:214},
-    {type:'molten_crawler', tx:132, tz:214},
-    {type:'molten_crawler', tx:70, tz:172},
-    {type:'molten_crawler', tx:90, tz:172},
-    {type:'molten_crawler', tx:150, tz:172},
-    {type:'molten_crawler', tx:170, tz:172},
-    {type:'lava_forged_sentinel', tx:60, tz:172},
-    {type:'forge_technician', tx:182, tz:172},
-    {type:'molten_crawler', tx:118, tz:190},
-    {type:'lava_forged_sentinel', tx:122, tz:184},
-    {type:'forge_technician', tx:60, tz:122},
-    {type:'molten_crawler', tx:92, tz:122},
-    {type:'molten_crawler', tx:150, tz:122},
-    {type:'industrial_devastator', tx:182, tz:122},
-    {type:'forge_technician', tx:118, tz:122},
-    {type:'industrial_devastator', tx:120, tz:150},
-    {type:'molten_crawler', tx:114, tz:144},
-    {type:'molten_crawler', tx:126, tz:144},
-    {type:'lava_forged_sentinel', tx:60, tz:88},
-    {type:'molten_crawler', tx:92, tz:88},
-    {type:'lava_forged_sentinel', tx:150, tz:88},
-    {type:'industrial_devastator', tx:182, tz:88},
-    {type:'forge_technician', tx:118, tz:88},
-    {type:'lava_forged_sentinel', tx:120, tz:78},
-    {type:'molten_crawler', tx:114, tz:72},
-    {type:'molten_crawler', tx:126, tz:72},
-    {type:'industrial_devastator', tx:106, tz:64},
-    {type:'industrial_devastator', tx:134, tz:64},
-    {type:'lava_forged_sentinel', tx:114, tz:63},
-    {type:'lava_forged_sentinel', tx:126, tz:63},
-    {type:'forge_technician', tx:120, tz:66}
-  ],
+  forge: _FO.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a668 — the foundry's crews, from the shared plan
 };
 ;
 
@@ -7863,7 +7978,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach' || zoneName === 'forge') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7956,6 +8071,7 @@ function tickGame(game) {
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
         else if (zoneName === 'the_reach') { if (_reWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_reWalkable(nx, e.z)) e.x = nx; else if (_reWalkable(e.x, nz)) e.z = nz; }   // a665 — the cliffs, the rifts, the dead works
+        else if (zoneName === 'forge') { if (_foWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_foWalkable(nx, e.z)) e.x = nx; else if (_foWalkable(e.x, nz)) e.z = nz; }   // a668 — the works, the lava, the walls
         else if (zoneName === 'xulcan') { if (_xuWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xuWalkable(nx, e.z)) e.x = nx; else if (_xuWalkable(e.x, nz)) e.z = nz; }   // a664 — the golden towers, the outpost walls
         else if (zoneName === 'wyvernwastes') { if (_wwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_wwWalkable(nx, e.z)) e.x = nx; else if (_wwWalkable(e.x, nz)) e.z = nz; }   // a663 — the ranges, crevasses, nest rims and crags
         else if (zoneName === 'neon_hollow') { if (_nhWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_nhWalkable(nx, e.z)) e.x = nx; else if (_nhWalkable(e.x, nz)) e.z = nz; }   // a661 — the city's buildings, wall and monorail pylons
@@ -11625,6 +11741,10 @@ function tickGame(game) {
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    if (zoneName === 'forge') zone.enemies.forEach(e => {   // a668 — nothing ends a tick in the lava or inside the works
+      if (!e.active || e._rv0x === undefined || _foWalkable(e.x, e.z)) return;
+      if (_foWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_foWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     if (zoneName === 'the_reach') zone.enemies.forEach(e => {   // a665 — nothing ends a tick down a rift or inside a ruin
       if (!e.active || e._rv0x === undefined || _reWalkable(e.x, e.z)) return;
