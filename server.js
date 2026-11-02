@@ -575,7 +575,7 @@ const ZONE_BOSS_HP = {
 //   Zones/coords now mirror the client exactly; server hp/atk tuning kept.
 const WORLD_BOSS_DEFS = [
   { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'citadel',      tx:120,tz:56, hp:280000, atk:115, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
-  { id:'ancient_wyrm',     name:'Eyexor',                 zone:'dragonlair',   tx:40, tz:64, hp:320000, atk:120, atkCooldown:85,  aggroRange:22, color:0xaa44ff, lootTier:5 },
+  { id:'ancient_wyrm',     name:'Eyexor',                 zone:'dragonlair',   tx:62, tz:64, leash:12, hp:320000, atk:120, atkCooldown:85,  aggroRange:22, color:0xaa44ff, lootTier:5 },
   { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'necropolis',   tx:56, tz:120,hp:360000, atk:130, atkCooldown:90,  aggroRange:22, color:0x44ddff, lootTier:4 },
   { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:56, tz:120,hp:440000, atk:145, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
   { id:'abacus_of_flesh',  name:'The Abacus of Flesh',    zone:'void_citadel', tx:56, tz:120,hp:520000, atk:160, atkCooldown:100, aggroRange:24, color:0xcc1810, lootTier:7 },
@@ -1201,6 +1201,92 @@ var _FO = (function(){
 })();
 function _foWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _FO.M[z*240 + x] === 1; }
 function _foWalkable(wx, wz){ return !_foWallAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
+// a669 — VAELTHARAX'S LAIR: plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), deterministic, so players and the lair's beasts collide with the same rock and
+//   lava. Tiles (80 × 80). A volcanic caldera: jagged basalt cliffs all round, the gate in the
+//   west wall, the VOLCANO rising out of the north wall, and two lava rivers running off its
+//   flanks — one south-west past the nest into a lava lake, one east into the cliffs — crossed by
+//   three natural stone bridges. Vaeltharax's NEST holds the centre (40,40) inside a broken rim
+//   of obsidian; EYEXOR's grotto, a ring of crystal monoliths, lies far off in the south-east
+//   (62,64) so the two are never met in the same place.
+// ════════════════════════════════════════════════════════════════════════════
+var _DL = (function(){
+  var s = 0x0a669001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  function vn(x, z){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; fx = fx*fx*(3 - 2*fx); fz = fz*fz*(3 - 2*fz);
+    var a = hs(ix, iz), b = hs(ix + 1, iz), c = hs(ix, iz + 1), d = hs(ix + 1, iz + 1); return a + (b - a)*fx + (c - a)*fz + (a - b - c + d)*fx*fz; }
+  function fbm(x, z){ return vn(x, z)*0.55 + vn(x*2.1 + 7.3, z*2.1 - 3.1)*0.3 + vn(x*4.3 - 1.7, z*4.3 + 9.2)*0.15; }
+  var N = 80, NEST = [40, 40, 13], GROTTO = [62, 64, 9], VOLC = [40, 6], SPAWN = [12, 22], GATE = [2, 20], CRATER = 4.2, CRY = 19.5;
+  var segD = function(px, pz, a, b){ var dx = b[0] - a[0], dz = b[1] - a[1], t = ((px - a[0])*dx + (pz - a[1])*dz)/(dx*dx + dz*dz); t = Math.max(0, Math.min(1, t)); var qx = a[0] + dx*t - px, qz = a[1] + dz*t - pz; return Math.sqrt(qx*qx + qz*qz); };
+  var lineD = function(px, pz, L){ var b = 1e9; for(var j = 0; j < L.length - 1; j++){ var d = segD(px, pz, L[j], L[j + 1]); if(d < b) b = d; } return b; };
+  // the volcano (world-unit height, before the walkable floor is subtracted): a ridged cone with a crater
+  var volcRaw = function(x, z){ var dx = x - VOLC[0], dz = z - VOLC[1], d = Math.sqrt(dx*dx + dz*dz), R0 = 19; if(d > R0) return 0; var u = 1 - d/R0, a = Math.atan2(dz, dx);
+    var h = 32*Math.pow(u, 1.3)*(0.9 + 0.22*fbm(x*0.22, z*0.22));
+    h *= 1 - 0.16*Math.pow(Math.abs(Math.sin(a*6 + fbm(x*0.09, z*0.09)*3.0)), 4)*Math.min(1, u*2.5);   // gullies
+    if(d < CRATER){ var rim = 32*Math.pow(1 - CRATER/R0, 1.3); h = Math.min(h, (CRY - 0.6) + (rim - CRY + 0.6)*Math.pow(d/CRATER, 2.2)); }
+    return h; };
+  var volcH = function(x, z){ return Math.max(0, volcRaw(x, z) - 1.2); };
+  // the caldera wall, opened at the west gate
+  var cliff = function(x, z){ var e = Math.min(x, z, 79 - x, 79 - z); var c = 5.5 + (fbm(x*0.13, z*0.13) - 0.5)*6 - e; var g = Math.hypot(x*0.55, z - 21); if(g < 9) c -= (9 - g)*1.4; return c; };
+  // the lava: two rivers off the volcano, the lake, the pits
+  var RIVA = [[41, 21], [37, 28], [29, 33], [22, 42], [16, 51], [12, 60]], RIVB = [[45, 21], [52, 26], [60, 29], [68, 33], [82, 36]];
+  var POOLS = [[11, 65, 5.5], [58, 50, 3.0], [27, 69, 2.6], [69, 14, 3.0]];
+  var lavaF = function(x, z){ var a = lineD(x, z, RIVA) - (1.7 + fbm(x*0.15, z*0.15)*1.3), b = lineD(x, z, RIVB) - (1.5 + fbm(x*0.15 + 5, z*0.15)*1.1), p = 1e9;
+    for(var i = 0; i < POOLS.length; i++){ var q = POOLS[i], d = Math.hypot(x - q[0], z - q[1]) - q[2]*(0.8 + fbm(x*0.25 + i, z*0.25)*0.4); if(d < p) p = d; } return Math.min(a, b, p); };
+  // three natural stone bridges over the flow
+  var BRIDGES = [[[21, 29], [35, 37], 1.9], [[11, 46], [26, 52], 1.7], [[57, 21], [62, 35], 1.7]];
+  var onBridge = function(x, z){ for(var i = 0; i < BRIDGES.length; i++) if(segD(x, z, BRIDGES[i][0], BRIDGES[i][1]) < BRIDGES[i][2]) return true; return false; };
+  // the nest's broken obsidian rim, the grotto's crystal ring (with their openings)
+  var angGap = function(a, gaps, w){ for(var i = 0; i < gaps.length; i++){ var d = Math.atan2(Math.sin(a - gaps[i]), Math.cos(a - gaps[i])); if(Math.abs(d) < w) return true; } return false; };
+  var NGAPS = [-2.6, 0.82, 1.9, -1.4], GGAPS = [-2.31, 0.9];
+  var nestRim = function(x, z){ var dx = x - NEST[0], dz = z - NEST[1], r = Math.sqrt(dx*dx + dz*dz); if(r < NEST[2] + 0.5 || r > NEST[2] + 2.8) return false; if(angGap(Math.atan2(dz, dx), NGAPS, 0.3)) return false; return fbm(x*0.5, z*0.5) > 0.36; };
+  var M = new Uint8Array(N*N), CLS = new Uint8Array(N*N), x, z, k;
+  // CLS: 0 caldera floor, 1 nest floor, 2 grotto, 3 bridge, 4 lava, 5 cliff, 6 volcano, 7 rock (props)
+  for(z = 0; z < N; z++) for(x = 0; x < N; x++){ var px = x + 0.5, pz = z + 0.5, i = z*N + x;
+    if(cliff(px, pz) > 0){ M[i] = 1; CLS[i] = 5; continue; }
+    if(volcRaw(px, pz) > 1.2){ M[i] = 1; CLS[i] = 6; continue; }
+    if(lavaF(px, pz) < 0){ if(onBridge(px, pz)){ CLS[i] = 3; continue; } M[i] = 1; CLS[i] = 4; continue; }
+    if(nestRim(px, pz)){ M[i] = 1; CLS[i] = 7; continue; }
+    var rn = Math.hypot(px - NEST[0], pz - NEST[1]), rg = Math.hypot(px - GROTTO[0], pz - GROTTO[1]);
+    CLS[i] = rn < NEST[2] + 0.5 ? 1 : rg < GROTTO[2] ? 2 : 0; }
+  // ── the grotto's monoliths and the works scattered through the caldera ──
+  var P = [];
+  for(var gk = 0; gk < 14; gk++){ var ga = gk/14*6.2832 + 0.11; if(angGap(ga, GGAPS, 0.42)) continue; var gr = GROTTO[2] + 0.8 + (gk % 2)*0.6; P.push([GROTTO[0] + Math.cos(ga)*gr, GROTTO[1] + Math.sin(ga)*gr, 1.0, 'monolith', gk*131 + 7, ga]); }
+  var keepOpen = function(px, pz, r){ return Math.hypot(px - NEST[0], pz - NEST[1]) > NEST[2] + 3.5 + r && Math.hypot(px - GROTTO[0], pz - GROTTO[1]) > GROTTO[2] + 2.5 + r && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 5 + r && Math.hypot(px - GATE[0], pz - GATE[1]) > 4 + r; };
+  var openAt = function(px, pz, r){ for(var dz = -r; dz <= r + 0.01; dz += 1) for(var dx = -r; dx <= r + 0.01; dx += 1){ if(dx*dx + dz*dz > r*r) continue; var xx = Math.floor(px + dx), zz = Math.floor(pz + dz); if(xx < 1 || zz < 1 || xx > 78 || zz > 78) return false; var q = zz*N + xx; if(M[q] || CLS[q] === 3) return false; } return true; };
+  var farP = function(px, pz, r, pad){ for(var i = 0; i < P.length; i++){ var q = P[i]; if(Math.hypot(q[0] - px, q[1] - pz) < q[2] + r + pad) return false; } return true; };
+  var place = function(kind, n, r0, r1, pad){ var c = 0; for(var t = 0; t < 4000 && c < n; t++){ var px = 3 + R()*74, pz = 3 + R()*74, r = r0 + R()*(r1 - r0);
+      if(!keepOpen(px, pz, r) || !openAt(px, pz, r + pad) || !farP(px, pz, r, pad)) continue; P.push([px, pz, r, kind, (R()*1e6)|0, R()*6.2832]); c++; } return c; };
+  place('ribcage', 1, 2.2, 2.2, 3);
+  place('columns', 9, 1.2, 2.0, 1.6);
+  place('spire', 22, 0.6, 1.1, 1.4);
+  place('vent', 6, 0.8, 0.8, 2.5);
+  place('boulder', 18, 0.7, 1.4, 1.0);
+  place('tree', 14, 0.35, 0.35, 1.2);
+  // stamp collision (every footprint a touch wider than the drawn rock)
+  P.forEach(function(p){ if(!p[2]) return; var rc = p[2] + (p[3] === 'tree' ? 0.1 : 0.3); for(z = Math.floor(p[1] - rc); z <= Math.ceil(p[1] + rc); z++) for(x = Math.floor(p[0] - rc); x <= Math.ceil(p[0] + rc); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < rc){ M[z*N + x] = 1; if(CLS[z*N + x] !== 4) CLS[z*N + x] = 7; } });
+  // seal what the gate can't reach
+  var seen = new Uint8Array(N*N), Q = [SPAWN[1]*N + SPAWN[0]]; seen[Q[0]] = 1;
+  while(Q.length){ var q = Q.pop(), qx = q % N, qz = (q/N)|0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(o){ var X = qx + o[0], Z = qz + o[1]; if(X < 0 || Z < 0 || X >= N || Z >= N) return; var kk = Z*N + X; if(seen[kk] || M[kk]) return; seen[kk] = 1; Q.push(kk); }); }
+  var SEALED = 0; for(k = 0; k < N*N; k++) if(!M[k] && !seen[k]){ M[k] = 1; SEALED++; }
+  // ── the lair's beasts: thralls at the gate, the rest through the caldera (never in the nest or the grotto) ──
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
+    return Math.hypot(px - NEST[0], pz - NEST[1]) > NEST[2] + 3.5 && Math.hypot(px - GROTTO[0], pz - GROTTO[1]) > GROTTO[2] + 3 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 7; };
+  var SPAWNS = [];
+  var put = function(type, reg, sp){ for(var t = 0; t < 3000; t++){ var px = reg[0] + R()*(reg[2] - reg[0]), pz = reg[1] + R()*(reg[3] - reg[1]), qx = Math.floor(px), qz = Math.floor(pz); if(!clear(qx + 0.5, qz + 0.5)) continue;
+      var ok = true; for(var i = 0; i < SPAWNS.length; i++) if(Math.hypot(SPAWNS[i].tx - qx, SPAWNS[i].tz - qz) < sp) ok = false; if(!ok) continue; SPAWNS.push({ tx:qx, tz:qz, type:type }); return true; } return false; };
+  var GATEZ = [12, 12, 30, 34], ALL = [4, 4, 76, 76];
+  put('ancient_guardian', GATEZ, 4); put('citadel_mage', GATEZ, 4); put('ancient_guardian', GATEZ, 4); put('iron_guard', GATEZ, 4);
+  for(var f = 0; f < 6; f++) put('fire_demon', ALL, 8);
+  for(var w2 = 0; w2 < 5; w2++) put('wyvern', ALL, 8);
+  [[4, 40, 22, 76], [56, 40, 76, 76], [20, 56, 50, 76], [52, 4, 76, 30], [4, 40, 22, 76], [56, 40, 76, 76]].forEach(function(r){ put('void_spider', r, 6); });
+  [[52, 26, 70, 46], [22, 54, 46, 70], [50, 50, 66, 56]].forEach(function(r){ if(!put('inferno_golem', r, 6)) put('inferno_golem', ALL, 6); });
+  return { N:N, M:M, CLS:CLS, P:P, SPAWNS:SPAWNS, NEST:NEST, GROTTO:GROTTO, VOLC:VOLC, SPAWN:SPAWN, GATE:GATE, CRATER:CRATER, CRY:CRY, RIVA:RIVA, RIVB:RIVB, POOLS:POOLS, BRIDGES:BRIDGES, NGAPS:NGAPS, SEALED:SEALED,
+    volcH:volcH, volcRaw:volcRaw, cliff:cliff, lavaF:lavaF, nestRim:nestRim, fbm:fbm, hs:hs, lineD:lineD };
+})();
+function _dlWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 80 || z >= 80) return true; return _DL.M[z*80 + x] === 1; }
+function _dlWalkable(wx, wz){ return !_dlWallAt(wx/TILE, wz/TILE); }
 // ════════════════════════════════════════════════════════════════════════════
 // a665 — THE REACH: plan. Shared VERBATIM by the client (70_terrain) and the server
 //   (server.js), fully deterministic, so players and the elites collide with the same ruins.
@@ -2628,32 +2714,7 @@ const ZONE_SPAWNS = {
     {type:'stone_sentinel', tx:67, tz:103}
   ],
   // a546 — MULTIPLAYER MIGRATION: Vaeltharax's Lair is now server-authoritative.
-  dragonlair: [
-    {type:'ancient_guardian', tx:12, tz:8},
-    {type:'citadel_mage', tx:16, tz:6},
-    {type:'ancient_guardian', tx:8, tz:20},
-    {type:'iron_guard', tx:20, tz:8},
-    {type:'fire_demon', tx:30, tz:15},
-    {type:'fire_demon', tx:45, tz:20},
-    {type:'fire_demon', tx:35, tz:40},
-    {type:'fire_demon', tx:55, tz:30},
-    {type:'fire_demon', tx:25, tz:55},
-    {type:'fire_demon', tx:50, tz:55},
-    {type:'wyvern', tx:38, tz:12},
-    {type:'wyvern', tx:55, tz:18},
-    {type:'wyvern', tx:22, tz:35},
-    {type:'wyvern', tx:60, tz:45},
-    {type:'wyvern', tx:40, tz:65},
-    {type:'void_spider', tx:8, tz:35},
-    {type:'void_spider', tx:15, tz:50},
-    {type:'void_spider', tx:65, tz:25},
-    {type:'void_spider', tx:70, tz:50},
-    {type:'void_spider', tx:30, tz:68},
-    {type:'void_spider', tx:55, tz:68},
-    {type:'inferno_golem', tx:45, tz:40},
-    {type:'inferno_golem', tx:60, tz:60},
-    {type:'inferno_golem', tx:30, tz:50}
-  ],
+  dragonlair: _DL.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a669 — the lair's beasts, from the shared plan (never in the nest or Eyexor's grotto)
   // a547 — MULTIPLAYER MIGRATION: Rift Vale is now server-authoritative.
   riftvale: [
     {type:'rift_stalker', tx:41, tz:47},
@@ -5099,6 +5160,7 @@ function spawnWorldBoss(game, def) {
     atk: def.atk,
     atkCooldown: def.atkCooldown || 90,
     aggroRange: def.aggroRange || 22,
+    leash: def.leash || 0,   // a669 — tethered bosses (Eyexor) never leave their ground
     color: def.color,
     lootTier: def.lootTier,
     phase: 1,
@@ -7884,9 +7946,8 @@ function tickWorldBoss(game) {
       const dx = nearest.x - wb.x, dz = nearest.z - wb.z;
       const len = Math.sqrt(dx*dx + dz*dz) || 1;
       const speed = 0.035; // a touch faster than xu_supreme, slower than berserker
-      wb.x += (dx / len) * speed * 1.6;
-      wb.z += (dz / len) * speed * 1.6;
-      posChanged = true;
+      const _nx = wb.x + (dx / len) * speed * 1.6, _nz = wb.z + (dz / len) * speed * 1.6;
+      if (!wb.leash || Math.hypot(_nx - wb.spawnX, _nz - wb.spawnZ) <= wb.leash * TILE) { wb.x = _nx; wb.z = _nz; posChanged = true; }   // a669 — tether
     }
     // Melee swing — server does damage to the nearest player only, but broadcasts
     // the swing animation cue to everyone in the zone so the boss looks alive.
@@ -7978,7 +8039,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach' || zoneName === 'forge') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach' || zoneName === 'forge' || zoneName === 'dragonlair') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8072,6 +8133,7 @@ function tickGame(game) {
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
         else if (zoneName === 'the_reach') { if (_reWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_reWalkable(nx, e.z)) e.x = nx; else if (_reWalkable(e.x, nz)) e.z = nz; }   // a665 — the cliffs, the rifts, the dead works
         else if (zoneName === 'forge') { if (_foWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_foWalkable(nx, e.z)) e.x = nx; else if (_foWalkable(e.x, nz)) e.z = nz; }   // a668 — the works, the lava, the walls
+        else if (zoneName === 'dragonlair') { if (_dlWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_dlWalkable(nx, e.z)) e.x = nx; else if (_dlWalkable(e.x, nz)) e.z = nz; }   // a669 — the caldera wall, the volcano, the lava, the nest's rim
         else if (zoneName === 'xulcan') { if (_xuWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xuWalkable(nx, e.z)) e.x = nx; else if (_xuWalkable(e.x, nz)) e.z = nz; }   // a664 — the golden towers, the outpost walls
         else if (zoneName === 'wyvernwastes') { if (_wwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_wwWalkable(nx, e.z)) e.x = nx; else if (_wwWalkable(e.x, nz)) e.z = nz; }   // a663 — the ranges, crevasses, nest rims and crags
         else if (zoneName === 'neon_hollow') { if (_nhWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_nhWalkable(nx, e.z)) e.x = nx; else if (_nhWalkable(e.x, nz)) e.z = nz; }   // a661 — the city's buildings, wall and monorail pylons
@@ -11741,6 +11803,10 @@ function tickGame(game) {
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    if (zoneName === 'dragonlair') zone.enemies.forEach(e => {   // a669 — nothing ends a tick in the lava or inside the rock
+      if (!e.active || e._rv0x === undefined || _dlWalkable(e.x, e.z)) return;
+      if (_dlWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_dlWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     if (zoneName === 'forge') zone.enemies.forEach(e => {   // a668 — nothing ends a tick in the lava or inside the works
       if (!e.active || e._rv0x === undefined || _foWalkable(e.x, e.z)) return;
