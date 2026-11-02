@@ -7923,6 +7923,15 @@ function tickGame(game) {
           }
         }
       } else if (nearestDist <= Math.max(_aggroR || 0, AGGRO_FLOOR)) e.aggroed = true;   // a597 — aggro floor
+      // a667 — THE REACH leash: aggro used to be for life, so every elite you ran past kept chasing
+      //   (often pinned behind a ruin) and kept dropping wells / rifts / orbs on you from far outside
+      //   your view — "invisible mobs follow me and hit me non stop". Past 36u with no recent hit-lock
+      //   it gives up and goes home (out of sight, so the trip home is instant).
+      if (zoneName === 'the_reach' && e.aggroed && !e._tgt && nearestDist > 36) {
+        e.aggroed = false; e._gwT = 0; e._dsT = 0; e._ssT = 0;
+        e.x = e.spawnX; e.z = e.spawnZ; e._rv0x = e.x; e._rv0z = e.z; changed.push(e);
+        return;
+      }
       if (!e.aggroed) return;
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
@@ -11471,7 +11480,7 @@ function tickGame(game) {
 
           // ── CONSTANT BARRAGE — each elite has its own pattern and colour
           e._reFire=(e._reFire||Math.floor(Math.random()*3))-1;
-          if(e._reFire<=0 && dd < (e.aggroRange||18)+4){
+          if(e._reFire<=0 && dd < Math.min(22, (e.aggroRange||18)+4)){
             e._reFire=(_RE_FIRE[e.type]||2)+Math.floor(Math.random()*2);
             if(e.type==='sphere_disruptor')      [-0.16,0,0.16].forEach(o=>shoot(o,_RE_GRN,0.28,'void'));
             else if(e.type==='harbinger_sphere'){ e._reSpin=(e._reSpin||0)+0.4;
@@ -11516,7 +11525,7 @@ function tickGame(game) {
 
           // ── ABILITY ROTATION — alternates two per type
           e._reCd=(e._reCd!=null?e._reCd:15)-1;
-          if(e._reCd<=0){
+          if(e._reCd<=0 && dd < 24){   // a667 — only while it is in sight of you (was: from anywhere on the map)
             e._reCd=13+Math.floor(Math.random()*7);
             e._reIdx=(e._reIdx||0)+1;
             const alt=(e._reIdx%2===0);
