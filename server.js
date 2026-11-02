@@ -972,6 +972,88 @@ function _wwWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 
 
 function _wwWalkable(wx, wz){ return !_wwWallAt(wx/TILE, wz/TILE); }
 
+// ════════════════════════════════════════════════════════════════════════════
+// a664 — XULCAN PRIME: plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), fully deterministic, so players and the Dominion's forces collide with the
+//   same towers. Tiles. The golden metropolis keeps its old bones — the N–S and E–W grand
+//   avenues, the ring road at r 70 (now with an inner ring at r 40 and four diagonal
+//   avenues), the Golden Harmonic at (120,70), Zet-Horak's arena at (120,110) — with a gold
+//   perimeter wall and gates north and south. Inside the ring: the tall harmonic towers;
+//   outside it: the industrial districts (foundries, ziggurats, silos). B: [x, z, r, kind,
+//   seed] circles. CAMPS: Dominion OUTPOSTS — hex platforms behind three barrier walls with
+//   three open entrances, a command spire in the middle, and traps (the client runs them:
+//   laser fences across the entrances, plasma mines outside, the spire's arc discharge).
+// ════════════════════════════════════════════════════════════════════════════
+var _XU = (function(){
+  var s = 0x0a664001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  var N = 240, CX = 120, CZ = 120, CORE = [120, 70], ARENA = [120, 110, 26], SPAWN = [120, 216], NGATE = [120, 30], WALL = 8;
+  var RINGS = [[40, 3], [70, 3.5]], DIAG = 3, AVE = 5;
+  var M = new Uint8Array(N*N), CLS = new Uint8Array(N*N), x, z, k;
+  var road = function(px, pz){ var dx = px - CX, dz = pz - CZ, r = Math.sqrt(dx*dx + dz*dz);
+    if(Math.abs(px - CX) < AVE || Math.abs(pz - CZ) < AVE) return 1;
+    for(var i = 0; i < RINGS.length; i++) if(Math.abs(r - RINGS[i][0]) < RINGS[i][1]) return 2;
+    if(r > 14 && r < 104){ var d1 = Math.abs(dx - dz)/1.41421, d2 = Math.abs(dx + dz)/1.41421; if(d1 < DIAG || d2 < DIAG) return 3; }
+    return 0; };
+  var plaza = function(px, pz){ return Math.hypot(px - ARENA[0], pz - ARENA[1]) < ARENA[2] ? 4 : Math.hypot(px - CORE[0], pz - CORE[1]) < 17 ? 5 : Math.hypot(px - SPAWN[0], pz - SPAWN[1]) < 13 ? 6 : Math.hypot(px - NGATE[0], pz - NGATE[1]) < 10 ? 6 : 0; };
+  // CLS: 0 tiles (gold panel floor), 1 grand avenue, 2 ring road, 3 diagonal avenue, 4 arena, 5 harmonic plaza, 6 gate plaza, 7 wall, 8 outpost pad, 9 building
+  for(z = 0; z < N; z++) for(x = 0; x < N; x++){ var px = x + 0.5, pz = z + 0.5, e = Math.min(px, pz, N - px, N - pz), c = 0;
+    var gate = Math.abs(px - CX) < AVE + 1 && (pz < 20 || pz > 220);
+    if(e < WALL && !gate){ c = 7; M[z*N + x] = 1; }
+    else { var p = plaza(px, pz); if(p) c = p; else c = road(px, pz); }
+    CLS[z*N + x] = c; }
+  // the Golden Harmonic itself
+  for(z = 60; z <= 80; z++) for(x = 110; x <= 130; x++) if(Math.hypot(x + 0.5 - CORE[0], z + 0.5 - CORE[1]) < 6.5){ M[z*N + x] = 1; CLS[z*N + x] = 9; }
+  var B = [], CAMPS = [];
+  var openAt = function(px, pz, r){ for(var dz = -r; dz <= r; dz += 1.5) for(var dx = -r; dx <= r; dx += 1.5){ if(dx*dx + dz*dz > r*r) continue; var xx = Math.floor(px + dx), zz = Math.floor(pz + dz); if(xx < 0 || zz < 0 || xx >= N || zz >= N) return false; var c2 = CLS[zz*N + xx]; if(c2 !== 0 || M[zz*N + xx]) return false; } return true; };
+  var farB = function(px, pz, r, pad){ for(var i = 0; i < B.length; i++) if(Math.hypot(B[i][0] - px, B[i][1] - pz) < B[i][2] + r + pad) return false; for(var j = 0; j < CAMPS.length; j++) if(Math.hypot(CAMPS[j][0] - px, CAMPS[j][1] - pz) < 9.5 + r + pad) return false; return true; };
+  // ── the outposts: twelve, three to each quarter ──
+  for(var t = 0; t < 8000 && CAMPS.length < 12; t++){ var px = 16 + R()*208, pz = 16 + R()*208, q = (px < CX ? 0 : 1) + (pz < CZ ? 0 : 2);
+    if(CAMPS.filter(function(c){ return c[3] === q; }).length >= 3) continue;
+    if(!openAt(px, pz, 8.2) || Math.hypot(px - SPAWN[0], pz - SPAWN[1]) < 36 || Math.hypot(px - NGATE[0], pz - NGATE[1]) < 22) continue; var ok = true; for(var j = 0; j < CAMPS.length; j++) if(Math.hypot(CAMPS[j][0] - px, CAMPS[j][1] - pz) < 26) ok = false; if(!ok) continue;
+    CAMPS.push([px, pz, R()*1.047, q, (R()*1e6)|0]); }
+  // ── the buildings ──
+  var INNER = ['tower', 'tower', 'ringt', 'spire', 'dome', 'tower', 'ringt'], OUTER = ['foundry', 'zigg', 'tower', 'silo', 'zigg', 'foundry', 'tower', 'dome'];
+  var SIZE = { tower:[3.2, 5.0], ringt:[2.6, 3.6], spire:[2.0, 2.8], dome:[3.4, 5.2], foundry:[5.5, 8.5], zigg:[4.5, 7.0], silo:[3.0, 4.2] };
+  for(var t2 = 0; t2 < 30000 && B.length < 260; t2++){ var bx = 10 + R()*220, bz = 10 + R()*220, rc = Math.hypot(bx - CX, bz - CZ), kinds = rc < 70 ? INNER : OUTER, kind = kinds[(R()*kinds.length)|0];
+    var sz = SIZE[kind], r = sz[0] + R()*(sz[1] - sz[0]); if(!openAt(bx, bz, r + 1.2)) continue; if(!farB(bx, bz, r, 1.4)) continue;
+    B.push([bx, bz, r, kind, (R()*1e6)|0]); }
+  // energy pylons along the ring roads
+  RINGS.forEach(function(rg, ri){ var n = Math.floor(rg[0]*0.42); for(var i = 0; i < n; i++){ var a = (i + 0.5)/n*6.2832; [-1, 1].forEach(function(sg){ var rr = rg[0] + sg*(rg[1] + 1.6), px2 = CX + Math.cos(a)*rr, pz2 = CZ + Math.sin(a)*rr; if(!openAt(px2, pz2, 0.9) || !farB(px2, pz2, 0.6, 0.4)) return; B.push([px2, pz2, 0.6, 'pylon', i*2 + ri]); }); } });
+  B.forEach(function(b){ for(z = Math.floor(b[1] - b[2]); z <= Math.ceil(b[1] + b[2]); z++) for(x = Math.floor(b[0] - b[2]); x <= Math.ceil(b[0] + b[2]); x++){ if(x < 0 || z < 0 || x >= N || z >= N) continue; if(Math.hypot(x + 0.5 - b[0], z + 0.5 - b[1]) < b[2]){ M[z*N + x] = 1; CLS[z*N + x] = 9; } } });
+  // ── the outposts: pad, three barrier walls (the gaps face the other way each time), the command spire ──
+  var TRAPS = [];
+  CAMPS.forEach(function(c){ var cx = c[0], cz = c[1], rot = c[2];
+    for(z = Math.floor(cz - 8); z <= Math.ceil(cz + 8); z++) for(x = Math.floor(cx - 8); x <= Math.ceil(cx + 8); x++){ if(x < 0 || z < 0 || x >= N || z >= N) continue; var dx = x + 0.5 - cx, dz = z + 0.5 - cz, d = Math.sqrt(dx*dx + dz*dz); if(d > 7.6) continue;
+      CLS[z*N + x] = 8; var a = Math.atan2(dz, dx) - rot, side = Math.floor((((a % 6.2832) + 6.2832) % 6.2832)/1.0472);
+      // hex distance
+      var la = (((a % 1.0472) + 1.0472) % 1.0472) - 0.5236, hd = d*Math.cos(la)/0.866;
+      if(hd > 5.8 && hd < 7.3 && side % 2 === 0) M[z*N + x] = 1;
+      if(d < 1.4) M[z*N + x] = 1; }
+    // traps: a laser fence across each of the three entrances, plasma mines outside, the spire's arc
+    for(k = 0; k < 3; k++){ var ea = rot + (k*2 + 1)*1.0472 + 0.5236, a0 = ea - 0.5236, a1 = ea + 0.5236, rr = 6.8/0.866*0.866;
+      TRAPS.push({ t:'fence', x0:cx + Math.cos(a0)*rr, z0:cz + Math.sin(a0)*rr, x1:cx + Math.cos(a1)*rr, z1:cz + Math.sin(a1)*rr, ph:R()*6.28, c:CAMPS.indexOf(c) });
+      for(var m2 = 0; m2 < 2; m2++){ var ma = ea + (m2 ? 0.45 : -0.45), md = 9.4 + R()*1.6; TRAPS.push({ t:'mine', x:cx + Math.cos(ma)*md, z:cz + Math.sin(ma)*md, c:CAMPS.indexOf(c) }); } }
+    TRAPS.push({ t:'arc', x:cx, z:cz, r:5.2, ph:R()*6.28, c:CAMPS.indexOf(c) }); });
+  // ── the Dominion's forces ──
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
+    return Math.hypot(px - ARENA[0], pz - ARENA[1]) > ARENA[2] - 2 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 16; };
+  var SPAWNS = [], CAP = { xu_quantum_seeker:24, xu_graviton_manipulator:16, xu_solar_lancer:18, xu_harmonic_warden:13, xu_data_construct:13 }, cnt = {};
+  var put = function(px, pz, type, jit){ if((cnt[type] || 0) >= CAP[type]) return false; for(var tr = 0; tr < 20; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
+      if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type] = (cnt[type] || 0) + 1; return true; } } return false; };
+  var ROSTER = [['xu_harmonic_warden', 'xu_quantum_seeker', 'xu_quantum_seeker', 'xu_solar_lancer', 'xu_graviton_manipulator'],
+                ['xu_data_construct', 'xu_solar_lancer', 'xu_quantum_seeker', 'xu_graviton_manipulator', 'xu_solar_lancer'],
+                ['xu_harmonic_warden', 'xu_data_construct', 'xu_quantum_seeker', 'xu_solar_lancer', 'xu_quantum_seeker']];
+  CAMPS.forEach(function(c, ci){ var ro = ROSTER[ci % 3]; ro.forEach(function(ty, i){ var a = c[2] + i/5*6.2832 + 0.3, d = i === 0 ? 2.6 : 3.8; put(c[0] + Math.cos(a)*d, c[1] + Math.sin(a)*d, ty, 0.35); }); });
+  // patrols on the avenues and the ring roads, in pairs
+  var ty2 = Object.keys(CAP);
+  for(var t3 = 0; t3 < 6000 && SPAWNS.length < 84; t3++){ var ty = ty2[t3 % 5]; if((cnt[ty] || 0) >= CAP[ty]) continue; var a3 = R()*6.2832, rr3 = R() < 0.5 ? 40 : 70, px3 = CX + Math.cos(a3)*rr3, pz3 = CZ + Math.sin(a3)*rr3;
+    if(R() < 0.35){ px3 = CX + (R() - 0.5)*4; pz3 = 26 + R()*188; } if(Math.hypot(px3 - ARENA[0], pz3 - ARENA[1]) < 30) continue;
+    if(put(px3, pz3, ty)) put(px3 + 1.5, pz3 + 1.5, ty2[(t3 + 2) % 5]); }
+  return { N:N, M:M, CLS:CLS, B:B, CAMPS:CAMPS, TRAPS:TRAPS, SPAWNS:SPAWNS, CX:CX, CZ:CZ, CORE:CORE, ARENA:ARENA, SPAWN:SPAWN, NGATE:NGATE, RINGS:RINGS, AVE:AVE, DIAG:DIAG, WALL:WALL, road:road };
+})();
+function _xuWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XU.M[z*240 + x] === 1; }
+function _xuWalkable(wx, wz){ return !_xuWallAt(wx/TILE, wz/TILE); }
+
 const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
@@ -3584,42 +3666,8 @@ const ZONE_SPAWNS = {
   //   this zone had no ZONE_SPAWNS entry). 34 spawns lifted verbatim from the client's
   //   enemySpawns. ENEMY_STATS for all five types was ADDED in the same patch — they did
   //   not exist at all. XU ZET-HORAK is now server-authoritative too (ZBOSS_SERVER.xulcan).
-  xulcan: [
-    {type:'xu_quantum_seeker', tx:108, tz:200},
-    {type:'xu_quantum_seeker', tx:132, tz:200},
-    {type:'xu_solar_lancer', tx:120, tz:196},
-    {type:'xu_graviton_manipulator', tx:96, tz:186},
-    {type:'xu_graviton_manipulator', tx:144, tz:186},
-    {type:'xu_harmonic_warden', tx:120, tz:182},
-    {type:'xu_quantum_seeker', tx:80, tz:176},
-    {type:'xu_quantum_seeker', tx:160, tz:176},
-    {type:'xu_data_construct', tx:108, tz:172},
-    {type:'xu_solar_lancer', tx:132, tz:172},
-    {type:'xu_graviton_manipulator', tx:64, tz:150},
-    {type:'xu_graviton_manipulator', tx:176, tz:150},
-    {type:'xu_quantum_seeker', tx:90, tz:160},
-    {type:'xu_quantum_seeker', tx:150, tz:160},
-    {type:'xu_harmonic_warden', tx:120, tz:158},
-    {type:'xu_solar_lancer', tx:70, tz:130},
-    {type:'xu_solar_lancer', tx:170, tz:130},
-    {type:'xu_data_construct', tx:100, tz:138},
-    {type:'xu_quantum_seeker', tx:140, tz:138},
-    {type:'xu_solar_lancer', tx:88, tz:128},
-    {type:'xu_harmonic_warden', tx:152, tz:128},
-    {type:'xu_quantum_seeker', tx:104, tz:96},
-    {type:'xu_quantum_seeker', tx:136, tz:96},
-    {type:'xu_harmonic_warden', tx:96, tz:84},
-    {type:'xu_harmonic_warden', tx:144, tz:84},
-    {type:'xu_graviton_manipulator', tx:84, tz:70},
-    {type:'xu_graviton_manipulator', tx:156, tz:70},
-    {type:'xu_solar_lancer', tx:104, tz:56},
-    {type:'xu_solar_lancer', tx:136, tz:56},
-    {type:'xu_data_construct', tx:120, tz:52},
-    {type:'xu_quantum_seeker', tx:40, tz:120},
-    {type:'xu_quantum_seeker', tx:200, tz:120},
-    {type:'xu_graviton_manipulator', tx:40, tz:170},
-    {type:'xu_graviton_manipulator', tx:200, tz:170}
-  ],
+  xulcan: _XU.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a664 — the Dominion outposts and the avenue patrols, from the shared plan
+
   // a537 — AVIA CANYON birds are now SERVER-AUTHORITATIVE (ZONE_SPAWNS.aviacanyon + maze
   //   collision via _aviaWalkable). The XUBERRY boss remains server-authoritative (ZONE_BOSS_HP.aviacanyon).
   // a555 — THE FORGE is now SERVER-AUTHORITATIVE (was deliberately client-side since a361,
@@ -7754,7 +7802,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -7837,6 +7885,7 @@ function tickGame(game) {
         else if (zoneName === 'frostveil') { if (_fvWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fvWalkable(nx, e.z)) e.x = nx; else if (_fvWalkable(e.x, nz)) e.z = nz; }   // a651 — glaciers, open water, rocks, pines
         else if (zoneName === 'cemetery') { if (_cmWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cmWalkable(nx, e.z)) e.x = nx; else if (_cmWalkable(e.x, nz)) e.z = nz; }   // a650 — graves + crypts
         else if (zoneName === 'fungal') { if (_fgWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_fgWalkable(nx, e.z)) e.x = nx; else if (_fgWalkable(e.x, nz)) e.z = nz; }   // a649 — fungal stems + mounds
+        else if (zoneName === 'xulcan') { if (_xuWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xuWalkable(nx, e.z)) e.x = nx; else if (_xuWalkable(e.x, nz)) e.z = nz; }   // a664 — the golden towers, the outpost walls
         else if (zoneName === 'wyvernwastes') { if (_wwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_wwWalkable(nx, e.z)) e.x = nx; else if (_wwWalkable(e.x, nz)) e.z = nz; }   // a663 — the ranges, crevasses, nest rims and crags
         else if (zoneName === 'neon_hollow') { if (_nhWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_nhWalkable(nx, e.z)) e.x = nx; else if (_nhWalkable(e.x, nz)) e.z = nz; }   // a661 — the city's buildings, wall and monorail pylons
         else if (zoneName === 'xeron') { if (_xrWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xrWalkable(nx, e.z)) e.x = nx; else if (_xrWalkable(e.x, nz)) e.z = nz; }   // a660 — the towers and the edge of the disc
@@ -11505,6 +11554,10 @@ function tickGame(game) {
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    if (zoneName === 'xulcan') zone.enemies.forEach(e => {   // a664 — no blink or charge ends inside a tower
+      if (!e.active || e._rv0x === undefined || _xuWalkable(e.x, e.z)) return;
+      if (_xuWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_xuWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     if (zoneName === 'wyvernwastes') zone.enemies.forEach(e => {   // a663 — no dive or leap ends inside a mountain or down a crevasse
       if (!e.active || e._rv0x === undefined || _wwWalkable(e.x, e.z)) return;
