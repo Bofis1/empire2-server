@@ -1377,6 +1377,88 @@ var _VS = (function(){
 function _vsWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 80 || z >= 80) return true; return _VS.M[z*80 + x] === 1; }
 function _vsWalkable(wx, wz){ return !_vsWallAt(wx/TILE, wz/TILE); }
 // ════════════════════════════════════════════════════════════════════════════
+// a671 — THE CAVES OF DESPAIR: plan. Shared VERBATIM by the client (70_terrain) and the server
+//   (server.js), deterministic. Tiles (80 × 80). Xu's mine as a MAZE: a 12 × 12 grid of cells
+//   (4-tile drifts, 2-tile rock between) carved by a seeded backtracker, opened up with a few
+//   loops and ragged alcoves so it reads as cave, not hedge. You come in through the adit in
+//   the west wall (the portal home) into the entry cavern; five worked-out chambers hold the
+//   crews' camps; the way winds to FOREMAN DRAX's dig pit in the far south-east — a round
+//   excavation 20 tiles across, ringed by rock, entered by just two drifts. Rails run down
+//   the long straight drifts. CLS: 0 rock, 1 drift, 2 chamber, 3 entry cavern, 4 the pit,
+//   5 adit. P: [x, z, r, kind, seed, ang].
+// ════════════════════════════════════════════════════════════════════════════
+var _CD = (function(){
+  var s = 0x0a671001; function R(){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s/4294967296; }
+  function hs(x, z){ var h = Math.sin(x*127.1 + z*311.7)*43758.5453; return h - Math.floor(h); }
+  function vn(x, z){ var ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz; fx = fx*fx*(3 - 2*fx); fz = fz*fz*(3 - 2*fz);
+    var a = hs(ix, iz), b = hs(ix + 1, iz), c = hs(ix, iz + 1), d = hs(ix + 1, iz + 1); return a + (b - a)*fx + (c - a)*fz + (a - b - c + d)*fx*fz; }
+  function fbm(x, z){ return vn(x, z)*0.55 + vn(x*2.1 + 7.3, z*2.1 - 3.1)*0.3 + vn(x*4.3 - 1.7, z*4.3 + 9.2)*0.15; }
+  var N = 80, C = 12, O = 3, STR = 6, CW = 4, PIT = [62, 62, 10], SPAWN = [12, 12], GATE = [2, 12];
+  var M = new Uint8Array(N*N), CLS = new Uint8Array(N*N), x, z, k, i, j;
+  for(k = 0; k < N*N; k++) M[k] = 1;
+  var cellX = function(ci){ return O + ci*STR; };
+  var open = function(x0, x1, z0, z1, c){ for(z = Math.max(1, z0); z < Math.min(N - 1, z1); z++) for(x = Math.max(0, x0); x < Math.min(N - 1, x1); x++){ M[z*N + x] = 0; if(!CLS[z*N + x] || c > 1) CLS[z*N + x] = c; } };
+  // cells inside the pit's rock collar are left out of the maze
+  var inPit = function(ci, cj){ var cx = cellX(ci) + CW/2, cz = cellX(cj) + CW/2; return Math.hypot(cx - PIT[0], cz - PIT[1]) < PIT[2] + 4.5; };
+  var vis = new Uint8Array(C*C), stack = [[1, 1]]; vis[1*C + 1] = 1; var EDGES = [];
+  for(i = 0; i < C; i++) for(j = 0; j < C; j++) if(inPit(i, j)) vis[j*C + i] = 2;
+  while(stack.length){ var cur = stack[stack.length - 1], nb = [];
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(o){ var a = cur[0] + o[0], b = cur[1] + o[1]; if(a >= 0 && b >= 0 && a < C && b < C && !vis[b*C + a]) nb.push([a, b]); });
+    if(!nb.length){ stack.pop(); continue; } var nx = nb[(R()*nb.length)|0]; vis[nx[1]*C + nx[0]] = 1; EDGES.push([cur[0], cur[1], nx[0], nx[1]]); stack.push(nx); }
+  // a few loops so it is a mine, not a puzzle box
+  var BASE = EDGES.length; for(var t = 0; t < 400 && EDGES.length < BASE + 10; t++){ var a1 = (R()*C)|0, b1 = (R()*C)|0, h = R() < 0.5, a2 = a1 + (h ? 1 : 0), b2 = b1 + (h ? 0 : 1); if(a2 >= C || b2 >= C || vis[b1*C + a1] !== 1 || vis[b2*C + a2] !== 1) continue;
+    if(EDGES.some(function(e){ return (e[0] === a1 && e[1] === b1 && e[2] === a2 && e[3] === b2) || (e[0] === a2 && e[1] === b2 && e[2] === a1 && e[3] === b1); })) continue; EDGES.push([a1, b1, a2, b2]); }
+  for(i = 0; i < C; i++) for(j = 0; j < C; j++) if(vis[j*C + i] === 1) open(cellX(i), cellX(i) + CW, cellX(j), cellX(j) + CW, 1);
+  EDGES.forEach(function(e){ var x0 = Math.min(cellX(e[0]), cellX(e[2])), z0 = Math.min(cellX(e[1]), cellX(e[3])); open(x0, Math.max(cellX(e[0]), cellX(e[2])) + CW, z0, Math.max(cellX(e[1]), cellX(e[3])) + CW, 1); });
+  // the chambers (worked-out stopes, 2 × 2 cells), the entry cavern, the adit
+  var ROOMS = [[0, 0, 3], [5, 1, 2], [1, 5, 2], [9, 1, 2], [5, 5, 2], [1, 9, 2]];
+  ROOMS.forEach(function(r){ open(cellX(r[0]), cellX(r[0] + 1) + CW, cellX(r[1]), cellX(r[1] + 1) + CW, r[2]); });
+  open(0, O + 1, 10, 15, 5);
+  // the pit: a round dig, its rock collar, and the two drifts that reach it
+  for(z = 0; z < N; z++) for(x = 0; x < N; x++){ var d = Math.hypot(x + 0.5 - PIT[0], z + 0.5 - PIT[1]); if(d < PIT[2]){ M[z*N + x] = 0; CLS[z*N + x] = 4; } else if(d < PIT[2] + 2.5){ M[z*N + x] = 1; CLS[z*N + x] = 0; } }
+  var PITWAYS = [];
+  [[-1, 0], [0, -1]].forEach(function(dv){ var px = PIT[0] + dv[0]*(PIT[2] - 1), pz = PIT[1] + dv[1]*(PIT[2] - 1), n = 0, hit = false;
+    while(n < 30 && !hit){ px += dv[0]; pz += dv[1]; n++; for(var w = -2; w < 2; w++){ var xx = Math.floor(px + (dv[1] ? w : 0)), zz = Math.floor(pz + (dv[0] ? w : 0)); if(xx < 1 || zz < 1 || xx > 78 || zz > 78) continue; var q = zz*N + xx; if(!M[q] && CLS[q] !== 4 && n > 3) hit = true; M[q] = 0; if(!CLS[q] || CLS[q] === 0) CLS[q] = 1; } }
+    PITWAYS.push([PIT[0] + dv[0]*PIT[2], PIT[1] + dv[1]*PIT[2], Math.atan2(dv[1], dv[0])]); });
+  // ragged alcoves: rock eaten back where it is thick enough to spare it
+  for(z = 2; z < N - 2; z++) for(x = 2; x < N - 2; x++){ var q2 = z*N + x; if(!M[q2]) continue; if(Math.hypot(x + 0.5 - PIT[0], z + 0.5 - PIT[1]) < PIT[2] + 3) continue; if(fbm(x*0.35, z*0.35) < 0.66) continue;
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(o){ if(!M[q2]) return; var a = (z + o[1])*N + x + o[0], b = (z - o[1])*N + x - o[0], b2 = (z - 2*o[1])*N + x - 2*o[0]; if(!M[a] && M[b] && M[b2] && (z - 2*o[1]) > 0 && (x - 2*o[0]) > 0){ M[q2] = 0; CLS[q2] = CLS[a] || 1; } }); }
+  // ── the mine's works ──
+  var P = [];
+  var cellC = function(ci){ return cellX(ci) + CW/2; };
+  // the long straight drifts get rails (runs of 3+ cells along a row or a column)
+  var RAILS = [];
+  var conn = function(a1, b1, a2, b2){ return EDGES.some(function(e){ return (e[0] === a1 && e[1] === b1 && e[2] === a2 && e[3] === b2) || (e[0] === a2 && e[1] === b2 && e[2] === a1 && e[3] === b1); }); };
+  for(j = 0; j < C; j++){ var st = 0; for(i = 1; i <= C; i++){ if(i < C && conn(i - 1, j, i, j)) continue; if(i - st >= 3) RAILS.push([cellC(st), cellC(j), cellC(i - 1), cellC(j)]); st = i; } }
+  for(i = 0; i < C; i++){ var st2 = 0; for(j = 1; j <= C; j++){ if(j < C && conn(i, j - 1, i, j)) continue; if(j - st2 >= 3) RAILS.push([cellC(i), cellC(st2), cellC(i), cellC(j - 1)]); st2 = j; } }
+  RAILS = RAILS.filter(function(r){ return Math.hypot((r[0] + r[2])/2 - PIT[0], (r[1] + r[3])/2 - PIT[1]) > PIT[2] + 4; });
+  RAILS.sort(function(a, b){ return (Math.abs(b[2] - b[0]) + Math.abs(b[3] - b[1])) - (Math.abs(a[2] - a[0]) + Math.abs(a[3] - a[1])); }); RAILS = RAILS.slice(0, 9);
+  // in the chambers: a drill rig, ore heaps, crates; crystals growing out of the rock everywhere
+  ROOMS.forEach(function(r, ri){ if(ri === 0) return; var cx = cellX(r[0]) + 5, cz = cellX(r[1]) + 5; P.push([cx + 0.5, cz + 0.5, 1.4, 'rig', ri, R()*6.28]);
+    P.push([cx - 2.5, cz + 3, 1.1, 'ore', ri*3, 0]); P.push([cx + 3, cz - 2.5, 0.9, 'crates', ri*5, R()*6.28]); });
+  P.push([7, 6, 0.9, 'crates', 99, 0.4]); P.push([13, 6, 1.0, 'ore', 98, 0]);
+  // stamp collision
+  P.forEach(function(p){ var rc = p[2] + 0.15; for(z = Math.floor(p[1] - rc); z <= Math.ceil(p[1] + rc); z++) for(x = Math.floor(p[0] - rc); x <= Math.ceil(p[0] + rc); x++) if(x >= 0 && z >= 0 && x < N && z < N && Math.hypot(x + 0.5 - p[0], z + 0.5 - p[1]) < rc) M[z*N + x] = 1; });
+  // seal what the adit can't reach
+  var seen = new Uint8Array(N*N), Q = [SPAWN[1]*N + SPAWN[0]]; seen[Q[0]] = 1;
+  while(Q.length){ var qq = Q.pop(), qx = qq % N, qz = (qq/N)|0; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function(o){ var X = qx + o[0], Z = qz + o[1]; if(X < 0 || Z < 0 || X >= N || Z >= N) return; var kk = Z*N + X; if(seen[kk] || M[kk]) return; seen[kk] = 1; Q.push(kk); }); }
+  var SEALED = 0; for(k = 0; k < N*N; k++) if(!M[k] && !seen[k]){ M[k] = 1; SEALED++; }
+  // ── the crews: a camp in every chamber, the rest down the drifts (none in Drax's pit) ──
+  var SPAWNS = [];
+  var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
+    return Math.hypot(px - PIT[0], pz - PIT[1]) > PIT[2] + 3 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 8; };
+  var put = function(type, cx, cz, rad, sp, camp){ for(var t2 = 0; t2 < 600; t2++){ var a = R()*6.2832, r = t2 ? R()*rad : 0, qx = Math.floor(cx + Math.cos(a)*r), qz = Math.floor(cz + Math.sin(a)*r); if(!clear(qx + 0.5, qz + 0.5)) continue;
+      var ok = true; for(var ii = 0; ii < SPAWNS.length; ii++) if(Math.hypot(SPAWNS[ii].tx - qx, SPAWNS[ii].tz - qz) < sp) ok = false; if(!ok) continue; var o = { tx:qx, tz:qz, type:type }; if(camp) o.camp = true; SPAWNS.push(o); return true; } return false; };
+  var CAMP = ['xu_overseer', 'xu_miner', 'xu_miner', 'blast_sapper', 'crystal_lurker'];
+  ROOMS.forEach(function(r, ri){ if(ri === 0) return; var cx = cellX(r[0]) + 5, cz = cellX(r[1]) + 5; CAMP.forEach(function(ty){ put(ty, cx, cz, 4.5, 1.8, true); }); });
+  var ROAM = ['xu_miner', 'crystal_lurker', 'blast_sapper', 'xu_overseer'], cells = [];
+  for(i = 0; i < C; i++) for(j = 0; j < C; j++) if(vis[j*C + i] === 1) cells.push([i, j]);
+  for(var t3 = 0; t3 < 3000 && SPAWNS.length < 62; t3++){ var c = cells[(R()*cells.length)|0]; var ty = ROAM[t3 % 4]; var cx2 = cellC(c[0]), cz2 = cellC(c[1]); put(ty, cx2, cz2, 1.5, 7, false); if(R() < 0.35) put(ROAM[(t3 + 1) % 4], cx2, cz2, 2.0, 1.8, false); }
+  return { N:N, M:M, CLS:CLS, P:P, SPAWNS:SPAWNS, RAILS:RAILS, ROOMS:ROOMS, PIT:PIT, PITWAYS:PITWAYS, SPAWN:SPAWN, GATE:GATE, C:C, STR:STR, O:O, CW:CW, SEALED:SEALED, fbm:fbm, hs:hs };
+})();
+function _cdWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 80 || z >= 80) return true; return _CD.M[z*80 + x] === 1; }
+function _cdWalkable(wx, wz){ return !_cdWallAt(wx/TILE, wz/TILE); }
+// ════════════════════════════════════════════════════════════════════════════
 // a665 — THE REACH: plan. Shared VERBATIM by the client (70_terrain) and the server
 //   (server.js), fully deterministic, so players and the elites collide with the same ruins.
 //   Tiles. An alien wasteland at the end of creation, with no order to it: broken cliffs
@@ -2153,111 +2235,7 @@ const ZONE_SPAWNS = {
     {type:'iron_guard', tx:224, tz:215}
   ],
   // a540 — MULTIPLAYER MIGRATION: Caves of Despair is now server-authoritative.
-  caves_of_despair: [
-    {type:'xu_miner', tx:8, tz:8},
-    {type:'xu_overseer', tx:14, tz:6},
-    {type:'blast_sapper', tx:18, tz:10},
-    {type:'crystal_lurker', tx:22, tz:8},
-    {type:'xu_miner', tx:26, tz:10},
-    {type:'xu_overseer', tx:30, tz:6},
-    {type:'blast_sapper', tx:44, tz:8},
-    {type:'crystal_lurker', tx:52, tz:6},
-    {type:'xu_miner', tx:60, tz:10},
-    {type:'xu_overseer', tx:68, tz:8},
-    {type:'blast_sapper', tx:74, tz:12},
-    {type:'crystal_lurker', tx:6, tz:16},
-    {type:'xu_miner', tx:8, tz:18},
-    {type:'xu_overseer', tx:10, tz:16},
-    {type:'blast_sapper', tx:6, tz:20},
-    {type:'crystal_lurker', tx:10, tz:20},
-    {type:'xu_miner', tx:32, tz:14},
-    {type:'xu_overseer', tx:34, tz:16},
-    {type:'blast_sapper', tx:36, tz:14},
-    {type:'crystal_lurker', tx:32, tz:18},
-    {type:'xu_miner', tx:62, tz:16},
-    {type:'xu_overseer', tx:64, tz:18},
-    {type:'blast_sapper', tx:66, tz:16},
-    {type:'crystal_lurker', tx:62, tz:20},
-    {type:'xu_miner', tx:14, tz:26},
-    {type:'xu_overseer', tx:16, tz:28},
-    {type:'blast_sapper', tx:18, tz:26},
-    {type:'crystal_lurker', tx:14, tz:30},
-    {type:'xu_miner', tx:18, tz:30},
-    {type:'xu_overseer', tx:50, tz:26},
-    {type:'blast_sapper', tx:52, tz:28},
-    {type:'crystal_lurker', tx:54, tz:26},
-    {type:'xu_miner', tx:50, tz:30},
-    {type:'xu_overseer', tx:54, tz:30},
-    {type:'blast_sapper', tx:24, tz:24},
-    {type:'crystal_lurker', tx:30, tz:26},
-    {type:'xu_miner', tx:40, tz:28},
-    {type:'xu_overseer', tx:44, tz:26},
-    {type:'blast_sapper', tx:60, tz:26},
-    {type:'crystal_lurker', tx:68, tz:28},
-    {type:'xu_miner', tx:74, tz:26},
-    {type:'xu_overseer', tx:6, tz:28},
-    {type:'blast_sapper', tx:8, tz:32},
-    {type:'crystal_lurker', tx:22, tz:34},
-    {type:'xu_miner', tx:28, tz:32},
-    {type:'xu_overseer', tx:70, tz:32},
-    {type:'blast_sapper', tx:74, tz:34},
-    {type:'crystal_lurker', tx:6, tz:40},
-    {type:'xu_miner', tx:10, tz:42},
-    {type:'xu_overseer', tx:14, tz:40},
-    {type:'blast_sapper', tx:16, tz:42},
-    {type:'crystal_lurker', tx:60, tz:40},
-    {type:'xu_miner', tx:64, tz:42},
-    {type:'xu_overseer', tx:70, tz:40},
-    {type:'blast_sapper', tx:74, tz:42},
-    {type:'crystal_lurker', tx:10, tz:50},
-    {type:'xu_miner', tx:12, tz:52},
-    {type:'xu_overseer', tx:14, tz:50},
-    {type:'blast_sapper', tx:10, tz:54},
-    {type:'crystal_lurker', tx:14, tz:54},
-    {type:'xu_miner', tx:36, tz:50},
-    {type:'xu_overseer', tx:38, tz:52},
-    {type:'blast_sapper', tx:40, tz:50},
-    {type:'crystal_lurker', tx:36, tz:54},
-    {type:'xu_miner', tx:40, tz:54},
-    {type:'xu_overseer', tx:64, tz:50},
-    {type:'blast_sapper', tx:66, tz:52},
-    {type:'crystal_lurker', tx:68, tz:50},
-    {type:'xu_miner', tx:64, tz:54},
-    {type:'xu_overseer', tx:68, tz:54},
-    {type:'blast_sapper', tx:22, tz:48},
-    {type:'crystal_lurker', tx:26, tz:52},
-    {type:'xu_miner', tx:30, tz:48},
-    {type:'xu_overseer', tx:48, tz:48},
-    {type:'blast_sapper', tx:54, tz:52},
-    {type:'crystal_lurker', tx:58, tz:48},
-    {type:'xu_miner', tx:22, tz:58},
-    {type:'xu_overseer', tx:28, tz:60},
-    {type:'blast_sapper', tx:48, tz:58},
-    {type:'crystal_lurker', tx:54, tz:60},
-    {type:'xu_miner', tx:10, tz:66},
-    {type:'xu_overseer', tx:12, tz:68},
-    {type:'blast_sapper', tx:14, tz:66},
-    {type:'crystal_lurker', tx:10, tz:70},
-    {type:'xu_miner', tx:14, tz:70},
-    {type:'xu_overseer', tx:36, tz:68},
-    {type:'blast_sapper', tx:38, tz:66},
-    {type:'crystal_lurker', tx:40, tz:68},
-    {type:'xu_miner', tx:36, tz:70},
-    {type:'xu_overseer', tx:40, tz:70},
-    {type:'blast_sapper', tx:38, tz:72},
-    {type:'crystal_lurker', tx:62, tz:66},
-    {type:'xu_miner', tx:64, tz:68},
-    {type:'xu_overseer', tx:66, tz:66},
-    {type:'blast_sapper', tx:62, tz:70},
-    {type:'crystal_lurker', tx:66, tz:70},
-    {type:'xu_miner', tx:20, tz:64},
-    {type:'xu_overseer', tx:26, tz:68},
-    {type:'blast_sapper', tx:48, tz:66},
-    {type:'crystal_lurker', tx:54, tz:68},
-    {type:'xu_miner', tx:24, tz:74},
-    {type:'xu_overseer', tx:50, tz:74},
-    {type:'blast_sapper', tx:72, tz:72}
-  ],
+  caves_of_despair: _CD.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a671 — the crews' camps and the drift patrols, from the shared maze
   // a539 — MULTIPLAYER MIGRATION: The Ashlands is now server-authoritative.
   // a636 — 33 camps nudged a few tiles off the rebuilt Ashlands' lava rivers, lakes and volcano bases
   ashlands: [
@@ -5903,7 +5881,7 @@ const ZBOSS_SERVER = {
 // ── DRAX (a560), Caves of Despair. Drill charges, pile-drivers, a called-in mining
   //    crew and a cave-in. Straight 6-attack rotation.
   caves_of_despair: {
-    x: 180, z: 180,
+    x: 93, z: 93,                                      // a671 — tile (62,62), the heart of Drax's pit (was the 240-map centre: outside this 80-tile mine)
     spd:    [0, 0.022, 0.030, 0.040, 0.052, 0.065],
     dmg:    [0, 1.0,   1.5,   2.1,   2.8,   3.6],
     phases: [0.80, 0.60, 0.40, 0.20],
@@ -8096,7 +8074,7 @@ function tickGame(game) {
         return;
       }
 
-      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach' || zoneName === 'forge' || zoneName === 'dragonlair' || zoneName === 'veiled_sanctuary') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
+      if (zoneName === 'riftvale' || zoneName === 'void_citadel' || zoneName === 'xumen' || zoneName === 'fungal' || zoneName === 'cemetery' || zoneName === 'frostveil' || zoneName === 'necropolis' || zoneName === 'ancient' || zoneName === 'sunken_sands' || zoneName === 'xumen_fortress' || zoneName === 'xeron' || zoneName === 'neon_hollow' || zoneName === 'wyvernwastes' || zoneName === 'xulcan' || zoneName === 'the_reach' || zoneName === 'forge' || zoneName === 'dragonlair' || zoneName === 'veiled_sanctuary' || zoneName === 'caves_of_despair') { e._rv0x = e.x; e._rv0z = e.z; }   // a645 — remembered so no move can end over the void
       // Skip movement AI when no players in zone (save CPU) but reset aggro
       if (!hasPlayers) {
         if (e.aggroed) { e.aggroed = false; e._tgt = null; e.x = e.spawnX; e.z = e.spawnZ; changed.push(e); }
@@ -8192,6 +8170,7 @@ function tickGame(game) {
         else if (zoneName === 'forge') { if (_foWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_foWalkable(nx, e.z)) e.x = nx; else if (_foWalkable(e.x, nz)) e.z = nz; }   // a668 — the works, the lava, the walls
         else if (zoneName === 'dragonlair') { if (_dlWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_dlWalkable(nx, e.z)) e.x = nx; else if (_dlWalkable(e.x, nz)) e.z = nz; }   // a669 — the caldera wall, the volcano, the lava, the nest's rim
         else if (zoneName === 'veiled_sanctuary') { if (_vsWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_vsWalkable(nx, e.z)) e.x = nx; else if (_vsWalkable(e.x, nz)) e.z = nz; }   // a670 — the cathedral's walls, columns and pews
+        else if (zoneName === 'caves_of_despair') { if (_cdWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_cdWalkable(nx, e.z)) e.x = nx; else if (_cdWalkable(e.x, nz)) e.z = nz; }   // a671 — the maze's rock
         else if (zoneName === 'xulcan') { if (_xuWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_xuWalkable(nx, e.z)) e.x = nx; else if (_xuWalkable(e.x, nz)) e.z = nz; }   // a664 — the golden towers, the outpost walls
         else if (zoneName === 'wyvernwastes') { if (_wwWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_wwWalkable(nx, e.z)) e.x = nx; else if (_wwWalkable(e.x, nz)) e.z = nz; }   // a663 — the ranges, crevasses, nest rims and crags
         else if (zoneName === 'neon_hollow') { if (_nhWalkable(nx, nz)) { e.x = nx; e.z = nz; } else if (_nhWalkable(nx, e.z)) e.x = nx; else if (_nhWalkable(e.x, nz)) e.z = nz; }   // a661 — the city's buildings, wall and monorail pylons
@@ -11861,6 +11840,10 @@ function tickGame(game) {
     if (zoneName === 'void_citadel') zone.enemies.forEach(e => {
       if (!e.active || e._rv0x === undefined || _vcWalkable(e.x, e.z)) return;
       if (_vcWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_vcWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
+    });
+    if (zoneName === 'caves_of_despair') zone.enemies.forEach(e => {   // a671 — nothing ends a tick inside the rock
+      if (!e.active || e._rv0x === undefined || _cdWalkable(e.x, e.z)) return;
+      if (_cdWalkable(e.x, e._rv0z)) e.z = e._rv0z; else if (_cdWalkable(e._rv0x, e.z)) e.x = e._rv0x; else { e.x = e._rv0x; e.z = e._rv0z; }
     });
     if (zoneName === 'veiled_sanctuary') zone.enemies.forEach(e => {   // a670 — nothing ends a tick inside the masonry
       if (!e.active || e._rv0x === undefined || _vsWalkable(e.x, e.z)) return;
