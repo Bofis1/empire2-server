@@ -489,6 +489,7 @@ const ENEMY_STATS = {
   prismaraptor:        {hp:255000, atk:460, spd:0.082, aggroRange:14, reward:1600, expR:5000, dmgReduction:0.25},
   sporegon:            {hp:660000, atk:400, spd:0.022, aggroRange:9,  reward:2600, expR:7500, dmgReduction:0.45},
   vortexwisp:          {hp:180000, atk:520, spd:0.070, aggroRange:15, reward:1500, expR:4500, dmgReduction:0.20},
+  dreamjelly:          {hp:300000, atk:480, spd:0.040, aggroRange:16, reward:1800, expR:5600, dmgReduction:0.20},   // a682
   // ── AVIA CANYON (a347) — Lv30 cybernetic birds (client-authoritative; here for parity) ──
   skyscout:            {hp:2800,   atk:95,  spd:0.052, aggroRange:17, reward:240,  expR:200,  dmgReduction:0},
   beakdrone:           {hp:4200,   atk:120, spd:0.070, aggroRange:14, reward:280,  expR:230,  dmgReduction:0.10},
@@ -3962,7 +3963,20 @@ const ZONE_SPAWNS = {
     {type:'prismaraptor', tx:180, tz:210},
     {type:'sporegon', tx:120, tz:150},
     {type:'vortexwisp', tx:110, tz:160},
-    {type:'vortexwisp', tx:130, tz:160}
+    {type:'vortexwisp', tx:130, tz:160},
+    // a682 — the dreamjellies
+    {type:'dreamjelly', tx:114, tz:184},
+    {type:'dreamjelly', tx:126, tz:184},
+    {type:'dreamjelly', tx:80, tz:170},
+    {type:'dreamjelly', tx:160, tz:170},
+    {type:'dreamjelly', tx:98, tz:146},
+    {type:'dreamjelly', tx:142, tz:146},
+    {type:'dreamjelly', tx:120, tz:136},
+    {type:'dreamjelly', tx:86, tz:132},
+    {type:'dreamjelly', tx:154, tz:132},
+    {type:'dreamjelly', tx:120, tz:118},
+    {type:'dreamjelly', tx:50, tz:150},
+    {type:'dreamjelly', tx:190, tz:150}
   ],
   // a332 — XULCAN PRIME mobs are likewise CLIENT-AUTHORITATIVE (bespoke Xu Dominion AI
   //   + abilities run client-side). No ZONE_SPAWNS entry on purpose: the server sends an
@@ -11202,6 +11216,18 @@ function tickGame(game) {
                                    eid:e.id,col:_lwCol(),radius:2.5});
               fx('lw_bloom',{eid:e.id,ex:+tx.toFixed(2),ez:+tz.toFixed(2)}); }
           }
+          else if(e.type==='dreamjelly'){
+            // a682 — DREAMJELLY: drifts in to lash with its tentacles, and pulses a hypnotic
+            //   ring around itself on a cooldown (hits and slows anyone still inside at the end)
+            if(dd>3.0) mv(sin,cos,SP);
+            if(dd<3.6 && e.attackTimer%12===0){ hit(1.0);
+              fx('lw_maul',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            if(dd<14 && e._ab>=28){ e._ab=0;
+              if(!game._sdGeyser) game._sdGeyser=[];
+              game._sdGeyser.push({zone:zoneName,x:e.x,z:e.z,fuse:9,dmg:Math.floor((e.atk||480)*1.4),
+                                   eid:e.id,col:_lwCol(),radius:4.2,slow:0.5,slowDur:1200});
+              fx('lw_hypno',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+          }
           else {
             // vortexwisp — floating prism caster that kites and fires rainbow spells
             if(dd<6) mv(-sin,-cos,SP*0.9);
@@ -12636,7 +12662,7 @@ function _fgTickEntities(game, zoneName, zone){
     }
   }
 }
-const LW_BESPOKE = { prismaraptor:1, sporegon:1, vortexwisp:1 };
+const LW_BESPOKE = { prismaraptor:1, sporegon:1, vortexwisp:1, dreamjelly:1 };
 const _LW_PRISM = [0xff3cf0,0xc94dff,0x6b7bff,0x39e6ff,0x4dffb0,0xfff04d,0xff8a3c];
 function _lwCol(off){ const L=_LW_PRISM.length; return _LW_PRISM[((Math.floor(Date.now()*0.006)+(off|0))%L+L)%L]; }
 const VC_BESPOKE = { void_construct:1, void_sentinel:1, rift_stalker:1, rift_weaver:1 };
