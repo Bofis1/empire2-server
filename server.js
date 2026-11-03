@@ -393,6 +393,7 @@ const ENEMY_STATS = {
   sand_mummy:        {hp:6500,  atk:185, spd:0.022, aggroRange:8,  reward:560,  expR:180,  dmgReduction:0},
   dune_skeleton:     {hp:4800,  atk:195, spd:0.032, aggroRange:9,  reward:480,  expR:156,  dmgReduction:0},
   sand_worm:         {hp:22000, atk:280, spd:0.012, aggroRange:10, reward:1200, expR:360,  dmgReduction:0.25},
+  falcon_sentinel:   {hp:9000,  atk:210, spd:0.040, aggroRange:11, reward:700,  expR:220,  dmgReduction:0.20},   // a684
   mushroom_man:      {hp:880,   atk:52,  spd:0.028, aggroRange:8,  reward:140,  expR:44,   dmgReduction:0},
   spore_walker:      {hp:480,   atk:42,  spd:0.072, aggroRange:9,  reward:100,  expR:32,   dmgReduction:0},
   mycelium_horror:   {hp:2200,  atk:78,  spd:0.018, aggroRange:8,  reward:320,  expR:100,  dmgReduction:0},
@@ -2434,7 +2435,9 @@ const ZONE_SPAWNS = {
     {tx:177,tz:153,type:'sand_scorpion'}, {tx:121,tz:158,type:'sand_scorpion'}, {tx:139,tz:158,type:'sand_scorpion'}, {tx:84,tz:162,type:'sand_scorpion'},
     {tx:106,tz:164,type:'sand_scorpion'}, {tx:165,tz:165,type:'sand_scorpion'}, {tx:134,tz:170,type:'sand_scorpion'}, {tx:101,tz:173,type:'sand_scorpion'},
     {tx:88,tz:174,type:'sand_scorpion'}, {tx:155,tz:177,type:'sand_scorpion'}, {tx:123,tz:181,type:'sand_scorpion'}, {tx:139,tz:195,type:'sand_scorpion'},
-    {tx:21,tz:212,type:'sand_scorpion'}, {tx:214,tz:219,type:'sand_scorpion'}
+    {tx:21,tz:212,type:'sand_scorpion'}, {tx:214,tz:219,type:'sand_scorpion'},
+    // a684 — falcon sentinels guard the ruins
+    {tx:96,tz:46,type:'falcon_sentinel'}, {tx:142,tz:60,type:'falcon_sentinel'}, {tx:76,tz:63,type:'falcon_sentinel'}, {tx:80,tz:82,type:'falcon_sentinel'}, {tx:178,tz:100,type:'falcon_sentinel'}, {tx:181,tz:137,type:'falcon_sentinel'}, {tx:60,tz:162,type:'falcon_sentinel'}, {tx:155,tz:172,type:'falcon_sentinel'}, {tx:61,tz:177,type:'falcon_sentinel'}, {tx:104,tz:199,type:'falcon_sentinel'}
   ],
   // a542 — MULTIPLAYER MIGRATION: Frostveil Tundra is now server-authoritative.
   frostveil: [
@@ -8417,6 +8420,35 @@ function tickGame(game) {
         }
       }
 
+      // ── a684: FALCON SENTINEL — spear reach, SUNSPEAR bolt, FALCON DIVE (marks where you stand, lands there)
+      if (e.type === 'falcon_sentinel' && e.aggroed) {
+        const dx2=nearestPlayer.x-e.x, dz2=nearestPlayer.z-e.z, dd=Math.sqrt(dx2*dx2+dz2*dz2)||0.0001;
+        const s2=dx2/dd, c2=dz2/dd, pr2=c2, pq2=-s2, ang=Math.atan2(dx2,dz2);
+        if (e._strafe===undefined) e._strafe=Math.random()<0.5?1:-1;
+        if (e._fdT>0){ e._fdT--;
+          if (e._fdT===0){ const tx=e._fdX, tz=e._fdZ;
+            if (_snWalkable(tx,tz)){ e.x=tx; e.z=tz; changed.push(e); }
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_shock', zone:zoneName, ex:+tx.toFixed(2), ez:+tz.toFixed(2), col:0xffdf70, r:3.0 });
+            const bd=Math.floor(e.atk*1.5);
+            targetPlayers.forEach(p=>{ const px=p.x-tx, pz=p.z-tz; if(px*px+pz*pz<2.8*2.8){ players.forEach((pp,ws)=>{ if(pp===p) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:bd,ex:+tx.toFixed(2),ez:+tz.toFixed(2),zone:zoneName}); }); } });
+          }
+        } else {
+          const MSs=0.24;
+          if (dd>3.2){ e.x+=(s2*0.9+pr2*e._strafe*0.3)*MSs; e.z+=(c2*0.9+pq2*e._strafe*0.3)*MSs; changed.push(e); }
+          else if (dd<2.2){ e.x-=s2*MSs*0.6; e.z-=c2*MSs*0.6; changed.push(e); }
+          e._fs=(e._fs||0)+1;
+          if (nearestDist<3.8 && e._fs>=9){ e._fs=0; const md=Math.floor(e.atk);
+            players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:md,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); });
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_motes', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), col:0xffdf70, n:4 }); }
+          e._fj=(e._fj||0)+1;
+          if (dd>4 && dd<16 && e._fj>=30){ e._fj=0; _sdSpawnProj(game, zoneName, e, ang, 0xffdf70, Math.floor(e.atk*0.9), 'bolt', null, 0); }
+          e._fd=(e._fd||20)+1;
+          if (dd>5 && dd<18 && e._fd>=55){ e._fd=0; e._fdT=7; e._fdX=nearestPlayer.x; e._fdZ=nearestPlayer.z;
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_geyser_warn', zone:zoneName, ex:+e._fdX.toFixed(2), ez:+e._fdZ.toFixed(2), col:0xffdf70 });
+            broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'sd_poof', zone:zoneName, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2), col:0xffdf70, n:6 }); }
+        }
+      }
+
       // ── a528: SAND WORM — surfaced spouts + geyser volleys, then DIVE into a
       //   racing wake and BREACH up under you. The "thing under the dunes."
       if (e.type === 'sand_worm' && e.aggroed) {
@@ -12031,7 +12063,7 @@ function tickGame(game) {
 }
 
 // a527 — Sunken Sands mobs that run bespoke server AI (skip the generic chase/melee).
-const SD_BESPOKE = { sand_scorpion:1, desert_snake:1, dune_skeleton:1, sand_mummy:1, sand_worm:1 };
+const SD_BESPOKE = { sand_scorpion:1, desert_snake:1, dune_skeleton:1, sand_mummy:1, sand_worm:1, falcon_sentinel:1 };
 // a529 — XU PATROL bespoke AI (zone-gated: these types also live in other zones,
 //   so their patrol kit only runs when zoneName==='patrol'). PM_PWR = damage dials.
 const PATROL_BESPOKE = { xu_rebel:1, bandit:1, bandit_archer:1, sniper:1, wraith:1, xu_scout:1, xu_siege_bot:1, xu_commander:1 };
