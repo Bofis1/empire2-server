@@ -960,27 +960,27 @@ var _WW = (function(){
   // ── the wyverns ──
   var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= 240 || zz >= 240 || M[zz*240 + xx]) return false; }
     return Math.hypot(px - CX, pz - CZ) > ARENA + 4 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 18; };
-  var SPAWNS = [], cnt = { wyvern_warlord:0, deep_wyrm:0, elder_dragon:0, frost_drakeling:0, glacier_basilisk:0 }, CAP = { wyvern_warlord:72, deep_wyrm:64, elder_dragon:54, frost_drakeling:42, glacier_basilisk:22 };
+  var SPAWNS = [], cnt = { wyvern_warlord:0, deep_wyrm:0, elder_dragon:0, frost_drakeling:0, glacier_basilisk:0 }, CAP = { wyvern_warlord:36, deep_wyrm:30, elder_dragon:26, frost_drakeling:18, glacier_basilisk:12 };
   var put = function(px, pz, type, jit){ if(cnt[type] >= CAP[type]) return false; for(var tr = 0; tr < 20; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
       if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type]++; return true; } } return false; };
   CAMPS.forEach(function(c, ci){ var cx = c[0], cz = c[1];
-    if(c[3] === 'nest'){ for(k = 0; k < 4; k++){ var a = k/4*6.283 + 0.4; put(cx + Math.cos(a)*2.6, cz + Math.sin(a)*2.6, 'wyvern_warlord', 0.3); } if(ci % 3 === 0) put(cx + Math.cos(c[5])*8, cz + Math.sin(c[5])*8, 'elder_dragon'); }
-    else if(c[3] === 'burrow'){ for(k = 0; k < 5; k++){ var a = k/5*6.283; put(cx + Math.cos(a)*3.6, cz + Math.sin(a)*3.6, 'deep_wyrm', 0.4); } }
-    else { for(k = 0; k < 5; k++){ var a = k/5*6.283 + 0.9; put(cx + Math.cos(a)*3.4, cz + Math.sin(a)*3.4, 'elder_dragon', 0.3); } } });
+    if(c[3] === 'nest'){ for(k = 0; k < 2; k++){ var a = k/2*6.283 + 0.4; put(cx + Math.cos(a)*2.6, cz + Math.sin(a)*2.6, 'wyvern_warlord', 0.3); } if(ci % 3 === 0) put(cx + Math.cos(c[5])*8, cz + Math.sin(c[5])*8, 'elder_dragon'); }
+    else if(c[3] === 'burrow'){ for(k = 0; k < 2; k++){ var a = k/2*6.283; put(cx + Math.cos(a)*3.6, cz + Math.sin(a)*3.6, 'deep_wyrm', 0.4); } }
+    else { for(k = 0; k < 2; k++){ var a = k/2*6.283 + 0.9; put(cx + Math.cos(a)*3.4, cz + Math.sin(a)*3.4, 'elder_dragon', 0.3); } } });
   // the rest hunt the trails and the snowfields in pairs
   var types = ['wyvern_warlord', 'deep_wyrm', 'elder_dragon'];
   for(var t = 0; t < 6000 && SPAWNS.length < 190; t++){ var ty = types[t % 3]; if(cnt[ty] >= CAP[ty]) continue; var px = 14 + R()*212, pz = 14 + R()*212; if(!farFrom(px, pz, CAMPS, 9)) continue;
-    if(put(px, pz, ty)){ put(px + 2, pz + 1, ty); } }
+    put(px, pz, ty); }
   // a688 — the two new hunters, placed after everything else so no earlier draw moves:
   //   drakeling packs prowl outside the nests, basilisks guard the burrows and shrines.
-  CAMPS.forEach(function(c){ var cx = c[0], cz = c[1];
-    if(c[3] === 'nest'){ for(k = 0; k < 3; k++){ var a = (c[5] || 0) + 2.2 + k*0.55; put(cx + Math.cos(a)*9.5, cz + Math.sin(a)*9.5, 'frost_drakeling', 0.6); } }
+  CAMPS.forEach(function(c, ci){ var cx = c[0], cz = c[1];
+    if(c[3] === 'nest'){ if(ci % 2) return; for(k = 0; k < 2; k++){ var a = (c[5] || 0) + 2.2 + k*0.55; put(cx + Math.cos(a)*9.5, cz + Math.sin(a)*9.5, 'frost_drakeling', 0.6); } }
     else if(c[3] === 'burrow'){ put(cx + 5.5, cz + 1.5, 'glacier_basilisk', 0.6); }
     else { put(cx + Math.cos(2.4)*9.5, cz + Math.sin(2.4)*9.5, 'glacier_basilisk', 0.6); } });
   var types2 = ['frost_drakeling', 'frost_drakeling', 'glacier_basilisk'];
   for(var t2 = 0; t2 < 6000; t2++){ if(cnt.frost_drakeling >= CAP.frost_drakeling && cnt.glacier_basilisk >= CAP.glacier_basilisk) break;
     var ty2 = types2[t2 % 3]; if(cnt[ty2] >= CAP[ty2]) continue; var px2 = 14 + R()*212, pz2 = 14 + R()*212; if(!farFrom(px2, pz2, CAMPS, 9)) continue;
-    if(put(px2, pz2, ty2) && ty2 === 'frost_drakeling'){ put(px2 + 1.6, pz2 + 1, ty2); put(px2 - 1, pz2 + 1.8, ty2); } }
+    if(put(px2, pz2, ty2) && ty2 === 'frost_drakeling'){ put(px2 + 1.6, pz2 + 1, ty2); } }
   return { M:M, MT:MT, CR:CR, P:P, CAMPS:CAMPS, SPAWNS:SPAWNS, TRAILS:TRAILS, CX:CX, CZ:CZ, ARENA:ARENA, SPAWN:SPAWN, SEALED:SEALED, trail:trail, mtn:mtn, crev:crev, fbm:fbm, hs:hs };
 })();
 function _wwWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _WW.M[z*240 + x] === 1; }
