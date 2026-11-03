@@ -416,6 +416,7 @@ const ENEMY_STATS = {
   necro_wight:       {hp:72000, atk:640, spd:0.038, aggroRange:10, reward:3800, expR:1250, dmgReduction:0.35},
   necro_abomination: {hp:130000,atk:820, spd:0.022, aggroRange:9,  reward:5200, expR:1600, dmgReduction:0.45},
   necro_lich_mage:   {hp:58000, atk:720, spd:0.030, aggroRange:16, reward:4400, expR:1400, dmgReduction:0.28},
+  necro_vampire:     {hp:95000, atk:700, spd:0.050, aggroRange:14, reward:4800, expR:1500, dmgReduction:0.35},   // a683
   xf_titan_elite:    {hp:60000, atk:780, spd:0.048, aggroRange:13, reward:4200, expR:1400, dmgReduction:0.44},
   xf_fortress_drone: {hp:39000, atk:660, spd:0.110, aggroRange:15, reward:3600, expR:1200, dmgReduction:0.36},
   xf_siege_walker:   {hp:120000,atk:900, spd:0.014, aggroRange:11, reward:5400, expR:1600, dmgReduction:0.50},
@@ -3339,7 +3340,22 @@ const ZONE_SPAWNS = {
     {type:'necro_abomination', tx:104, tz:44},
     {type:'necro_abomination', tx:141, tz:70},
     {type:'necro_abomination', tx:192, tz:18},
-    {type:'necro_abomination', tx:139, tz:141}
+    {type:'necro_abomination', tx:139, tz:141},
+    // a683 — a vampire lord leads every camp
+    {type:'necro_vampire', tx:24, tz:33},
+    {type:'necro_vampire', tx:58, tz:46},
+    {type:'necro_vampire', tx:38, tz:64},
+    {type:'necro_vampire', tx:199, tz:29},
+    {type:'necro_vampire', tx:184, tz:49},
+    {type:'necro_vampire', tx:209, tz:73},
+    {type:'necro_vampire', tx:37, tz:208},
+    {type:'necro_vampire', tx:60, tz:187},
+    {type:'necro_vampire', tx:34, tz:219},
+    {type:'necro_vampire', tx:200, tz:199},
+    {type:'necro_vampire', tx:171, tz:195},
+    {type:'necro_vampire', tx:202, tz:172},
+    {type:'necro_vampire', tx:112, tz:45},
+    {type:'necro_vampire', tx:125, tz:202}
   ],
   // a552 — XUMEN FORTRESS is now SERVER-AUTHORITATIVE (was client-side since a490).
   //   200 spawns lifted verbatim from the client's enemySpawns in 80_zone_defs.part.
@@ -9469,6 +9485,26 @@ function tickGame(game) {
             if(dd<6){ plagueHit(0.7); toPlayer({ eff:'slow', slow:0.5, root:1300 }); } }
           if(dd<3.5 && (e._ph=(e._ph||0)+1)>=25){ e._ph=0; npBlink(8); }
         }
+        else if(e.type==='necro_vampire'){
+          // a683 — VAMPIRE LORD: closes and circles; bloodblade strikes that drink life; BLOOD DASH
+          //   (blink to the far side of you, then strike); CRIMSON SIGIL (a slowing blood circle).
+          const MS=0.3, _VB=0xc01030;
+          if(dd>2.6) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS); else mv(pr*strafe*0.8,pq*strafe*0.8,MS*0.7);
+          const drink=(f)=>{ const mh=e.maxHp||e.hp; e.hp=Math.min(mh, e.hp+Math.round(mh*f)); _moved=true; };
+          if(dd<3.0 && e.attackTimer%7===0){
+            players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_npDmgS(e,1.0),ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),zone:zoneName}); });
+            drink(0.02); broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_poof',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_VB,n:4}); }
+          if(dd>5 && dd<18 && e._ab>=33){
+            const nx=nearestPlayer.x+sin*2.4, nz=nearestPlayer.z+cos*2.4;
+            if(_npWalkable(nx,nz)){ e._ab=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0x400010});
+              e.x=nx; e.z=nz; _moved=true; e.attackTimer=6;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_rift',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_VB}); } }
+          e._sig=(e._sig||15)+1;
+          if(dd<16 && e._sig>=43){ e._sig=0; if(!game._sdGeyser) game._sdGeyser=[];
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'vs_halo',zone:zoneName,ex:+nearestPlayer.x.toFixed(2),ez:+nearestPlayer.z.toFixed(2),col:_VB,ms:800});
+            game._sdGeyser.push({ zone:zoneName, x:nearestPlayer.x, z:nearestPlayer.z, fuse:8, dmg:_npDmgS(e,1.3), eid:e.id, col:_VB, radius:3.6, slow:0.5, slowDur:1200 }); }
+        }
         else { // necro_wight — BONE BRUISER
           const MS=0.228;
           if(dd>2.8) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS); else mv(pr*strafe,pq*strafe,MS);
@@ -12040,7 +12076,7 @@ const ELD_BESPOKE = { ancient_guardian:1, stone_sentinel:1, vine_horror:1, void_
 // a544 — NECROPOLIS plague/death AI (zone-gated to 'necropolis'). NO HP or ATK multiplier here:
 //   these four are already E13-huge in ENEMY_STATS with baked dmgReduction (0.28-0.45), which
 //   the client kit deliberately leaves alone. Damage mirrors the client's flat _NP_PWR floor.
-const NP_BESPOKE = { necro_abomination:1, necro_lich_mage:1, necro_specter:1, necro_wight:1 };
+const NP_BESPOKE = { necro_abomination:1, necro_lich_mage:1, necro_specter:1, necro_wight:1, necro_vampire:1 };
 // a545 — VEILED SANCTUARY ritual AI (zone-gated to 'veiled_sanctuary'). Eight types, the
 //   largest roster yet, two of them elites. NO HP/ATK multiplier: like the necropolis these are
 //   already huge in ENEMY_STATS with baked dmgReduction, and the client kit leaves them alone.
@@ -12738,7 +12774,7 @@ function _dlDmgS(e, mult){ return Math.floor((DL_PWR[e.type] || e.atk || 275) * 
 //   zone's mobs do, but only the mobs were ever mirrored here, so the boss had no entry.
 const VS_PWR = { veiled_acolyte:185, censer_bearer:205, penitent_striker:215, choir_wraith:195, stone_inquisitor:235, ritual_guardian:220, veiled_cardinal:290, forsaken_abbot:320, final_abbot:380 };
 function _vsDmgS(e, mult){ return Math.floor((VS_PWR[e.type] || e.atk || 200) * mult); }
-const NP_PWR = { necro_abomination:240, necro_wight:190, necro_lich_mage:200, necro_specter:170 };
+const NP_PWR = { necro_abomination:240, necro_wight:190, necro_lich_mage:200, necro_specter:170, necro_vampire:230 };
 function _npDmgS(e, mult){ return Math.floor((NP_PWR[e.type] || e.atk || 180) * mult); }
 const ELD_PWR = { ancient_guardian:170, stone_sentinel:160, vine_horror:130, void_stalker:120 };
 function _eldDmgS(e, mult){ return Math.floor((ELD_PWR[e.type] || e.atk || 120) * 2.2 * mult); }
