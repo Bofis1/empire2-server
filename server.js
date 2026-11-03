@@ -374,6 +374,8 @@ const ENEMY_STATS = {
   wyvern_warlord:    {hp:55000, atk:400, spd:0.065, aggroRange:15, reward:1600, expR:550,  dmgReduction:0},
   elder_dragon:      {hp:90000, atk:480, spd:0.040, aggroRange:14, reward:2000, expR:680,  dmgReduction:0},
   deep_wyrm:         {hp:75000, atk:440, spd:0.030, aggroRange:11, reward:1800, expR:600,  dmgReduction:0},
+  frost_drakeling:   {hp:30000, atk:340, spd:0.085, aggroRange:15, reward:1200, expR:420,  dmgReduction:0},      // a688
+  glacier_basilisk:  {hp:95000, atk:460, spd:0.028, aggroRange:13, reward:2200, expR:720,  dmgReduction:0.30},   // a688
   xu_titan:          {hp:36000, atk:360, spd:0.042, aggroRange:12, reward:1800, expR:600,  dmgReduction:0.38},
   xu_warframe:       {hp:40000, atk:370, spd:0.036, aggroRange:14, reward:2200, expR:700,  dmgReduction:0.40},   // a648
   xu_enforcer:       {hp:24000, atk:300, spd:0.100, aggroRange:14, reward:1500, expR:520,  dmgReduction:0.32},
@@ -958,7 +960,7 @@ var _WW = (function(){
   // ── the wyverns ──
   var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= 240 || zz >= 240 || M[zz*240 + xx]) return false; }
     return Math.hypot(px - CX, pz - CZ) > ARENA + 4 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 18; };
-  var SPAWNS = [], cnt = { wyvern_warlord:0, deep_wyrm:0, elder_dragon:0 }, CAP = { wyvern_warlord:72, deep_wyrm:64, elder_dragon:54 };
+  var SPAWNS = [], cnt = { wyvern_warlord:0, deep_wyrm:0, elder_dragon:0, frost_drakeling:0, glacier_basilisk:0 }, CAP = { wyvern_warlord:72, deep_wyrm:64, elder_dragon:54, frost_drakeling:42, glacier_basilisk:22 };
   var put = function(px, pz, type, jit){ if(cnt[type] >= CAP[type]) return false; for(var tr = 0; tr < 20; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
       if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type]++; return true; } } return false; };
   CAMPS.forEach(function(c, ci){ var cx = c[0], cz = c[1];
@@ -969,6 +971,16 @@ var _WW = (function(){
   var types = ['wyvern_warlord', 'deep_wyrm', 'elder_dragon'];
   for(var t = 0; t < 6000 && SPAWNS.length < 190; t++){ var ty = types[t % 3]; if(cnt[ty] >= CAP[ty]) continue; var px = 14 + R()*212, pz = 14 + R()*212; if(!farFrom(px, pz, CAMPS, 9)) continue;
     if(put(px, pz, ty)){ put(px + 2, pz + 1, ty); } }
+  // a688 — the two new hunters, placed after everything else so no earlier draw moves:
+  //   drakeling packs prowl outside the nests, basilisks guard the burrows and shrines.
+  CAMPS.forEach(function(c){ var cx = c[0], cz = c[1];
+    if(c[3] === 'nest'){ for(k = 0; k < 3; k++){ var a = (c[5] || 0) + 2.2 + k*0.55; put(cx + Math.cos(a)*9.5, cz + Math.sin(a)*9.5, 'frost_drakeling', 0.6); } }
+    else if(c[3] === 'burrow'){ put(cx + 5.5, cz + 1.5, 'glacier_basilisk', 0.6); }
+    else { put(cx + Math.cos(2.4)*9.5, cz + Math.sin(2.4)*9.5, 'glacier_basilisk', 0.6); } });
+  var types2 = ['frost_drakeling', 'frost_drakeling', 'glacier_basilisk'];
+  for(var t2 = 0; t2 < 6000; t2++){ if(cnt.frost_drakeling >= CAP.frost_drakeling && cnt.glacier_basilisk >= CAP.glacier_basilisk) break;
+    var ty2 = types2[t2 % 3]; if(cnt[ty2] >= CAP[ty2]) continue; var px2 = 14 + R()*212, pz2 = 14 + R()*212; if(!farFrom(px2, pz2, CAMPS, 9)) continue;
+    if(put(px2, pz2, ty2) && ty2 === 'frost_drakeling'){ put(px2 + 1.6, pz2 + 1, ty2); put(px2 - 1, pz2 + 1.8, ty2); } }
   return { M:M, MT:MT, CR:CR, P:P, CAMPS:CAMPS, SPAWNS:SPAWNS, TRAILS:TRAILS, CX:CX, CZ:CZ, ARENA:ARENA, SPAWN:SPAWN, SEALED:SEALED, trail:trail, mtn:mtn, crev:crev, fbm:fbm, hs:hs };
 })();
 function _wwWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _WW.M[z*240 + x] === 1; }
@@ -10094,6 +10106,36 @@ function tickGame(game) {
                 fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_EARTH,n:3}); }
             }
           }
+          else if(e.type==='frost_drakeling'){
+            // a688 — FROST DRAKELING: pack hunter — circles and snaps, POUNCES; the frost bite slows
+            const MS=0.51*_pk;
+            if(e._pn>0){ e._pn--; mv(Math.sin(e._pd),Math.cos(e._pd),MS*3.2);
+              const _px=nearestPlayer.x-e.x, _pz=nearestPlayer.z-e.z;
+              if(Math.sqrt(_px*_px+_pz*_pz)<2.4 && !e._ph){ e._ph=1; hit(1.2); toPlayer({eff:'slow',slow:0.6,root:800});
+                fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_FROST,n:6}); } }
+            else {
+              if(dd>2.2) mv(sin*0.7+pr*strafe*0.55, cos*0.7+pq*strafe*0.55, MS); else mv(pr*strafe,pq*strafe,MS*0.8);
+              if(dd<2.6 && e.attackTimer%8===0){ hit(0.9); fx('sd_motes',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_FROST,n:3}); }
+              e._pc=(e._pc||Math.floor(Math.random()*20))+1;
+              if(dd>3 && dd<9 && e._pc>=35){ e._pc=0; e._pn=3; e._pd=ang; e._ph=0; fx('sd_poof',{ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_WW_FROST,n:5}); }
+            }
+          }
+          else if(e.type==='glacier_basilisk'){
+            // a688 — GLACIER BASILISK: lumbers in, rakes; FREEZING GAZE (a line of frost that roots);
+            //   ICE SPIKES (a ring erupting round you)
+            const MS=0.168*_pk;
+            if(dd>3.4) mv(sin,cos,MS);
+            if(dd<3.8 && e.attackTimer%14===0){ hit(1.1); toPlayer({eff:'shake',shake:2}); }
+            if(!game._sdGeyser) game._sdGeyser=[];
+            if(dd>3 && dd<13 && e._ab>=40){ e._ab=0;
+              for(let fi=0;fi<4;fi++){ const fr=(fi+1)/4, gx=e.x+(nearestPlayer.x-e.x)*fr, gz=e.z+(nearestPlayer.z-e.z)*fr;
+                game._sdGeyser.push({zone:zoneName,x:gx,z:gz,fuse:5+fi*2,dmg:_wwDmgS(e,0.7),eid:e.id,col:_WW_ICE,radius:2.4,slow:0.35,slowDur:1200});
+                fx('sd_geyser_warn',{ex:+gx.toFixed(2),ez:+gz.toFixed(2),col:_WW_ICE}); } }
+            e._sp2=(e._sp2||17)+1;
+            if(dd<10 && e._sp2>=50){ e._sp2=0; for(let k=0;k<5;k++){ const a=k/5*6.283, gx=nearestPlayer.x+Math.cos(a)*1.6, gz=nearestPlayer.z+Math.sin(a)*1.6;
+              game._sdGeyser.push({zone:zoneName,x:gx,z:gz,fuse:7,dmg:_wwDmgS(e,0.6),eid:e.id,col:_WW_FROST,radius:1.8});
+              fx('sd_geyser_warn',{ex:+gx.toFixed(2),ez:+gz.toFixed(2),col:_WW_FROST}); } }
+          }
           else {
             // ELDER OF THE WASTES — stomps, GLACIAL FLAMEBREATH, TAIL SWEEP, FROSTFIRE ROAR
             const MS=0.192*_pk;
@@ -12793,8 +12835,8 @@ function _nhTag(game, zoneName, tgt){
     send(ws, { type:'sv_player_fx', zone:zoneName, eff:'nh_tag', ms:NH_TAG_MS }); });
 }
 const _NH_MAG=0xff3cff, _NH_CYN=0x00e0ff, _NH_CHROME=0xdfe8f0, _NH_AMBER=0xffa000, _NH_WHITE=0xffffff;
-const WW_BESPOKE = { wyvern_warlord:1, deep_wyrm:1, elder_dragon:1 };
-const WW_PWR = { wyvern_warlord:250, deep_wyrm:240, elder_dragon:265 };
+const WW_BESPOKE = { wyvern_warlord:1, deep_wyrm:1, elder_dragon:1, frost_drakeling:1, glacier_basilisk:1 };
+const WW_PWR = { wyvern_warlord:250, deep_wyrm:240, elder_dragon:265, frost_drakeling:230, glacier_basilisk:260 };
 function _wwDmgS(e, mult){ return Math.floor((WW_PWR[e.type] || e.atk || 240) * mult); }
 const _WW_FIRE=0xff5500, _WW_EMBER=0xff8830, _WW_ICE=0x80c8ff, _WW_FROST=0xd8ecff, _WW_VENOM=0x88cc00, _WW_EARTH=0xaa6600;
 const RV_BESPOKE = { void_colossus:1, rift_stalker:1, psyche_horror:1, rift_weaver:1 };
