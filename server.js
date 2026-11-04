@@ -8125,7 +8125,7 @@ function _e2CrowdSpread(game, zoneName, zone, changed){
         if (d2 >= need*need) continue;
         let d = Math.sqrt(d2), ux, uz;
         if (d < 0.001){ const a = (e.id || 0)*2.399; ux = Math.cos(a); uz = Math.sin(a); d = 0; } else { ux = dx/d; uz = dz/d; }
-        const share = chasing(o) ? 0.5 : 1.0;   // two chasers split the overlap; an idle one doesn't move
+        const share = chasing(o) ? _spreadRadius(o)/(re + _spreadRadius(o)) : 1.0;   // a698 — chasers split the overlap by size (big ones barely budge); an idle one doesn't move
         const m = (need - d)*share*0.6;
         add(e, ux*m, uz*m);
       }
@@ -11594,8 +11594,10 @@ function tickGame(game) {
             if(!e._overheat && e.hp < e.maxHp*0.4 && e._ab>20 && Math.random()<0.02){
               e._overheat=50;                                   // 300 frames
               fx('fg_overheat',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
-            if(dd<14) mv(-sin,-cos,SP);
-            else if(dd>24) mv(sin,cos,SP*0.8);
+            // a698 — it plants itself and shells you: closes in when you're far, holds its ground
+            //   when you're near. (It used to back away under 14u with no wall check, so it reversed
+            //   into the foundry machinery and the zone's wall correction snapped it back every tick.)
+            if(dd>18){ const nx=e.x+sin*SP*0.8, nz=e.z+cos*SP*0.8; if(_foWalkable(nx,nz)){ e.x=nx; e.z=nz; _moved=true; } else if(_foWalkable(nx,e.z)){ e.x=nx; _moved=true; } else if(_foWalkable(e.x,nz)){ e.z=nz; _moved=true; } }
             if(dd<6 && e.attackTimer%8===0) hit(0.8);
             // CANNON BARRAGE — five shells that leave burning craters
             e._bar=(e._bar||7)+1;
