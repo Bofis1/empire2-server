@@ -407,6 +407,7 @@ const ENEMY_STATS = {
   magma_crab:        {hp:2400,  atk:82,  spd:0.020, aggroRange:7,  reward:340,  expR:108,  dmgReduction:0},
   void_phantom:      {hp:720,   atk:65,  spd:0.062, aggroRange:11, reward:170,  expR:55,   dmgReduction:0},
   stone_sentinel:    {hp:2800,  atk:88,  spd:0.016, aggroRange:8,  reward:360,  expR:115,  dmgReduction:0},
+  jade_serpent:      {hp:2000,  atk:80,  spd:0.034, aggroRange:11, reward:300,  expR:95,   dmgReduction:0},   // a699
   vine_horror:       {hp:1400,  atk:72,  spd:0.026, aggroRange:9,  reward:260,  expR:82,   dmgReduction:0},
   skeleton_warrior:  {hp:720,   atk:52,  spd:0.028, aggroRange:8,  reward:120,  expR:38,   dmgReduction:0},
   grave_crawler:     {hp:600,   atk:44,  spd:0.065, aggroRange:9,  reward:95,   expR:32,   dmgReduction:0},
@@ -2798,7 +2799,9 @@ const ZONE_SPAWNS = {
     {type:'stone_sentinel', tx:187, tz:222},
     {type:'stone_sentinel', tx:73, tz:205},
     {type:'stone_sentinel', tx:208, tz:130},
-    {type:'stone_sentinel', tx:67, tz:103}
+    {type:'stone_sentinel', tx:67, tz:103},
+    // a699 — jade serpents circle the temples
+    {type:'jade_serpent', tx:37, tz:69}, {type:'jade_serpent', tx:85, tz:35}, {type:'jade_serpent', tx:67, tz:73}, {type:'jade_serpent', tx:201, tz:73}, {type:'jade_serpent', tx:161, tz:54}, {type:'jade_serpent', tx:43, tz:172}, {type:'jade_serpent', tx:64, tz:212}, {type:'jade_serpent', tx:89, tz:170}, {type:'jade_serpent', tx:170, tz:203}, {type:'jade_serpent', tx:167, tz:187}, {type:'jade_serpent', tx:98, tz:92}, {type:'jade_serpent', tx:144, tz:97},
   ],
   // a546 — MULTIPLAYER MIGRATION: Vaeltharax's Lair is now server-authoritative.
   dragonlair: _DL.SPAWNS.map(s => ({ type:s.type, tx:s.tx, tz:s.tz })),   // a669 — the lair's beasts, from the shared plan (never in the nest or Eyexor's grotto)
@@ -9530,6 +9533,24 @@ function tickGame(game) {
             _pmShock(game,zoneName,e,e.x,e.z,4.0,(dd<4.5?_eldDmgS(e,0.9):0),_EJ,players,send);
             if(!(e._eldHealCD>0) && e.hp<e.maxHp){ e.hp=Math.min(e.maxHp, e.hp+Math.floor(e.maxHp*0.06)); e._eldHealCD=40; changed.push(e); } }
         }
+        else if(e.type==='jade_serpent'){
+          // a699 — JADE SERPENT: circles at mid range; SUN BOLTS; COIL DIVE (a line strike through you);
+          //   FEATHER STORM (a ring of jade plumes when you crowd it)
+          const MS=0.204;
+          if(e._dive>0){ e._dive--; mv(Math.sin(e._dd),Math.cos(e._dd),MS*3.4);
+            if(dd<2.4 && !e._dh){ e._dh=1; hit(_eldDmgS(e,1.2)); } }
+          else {
+            if(dd<7) mv(-sin*0.6+pr*strafe*0.7,-cos*0.6+pq*strafe*0.7,MS);
+            else if(dd>13) mv(sin*0.7+pr*strafe*0.3,cos*0.7+pq*strafe*0.3,MS);
+            else mv(pr*strafe,pq*strafe,MS);
+            if(dd>3 && dd<18 && e.attackTimer%9===0) shoot(ang,_EG,0.55,3,0.18);
+            e._dv=(e._dv||Math.floor(Math.random()*16))+1;
+            if(dd>4 && dd<12 && e._dv>=33){ e._dv=0; e._dive=3; e._dd=ang; e._dh=0;
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_EJ,n:6}); }
+            e._fs=(e._fs||10)+1; if(dd<6 && e._fs>=40){ e._fs=0; for(let i=0;i<8;i++) _sdSpawnProj(game,zoneName,e,i*0.785,_EJ,_eldDmgS(e,0.6),'plasma',null,0);
+              broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_poof',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:_EJ,n:8}); }
+          }
+        }
         else { // void_stalker (ANCIENT PHANTOM — a different kit from the Void Wastes stalker)
           const MS=0.27;
           if(e._lunge){ e._lst=(e._lst||0)+1;
@@ -12253,7 +12274,7 @@ const FZ_BESPOKE = { ice_golem:1, polar_bear:1, frost_wraith:1, frost_specter:1,
 // a543 — ANCIENT REALM arcane AI (zone-gated to 'ancient'). NOTE void_stalker also lives in
 //   the (already migrated) Void Wastes with a completely different kit — the zone gate is what
 //   keeps the two apart, so never drop it. Client bumps HP x7.0 AND ATK x2.2 zone-locally.
-const ELD_BESPOKE = { ancient_guardian:1, stone_sentinel:1, vine_horror:1, void_stalker:1 };
+const ELD_BESPOKE = { ancient_guardian:1, stone_sentinel:1, vine_horror:1, void_stalker:1, jade_serpent:1 };
 // a544 — NECROPOLIS plague/death AI (zone-gated to 'necropolis'). NO HP or ATK multiplier here:
 //   these four are already E13-huge in ENEMY_STATS with baked dmgReduction (0.28-0.45), which
 //   the client kit deliberately leaves alone. Damage mirrors the client's flat _NP_PWR floor.
@@ -12957,7 +12978,7 @@ const VS_PWR = { veiled_acolyte:185, censer_bearer:205, penitent_striker:215, ch
 function _vsDmgS(e, mult){ return Math.floor((VS_PWR[e.type] || e.atk || 200) * mult); }
 const NP_PWR = { necro_abomination:240, necro_wight:190, necro_lich_mage:200, necro_specter:170, necro_vampire:230 };
 function _npDmgS(e, mult){ return Math.floor((NP_PWR[e.type] || e.atk || 180) * mult); }
-const ELD_PWR = { ancient_guardian:170, stone_sentinel:160, vine_horror:130, void_stalker:120 };
+const ELD_PWR = { ancient_guardian:170, stone_sentinel:160, vine_horror:130, void_stalker:120, jade_serpent:140 };
 function _eldDmgS(e, mult){ return Math.floor((ELD_PWR[e.type] || e.atk || 120) * 2.2 * mult); }
 const FZ_PWR = { ice_golem:140, polar_bear:120, frost_wraith:100, frost_specter:95, frost_yeti:130 };
 function _fzDmgS(e, mult){ return Math.floor((FZ_PWR[e.type] || e.atk || 90) * 2.2 * mult); }
