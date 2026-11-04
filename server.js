@@ -400,6 +400,7 @@ const ENEMY_STATS = {
   spore_walker:      {hp:480,   atk:42,  spd:0.072, aggroRange:9,  reward:100,  expR:32,   dmgReduction:0},
   mycelium_horror:   {hp:2200,  atk:78,  spd:0.018, aggroRange:8,  reward:320,  expR:100,  dmgReduction:0},
   polar_bear:        {hp:1800,  atk:88,  spd:0.038, aggroRange:10, reward:280,  expR:90,   dmgReduction:0},
+  frost_yeti:        {hp:2600,  atk:92,  spd:0.030, aggroRange:10, reward:340,  expR:110,  dmgReduction:0},   // a691
   ice_golem:         {hp:3200,  atk:95,  spd:0.016, aggroRange:7,  reward:380,  expR:120,  dmgReduction:0},
   frost_specter:     {hp:680,   atk:62,  spd:0.052, aggroRange:11, reward:160,  expR:52,   dmgReduction:0},
   ash_wraith:        {hp:2200,  atk:88,  spd:0.048, aggroRange:10, reward:200,  expR:80,   dmgReduction:0},
@@ -2592,7 +2593,9 @@ const ZONE_SPAWNS = {
     {type:'frost_specter', tx:217, tz:24},
     {type:'frost_specter', tx:15, tz:17},
     {type:'frost_specter', tx:15, tz:18},
-    {type:'frost_specter', tx:15, tz:16}
+    {type:'frost_specter', tx:15, tz:16},
+    // a691 — yetis prowl near the covens and the packs
+    {type:'frost_yeti', tx:203, tz:135}, {type:'frost_yeti', tx:47, tz:154}, {type:'frost_yeti', tx:203, tz:91}, {type:'frost_yeti', tx:141, tz:206}, {type:'frost_yeti', tx:110, tz:37}, {type:'frost_yeti', tx:94, tz:205}, {type:'frost_yeti', tx:152, tz:206}, {type:'frost_yeti', tx:84, tz:39}, {type:'frost_yeti', tx:218, tz:131}, {type:'frost_yeti', tx:30, tz:81}, {type:'frost_yeti', tx:225, tz:153}, {type:'frost_yeti', tx:43, tz:194}, {type:'frost_yeti', tx:196, tz:43}, {type:'frost_yeti', tx:217, tz:193},
   ],
   // a543 — MULTIPLAYER MIGRATION: Ancient Realm is now server-authoritative.
   ancient: [
@@ -9317,6 +9320,15 @@ function tickGame(game) {
             e._roar=(e._roar||0)+1; if(dd<16 && e._roar>=53){ e._roar=0; snowstorm(10,0.35); }
           }
         }
+        else if(e.type==='frost_yeti'){
+          // a691 — YETI: lumbers in and swipes; HURLS a block of ice that bursts where you stand;
+          //   pounds the ground — a frost nova that freezes you if you're close
+          const MS=0.18;
+          if(dd>3.0) mv(sin*0.92+pr*strafe*0.2, cos*0.92+pq*strafe*0.2, MS);
+          if(dd<3.2 && e.attackTimer%10===0){ hit(_fzDmgS(e,1.1)); toPlayer({ eff:'shake', shake:1 }); }
+          if(dd>5 && dd<16 && e._ab>=30){ e._ab=0; iceSpikes(nearestPlayer.x,nearestPlayer.z,1.3); }
+          e._pound=(e._pound||20)+1; if(dd<6 && e._pound>=44){ e._pound=0; frostNova(1.0); }
+        }
         else if(e.type==='frost_wraith'){
           // RANGED — ICE-LANCE volleys, SHARD NOVA, frost blink
           const MS=0.312;
@@ -12142,7 +12154,7 @@ const CT_BESPOKE = { iron_guard:1, citadel_mage:1, xu_sniper_elite:1, xu_shieldb
 //   the mirrored zone, so the gate is mandatory). The client kit bumps HP x6.0 (a474 doubled
 //   it from 3.0) AND ATK x2.2 zone-locally: HP rides ZONE_HP_MULT, the ATK bump is folded in
 //   below. Same flat-PWR mirror as the other zones (client _fzDmg adds maxHP/DEF terms).
-const FZ_BESPOKE = { ice_golem:1, polar_bear:1, frost_wraith:1, frost_specter:1 };
+const FZ_BESPOKE = { ice_golem:1, polar_bear:1, frost_wraith:1, frost_specter:1, frost_yeti:1 };
 // a543 — ANCIENT REALM arcane AI (zone-gated to 'ancient'). NOTE void_stalker also lives in
 //   the (already migrated) Void Wastes with a completely different kit — the zone gate is what
 //   keeps the two apart, so never drop it. Client bumps HP x7.0 AND ATK x2.2 zone-locally.
@@ -12852,7 +12864,7 @@ const NP_PWR = { necro_abomination:240, necro_wight:190, necro_lich_mage:200, ne
 function _npDmgS(e, mult){ return Math.floor((NP_PWR[e.type] || e.atk || 180) * mult); }
 const ELD_PWR = { ancient_guardian:170, stone_sentinel:160, vine_horror:130, void_stalker:120 };
 function _eldDmgS(e, mult){ return Math.floor((ELD_PWR[e.type] || e.atk || 120) * 2.2 * mult); }
-const FZ_PWR = { ice_golem:140, polar_bear:120, frost_wraith:100, frost_specter:95 };
+const FZ_PWR = { ice_golem:140, polar_bear:120, frost_wraith:100, frost_specter:95, frost_yeti:130 };
 function _fzDmgS(e, mult){ return Math.floor((FZ_PWR[e.type] || e.atk || 90) * 2.2 * mult); }
 const CT_PWR = { iron_guard:80, citadel_mage:78, xu_sniper_elite:85, xu_shieldbot:72, xu_commander_elite:95 };
 function _ctDmgS(e, mult){ return Math.floor((CT_PWR[e.type] || e.atk || 60) * 1.5 * mult); }
