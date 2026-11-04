@@ -8073,6 +8073,96 @@ function tickWorldBoss(game) {
   }
 }
 
+// ══════════════════════════════════════════════════════════
+// a692 — CROWD SPREAD (every zone). Mobs used to funnel down the same line onto the player and
+//   end up stacked in one clump. After all of a zone's mobs have moved each tick:
+//   • SEPARATION — two mobs closer than their combined personal space ease apart (big ones need
+//     more room). Only chasing mobs are pushed; mobs idling at camp hold their ground.
+//   • SURROUND — mobs closing on the same player fan out round them: neighbours that are too close
+//     in angle slide sideways along the ring until they're evenly spaced, so a pack surrounds you
+//     instead of queuing behind each other.
+//   Every nudge is small (capped per tick, so it reads as walking, not sliding) and is checked
+//   against the zone's own walkable map, so nothing is ever pushed into a wall, a pit or the lava.
+// ══════════════════════════════════════════════════════════
+const _SPREAD_BIG = new Set(['ice_golem','lava_golem','inferno_golem','ancient_guardian','void_colossus','cyber_ogre','elder_dragon','wyvern_warlord','deep_wyrm','glacier_basilisk',
+  'hollow_enforcer','crash_car','xu_titan','xu_annihilator','xf_titan_elite','xf_siege_walker','xf_warlord','industrial_devastator','necro_abomination','mycelium_horror','sand_worm',
+  'stone_sentinel','sanctuary_guardian','ritual_guardian','mushroom_brute','xu_siege_bot','void_construct','frost_yeti','death_knight','xu_warframe','psyche_horror']);
+function _spreadRadius(e){ return _SPREAD_BIG.has(e.type) ? 1.45 : 0.9; }   // personal space (world units); TILE = 1.5
+function _spreadWalkFn(zoneName, zone){
+  switch(zoneName){
+    case 'void': return _vwWalkable; case 'sunken_sands': return _snWalkable; case 'ancient': return _anWalkable;
+    case 'necropolis': return _npWalkable; case 'frostveil': return _fvWalkable; case 'cemetery': return _cmWalkable;
+    case 'fungal': return _fgWalkable; case 'the_reach': return _reWalkable; case 'forge': return _foWalkable;
+    case 'dragonlair': return _dlWalkable; case 'veiled_sanctuary': return _vsWalkable; case 'caves_of_despair': return _cdWalkable;
+    case 'xulcan': return _xuWalkable; case 'wyvernwastes': return _wwWalkable; case 'neon_hollow': return _nhWalkable;
+    case 'xeron': return _xrWalkable; case 'xumen_fortress': return _xfWalkable; case 'xumen': return _xcWalkable;
+    case 'void_citadel': return _vcWalkable; case 'riftvale': return _rvWalkable; case 'citadel': return _ctWalkable;
+    case 'convergence': { const mz = _convMazeFor(zone); return mz ? ((x, z)=>!e2ConvMazeWall(mz, x, z, TILE)) : null; }
+  }
+  return null;
+}
+function _e2CrowdSpread(game, zoneName, zone, changed){
+  game._spN = (game._spN || 0) + 1; const N = game._spN - 1;
+  const all = zone.enemies, act = [];
+  for (let i = 0; i < all.length; i++){ const e = all[i]; if (e.active && !(e.spd === 0)) act.push(e); }
+  if (act.length < 2) return;
+  const walk = _spreadWalkFn(zoneName, zone);
+  const ok = (x, z)=>{ try { return !walk || walk(x, z); } catch(_){ return true; } };
+  const chasing = e => e.aggroed && e._spT && e._spN === N;
+  // spatial hash (cell 4u) so this stays cheap in 250-mob zones
+  const C = 4, grid = new Map(), key = (cx, cz)=>cx*73856093 ^ cz*19349663;
+  act.forEach(e => { const k = key(Math.floor(e.x/C), Math.floor(e.z/C)); let b = grid.get(k); if (!b){ b = []; grid.set(k, b); } b.push(e); });
+  const push = new Map();   // e -> [dx, dz]
+  const add = (e, dx, dz)=>{ const p = push.get(e); if (p){ p[0] += dx; p[1] += dz; } else push.set(e, [dx, dz]); };
+  // ── SEPARATION
+  act.forEach(e => {
+    if (!chasing(e)) return;
+    const re = _spreadRadius(e), cx = Math.floor(e.x/C), cz = Math.floor(e.z/C);
+    for (let ox = -1; ox <= 1; ox++) for (let oz = -1; oz <= 1; oz++){
+      const b = grid.get(key(cx + ox, cz + oz)); if (!b) continue;
+      for (const o of b){ if (o === e) continue;
+        const dx = e.x - o.x, dz = e.z - o.z, d2 = dx*dx + dz*dz, need = re + _spreadRadius(o);
+        if (d2 >= need*need) continue;
+        let d = Math.sqrt(d2), ux, uz;
+        if (d < 0.001){ const a = (e.id || 0)*2.399; ux = Math.cos(a); uz = Math.sin(a); d = 0; } else { ux = dx/d; uz = dz/d; }
+        const share = chasing(o) ? 0.5 : 1.0;   // two chasers split the overlap; an idle one doesn't move
+        const m = (need - d)*share*0.6;
+        add(e, ux*m, uz*m);
+      }
+    }
+  });
+  // ── SURROUND: per target player, the mobs closing in (within 7u) spread round the ring
+  const byT = new Map();
+  act.forEach(e => { if (!chasing(e)) return; const p = e._spT; const dx = e.x - p.x, dz = e.z - p.z, r = Math.sqrt(dx*dx + dz*dz);
+    if (r > 7 || r < 0.3) return; let L = byT.get(p); if (!L){ L = []; byT.set(p, L); } L.push({ e, a:Math.atan2(dz, dx), r }); });
+  byT.forEach((L, p) => {
+    if (L.length < 2) return;
+    L.sort((u, v)=>u.a - v.a);
+    const n = L.length, even = Math.PI*2/n;
+    for (let i = 0; i < n; i++){
+      const u = L[i], v = L[(i + 1) % n];
+      let gap = v.a - u.a; if (i === n - 1) gap += Math.PI*2;
+      const rr = Math.max(1.2, (u.r + v.r)/2);
+      const want = Math.min(even, (_spreadRadius(u.e) + _spreadRadius(v.e))*1.25/rr);   // the angle that keeps them a body-width apart
+      if (gap >= want) continue;
+      const da = Math.min(0.35, (want - gap)*0.5);   // radians each side, per tick
+      // u slides clockwise (angle down), v slides anticlockwise (angle up), both staying on their ring
+      const ua = u.a - da, va = v.a + da;
+      add(u.e, (p.x + Math.cos(ua)*u.r - u.e.x)*0.5, (p.z + Math.sin(ua)*u.r - u.e.z)*0.5);
+      add(v.e, (p.x + Math.cos(va)*v.r - v.e.x)*0.5, (p.z + Math.sin(va)*v.r - v.e.z)*0.5);
+    }
+  });
+  if (!push.size) return;
+  const inC = new Set(changed);
+  push.forEach((d, e) => {
+    let dx = d[0], dz = d[1]; const m = Math.sqrt(dx*dx + dz*dz); if (m < 0.01) return;
+    const cap = 0.28; if (m > cap){ dx *= cap/m; dz *= cap/m; }   // ~2.8 u/s at most — a sidestep, not a slide
+    const nx = e.x + dx, nz = e.z + dz;
+    if (ok(nx, nz)){ e.x = nx; e.z = nz; } else if (ok(nx, e.z)) e.x = nx; else if (ok(e.x, nz)) e.z = nz; else return;
+    if (!inC.has(e)){ changed.push(e); inC.add(e); }
+  });
+}
+
 function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
@@ -8192,6 +8282,7 @@ function tickGame(game) {
         return;
       }
       if (!e.aggroed) return;
+      e._spT = nearestPlayer; e._spN = game._spN || 0;   // a692 — crowd spread: who this mob is after, this tick
 
       // a529 — this mob runs bespoke server AI? (sand types anywhere; patrol types only in patrol)
       const _bespoke = SD_BESPOKE[e.type] || (zoneName === 'patrol' && PATROL_BESPOKE[e.type]) || (zoneName === 'void' && VW_BESPOKE[e.type]) || (zoneName === 'blooming_wilds' && BW_BESPOKE[e.type]) || (zoneName === 'aviacanyon' && AV_BESPOKE[e.type]) || (zoneName === 'cemetery' && CM_BESPOKE[e.type]) || (zoneName === 'ashlands' && AL_BESPOKE[e.type]) || (zoneName === 'caves_of_despair' && CD_BESPOKE[e.type]) || (zoneName === 'citadel' && CT_BESPOKE[e.type]) || (zoneName === 'frostveil' && FZ_BESPOKE[e.type]) || (zoneName === 'ancient' && ELD_BESPOKE[e.type]) || (zoneName === 'necropolis' && NP_BESPOKE[e.type]) || (zoneName === 'veiled_sanctuary' && VS_BESPOKE[e.type]) || (zoneName === 'dragonlair' && DL_BESPOKE[e.type]) || (zoneName === 'riftvale' && RV_BESPOKE[e.type]) || (zoneName === 'wyvernwastes' && WW_BESPOKE[e.type]) || (zoneName === 'neon_hollow' && NH_BESPOKE[e.type]) || (zoneName === 'xeron' && XR_BESPOKE[e.type]) || (zoneName === 'xumen' && XM_BESPOKE[e.type]) || (zoneName === 'xumen_fortress' && XF_BESPOKE[e.type]) || (zoneName === 'void_citadel' && VC_BESPOKE[e.type]) || (zoneName === 'lucidwilde' && LW_BESPOKE[e.type]) || (zoneName === 'forge' && FG_BESPOKE[e.type]) || (zoneName === 'xulcan' && XU_BESPOKE[e.type]) || (zoneName === 'fungal' && FD_BESPOKE[e.type]) || (zoneName === 'the_reach' && (RE_BESPOKE[e.type] || KE_MINION[e.type])) || (zoneName === 'convergence' && CV_BESPOKE[e.type]);   // a609
@@ -11942,6 +12033,8 @@ function tickGame(game) {
           if(_moved) changed.push(e);
         }
     });
+
+    _e2CrowdSpread(game, zoneName, zone, changed);   // a692 — mobs keep their distance and surround the player
 
     // a645 — RIFT VALE: whatever moved a mob this tick (chase, rift dash, phase strike,
     //   bespoke kits), it never ends standing over open void — slide or step back.
