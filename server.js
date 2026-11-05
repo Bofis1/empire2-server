@@ -433,6 +433,13 @@ const ENEMY_STATS = {
   // ── VOID CITADEL — LV.70+ DIMENSIONAL FORTRESS ──
   void_construct:   {hp:32000, atk:320, spd:0.040, aggroRange:11, reward:1100, expR:820,  dmgReduction:0},
   void_sentinel:    {hp:44000, atk:360, spd:0.015, aggroRange:16, reward:1300, expR:950,  dmgReduction:0.10},
+  // ── a703 — VOID CITADEL garrison (exclusive to void_citadel) ──
+  singularity_hound:     {hp:190000, atk:300, spd:0.072, aggroRange:16, reward:1400, expR:1000, dmgReduction:0.10},
+  null_lancer:           {hp:220000, atk:320, spd:0.045, aggroRange:18, reward:1500, expR:1050, dmgReduction:0.15},
+  void_obelisk:          {hp:200000, atk:300, spd:0.020, aggroRange:20, reward:1450, expR:1050, dmgReduction:0.20},
+  collapsar:             {hp:300000, atk:320, spd:0.022, aggroRange:16, reward:1800, expR:1300, dmgReduction:0.25},
+  abyss_wraith:          {hp:180000, atk:300, spd:0.050, aggroRange:18, reward:1400, expR:1000, dmgReduction:0.10},
+  dark_matter_colossus:  {hp:340000, atk:340, spd:0.028, aggroRange:14, reward:1900, expR:1400, dmgReduction:0.30},
   // ── NEON HOLLOW — POST-CAP AA-GATED HARDEST ZONE ──
   sentinel_drone:      {hp:65000,  atk:480, spd:0.060, aggroRange:14, reward:1800, expR:1350, dmgReduction:0},
   maintenance_striker: {hp:95000,  atk:580, spd:0.048, aggroRange:10, reward:2200, expR:1600, dmgReduction:0.05},
@@ -488,7 +495,6 @@ const ENEMY_STATS = {
   xu_solar_lancer:         {hp:360000, atk:480, spd:0.060, aggroRange:16, reward:3400, expR:4500, dmgReduction:0.25},
   xu_harmonic_warden:      {hp:480000, atk:380, spd:0.030, aggroRange:16, reward:3200, expR:4200, dmgReduction:0.42},
   xu_data_construct:       {hp:240000, atk:320, spd:0.045, aggroRange:16, reward:3000, expR:4400, dmgReduction:0.20},
-  xu_prism_seraph:         {hp:200000, atk:470, spd:0.058, aggroRange:18, reward:3100, expR:4400, dmgReduction:0.15},   // a702
   molten_crawler:        {hp:95000,  atk:480, spd:0.078, aggroRange:12, reward:2000, expR:2800, dmgReduction:0.08},
   lava_forged_sentinel:  {hp:220000, atk:620, spd:0.030, aggroRange:18, reward:3000, expR:4300, dmgReduction:0.20},
   forge_technician:      {hp:140000, atk:380, spd:0.046, aggroRange:14, reward:2400, expR:3600, dmgReduction:0.10},
@@ -1055,7 +1061,7 @@ var _XU = (function(){
   // ── the Dominion's forces ──
   var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
     return Math.hypot(px - ARENA[0], pz - ARENA[1]) > ARENA[2] - 2 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 16; };
-  var SPAWNS = [], CAP = { xu_quantum_seeker:24, xu_graviton_manipulator:16, xu_solar_lancer:18, xu_harmonic_warden:13, xu_data_construct:13, xu_prism_seraph:12 }, cnt = {};
+  var SPAWNS = [], CAP = { xu_quantum_seeker:24, xu_graviton_manipulator:16, xu_solar_lancer:18, xu_harmonic_warden:13, xu_data_construct:13 }, cnt = {};
   var put = function(px, pz, type, jit){ if((cnt[type] || 0) >= CAP[type]) return false; for(var tr = 0; tr < 20; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
       if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type] = (cnt[type] || 0) + 1; return true; } } return false; };
   var ROSTER = [['xu_harmonic_warden', 'xu_quantum_seeker', 'xu_quantum_seeker', 'xu_solar_lancer', 'xu_graviton_manipulator'],
@@ -1067,8 +1073,6 @@ var _XU = (function(){
   for(var t3 = 0; t3 < 6000 && SPAWNS.length < 84; t3++){ var ty = ty2[t3 % 5]; if((cnt[ty] || 0) >= CAP[ty]) continue; var a3 = R()*6.2832, rr3 = R() < 0.5 ? 40 : 70, px3 = CX + Math.cos(a3)*rr3, pz3 = CZ + Math.sin(a3)*rr3;
     if(R() < 0.35){ px3 = CX + (R() - 0.5)*4; pz3 = 26 + R()*188; } if(Math.hypot(px3 - ARENA[0], pz3 - ARENA[1]) < 30) continue;
     if(put(px3, pz3, ty)) put(px3 + 1.5, pz3 + 1.5, ty2[(t3 + 2) % 5]); }
-  // a702 — a prism seraph hovers over each outpost, a little outside the ring
-  CAMPS.forEach(function(c){ var a5 = c[2] + 3.4; put(c[0] + Math.cos(a5)*6.0, c[1] + Math.sin(a5)*6.0, 'xu_prism_seraph', 0.5); });
   return { N:N, M:M, CLS:CLS, B:B, CAMPS:CAMPS, TRAPS:TRAPS, SPAWNS:SPAWNS, CX:CX, CZ:CZ, CORE:CORE, ARENA:ARENA, SPAWN:SPAWN, NGATE:NGATE, RINGS:RINGS, AVE:AVE, DIAG:DIAG, WALL:WALL, road:road };
 })();
 function _xuWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XU.M[z*240 + x] === 1; }
@@ -3546,210 +3550,210 @@ const ZONE_SPAWNS = {
   //   ZONE_TYPE_HP above; without those entries these four would ship at a sixth to a
   //   their intended health.
   void_citadel: [
-    {type:'void_construct', tx:44, tz:31},
-    {type:'void_construct', tx:46, tz:33},
-    {type:'void_sentinel', tx:44, tz:33},
-    {type:'void_sentinel', tx:36, tz:54},
-    {type:'rift_stalker', tx:49, tz:33},
-    {type:'rift_stalker', tx:44, tz:54},
-    {type:'void_construct', tx:33, tz:54},
-    {type:'void_construct', tx:42, tz:33},
-    {type:'rift_weaver', tx:37, tz:33},
-    {type:'rift_weaver', tx:47, tz:54},
-    {type:'void_construct', tx:67, tz:37},
-    {type:'void_construct', tx:80, tz:39},
-    {type:'void_sentinel', tx:72, tz:38},
-    {type:'void_sentinel', tx:80, tz:44},
-    {type:'rift_stalker', tx:81, tz:43},
-    {type:'rift_stalker', tx:71, tz:33},
-    {type:'void_construct', tx:69, tz:50},
-    {type:'void_construct', tx:63, tz:47},
-    {type:'rift_weaver', tx:69, tz:40},
-    {type:'rift_weaver', tx:65, tz:44},
-    {type:'void_construct', tx:31, tz:66},
-    {type:'void_construct', tx:49, tz:78},
-    {type:'void_sentinel', tx:32, tz:69},
-    {type:'void_sentinel', tx:31, tz:75},
-    {type:'rift_stalker', tx:38, tz:72},
-    {type:'rift_stalker', tx:48, tz:72},
-    {type:'void_construct', tx:36, tz:74},
-    {type:'void_construct', tx:34, tz:64},
-    {type:'rift_weaver', tx:50, tz:69},
-    {type:'rift_weaver', tx:42, tz:77},
-    {type:'void_construct', tx:192, tz:47},
-    {type:'void_construct', tx:210, tz:43},
-    {type:'void_sentinel', tx:194, tz:49},
-    {type:'void_sentinel', tx:192, tz:47},
-    {type:'rift_stalker', tx:208, tz:46},
-    {type:'rift_stalker', tx:206, tz:48},
-    {type:'void_construct', tx:196, tz:50},
-    {type:'void_construct', tx:210, tz:36},
-    {type:'rift_weaver', tx:207, tz:47},
-    {type:'rift_weaver', tx:192, tz:47},
-    {type:'void_construct', tx:158, tz:38},
-    {type:'void_construct', tx:166, tz:32},
-    {type:'void_sentinel', tx:163, tz:48},
-    {type:'void_sentinel', tx:164, tz:44},
-    {type:'rift_stalker', tx:174, tz:31},
-    {type:'rift_stalker', tx:167, tz:47},
-    {type:'void_construct', tx:173, tz:38},
-    {type:'void_construct', tx:169, tz:39},
-    {type:'rift_weaver', tx:169, tz:40},
-    {type:'rift_weaver', tx:176, tz:47},
-    {type:'void_construct', tx:195, tz:66},
-    {type:'void_construct', tx:203, tz:64},
-    {type:'void_sentinel', tx:194, tz:80},
-    {type:'void_sentinel', tx:194, tz:76},
-    {type:'rift_stalker', tx:206, tz:76},
-    {type:'rift_stalker', tx:195, tz:79},
-    {type:'void_construct', tx:196, tz:65},
-    {type:'void_construct', tx:194, tz:74},
-    {type:'rift_weaver', tx:201, tz:81},
-    {type:'rift_weaver', tx:197, tz:68},
-    {type:'void_construct', tx:36, tz:201},
-    {type:'void_construct', tx:36, tz:203},
-    {type:'void_sentinel', tx:36, tz:204},
-    {type:'void_sentinel', tx:49, tz:200},
-    {type:'rift_stalker', tx:44, tz:205},
-    {type:'rift_stalker', tx:38, tz:206},
-    {type:'void_construct', tx:44, tz:202},
-    {type:'void_construct', tx:42, tz:200},
-    {type:'rift_weaver', tx:35, tz:209},
-    {type:'rift_weaver', tx:44, tz:194},
-    {type:'void_construct', tx:69, tz:205},
-    {type:'void_construct', tx:70, tz:205},
-    {type:'void_sentinel', tx:80, tz:196},
-    {type:'void_sentinel', tx:64, tz:193},
-    {type:'rift_stalker', tx:71, tz:205},
-    {type:'rift_stalker', tx:64, tz:193},
-    {type:'void_construct', tx:79, tz:199},
-    {type:'void_construct', tx:70, tz:202},
-    {type:'rift_weaver', tx:76, tz:207},
-    {type:'rift_weaver', tx:75, tz:205},
-    {type:'void_construct', tx:44, tz:177},
-    {type:'void_construct', tx:48, tz:159},
-    {type:'void_sentinel', tx:36, tz:174},
-    {type:'void_sentinel', tx:33, tz:171},
-    {type:'rift_stalker', tx:48, tz:168},
-    {type:'rift_stalker', tx:43, tz:161},
-    {type:'void_construct', tx:44, tz:163},
-    {type:'void_construct', tx:39, tz:168},
-    {type:'rift_weaver', tx:38, tz:176},
-    {type:'rift_weaver', tx:39, tz:168},
-    {type:'void_construct', tx:204, tz:206},
-    {type:'void_construct', tx:202, tz:209},
-    {type:'void_sentinel', tx:207, tz:193},
-    {type:'void_sentinel', tx:208, tz:197},
-    {type:'rift_stalker', tx:200, tz:190},
-    {type:'rift_stalker', tx:209, tz:193},
-    {type:'void_construct', tx:198, tz:209},
-    {type:'void_construct', tx:193, tz:191},
-    {type:'rift_weaver', tx:205, tz:191},
-    {type:'rift_weaver', tx:209, tz:206},
-    {type:'void_construct', tx:162, tz:210},
-    {type:'void_construct', tx:176, tz:201},
-    {type:'void_sentinel', tx:171, tz:197},
-    {type:'void_sentinel', tx:166, tz:204},
-    {type:'rift_stalker', tx:171, tz:205},
-    {type:'rift_stalker', tx:173, tz:205},
-    {type:'void_construct', tx:176, tz:209},
-    {type:'void_construct', tx:164, tz:207},
-    {type:'rift_weaver', tx:167, tz:192},
-    {type:'rift_weaver', tx:176, tz:193},
-    {type:'void_construct', tx:199, tz:170},
-    {type:'void_construct', tx:193, tz:165},
-    {type:'void_sentinel', tx:209, tz:171},
-    {type:'void_sentinel', tx:200, tz:177},
-    {type:'rift_stalker', tx:194, tz:159},
-    {type:'rift_stalker', tx:203, tz:168},
-    {type:'void_construct', tx:199, tz:160},
-    {type:'void_construct', tx:196, tz:174},
-    {type:'rift_weaver', tx:199, tz:160},
-    {type:'rift_weaver', tx:204, tz:166},
-    {type:'void_construct', tx:117, tz:50},
-    {type:'void_construct', tx:113, tz:58},
-    {type:'void_sentinel', tx:126, tz:53},
-    {type:'void_sentinel', tx:123, tz:57},
-    {type:'rift_stalker', tx:124, tz:54},
-    {type:'rift_stalker', tx:116, tz:52},
-    {type:'void_construct', tx:129, tz:56},
-    {type:'void_construct', tx:115, tz:48},
-    {type:'rift_weaver', tx:117, tz:43},
-    {type:'rift_weaver', tx:120, tz:44},
-    {type:'void_construct', tx:126, tz:189},
-    {type:'void_construct', tx:121, tz:182},
-    {type:'void_sentinel', tx:112, tz:191},
-    {type:'void_sentinel', tx:115, tz:196},
-    {type:'rift_stalker', tx:119, tz:185},
-    {type:'rift_stalker', tx:127, tz:185},
-    {type:'void_construct', tx:121, tz:197},
-    {type:'void_construct', tx:121, tz:192},
-    {type:'rift_weaver', tx:117, tz:184},
-    {type:'rift_weaver', tx:129, tz:191},
-    {type:'void_construct', tx:51, tz:118},
-    {type:'void_construct', tx:65, tz:123},
-    {type:'void_sentinel', tx:54, tz:124},
-    {type:'void_sentinel', tx:48, tz:124},
-    {type:'rift_stalker', tx:64, tz:123},
-    {type:'rift_stalker', tx:49, tz:115},
-    {type:'void_construct', tx:63, tz:121},
-    {type:'void_construct', tx:65, tz:115},
-    {type:'rift_weaver', tx:60, tz:111},
-    {type:'rift_weaver', tx:53, tz:113},
-    {type:'void_construct', tx:180, tz:121},
-    {type:'void_construct', tx:178, tz:116},
-    {type:'void_sentinel', tx:177, tz:120},
-    {type:'void_sentinel', tx:176, tz:111},
-    {type:'rift_stalker', tx:190, tz:115},
-    {type:'rift_stalker', tx:184, tz:116},
-    {type:'void_construct', tx:186, tz:124},
-    {type:'void_construct', tx:181, tz:114},
-    {type:'rift_weaver', tx:178, tz:127},
-    {type:'rift_weaver', tx:184, tz:118},
-    {type:'void_construct', tx:147, tz:158},
-    {type:'void_sentinel', tx:136, tz:96},
-    {type:'rift_stalker', tx:52, tz:118},
-    {type:'rift_weaver', tx:218, tz:224},
-    {type:'void_construct', tx:104, tz:166},
-    {type:'void_sentinel', tx:182, tz:208},
-    {type:'rift_stalker', tx:109, tz:66},
-    {type:'rift_weaver', tx:120, tz:70},
-    {type:'void_sentinel', tx:92, tz:150},
-    {type:'rift_stalker', tx:220, tz:39},
-    {type:'void_sentinel', tx:26, tz:218},
-    {type:'rift_stalker', tx:224, tz:49},
-    {type:'void_sentinel', tx:182, tz:217},
-    {type:'rift_stalker', tx:203, tz:149},
-    {type:'void_sentinel', tx:119, tz:166},
-    {type:'rift_stalker', tx:77, tz:152},
-    {type:'void_sentinel', tx:95, tz:39},
-    {type:'rift_stalker', tx:160, tz:79},
-    {type:'void_sentinel', tx:21, tz:55},
-    {type:'rift_stalker', tx:84, tz:67},
-    {type:'void_sentinel', tx:192, tz:153},
-    {type:'void_sentinel', tx:108, tz:193},
-    {type:'void_sentinel', tx:216, tz:160},
-    {type:'void_sentinel', tx:221, tz:27},
-    {type:'void_sentinel', tx:54, tz:206},
-    {type:'void_sentinel', tx:54, tz:56},
-    {type:'void_sentinel', tx:212, tz:133},
-    {type:'void_sentinel', tx:96, tz:51},
-    {type:'void_sentinel', tx:89, tz:92},
-    {type:'void_sentinel', tx:53, tz:134},
-    {type:'void_sentinel', tx:95, tz:82},
-    {type:'void_sentinel', tx:164, tz:138},
-    {type:'void_sentinel', tx:36, tz:33},
-    {type:'void_sentinel', tx:138, tz:178},
-    {type:'void_sentinel', tx:205, tz:163},
-    {type:'void_sentinel', tx:176, tz:65},
-    {type:'void_sentinel', tx:216, tz:65},
-    {type:'void_sentinel', tx:193, tz:49},
-    {type:'void_sentinel', tx:54, tz:184},
-    {type:'void_sentinel', tx:26, tz:146},
-    {type:'void_sentinel', tx:75, tz:89},
-    {type:'void_sentinel', tx:136, tz:66},
-    {type:'void_sentinel', tx:125, tz:218},
-    {type:'void_sentinel', tx:149, tz:177}
+    {type:'singularity_hound', tx:44, tz:31},
+    {type:'null_lancer', tx:46, tz:33},
+    {type:'void_obelisk', tx:44, tz:33},
+    {type:'abyss_wraith', tx:36, tz:54},
+    {type:'singularity_hound', tx:49, tz:33},
+    {type:'dark_matter_colossus', tx:44, tz:54},
+    {type:'null_lancer', tx:33, tz:54},
+    {type:'abyss_wraith', tx:42, tz:33},
+    {type:'collapsar', tx:37, tz:33},
+    {type:'void_obelisk', tx:47, tz:54},
+    {type:'singularity_hound', tx:67, tz:37},
+    {type:'null_lancer', tx:80, tz:39},
+    {type:'void_obelisk', tx:72, tz:38},
+    {type:'abyss_wraith', tx:80, tz:44},
+    {type:'singularity_hound', tx:81, tz:43},
+    {type:'dark_matter_colossus', tx:71, tz:33},
+    {type:'null_lancer', tx:69, tz:50},
+    {type:'abyss_wraith', tx:63, tz:47},
+    {type:'collapsar', tx:69, tz:40},
+    {type:'void_obelisk', tx:65, tz:44},
+    {type:'singularity_hound', tx:31, tz:66},
+    {type:'null_lancer', tx:49, tz:78},
+    {type:'void_obelisk', tx:32, tz:69},
+    {type:'abyss_wraith', tx:31, tz:75},
+    {type:'singularity_hound', tx:38, tz:72},
+    {type:'dark_matter_colossus', tx:48, tz:72},
+    {type:'null_lancer', tx:36, tz:74},
+    {type:'abyss_wraith', tx:34, tz:64},
+    {type:'collapsar', tx:50, tz:69},
+    {type:'void_obelisk', tx:42, tz:77},
+    {type:'singularity_hound', tx:192, tz:47},
+    {type:'null_lancer', tx:210, tz:43},
+    {type:'void_obelisk', tx:194, tz:49},
+    {type:'abyss_wraith', tx:192, tz:47},
+    {type:'singularity_hound', tx:208, tz:46},
+    {type:'dark_matter_colossus', tx:206, tz:48},
+    {type:'null_lancer', tx:196, tz:50},
+    {type:'abyss_wraith', tx:210, tz:36},
+    {type:'collapsar', tx:207, tz:47},
+    {type:'void_obelisk', tx:192, tz:47},
+    {type:'singularity_hound', tx:158, tz:38},
+    {type:'null_lancer', tx:166, tz:32},
+    {type:'void_obelisk', tx:163, tz:48},
+    {type:'abyss_wraith', tx:164, tz:44},
+    {type:'singularity_hound', tx:174, tz:31},
+    {type:'dark_matter_colossus', tx:167, tz:47},
+    {type:'null_lancer', tx:173, tz:38},
+    {type:'abyss_wraith', tx:169, tz:39},
+    {type:'collapsar', tx:169, tz:40},
+    {type:'void_obelisk', tx:176, tz:47},
+    {type:'singularity_hound', tx:195, tz:66},
+    {type:'null_lancer', tx:203, tz:64},
+    {type:'void_obelisk', tx:194, tz:80},
+    {type:'abyss_wraith', tx:194, tz:76},
+    {type:'singularity_hound', tx:206, tz:76},
+    {type:'dark_matter_colossus', tx:195, tz:79},
+    {type:'null_lancer', tx:196, tz:65},
+    {type:'abyss_wraith', tx:194, tz:74},
+    {type:'collapsar', tx:201, tz:81},
+    {type:'void_obelisk', tx:197, tz:68},
+    {type:'singularity_hound', tx:36, tz:201},
+    {type:'null_lancer', tx:36, tz:203},
+    {type:'void_obelisk', tx:36, tz:204},
+    {type:'abyss_wraith', tx:49, tz:200},
+    {type:'singularity_hound', tx:44, tz:205},
+    {type:'dark_matter_colossus', tx:38, tz:206},
+    {type:'null_lancer', tx:44, tz:202},
+    {type:'abyss_wraith', tx:42, tz:200},
+    {type:'collapsar', tx:35, tz:209},
+    {type:'void_obelisk', tx:44, tz:194},
+    {type:'singularity_hound', tx:69, tz:205},
+    {type:'null_lancer', tx:70, tz:205},
+    {type:'void_obelisk', tx:80, tz:196},
+    {type:'abyss_wraith', tx:64, tz:193},
+    {type:'singularity_hound', tx:71, tz:205},
+    {type:'dark_matter_colossus', tx:64, tz:193},
+    {type:'null_lancer', tx:79, tz:199},
+    {type:'abyss_wraith', tx:70, tz:202},
+    {type:'collapsar', tx:76, tz:207},
+    {type:'void_obelisk', tx:75, tz:205},
+    {type:'singularity_hound', tx:44, tz:177},
+    {type:'null_lancer', tx:48, tz:159},
+    {type:'void_obelisk', tx:36, tz:174},
+    {type:'abyss_wraith', tx:33, tz:171},
+    {type:'singularity_hound', tx:48, tz:168},
+    {type:'dark_matter_colossus', tx:43, tz:161},
+    {type:'null_lancer', tx:44, tz:163},
+    {type:'abyss_wraith', tx:39, tz:168},
+    {type:'collapsar', tx:38, tz:176},
+    {type:'void_obelisk', tx:39, tz:168},
+    {type:'singularity_hound', tx:204, tz:206},
+    {type:'null_lancer', tx:202, tz:209},
+    {type:'void_obelisk', tx:207, tz:193},
+    {type:'abyss_wraith', tx:208, tz:197},
+    {type:'singularity_hound', tx:200, tz:190},
+    {type:'dark_matter_colossus', tx:209, tz:193},
+    {type:'null_lancer', tx:198, tz:209},
+    {type:'abyss_wraith', tx:193, tz:191},
+    {type:'collapsar', tx:205, tz:191},
+    {type:'void_obelisk', tx:209, tz:206},
+    {type:'singularity_hound', tx:162, tz:210},
+    {type:'null_lancer', tx:176, tz:201},
+    {type:'void_obelisk', tx:171, tz:197},
+    {type:'abyss_wraith', tx:166, tz:204},
+    {type:'singularity_hound', tx:171, tz:205},
+    {type:'dark_matter_colossus', tx:173, tz:205},
+    {type:'null_lancer', tx:176, tz:209},
+    {type:'abyss_wraith', tx:164, tz:207},
+    {type:'collapsar', tx:167, tz:192},
+    {type:'void_obelisk', tx:176, tz:193},
+    {type:'singularity_hound', tx:199, tz:170},
+    {type:'null_lancer', tx:193, tz:165},
+    {type:'void_obelisk', tx:209, tz:171},
+    {type:'abyss_wraith', tx:200, tz:177},
+    {type:'singularity_hound', tx:194, tz:159},
+    {type:'dark_matter_colossus', tx:203, tz:168},
+    {type:'null_lancer', tx:199, tz:160},
+    {type:'abyss_wraith', tx:196, tz:174},
+    {type:'collapsar', tx:199, tz:160},
+    {type:'void_obelisk', tx:204, tz:166},
+    {type:'singularity_hound', tx:117, tz:50},
+    {type:'null_lancer', tx:113, tz:58},
+    {type:'void_obelisk', tx:126, tz:53},
+    {type:'abyss_wraith', tx:123, tz:57},
+    {type:'singularity_hound', tx:124, tz:54},
+    {type:'dark_matter_colossus', tx:116, tz:52},
+    {type:'null_lancer', tx:129, tz:56},
+    {type:'abyss_wraith', tx:115, tz:48},
+    {type:'collapsar', tx:117, tz:43},
+    {type:'void_obelisk', tx:120, tz:44},
+    {type:'singularity_hound', tx:126, tz:189},
+    {type:'null_lancer', tx:121, tz:182},
+    {type:'void_obelisk', tx:112, tz:191},
+    {type:'abyss_wraith', tx:115, tz:196},
+    {type:'singularity_hound', tx:119, tz:185},
+    {type:'dark_matter_colossus', tx:127, tz:185},
+    {type:'null_lancer', tx:121, tz:197},
+    {type:'abyss_wraith', tx:121, tz:192},
+    {type:'collapsar', tx:117, tz:184},
+    {type:'void_obelisk', tx:129, tz:191},
+    {type:'singularity_hound', tx:51, tz:118},
+    {type:'null_lancer', tx:65, tz:123},
+    {type:'void_obelisk', tx:54, tz:124},
+    {type:'abyss_wraith', tx:48, tz:124},
+    {type:'singularity_hound', tx:64, tz:123},
+    {type:'dark_matter_colossus', tx:49, tz:115},
+    {type:'null_lancer', tx:63, tz:121},
+    {type:'abyss_wraith', tx:65, tz:115},
+    {type:'collapsar', tx:60, tz:111},
+    {type:'void_obelisk', tx:53, tz:113},
+    {type:'singularity_hound', tx:180, tz:121},
+    {type:'null_lancer', tx:178, tz:116},
+    {type:'void_obelisk', tx:177, tz:120},
+    {type:'abyss_wraith', tx:176, tz:111},
+    {type:'singularity_hound', tx:190, tz:115},
+    {type:'dark_matter_colossus', tx:184, tz:116},
+    {type:'null_lancer', tx:186, tz:124},
+    {type:'abyss_wraith', tx:181, tz:114},
+    {type:'collapsar', tx:178, tz:127},
+    {type:'void_obelisk', tx:184, tz:118},
+    {type:'singularity_hound', tx:147, tz:158},
+    {type:'null_lancer', tx:136, tz:96},
+    {type:'void_obelisk', tx:52, tz:118},
+    {type:'abyss_wraith', tx:218, tz:224},
+    {type:'singularity_hound', tx:104, tz:166},
+    {type:'dark_matter_colossus', tx:182, tz:208},
+    {type:'null_lancer', tx:109, tz:66},
+    {type:'abyss_wraith', tx:120, tz:70},
+    {type:'collapsar', tx:92, tz:150},
+    {type:'void_obelisk', tx:220, tz:39},
+    {type:'singularity_hound', tx:26, tz:218},
+    {type:'null_lancer', tx:224, tz:49},
+    {type:'void_obelisk', tx:182, tz:217},
+    {type:'abyss_wraith', tx:203, tz:149},
+    {type:'singularity_hound', tx:119, tz:166},
+    {type:'dark_matter_colossus', tx:77, tz:152},
+    {type:'null_lancer', tx:95, tz:39},
+    {type:'abyss_wraith', tx:160, tz:79},
+    {type:'collapsar', tx:21, tz:55},
+    {type:'void_obelisk', tx:84, tz:67},
+    {type:'singularity_hound', tx:192, tz:153},
+    {type:'null_lancer', tx:108, tz:193},
+    {type:'void_obelisk', tx:216, tz:160},
+    {type:'abyss_wraith', tx:221, tz:27},
+    {type:'singularity_hound', tx:54, tz:206},
+    {type:'dark_matter_colossus', tx:54, tz:56},
+    {type:'null_lancer', tx:212, tz:133},
+    {type:'abyss_wraith', tx:96, tz:51},
+    {type:'collapsar', tx:89, tz:92},
+    {type:'void_obelisk', tx:53, tz:134},
+    {type:'singularity_hound', tx:95, tz:82},
+    {type:'null_lancer', tx:164, tz:138},
+    {type:'void_obelisk', tx:36, tz:33},
+    {type:'abyss_wraith', tx:138, tz:178},
+    {type:'singularity_hound', tx:205, tz:163},
+    {type:'dark_matter_colossus', tx:176, tz:65},
+    {type:'null_lancer', tx:216, tz:65},
+    {type:'abyss_wraith', tx:193, tz:49},
+    {type:'collapsar', tx:54, tz:184},
+    {type:'void_obelisk', tx:26, tz:146},
+    {type:'singularity_hound', tx:75, tz:89},
+    {type:'null_lancer', tx:136, tz:66},
+    {type:'void_obelisk', tx:125, tz:218},
+    {type:'abyss_wraith', tx:149, tz:177}
   ],
   // ── NEON HOLLOW — POST-CAP AA-GATED (matches client ZONE_DEFS.neon_hollow) ──
   // a549 — NEON HOLLOW is now SERVER-AUTHORITATIVE (was client-side since a487).
@@ -6780,7 +6784,7 @@ const ZBOSS_SERVER = {
           zone._nextEid = (zone._nextEid || 100000) + 1;
           const add = {
             id: zone._nextEid,
-            type: useConstruct ? 'void_construct' : 'void_sentinel',
+            type: useConstruct ? 'singularity_hound' : 'abyss_wraith',   // a703 — the citadel's own garrison
             x: ssx, z: ssz, spawnX: ssx, spawnZ: ssz,
             hp: useConstruct ? 1800 : 2200, maxHp: useConstruct ? 1800 : 2200,
             atk: useConstruct ? 130 : 160, spd: 0.055, aggroRange: 14,
@@ -8093,7 +8097,11 @@ function tickWorldBoss(game) {
 const _SPREAD_BIG = new Set(['ice_golem','lava_golem','inferno_golem','ancient_guardian','void_colossus','cyber_ogre','elder_dragon','wyvern_warlord','deep_wyrm','glacier_basilisk',
   'hollow_enforcer','crash_car','xu_titan','xu_annihilator','xf_titan_elite','xf_siege_walker','xf_warlord','industrial_devastator','necro_abomination','mycelium_horror','sand_worm',
   'stone_sentinel','sanctuary_guardian','ritual_guardian','mushroom_brute','xu_siege_bot','void_construct','frost_yeti','death_knight','xu_warframe','psyche_horror']);
-function _spreadRadius(e){ return _SPREAD_BIG.has(e.type) ? 1.45 : 0.9; }   // personal space (world units); TILE = 1.5
+// a703 — the giants get bubbles that match their bodies: Xulcan Prime's machines are 5-8 units across,
+//   so the old 0.9/1.45 let five of them stand inside each other round you
+const _SPREAD_R = { xu_harmonic_warden:2.6, xu_graviton_manipulator:2.2, xu_data_construct:2.0, xu_quantum_seeker:1.8, xu_solar_lancer:1.8, xu_prism_seraph:1.8,
+  collapsar:2.2, dark_matter_colossus:1.8, void_obelisk:1.4, singularity_hound:1.2, null_lancer:1.0, abyss_wraith:1.0 };
+function _spreadRadius(e){ return _SPREAD_R[e.type] || (_SPREAD_BIG.has(e.type) ? 1.45 : 0.9); }   // personal space (world units); TILE = 1.5
 function _spreadWalkFn(zoneName, zone){
   switch(zoneName){
     case 'void': return _vwWalkable; case 'sunken_sands': return _snWalkable; case 'ancient': return _anWalkable;
@@ -8145,6 +8153,11 @@ function _e2CrowdSpread(game, zoneName, zone, changed){
     if (L.length < 2) return;
     L.sort((u, v)=>u.a - v.a);
     const n = L.length, even = Math.PI*2/n;
+    // a703 — a ring too small to hold everyone side by side widens: anyone inside the radius the ring
+    //   needs (the sum of their bubbles laid round a circle) is eased outward to it
+    let sumR = 0; for (let i = 0; i < n; i++) sumR += _spreadRadius(L[i].e);
+    const rNeed = sumR*1.05/Math.PI;
+    for (let i = 0; i < n; i++){ const u = L[i]; if (u.r < rNeed) add(u.e, Math.cos(u.a)*(rNeed - u.r)*0.4, Math.sin(u.a)*(rNeed - u.r)*0.4); }
     for (let i = 0; i < n; i++){
       const u = L[i], v = L[(i + 1) % n];
       let gap = v.a - u.a; if (i === n - 1) gap += Math.PI*2;
@@ -8162,7 +8175,7 @@ function _e2CrowdSpread(game, zoneName, zone, changed){
   const inC = new Set(changed);
   push.forEach((d, e) => {
     let dx = d[0], dz = d[1]; const m = Math.sqrt(dx*dx + dz*dz); if (m < 0.01) return;
-    const cap = 0.28; if (m > cap){ dx *= cap/m; dz *= cap/m; }   // ~2.8 u/s at most — a sidestep, not a slide
+    const cap = 0.28*Math.sqrt(Math.max(1, _spreadRadius(e)/0.9)); if (m > cap){ dx *= cap/m; dz *= cap/m; }   // ~2.8 u/s for a normal mob (a sidestep, not a slide); a703 — up to ~4.8 for a giant so its own advance can't drown it out
     const nx = e.x + dx, nz = e.z + dz;
     if (ok(nx, nz)){ e.x = nx; e.z = nz; } else if (ok(nx, e.z)) e.x = nx; else if (ok(e.x, nz)) e.z = nz; else return;
     if (!inC.has(e)){ changed.push(e); inC.add(e); }
@@ -11264,7 +11277,26 @@ function tickGame(game) {
           const blink=(nx,nz)=>{ if(nx>2 && nx<358 && nz>2 && nz<358){ e.x=nx; e.z=nz; _moved=true; }
             fx('vc_blink',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); };
 
-          if(e.type==='void_construct'){
+          if(VCX_BESPOKE[e.type]){
+            // a703 — the citadel's own garrison: one shared brain (the client runs the same text offline)
+            const _inZ=(p)=>p.gameId===game.id && p.zone===zoneName && p.x!==undefined;
+            _vcxBrain(e, { ex:e.x, ez:e.z, px:nearestPlayer.x, pz:nearestPlayer.z, dd:dd, ang:ang, sin:sin, cos:cos, st:strafe, at:e.attackTimer,
+              mv:mv, hit:hit, hitAt:hitAt, shoot:shoot,
+              hitLine:(m,x0,z0,a,len,w)=>{ players.forEach((p,ws)=>{ if(!_inZ(p)) return; if(_vcxOnLine(p.x,p.z,x0,z0,a,len,w))
+                send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_vcDmgS(e,m),ex:+x0.toFixed(2),ez:+z0.toFixed(2),zone:zoneName}); }); },
+              pullAt:(x,z,r,amt)=>{ players.forEach((p,ws)=>{ if(!_inZ(p)) return; const qx=p.x-x, qz=p.z-z, q=Math.sqrt(qx*qx+qz*qz); if(q<r && q>0.3)
+                send(ws,{type:'sv_player_fx',zone:zoneName,eff:'pull',px:+x.toFixed(2),pz:+z.toFixed(2),pull:amt}); }); },
+              pushAt:(x,z,r,amt)=>{ players.forEach((p,ws)=>{ if(!_inZ(p)) return; const qx=p.x-x, qz=p.z-z; if(qx*qx+qz*qz<r*r)
+                send(ws,{type:'sv_player_fx',zone:zoneName,eff:'push',px:+x.toFixed(2),pz:+z.toFixed(2),push:amt}); }); },
+              fx:(vt,d)=>{ const o={}; for(const k in d) o[k]=(typeof d[k]==='number')?+d[k].toFixed(2):d[k]; fx(vt,o); },
+              blink:(x,z)=>{ if(_vcWalkable(x,z)) blink(x,z); },
+              slow:(f,ms)=>toPlayer({slow:f,root:ms}), shake:(n)=>toPlayer({shake:n}),
+              swap:()=>{ const _now=Date.now(); if(zone._vcSwapCd && _now<zone._vcSwapCd) return; zone._vcSwapCd=_now+10000;
+                const exX=e.x, exZ=e.z, plX=nearestPlayer.x, plZ=nearestPlayer.z; e.x=plX; e.z=plZ; _moved=true;
+                toPlayer({eff:'swap',px:+exX.toFixed(2),pz:+exZ.toFixed(2)}); toPlayer({slow:0.5,root:500});
+                fx('vc_swap',{eid:e.id,ax:+exX.toFixed(2),az:+exZ.toFixed(2),bx:+plX.toFixed(2),bz:+plZ.toFixed(2)}); } });
+          }
+          else if(e.type==='void_construct'){
             // NULL GOLEM — your reflection is its weapon
             const MS=0.228;
             if(dd>2.8) mv(sin*0.9+pr*strafe*0.3, cos*0.9+pq*strafe*0.3, MS);
@@ -11775,29 +11807,6 @@ function tickGame(game) {
               if(dd>3 && dd<22 && e._sp>=25){ e._sp=0;
                 _sdSpawnProj(game,zoneName,e,ang,_XP_GOLD,Math.floor((e.atk||480)*1.1),'plasma',null,0);
                 fx('xp_lance',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
-          }
-          else if(e.type==='xu_prism_seraph'){
-            // a702 — PRISM SERAPH: circles at mid range; PRISM FAN (five light-lances); HALO NOVA
-            //   (a ring of lances, then a blink away) if you close in; JUDGEMENT (three sun-strikes
-            //   marked in a line toward you)
-            if(e._strafe==null) e._strafe=Math.random()<0.5?1:-1;
-            if(Math.random()<0.036) e._strafe=-e._strafe;
-            const pr=cos, pq=-sin, st=e._strafe;
-            if(dd<6) mv(-sin*0.8+pr*st*0.5,-cos*0.8+pq*st*0.5,SP);
-            else if(dd>12) mv(sin*0.8+pr*st*0.3,cos*0.8+pq*st*0.3,SP);
-            else mv(pr*st,pq*st,SP);
-            if(dd>3 && dd<20 && e.attackTimer%15===0){
-              for(let i=0;i<5;i++) _sdSpawnProj(game,zoneName,e,ang+(i-2)*0.17,i%2?_XP_CYAN:_XP_GOLD,Math.floor((e.atk||470)*0.7),'plasma',null,0);
-              fx('xp_lance',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
-            e._hn=(e._hn||17)+1;
-            if(dd<5 && e._hn>=40){ e._hn=0;
-              fx('xp_pulse',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
-              for(let i=0;i<10;i++) _sdSpawnProj(game,zoneName,e,i/10*Math.PI*2,_XP_CYAN,Math.floor((e.atk||470)*0.6),'bolt',null,0);
-              const a2=ang+Math.PI+(Math.random()-0.5)*1.2, nx=e.x+Math.sin(a2)*7, nz=e.z+Math.cos(a2)*7;
-              if(_xuWalkable(nx,nz)){ fx('xp_cloak',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); blink(nx,nz); } }
-            if(dd<18 && e._ab>=50){ e._ab=0;
-              for(let k=0;k<3;k++){ const d=Math.max(2,dd*0.55)+k*3.0;
-                tele(e.x+sin*d, e.z+cos*d, 5+k*3, 2.4, 0.9, _XP_GOLD); } }
           }
           else {
             // xu_data_construct — SUPPORT NODE: needles and a repair matrix
@@ -12835,7 +12844,7 @@ function _cvTickEnts(game, zoneName, zone){
     else if (!e.active) e._cv.shardAt = null; });
 }
 
-const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1, xu_prism_seraph:1 };
+const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1 };
 const _XP_GOLD=0xffd24a, _XP_CYAN=0x40d0ff, _XP_BLUE=0x6080ff, _XP_HOT=0xffe48a, _XP_VIOLET=0x8040ff;
 const FG_BESPOKE = { molten_crawler:1, lava_forged_sentinel:1, forge_technician:1, industrial_devastator:1 };
 const _FG_LAVA=0xff3200, _FG_HOT=0xff6a26, _FG_CYAN=0x32d8ff, _FG_EMBER=0xff7a1e;
@@ -12929,8 +12938,130 @@ function _fgTickEntities(game, zoneName, zone){
 const LW_BESPOKE = { prismaraptor:1, sporegon:1, vortexwisp:1, dreamjelly:1 };
 const _LW_PRISM = [0xff3cf0,0xc94dff,0x6b7bff,0x39e6ff,0x4dffb0,0xfff04d,0xff8a3c];
 function _lwCol(off){ const L=_LW_PRISM.length; return _LW_PRISM[((Math.floor(Date.now()*0.006)+(off|0))%L+L)%L]; }
-const VC_BESPOKE = { void_construct:1, void_sentinel:1, rift_stalker:1, rift_weaver:1 };
-const VC_PWR = { void_construct:230, void_sentinel:240, rift_stalker:245, rift_weaver:250 };
+// ── a703 — VOID CITADEL GARRISON BRAIN. One kit for the six citadel-only mobs, run at 10Hz. The SAME
+//   function text lives in the client (offline/P2P, driven every 6th frame, with movement spread
+//   across the frames between) and in the server (authoritative online), each handing it an adapter P:
+//   P.ex/ez (mob), P.px/pz (target), P.dd/ang/sin/cos, P.st (strafe sign), P.at (tick counter),
+//   P.mv, P.hit, P.hitAt, P.hitLine, P.pullAt, P.pushAt, P.shoot, P.fx, P.blink, P.slow, P.shake, P.swap.
+function _vcxOnLine(px, pz, x0, z0, a, len, w){ const dx = Math.sin(a), dz = Math.cos(a), qx = px - x0, qz = pz - z0;
+  const t = Math.max(0, Math.min(len, qx*dx + qz*dz)), rx = qx - dx*t, rz = qz - dz*t; return rx*rx + rz*rz < w*w; }
+function _vcxBrain(e, P){
+  const T = e.type, st = P.st, sin = P.sin, cos = P.cos, pr = cos, pq = -sin, dd = P.dd, ang = P.ang, at = P.at, PI = Math.PI;
+  const LAV = 0xb44dff, CRIM = 0xff2050;
+  const rnd = (n)=>Math.floor(Math.random()*n);
+  // a black hole this mob has left in the world (the hound's rear vent, the colossus's singularity fist):
+  //   it drags everything near it inward, burns at the horizon, then collapses in a blast
+  if(e._bh){ const b = e._bh; b.t++;
+    if(b.t % 2 === 0) P.pullAt(b.x, b.z, b.pr, b.pa);
+    if(b.t % 5 === 0) P.hitAt(0.45, b.x, b.z, 1.6);
+    if(b.t >= b.life){ P.fx('vcx_pop', {x:b.x, z:b.z, r:b.br}); P.hitAt(b.bm, b.x, b.z, b.br); e._bh = null; } }
+
+  if(T === 'singularity_hound'){
+    // SINGULARITY HOUND — a fast biter that LUNGES through you and vents an EVENT HORIZON from its rear
+    const MS = 0.43;
+    if(e._lgS === 1){ e._lgT++; if(e._lgT >= 3){ e._lgS = 2; e._lgT = 0; e._lgA = ang; e._lgH = 0; P.fx('vcx_wind', {x:P.ex, z:P.ez, c:CRIM}); } }
+    else if(e._lgS === 2){ e._lgT++; P.mv(Math.sin(e._lgA), Math.cos(e._lgA), MS*3.2);
+      if(!e._lgH && dd < 2.4){ e._lgH = 1; P.hit(1.4); P.fx('vcx_bite', {x:P.px, z:P.pz, c:CRIM}); }
+      if(e._lgT >= 4) e._lgS = 0; }
+    else {
+      if(dd > 2.2) P.mv(sin*0.9 + pr*st*0.35, cos*0.9 + pq*st*0.35, MS); else P.mv(pr*st, pq*st, MS*0.5);
+      if(dd < 2.8 && at % 8 === 0){ P.hit(1.0); P.fx('vcx_bite', {x:P.px, z:P.pz, c:LAV}); }
+      e._lg = (e._lg === undefined ? rnd(20) : e._lg) + 1;
+      if(dd > 4 && dd < 11 && e._lg >= 35){ e._lg = 0; e._lgS = 1; e._lgT = 0; P.fx('vcx_wind', {x:P.ex, z:P.ez, c:LAV}); } }
+    e._eh = (e._eh === undefined ? rnd(30) : e._eh) + 1;
+    if(!e._bh && dd < 12 && e._eh >= 60){ e._eh = 0; const hx = P.ex - sin*2.2, hz = P.ez - cos*2.2;
+      e._bh = {x:hx, z:hz, t:0, life:30, pr:7, pa:0.7, br:3.0, bm:1.3}; P.fx('vcx_hole', {x:hx, z:hz, ms:3000, r:1.0}); }
+  }
+  else if(T === 'null_lancer'){
+    // NULL LANCER — holds mid range; crystal shard volleys; PRISM LASER (an aimed line, telegraphed, then fired)
+    const MS = 0.27;
+    if(e._lz){ const L = e._lz; L.t++;
+      if(L.t === 9){ P.fx('vcx_laser', {x0:L.x, z0:L.z, x1:L.x + Math.sin(L.a)*20, z1:L.z + Math.cos(L.a)*20, w:1.2}); P.hitLine(1.6, L.x, L.z, L.a, 20, 1.2); P.shake(1); }
+      if(L.t >= 12) e._lz = null; }
+    else {
+      if(dd < 4.5) P.mv(-sin*0.7 + pr*st*0.6, -cos*0.7 + pq*st*0.6, MS);
+      else if(dd > 10) P.mv(sin*0.8 + pr*st*0.3, cos*0.8 + pq*st*0.3, MS);
+      else P.mv(pr*st, pq*st, MS*0.8);
+      if(dd < 3.2 && at % 10 === 0){ P.hit(1.1); P.fx('vcx_bite', {x:P.px, z:P.pz, c:CRIM}); }
+      if(dd > 3 && dd < 16 && at % 20 === 0) P.shoot(ang, LAV, 0.5, 3, 0.2);
+      e._lc = (e._lc === undefined ? rnd(25) : e._lc) + 1;
+      if(dd > 3 && dd < 16 && e._lc >= 45){ e._lc = 0; e._lz = {x:P.ex, z:P.ez, a:ang, t:0};
+        P.fx('vcx_lwarn', {x0:P.ex, z0:P.ez, x1:P.ex + Math.sin(ang)*20, z1:P.ez + Math.cos(ang)*20, ms:900, w:1.2}); } }
+  }
+  else if(T === 'void_obelisk'){
+    // VOID OBELISK — a turret: LASER SPIRAL (four streams wheeling round it), CRYSTAL GRID (two crossing
+    //   lasers marked through your position, then fired), and it blinks away if crowded
+    const MS = 0.12;
+    if(dd > 15) P.mv(sin, cos, MS);
+    e._ob = (e._ob || 0) + 1;
+    if(dd < 4 && e._ob >= 25){ e._ob = 0; const a2 = ang + PI + (Math.random() - 0.5)*0.9; P.blink(P.ex + Math.sin(a2)*6, P.ez + Math.cos(a2)*6); }
+    if(e._spN > 0){ e._spN--; if(e._spN % 2 === 0){ for(let k=0;k<4;k++) P.shoot(e._spA + k*PI/2, (k % 2) ? CRIM : LAV, 0.35, 1, 0); e._spA += 0.38; } }
+    else { e._sp = (e._sp === undefined ? rnd(40) : e._sp) + 1;
+      if(dd < 18 && e._sp >= 70){ e._sp = 0; e._spN = 20; e._spA = ang; P.fx('vcx_pulse', {x:P.ex, z:P.ez, r:2.2, c:LAV}); } }
+    if(e._gd){ const Gd = e._gd; Gd.t++;
+      if(Gd.t === 10){ for(let i=0;i<2;i++){ const a = Gd.a + i*PI/2, x0 = Gd.x - Math.sin(a)*8, z0 = Gd.z - Math.cos(a)*8;
+          P.fx('vcx_laser', {x0:x0, z0:z0, x1:Gd.x + Math.sin(a)*8, z1:Gd.z + Math.cos(a)*8, w:1.0}); P.hitLine(1.3, x0, z0, a, 16, 1.0); } }
+      if(Gd.t >= 12) e._gd = null; }
+    else { e._gc = (e._gc === undefined ? rnd(30) : e._gc) + 1;
+      if(dd < 16 && e._gc >= 55){ e._gc = 0; const g = Math.random()*PI; e._gd = {x:P.px, z:P.pz, a:g, t:0};
+        for(let i=0;i<2;i++){ const a = g + i*PI/2; P.fx('vcx_lwarn', {x0:P.px - Math.sin(a)*8, z0:P.pz - Math.cos(a)*8, x1:P.px + Math.sin(a)*8, z1:P.pz + Math.cos(a)*8, ms:1000, w:1.0}); } } }
+  }
+  else if(T === 'collapsar'){
+    // COLLAPSAR — a living black hole: it always DRAGS you in, sprays dark-matter orbs, and GRAVITATIONAL
+    //   COLLAPSE hauls you hard to its horizon, detonates, and spits you back out
+    const MS = 0.13;
+    if(e._cp){ const C = e._cp; C.t++; P.pullAt(P.ex, P.ez, 13, 0.55);
+      if(C.t >= 15){ P.fx('vcx_pop', {x:P.ex, z:P.ez, r:4.5}); P.hitAt(1.7, P.ex, P.ez, 4.5); P.pushAt(P.ex, P.ez, 6, 5.5); P.shake(3); e._cp = null; } }
+    else {
+      if(dd > 6) P.mv(sin, cos, MS); else P.mv(pr*st, pq*st, MS*0.5);
+      if(at % 5 === 0) P.pullAt(P.ex, P.ez, 12, 0.5);
+      if(dd < 2.8 && at % 8 === 0) P.hit(0.8);
+      e._dm = (e._dm === undefined ? rnd(20) : e._dm) + 1;
+      if(dd < 18 && e._dm >= 30){ e._dm = 0; const s0 = Math.random()*PI; for(let i=0;i<8;i++) P.shoot(s0 + i*PI/4, (i % 2) ? CRIM : LAV, 0.45, 1, 0); }
+      e._cc = (e._cc === undefined ? rnd(40) : e._cc) + 1;
+      if(dd < 12 && e._cc >= 80){ e._cc = 0; e._cp = {t:0}; P.fx('vcx_cwarn', {x:P.ex, z:P.ez, r:4.5, ms:1500}); P.fx('vcx_hole', {x:P.ex, z:P.ez, ms:1500, r:2.2}); } }
+  }
+  else if(T === 'abyss_wraith'){
+    // ABYSS WRAITH — SOUL SIPHON (a held beam out of the hole in its face that drains and slows you; break
+    //   range to end it), blinks away when crowded, and VOID SWAP trades places with you
+    const MS = 0.3;
+    if(e._sf){ const S = e._sf; S.t++;
+      if(dd > 13 || S.n >= 8){ e._sf = null; P.fx('vcx_siphon_end', {}); }
+      else if(S.t % 2 === 0){ S.n++; P.hit(0.36); P.slow(0.6, 350); P.fx('vcx_siphon', {ex:P.ex, ez:P.ez, tx:P.px, tz:P.pz}); } }
+    else {
+      if(dd < 5) P.mv(-sin*0.6 + pr*st*0.7, -cos*0.6 + pq*st*0.7, MS);
+      else if(dd > 10) P.mv(sin*0.8 + pr*st*0.3, cos*0.8 + pq*st*0.3, MS);
+      else P.mv(pr*st, pq*st, MS);
+      if(dd < 2.8 && at % 9 === 0){ P.hit(1.0); P.fx('vcx_bite', {x:P.px, z:P.pz, c:LAV}); }
+      e._sc = (e._sc === undefined ? rnd(30) : e._sc) + 1;
+      if(dd > 3 && dd < 12 && e._sc >= 50){ e._sc = 0; e._sf = {t:0, n:0}; P.fx('vcx_siphon', {ex:P.ex, ez:P.ez, tx:P.px, tz:P.pz}); } }
+    e._bk = (e._bk || 0) + 1;
+    if(dd < 3 && e._bk >= 22){ e._bk = 0; const a2 = ang + PI + (Math.random() - 0.5); P.blink(P.ex + Math.sin(a2)*6, P.ez + Math.cos(a2)*6); }
+    e._vw = (e._vw === undefined ? rnd(40) : e._vw) + 1;
+    if(dd > 3 && dd < 13 && e._vw >= 75 && !e._sf){ e._vw = 0; P.swap(); }
+  }
+  else if(T === 'dark_matter_colossus'){
+    // DARK MATTER COLOSSUS — heavy slams; CRYSTAL RUPTURE (a line of crystal eruptions marching at you);
+    //   SINGULARITY FIST (drops a black hole where you stand that drags, burns and collapses)
+    const MS = 0.17;
+    if(dd > 2.8) P.mv(sin*0.95 + pr*st*0.15, cos*0.95 + pq*st*0.15, MS);
+    if(dd < 3.6 && at % 14 === 0){ P.hit(1.4); P.fx('vcx_pulse', {x:P.ex + sin*1.5, z:P.ez + cos*1.5, r:2.6, c:LAV}); P.shake(2); }
+    if(e._cr){ const C = e._cr; C.t++;
+      for(let k=0;k<C.p.length;k++){ const q = C.p[k]; if(C.t === 5 + k*2){ P.fx('vcx_crys', {x:q[0], z:q[1]}); P.hitAt(1.1, q[0], q[1], 1.8); } }
+      if(C.t >= 5 + C.p.length*2) e._cr = null; }
+    else { e._rc = (e._rc === undefined ? rnd(30) : e._rc) + 1;
+      if(dd < 15 && e._rc >= 50){ e._rc = 0; const p = [];
+        for(let k=0;k<6;k++){ const d = 2.4 + k*2.0, x = P.ex + sin*d, z = P.ez + cos*d; p.push([x, z]); P.fx('vcx_cwarn', {x:x, z:z, r:1.8, ms:500 + k*200}); }
+        e._cr = {t:0, p:p}; } }
+    e._fs = (e._fs === undefined ? rnd(40) : e._fs) + 1;
+    if(!e._bh && dd > 4 && dd < 14 && e._fs >= 70){ e._fs = 0;
+      e._bh = {x:P.px, z:P.pz, t:0, life:22, pr:6, pa:0.6, br:3.2, bm:1.5}; P.fx('vcx_hole', {x:P.px, z:P.pz, ms:2200, r:1.3}); P.fx('vcx_pulse', {x:P.ex, z:P.ez, r:1.6, c:CRIM}); }
+  }
+}
+
+const VCX_BESPOKE = { singularity_hound:1, null_lancer:1, void_obelisk:1, collapsar:1, abyss_wraith:1, dark_matter_colossus:1 };
+const VC_BESPOKE = { void_construct:1, void_sentinel:1, rift_stalker:1, rift_weaver:1, singularity_hound:1, null_lancer:1, void_obelisk:1, collapsar:1, abyss_wraith:1, dark_matter_colossus:1 };
+const VC_PWR = { void_construct:230, void_sentinel:240, rift_stalker:245, rift_weaver:250, singularity_hound:245, null_lancer:255, void_obelisk:240, collapsar:260, abyss_wraith:245, dark_matter_colossus:270 };
 function _vcDmgS(e, mult){ return Math.floor((VC_PWR[e.type] || e.atk || 235) * mult); }
 const _VC_NULL=0x0a0016, _VC_EDGE=0xb44dff, _VC_CRIM=0xff2050, _VC_PALE=0xcfc8ff;
 const XF_BESPOKE = { xf_fortress_drone:1, xf_siege_walker:1, xf_warlord:1, xf_titan_elite:1, xf_praetorian:1 };
