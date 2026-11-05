@@ -433,6 +433,7 @@ const ENEMY_STATS = {
   xf_siege_walker:   {hp:120000,atk:900, spd:0.014, aggroRange:11, reward:5400, expR:1600, dmgReduction:0.50},
   xf_warlord:        {hp:51000, atk:720, spd:0.062, aggroRange:16, reward:4800, expR:1500, dmgReduction:0.40},
   xf_praetorian:     {hp:84000, atk:760, spd:0.050, aggroRange:14, reward:5200, expR:1600, dmgReduction:0.42},   // a658 — the Xu elite guard
+  xf_stealth_bomber: {hp:52000, atk:700, spd:0.100, aggroRange:18, reward:4600, expR:1500, dmgReduction:0.38},   // a706 — the stealth bomber
   void_spike_horror:  {hp:3600,  atk:180, spd:0.040, aggroRange:12, reward:420, expR:140,  dmgReduction:0.15},
   // sanctuary
   sanctuary_guardian:  {hp:2400,  atk:95,  spd:0.025, aggroRange:8,  reward:280, expR:90,   dmgReduction:0},
@@ -731,8 +732,8 @@ var _XF = (function(){
   var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= 240 || zz >= 240 || M[zz*240 + xx]) return false; } return Math.hypot(px - CX, pz - CZ) > ARENA + 2; };
   var SPAWNS = [];
   var put = function(px, pz, type){ for(var tr = 0; tr < 14; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*0.9 : 0)), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*0.9 : 0)); if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type, camp:true }); return; } } };
-  var POOL = { air:['xf_fortress_drone', 'xf_fortress_drone', 'xf_warlord', 'xf_titan_elite', 'xf_fortress_drone'], mech:['xf_titan_elite', 'xf_titan_elite', 'xf_siege_walker', 'xf_fortress_drone', 'xf_warlord'],
-               armor:['xf_siege_walker', 'xf_siege_walker', 'xf_titan_elite', 'xf_fortress_drone', 'xf_titan_elite'], garrison:['xf_warlord', 'xf_praetorian', 'xf_titan_elite', 'xf_warlord', 'xf_fortress_drone'] };
+  var POOL = { air:['xf_fortress_drone', 'xf_stealth_bomber', 'xf_warlord', 'xf_titan_elite', 'xf_stealth_bomber'], mech:['xf_titan_elite', 'xf_titan_elite', 'xf_siege_walker', 'xf_fortress_drone', 'xf_warlord'],
+               armor:['xf_siege_walker', 'xf_siege_walker', 'xf_titan_elite', 'xf_stealth_bomber', 'xf_titan_elite'], garrison:['xf_warlord', 'xf_praetorian', 'xf_titan_elite', 'xf_warlord', 'xf_fortress_drone'] };
   var CAMPS = [[28, 62, 'air'], [60, 58, 'air'], [88, 60, 'air'], [40, 88, 'air'], [76, 88, 'air'], [58, 20, 'air'],
                [150, 37, 'mech'], [200, 37, 'mech'], [152, 57, 'mech'], [188, 57, 'mech'], [214, 57, 'mech'], [150, 92, 'mech'], [184, 94, 'mech'], [214, 88, 'mech'],
                [172, 151, 'armor'], [150, 172, 'armor'], [176, 197, 'armor'], [212, 197, 'armor'], [150, 217], [200, 217, 'armor'], [210, 178, 'armor'],
@@ -11079,7 +11080,16 @@ function tickGame(game) {
             return out;
           };
 
-          if(e.type==='xf_fortress_drone'){
+          if(e.type==='xf_stealth_bomber'){
+            // a706 — the stealth bomber: one shared brain (the client runs the same text offline)
+            const _fx=(vt,d)=>{ const o={}; for(const k in d) o[k]=(typeof d[k]==='number')?+d[k].toFixed(2):d[k]; fx(vt,o); };
+            _xfbBrain(e, { ex:e.x, ez:e.z, px:nearestPlayer.x, pz:nearestPlayer.z, dd:dd, ang:ang, sin:sin, cos:cos, st:e._strafe, at:e.attackTimer,
+              mv:mv, fx:_fx, shoot:(a,col,m,n,sp)=>shoot(a,col,m,n,sp,'plasma'),
+              hitAt:(m,x,z,r)=>{ players.forEach((p,ws)=>{ if(p.gameId!==game.id || p.zone!==zoneName || p.x===undefined) return; const qx=p.x-x, qz=p.z-z; if(qx*qx+qz*qz<r*r)
+                send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_xfDmgS(e,m),ex:+x.toFixed(2),ez:+z.toFixed(2),zone:zoneName}); }); },
+              cloak:(on)=>{ e._cloak=on?1:0; _fx('xfb_cloakset',{eid:e.id,on:on?1:0}); } });
+          }
+          else if(e.type==='xf_fortress_drone'){
             // GUN-PLATFORM SPRINTER — jinks hard, streams cannon fire, tethers killzones
             const MS=0.57;
             if(Math.random()<0.108) e._strafe=-e._strafe;
@@ -13227,8 +13237,32 @@ const VC_BESPOKE = { void_construct:1, void_sentinel:1, rift_stalker:1, rift_wea
 const VC_PWR = { void_construct:230, void_sentinel:240, rift_stalker:245, rift_weaver:250, singularity_hound:245, null_lancer:255, void_obelisk:240, collapsar:260, abyss_wraith:245, dark_matter_colossus:270 };
 function _vcDmgS(e, mult){ return Math.floor((VC_PWR[e.type] || e.atk || 235) * mult); }
 const _VC_NULL=0x0a0016, _VC_EDGE=0xb44dff, _VC_CRIM=0xff2050, _VC_PALE=0xcfc8ff;
-const XF_BESPOKE = { xf_fortress_drone:1, xf_siege_walker:1, xf_warlord:1, xf_titan_elite:1, xf_praetorian:1 };
-const XF_PWR = { xf_fortress_drone:285, xf_siege_walker:315, xf_warlord:320, xf_titan_elite:335, xf_praetorian:330 };
+// ── a706 — STEALTH BOMBER BRAIN (10Hz; the same text runs in the client offline and on the server).
+//   P: ex/ez, px/pz, dd/ang/sin/cos, st, at, mv, hitAt(m,x,z,r), shoot(a,col,m,n,spread), fx, cloak(on)
+function _xfbBrain(e, P){
+  const PI = Math.PI, RED = 0xff3040, CYAN = 0x30d8ff, dd = P.dd, ang = P.ang, sin = P.sin, cos = P.cos, st = P.st;
+  const rnd = (n)=>Math.floor(Math.random()*n);
+  if(e._q && e._q.length){ e._qt = (e._qt || 0) + 1; for(let i=e._q.length - 1;i>=0;i--){ if(e._qt >= e._q[i][0]){ const f = e._q[i][1]; e._q.splice(i, 1); f(); } } }
+  const later = (n, f)=>{ if(!e._q) e._q = []; e._q.push([(e._qt || 0) + n, f]); };
+  // CARPET BOMBING RUN — six impacts marked in a line through you, then it screams down the line dropping them in sequence
+  if(e._run){ const R = e._run; R.t++; P.mv(Math.sin(R.a), Math.cos(R.a), 0.9);
+    for(let k=0;k<R.p.length;k++){ if(R.t === 2 + k*2){ const b = R.p[k]; P.fx('xfb_drop', {x:b[0], z:b[1]}); later(4, ()=>{ P.fx('xfb_boom', {x:b[0], z:b[1]}); P.hitAt(1.0, b[0], b[1], 2.3); }); } }
+    if(R.t >= 16) e._run = null; return; }
+  // it circles you at range, strafing with paired missiles
+  const want = 9, rad = dd > want + 2 ? 0.8 : (dd < want - 2 ? -0.6 : 0);
+  P.mv(sin*rad + cos*st*0.9, cos*rad - sin*st*0.9, 0.6);
+  if(P.at % 20 === 0 && dd < 20 && !(e._ck > 0)) P.shoot(ang, RED, 0.5, 2, 0.25);
+  // CLOAK — it fades from sight and repositions, then decloaks into a run
+  if(e._ck > 0){ e._ck--; if(e._ck === 0){ P.cloak(0); P.fx('xfb_decloak', {x:P.ex, z:P.ez}); } }
+  else { e._cc = (e._cc === undefined ? rnd(40) : e._cc) + 1; if(e._cc >= 90){ e._cc = 0; e._ck = 30; P.cloak(1); P.fx('xfb_cloak', {x:P.ex, z:P.ez}); } }
+  e._rn = (e._rn === undefined ? rnd(30) : e._rn) + 1;
+  if(e._rn >= 55 && dd < 18){ e._rn = 0; const p = [];
+    for(let k=0;k<6;k++){ const d = dd - 5 + k*2.0, x = P.ex + Math.sin(ang)*d, z = P.ez + Math.cos(ang)*d; p.push([x, z]); P.fx('xfb_warn', {x:x, z:z, ms:600 + k*200}); }
+    e._run = {t:0, a:ang, p:p}; P.fx('xfb_run', {x:P.ex, z:P.ez}); if(e._ck > 0){ e._ck = 0; P.cloak(0); P.fx('xfb_decloak', {x:P.ex, z:P.ez}); } }
+}
+
+const XF_BESPOKE = { xf_fortress_drone:1, xf_siege_walker:1, xf_warlord:1, xf_titan_elite:1, xf_praetorian:1, xf_stealth_bomber:1 };
+const XF_PWR = { xf_fortress_drone:285, xf_siege_walker:315, xf_warlord:320, xf_titan_elite:335, xf_praetorian:330, xf_stealth_bomber:320 };
 // a658 — a Praetorian's WAR CRY drives the garrison around it to hit 20% harder for 8s
 function _xfDmgS(e, mult){ return Math.floor((XF_PWR[e.type] || e.atk || 300) * mult * ((e._rallyUntil || 0) > Date.now() ? 1.2 : 1)); }
 const _XF_CYAN=0x00ffff, _XF_RED=0xff2233, _XF_GOLD=0xffc832, _XF_LIME=0x9dff00, _XF_PR=0x66ff33;
