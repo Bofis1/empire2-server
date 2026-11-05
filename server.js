@@ -566,7 +566,7 @@ const ZONE_BOSS_HP = {
   wyvernwastes:     { hp:500000,   name:'CRYOTHAR' },
   xumen:            { hp:675000,   name:'THE XU SUPREME OVERLORD' },
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
-  xumen_fortress:   { hp:1200000,  name:'THE APEX PYRAMID' },
+  xumen_fortress:   { hp:2800000,  name:'THE APEX PYRAMID' },   // a707 — rebalanced (was 1.2M)
   void_citadel:     { hp:800000,   name:'COMMANDANT XERATH' },
   neon_hollow:      { hp:1600000,  name:'THE CURATOR' },
   veiled_sanctuary: { hp:4000000,  name:'THE FINAL ABBOT' },  // v92.41 · a614 — 110+ raid boss (was 850k)
@@ -5126,7 +5126,7 @@ const ZONE_DMG_BASE = {
   neon_hollow:     { lvl:100, mob: 275, boss: 118 },
   the_reach:       { lvl:100, mob: 422, boss: 316 },
   xeron:           { lvl:100, mob: 290, boss:  97 },
-  xumen_fortress:  { lvl:100, mob: 334, boss: 141 }
+  xumen_fortress:  { lvl:100, mob: 334, boss:1080 }   // a707 — the rebuilt Apex Pyramid's damage is set in APX_D directly (k = 1)
 };
 const ZONE_DMG_K = {};
 Object.keys(ZONE_DMG_BASE).forEach(function(z){
@@ -5393,6 +5393,203 @@ const _CV = {
        phases:[0.80,0.60,0.40,0.20], acd:[0,20,14,12,10,8],
        base:['root_slam'], unlock:[[2,'natures_grasp'],[2,'leaf_storm'],[4,'ancient_wrath']] },
 };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// a707 — THE APEX PYRAMID, REBUILT. One brain, shared word for word by the server (the
+//   authority whenever you're in a lobby) and the client (solo). Runs at 10 Hz.
+//   The craft now FLIES: it glides around its target, holds station to fire, and makes
+//   strafing runs across the arena. Everything it does is telegraphed and dodgeable:
+//     KEEL DISCHARGE   P1+  the reactor under the keel charges, then bursts (stand clear of it)
+//     TRACTOR BEAM     P1+  drags everyone in toward a crush zone under the keel (walk out)
+//     STRAFING RUN     P1+  marks a lane, flies down it and carpets it with bombs
+//     PLASMA BROADSIDE P1+  lances fired from the face batteries, rotating (4, then 8)
+//     ORBITAL LANCE    P2+  a reticle on every player, then a beam from orbit
+//     PYLON FENCE      P2+  laser spokes sweep out from the keel (the eye of the storm is under it)
+//     DISINTEGRATOR    P3+  a tracking beam from the core (keep moving across it)
+//     APEX COLLAPSE    P4   the capstone drops: shock rings roll out, each with two gaps
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), pull(k,x,z,amt), push(k,x,z,amt),
+//        fx(vt,obj), rnd() }   S: the craft's position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const APX_D  = { bolt:600, crush:540, keel:1370, lance:2250, fence:860, beam:760, bomb:1530, ring:1800 };   // a707 — tuned with the balance bot
+const APX_PM = [1, 1, 1.12, 1.25, 1.4];
+const APX_R  = 21;     // the craft keeps within this radius of its home
+const APX_ENG = 34;    // and only fights players inside this radius
+function _apxBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = APX_PM[ph], R2 = v => Math.round(v * 100) / 100;
+  let X = S._ax;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    // fresh spawn, or a respawn after a kill: home, everything off cooldown-reset
+    X = S._ax = { t:0, vx:0, vz:0, orb:A.rnd()*6.28, ow:(A.rnd() < 0.5 ? -1 : 1),
+      cd:{ keel:45, tractor:110, strafe:170, fence:40, beam:40, collapse:30 }, lance:40, gap:30, act:null, last:{},
+      bolts:[], bombs:[], lances:[], bs:24, bsRot:0, tgt:null, tgtT:0, dmg:false, ph:ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => (p.x - hx)*(p.x - hx) + (p.z - hz)*(p.z - hz) < APX_ENG*APX_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+
+  // ── projectiles and fuses keep running whatever the craft is doing
+  for(let i = X.bolts.length - 1; i >= 0; i--){
+    const o = X.bolts[i]; o.x += o.vx; o.z += o.vz;
+    let hit = false; for(const p of inA){ if(D(p, o.x, o.z) < 0.85){ A.hit(p.k, Math.round(APX_D.bolt * M)); hit = true; break; } }
+    if(hit || --o.l <= 0) X.bolts.splice(i, 1);
+  }
+  for(let i = X.bombs.length - 1; i >= 0; i--){ const o = X.bombs[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < 2.4) A.hit(p.k, Math.round(APX_D.bomb * M)); }); X.bombs.splice(i, 1); } }
+  for(let i = X.lances.length - 1; i >= 0; i--){ const o = X.lances[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < 2.7) A.hit(p.k, Math.round(APX_D.lance * M)); }); X.lances.splice(i, 1); } }
+
+  if(!inA.length){
+    // nobody in the arena: drop what it's doing and glide home
+    X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.25); S.x += dx/d*st; S.z += dz/d*st; } X.vx = X.vz = 0; return;
+  }
+  // main target: the nearest, re-picked every 4s so it doesn't flicker between two players
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } });
+    X.tgt = best.k; X.tgtT = 40;
+  }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.lance > 0) X.lance--;
+  if(X.gap > 0) X.gap--;
+
+  // ── a new phase: the hull reconfigures, and the shock throws everyone back
+  if(ph > X.ph){
+    X.ph = ph; X.act = { k:'xform', t:0 }; X.bolts.length = 0;
+    A.fx('apx_xform', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4.5); });
+  }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'xform'){ done = a.t >= 20; }
+    else if(a.k === 'keel'){
+      if(a.t === 14){ A.fx('apx_keel_go', { x:R2(a.x), z:R2(a.z) });
+        inA.forEach(p => { if(D(p, a.x, a.z) < 4.8) A.hit(p.k, Math.round(APX_D.keel * M)); }); }
+      done = a.t >= 18;
+    }
+    else if(a.k === 'tractor'){
+      if(a.t > 8){
+        inA.forEach(p => { const d = D(p, a.x, a.z);
+          if(d < 16 && d > 1.2) A.pull(p.k, a.x, a.z, 0.24);
+          if(d < 2.6 && once(p.k, 'cr', 5)) A.hit(p.k, Math.round(APX_D.crush * M)); });
+      }
+      done = a.t >= 48;
+    }
+    else if(a.k === 'strafe'){
+      if(a.t > a.w){
+        const u = Math.min(1, (a.t - a.w) / a.d), e = u*u*(3 - 2*u);
+        S.x = a.sx + (a.ex - a.sx)*e; S.z = a.sz + (a.ez - a.sz)*e;
+        const rt = a.t - a.w; if(rt % 2 === 1 && rt < a.d){ const f = rt / a.d;
+          X.bombs.push({ x:a.sx + (a.ex - a.sx)*f, z:a.sz + (a.ez - a.sz)*f, f:5 }); }
+      }
+      done = a.t >= a.w + a.d;
+      if(done){ X.vx = (a.ex - a.sx) / a.d * 0.5; X.vz = (a.ez - a.sz) / a.d * 0.5; }
+    }
+    else if(a.k === 'fence'){
+      if(a.t > a.warn){
+        const tt = a.t - a.warn;
+        inA.forEach(p => { const dx = p.x - a.x, dz = p.z - a.z, r = Math.hypot(dx, dz);
+          if(r < a.inr || r > a.len) return;
+          for(let i = 0; i < a.n; i++){ const an = a.a0 + a.w*tt + i*Math.PI/a.n;
+            const perp = Math.abs(dx*Math.cos(an) - dz*Math.sin(an));
+            if(perp < 0.75 && once(p.k, 'fe', 6)){ A.hit(p.k, Math.round(APX_D.fence * M)); break; } } });
+      }
+      done = a.t >= a.warn + a.d;
+    }
+    else if(a.k === 'beam'){
+      if(a.t > a.warn){
+        const want = Math.atan2(P.x - a.x, P.z - a.z); let da = want - a.a;
+        while(da > Math.PI) da -= 2*Math.PI; while(da < -Math.PI) da += 2*Math.PI;
+        a.a += Math.max(-0.04, Math.min(0.04, da));
+        if(a.t % 2 === 0) A.fx('apx_beama', { a:+a.a.toFixed(3) });
+        const sx = Math.sin(a.a), sz = Math.cos(a.a);
+        inA.forEach(p => { const dx = p.x - a.x, dz = p.z - a.z, al = dx*sx + dz*sz, pe = Math.abs(dx*sz - dz*sx);
+          if(al > 1.0 && al < a.len && pe < 0.9 && once(p.k, 'bm', 4)) A.hit(p.k, Math.round(APX_D.beam * M)); });
+      }
+      done = a.t >= a.warn + a.d;
+    }
+    else if(a.k === 'collapse'){
+      a.rings.forEach((g, ri) => {
+        const rt = a.t - g.t0; if(rt <= 0) return; const r = 1.2 + rt*a.spd; if(r > 26) return;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) > 0.7) return;
+          const an = Math.atan2(p.x - a.x, p.z - a.z);
+          const inGap = g.g.some(ga => { let q = an - ga; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return Math.abs(q) < a.hw; });
+          if(!inGap && once(p.k, 'rg' + ri, 99)) A.hit(p.k, Math.round(APX_D.ring * M)); });
+      });
+      done = a.t >= a.rings[a.rings.length - 1].t0 + 30;
+    }
+    if(done){ X.act = null; X.gap = ph >= 4 ? 12 : ph >= 3 ? 16 : 22; }
+  } else {
+    // ── GLIDE: circle the target at a few metres, banking, never quite still
+    X.orb += 0.016*X.ow;
+    const tx = P.x + Math.sin(X.orb)*3.0, tz = P.z + Math.cos(X.orb)*3.0;
+    const vmax = [0, 0.16, 0.19, 0.23, 0.28][ph];
+    let wx = (tx - S.x)*0.09, wz = (tz - S.z)*0.09; const wl = Math.hypot(wx, wz);
+    if(wl > vmax){ wx = wx/wl*vmax; wz = wz/wl*vmax; }
+    X.vx += (wx - X.vx)*0.14; X.vz += (wz - X.vz)*0.14;
+    S.x += X.vx; S.z += X.vz;
+    if(X.t % 120 === 0 && A.rnd() < 0.5) X.ow = -X.ow;
+
+    // ── pick the next major move
+    if(X.gap <= 0){
+      // of the moves that are ready, the one it has gone longest without using
+      const MIN = { keel:1, tractor:1, strafe:1, fence:2, beam:3, collapse:4 };
+      let k = null, lk = 1e9;
+      for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(k) X.last[k] = X.t;
+      if(k === 'keel'){
+        X.act = { k, t:0, x:S.x, z:S.z }; X.cd.keel = ph >= 3 ? 55 : 70;
+        A.fx('apx_keel', { x:R2(S.x), z:R2(S.z), r:4.8, w:14 });
+      } else if(k === 'tractor'){
+        X.act = { k, t:0, x:S.x, z:S.z }; X.cd.tractor = ph >= 3 ? 120 : 150;
+        A.fx('apx_tractor', { x:R2(S.x), z:R2(S.z), w:8, d:40, r:16, cr:2.6 });
+      } else if(k === 'strafe'){
+        let dx = P.x - S.x, dz = P.z - S.z, dl = Math.hypot(dx, dz);
+        if(dl < 1.5){ dx = hx - S.x; dz = hz - S.z; dl = Math.hypot(dx, dz) || 1; if(dl < 1.5){ dx = 1; dz = 0; dl = 1; } }
+        dx /= dl; dz /= dl; let L = 24, ex = S.x + dx*L, ez = S.z + dz*L;
+        while(L > 10 && Math.hypot(ex - hx, ez - hz) > APX_R){ L -= 1; ex = S.x + dx*L; ez = S.z + dz*L; }
+        if(Math.hypot(ex - hx, ez - hz) > APX_R){ dx = hx - S.x; dz = hz - S.z; dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl; L = Math.min(24, dl + 8); ex = S.x + dx*L; ez = S.z + dz*L; }
+        X.act = { k, t:0, sx:S.x, sz:S.z, ex, ez, w:14, d:18 }; X.cd.strafe = ph >= 4 ? 120 : ph >= 3 ? 140 : 160;
+        A.fx('apx_strafe', { sx:R2(S.x), sz:R2(S.z), ex:R2(ex), ez:R2(ez), w:14, d:18, br:2.4, bf:5 });
+      } else if(k === 'fence'){
+        const n = ph >= 4 ? 3 : 2, w = (ph >= 4 ? 0.055 : 0.045)*(A.rnd() < 0.5 ? -1 : 1), a0 = A.rnd()*Math.PI;
+        X.act = { k, t:0, x:S.x, z:S.z, n, w, a0, len:15, inr:1.6, warn:16, d:46 }; X.cd.fence = ph >= 4 ? 130 : 160;
+        A.fx('apx_fence', { x:R2(S.x), z:R2(S.z), n, w:+w.toFixed(4), a0:+a0.toFixed(3), len:15, inr:1.6, warn:16, d:46 });
+      } else if(k === 'beam'){
+        const a0 = Math.atan2(P.x - S.x, P.z - S.z);
+        X.act = { k, t:0, x:S.x, z:S.z, a:a0, warn:12, d:36, len:20 }; X.cd.beam = ph >= 4 ? 110 : 130;
+        A.fx('apx_beam', { x:R2(S.x), z:R2(S.z), a:+a0.toFixed(3), warn:12, d:36, len:20 });
+      } else if(k === 'collapse'){
+        const rings = [15, 27, 39].map(t0 => ({ t0, g:[A.rnd()*6.283, 0] })); rings.forEach(g => { g.g[1] = g.g[0] + 2.2 + A.rnd()*1.9; });
+        X.act = { k, t:0, x:S.x, z:S.z, rings, spd:0.85, hw:0.34 }; X.cd.collapse = 140;
+        A.fx('apx_collapse', { x:R2(S.x), z:R2(S.z), spd:0.85, hw:0.34, rings:rings.map(g => [g.t0, +g.g[0].toFixed(3), +g.g[1].toFixed(3)]) });
+      }
+    }
+  }
+  // ── ORBITAL LANCE: a reticle under every player in the arena
+  if(ph >= 2 && X.lance <= 0){
+    X.lance = ph >= 4 ? 55 : ph >= 3 ? 70 : 85;
+    const pts = inA.slice(0, 6).map(p => [R2(p.x), R2(p.z)]);
+    pts.forEach(q => X.lances.push({ x:q[0], z:q[1], f:18 }));
+    A.fx('apx_lance', { pts, f:18, r:2.7 });
+  }
+  // ── PLASMA BROADSIDE: the face batteries, rotating a little every volley
+  if(--X.bs <= 0 && !(X.act && X.act.k === 'xform')){
+    X.bs = [0, 28, 22, 18, 14][ph]; X.bsRot += 0.42;
+    const n = ph >= 3 ? 8 : 4, sp = 1.3, angs = [];
+    for(let i = 0; i < n; i++){ const an = X.bsRot + i*2*Math.PI/n; angs.push(+an.toFixed(3));
+      X.bolts.push({ x:S.x + Math.sin(an)*5.5, z:S.z + Math.cos(an)*5.5, vx:Math.sin(an)*sp, vz:Math.cos(an)*sp, l:22 }); }
+    A.fx('apx_bolts', { x:R2(S.x), z:R2(S.z), a:angs, r0:5.5, s:sp, l:22 });
+  }
+  // stay over the arena
+  const ox = S.x - hx, oz = S.z - hz, od = Math.hypot(ox, oz);
+  if(od > APX_R){ S.x = hx + ox/od*APX_R; S.z = hz + oz/od*APX_R; X.vx *= 0.5; X.vz *= 0.5; }
+}
 
 const ZBOSS_SERVER = {
 
@@ -6844,73 +7041,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE APEX PYRAMID (a552). Structurally unlike every boss migrated so far: it has
-  //    NO attack rotation. It hovers motionless over the fortress arena and runs five
-  //    abilities on five independent cooldowns, so everything lives in passive() and the
-  //    rotation machinery is left unused. Damage scales linearly with phase (X * phase),
-  //    which is why `dmg` is just the phase number.
+  // ── THE APEX PYRAMID (a707). Rebuilt: it flies now, and every move it makes lives in the
+  //    shared brain _apxBrain (above ZBOSS_SERVER, the client runs the same text solo). The
+  //    brain moves the craft itself (move:'self'), aims at every player in the arena and
+  //    hands back damage, pulls, pushes and render cues through this adapter.
   xumen_fortress: {
-    x: 180, z: 180,                                    // tile (120,120) — central laser arena
-    spd:    [0,0,0,0,0],                               // unused under 'hold'
-    dmg:    [0, 1, 2, 3, 4],
+    x: 180, z: 180,                                    // tile (120,120) — the launch complex
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in APX_D
     phases: [0.75, 0.50, 0.25],
-    acd:    [0, 20, 20, 20, 20],                       // unused — no rotation
+    acd:    [0, 20, 20, 20, 20],
     tele:   0,
-    move:   'hold',
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, np, nd, zoneName, game, aoe, fx, proj, geyser } = c;
-      const pang = Math.atan2(np.x - b.x, np.z - b.z);
-
-      // CANNON SALVO — four projectiles fired outward from the rotating hull
-      const salvoRate = Math.max(3, Math.round(Math.max(20, 50 - ph*8) / 6));
-      if (b._vt % salvoRate === 0) {
-        fx('ap_salvo');
-        b._hullSpin = (b._hullSpin || 0) + 0.072;
-        for (let ci = 0; ci < 4; ci++) proj(b._hullSpin + ci/4*Math.PI*2, 0xff2200, Math.floor(180 * mult), 'plasma');
-      }
-
-      // TRACTOR BEAM — drags everyone in the arena toward the hull, then burns them
-      if (b._tbOn) {
-        b._tbT = (b._tbT || 0) + 1;
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          const dx = b.x - p.x, dz = b.z - p.z, d = Math.sqrt(dx*dx + dz*dz);
-          if (d > 1.5) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull',
-                                  px:+b.x.toFixed(2), pz:+b.z.toFixed(2), pull:0.12*6 });
-          if (d < 4.5) send(ws, { type:'sv_enemy_attack', eid:-1, dmg:Math.floor(60 * mult),
-                                  ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
-        });
-        if (b._tbT >= 30) { b._tbOn = 0; b._tbT = 0; fx('ap_tractor_end'); }
-      } else {
-        b._tbCd = (b._tbCd || 0) - 1;
-        if (b._tbCd <= 0 && nd < 18) {
-          b._tbCd = 30 + Math.floor(Math.random() * 20);
-          b._tbOn = 1; b._tbT = 0;
-          fx('ap_tractor');
-        }
-      }
-
-      // ORBITAL STRIKE — P2+, a telegraphed pillar on your position
-      if (ph >= 2) {
-        b._obCd = (b._obCd || 0) - 1;
-        if (b._obCd <= 0) {
-          b._obCd = Math.max(5, Math.round((240 - ph*30) / 6));
-          fx('ap_orbital', { tx:+np.x.toFixed(2), tz:+np.z.toFixed(2) });
-          geyser(np.x, np.z, 10, 6.75, Math.floor(320 * mult), 0x00ffff, { shake:14 });
-        }
-      }
-
-      // DISINTEGRATION BEAM — P3+, a continuous aimed lance
-      if (ph >= 3 && b._vt % 2 === 0) proj(pang, 0x00ffff, Math.floor(80 * mult), 'plasma');
-
-      // VOID SHOCKWAVE — P4, area denial around the hull
-      if (ph >= 4) {
-        b._vsCd = (b._vsCd || 0) - 1;
-        if (b._vsCd <= 0) {
-          b._vsCd = 20;
-          fx('ap_void'); aoe(10.5, Math.floor(200 * mult));
-        }
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _apxBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
@@ -7950,6 +8103,9 @@ function tickZoneBoss(game, zoneName, zone) {
   if (b._hold > 0) {
     // a619 — a channelled pattern (the Keeper's lattices, horizon, End Cycle) anchors the boss
     b._hold--; nx = b.x; nz = b.z;
+  } else if (cfg.move === 'self') {
+    // a707 — the boss's own brain flies it (THE APEX PYRAMID); position is written in passive()
+    nx = b.x; nz = b.z;
   } else if (cfg.move === 'hold') {
     // a552 — THE APEX PYRAMID never moves at all: it hovers over its arena and spins.
     nx = b.x; nz = b.z;
