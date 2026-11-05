@@ -563,7 +563,7 @@ const ZONE_BOSS_HP = {
   ancient:          { hp:120000,   name:'THE ELDER ARCHITECT' },
   dragonlair:       { hp:375000,   name:'VAELTHARAX THE UNDYING' },
   riftvale:         { hp:400000,   name:'THE RIFT SOVEREIGN' },
-  wyvernwastes:     { hp:500000,   name:'CRYOTHAR' },
+  wyvernwastes:     { hp:1200000,  name:'CRYOTHAR' },   // a709 — rebuilt (was 500k)
   xumen:            { hp:675000,   name:'THE XU SUPREME OVERLORD' },
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
   xumen_fortress:   { hp:2800000,  name:'THE APEX PYRAMID' },   // a707 — rebalanced (was 1.2M)
@@ -5117,7 +5117,7 @@ const ZONE_DMG_BASE = {
   riftvale:        { lvl: 65, mob: 274, boss:  45 },
   void_citadel:    { lvl: 70, mob: 216, boss: 191 },
   veiled_sanctuary:{ lvl:110, mob: 228, boss: 217 },   // a614 — 110+ (was 80): hits on the level-110 curve
-  wyvernwastes:    { lvl: 80, mob: 259, boss: 238 },
+  wyvernwastes:    { lvl: 80, mob: 259, boss: 605.2494 },   // a709 — the rebuilt Cryothar's damage is set in CRY_D directly (k = 1)
   xumen:           { lvl: 80, mob: 267, boss: 183 },
   xulcan:          { lvl: 90, mob: 633, boss: 407 },
   forge:           { lvl: 95, mob: 624, boss: 288 },
@@ -5739,48 +5739,166 @@ function _curBrain(S, A){
   const c = clampA(S.x, S.z, CUR_R); S.x = c[0]; S.z = c[1];
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a709 — CRYOTHAR, REBUILT as a blue frost dragon. One brain, shared word for word by the
+//   server (the authority in a lobby) and the client (solo). 10 Hz. It stalks its target
+//   on the ground, turning to face it, and takes to the air for its big moves:
+//     FROST BREATH    P1+  a sweeping cone of breath that chills (slows) as it burns
+//     TAIL SWEEP      P1+  everything behind and beside it, swept away
+//     WING GUST       P1+  a blast of wind from the wings that hurls you back
+//     GLACIER SPIKES  P2+  lines of ice spikes race out of the ground toward every player
+//     ICICLE STORM    P2+  it takes off and rains icicles on marked ground
+//     ICE TOMB        P3+  a frost circle closes on its target and freezes it solid
+//     DIVE BOMB       P3+  it climbs, then crashes down on you
+//     ABSOLUTE ZERO   P5   a blizzard over the whole lair — only the warm vents are safe
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), slow(k,f,ms),
+//        fx(vt,obj), rnd() }   S: Cryothar's position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const CRY_D  = { breath:340, tail:880, gust:650, spike:900, icicle:950, tomb:1300, dive:1250, zero:1700 };
+const CRY_PM = [1, 1, 1.1, 1.2, 1.32, 1.45];
+const CRY_R = 22, CRY_ENG = 38;
+function _cryBrain(S, A){
+  const ph = Math.max(1, Math.min(5, A.ph | 0)), M = CRY_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._cr;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._cr = { t:0, vx:0, vz:0, face:0, cd:{ breath:30, tail:40, gust:55, spike:40, icicle:60, tomb:40, dive:50, zero:30 }, last:{}, gap:20, act:null,
+      hz:[], tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < CRY_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // delayed strikes (icicles, spikes, tombs, the dive) land whatever it is doing
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(CRY_D[o.d]*M)); if(o.push) A.push(p.k, o.x, o.z, o.push); if(o.root) A.slow(p.k, 0.05, o.root); } }); X.hz.splice(i, 1); } }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.2); S.x += dx/d*st; S.z += dz/d*st; } return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'roar', t:0 }; A.fx('cry_roar', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'roar') done = a.t >= 16;
+    else if(a.k === 'breath'){
+      if(a.t > a.w){ const u = (a.t - a.w)/a.d, an = a.a - a.sw + 2*a.sw*u; X.face = an;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(d > a.r || d < 0.5) return;
+          if(Math.abs(dAng(angTo(p.x, p.z), an)) < a.ha && once(p.k, 'br', 4)){ A.hit(p.k, Math.round(CRY_D.breath*M)); A.slow(p.k, 0.6, 600); } }); }
+      done = a.t >= a.w + a.d; }
+    else if(a.k === 'tail'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.r && Math.abs(dAng(angTo(p.x, p.z), a.a)) > a.front){ A.hit(p.k, Math.round(CRY_D.tail*M)); A.push(p.k, a.x, a.z, 3.5); } });
+      done = a.t >= a.w + 5; }
+    else if(a.k === 'gust'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.r && Math.abs(dAng(angTo(p.x, p.z), a.a)) < a.ha){ A.hit(p.k, Math.round(CRY_D.gust*M)); A.push(p.k, a.x, a.z, 6); } });
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'icicle' || a.k === 'dive' || a.k === 'zero' || a.k === 'spike' || a.k === 'tomb'){
+      if(a.k === 'dive' && a.t === a.land){ S.x = a.tx; S.z = a.tz; }
+      if(a.k === 'zero' && a.t === a.w){
+        inA.forEach(p => { if(!a.safe.some(q => D(p, q[0], q[1]) < a.sr)) A.hit(p.k, Math.round(CRY_D.zero*M)); }); }
+      done = a.t >= a.end; }
+    if(done){ X.act = null; X.gap = ph >= 4 ? 12 : 18; }
+  } else {
+    // ── STALK: turn to face the target and close to breath range, never quite on top of it
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.12, Math.min(0.12, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.16, 0.18, 0.20, 0.22, 0.25][ph];
+    let sp = d > 7 ? vmax : d < 4 ? -vmax*0.4 : 0;
+    const tvx = Math.sin(X.face)*sp, tvz = Math.cos(X.face)*sp;
+    X.vx += (tvx - X.vx)*0.15; X.vz += (tvz - X.vz)*0.15; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { breath:1, tail:1, gust:1, spike:2, icicle:2, tomb:3, dive:3, zero:5 };
+      let k = null, lk = 1e9;
+      for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue;
+        if(m === 'tail' && !inA.some(p => D(p, S.x, S.z) < 8 && Math.abs(dAng(angTo(p.x, p.z), X.face)) > 1.0)) continue;   // only if someone's round the back
+        if(m === 'breath' && d > 13) continue;
+        const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(k) X.last[k] = X.t;
+      const fa = +X.face.toFixed(3);
+      if(k === 'breath'){ X.face = want;
+        X.act = { k, t:0, x:S.x, z:S.z, a:want, sw:0.55, ha:0.34, r:14, w:10, d:22 }; X.cd.breath = ph >= 4 ? 55 : 70;
+        A.fx('cry_breath', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), sw:0.55, ha:0.34, r:14, w:10, d:22 });
+      } else if(k === 'tail'){
+        X.act = { k, t:0, x:S.x, z:S.z, a:X.face, front:1.0, r:8.5, w:9 }; X.cd.tail = 45;
+        A.fx('cry_tail', { x:R2(S.x), z:R2(S.z), a:fa, front:1.0, r:8.5, w:9 });
+      } else if(k === 'gust'){ X.face = want;
+        X.act = { k, t:0, x:S.x, z:S.z, a:want, ha:0.75, r:12, w:11 }; X.cd.gust = ph >= 4 ? 60 : 80;
+        A.fx('cry_gust', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), ha:0.75, r:12, w:11 });
+      } else if(k === 'spike'){
+        // a line of eruptions from its chest out to each player, racing outward
+        const lines = inA.slice(0, 4).map(p => { const an = angTo(p.x, p.z); return +an.toFixed(3); });
+        const step = 1.9, n = 10, w = 8;
+        lines.forEach(an => { for(let j = 1; j <= n; j++){ const c = clampA(S.x + Math.sin(an)*j*step, S.z + Math.cos(an)*j*step, CRY_R + 10);
+          X.hz.push({ x:c[0], z:c[1], r:1.6, f:w + j*1, d:'spike' }); } });
+        X.act = { k, t:0, end:w + 4 }; X.cd.spike = ph >= 4 ? 75 : 95;
+        A.fx('cry_spike', { x:R2(S.x), z:R2(S.z), a:lines, step, n, w });
+      } else if(k === 'icicle'){
+        const pts = [];
+        for(let i = 0; i < 10; i++){ const q = inA[i % inA.length], an = A.rnd()*6.28, rr = i < inA.length ? 0 : 1.5 + A.rnd()*6;
+          const c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, CRY_R + 10), f = 12 + i*2;
+          pts.push([R2(c[0]), R2(c[1]), f]); X.hz.push({ x:c[0], z:c[1], r:2.4, f, d:'icicle' }); }
+        X.act = { k, t:0, end:36 }; X.cd.icicle = ph >= 4 ? 110 : 140;
+        A.fx('cry_icicle', { x:R2(S.x), z:R2(S.z), pts, r:2.4, up:36 });
+      } else if(k === 'tomb'){
+        const f = 16, c = [R2(P.x), R2(P.z)];
+        X.hz.push({ x:c[0], z:c[1], r:2.6, f, d:'tomb', root:1500 });
+        X.act = { k, t:0, end:8 }; X.cd.tomb = ph >= 4 ? 85 : 110;
+        A.fx('cry_tomb', { x:c[0], z:c[1], r:2.6, f });
+      } else if(k === 'dive'){
+        const c = clampA(P.x, P.z, CRY_R), land = 24;
+        X.hz.push({ x:c[0], z:c[1], r:4.5, f:land, d:'dive', push:4 });
+        X.act = { k, t:0, tx:c[0], tz:c[1], land, end:land + 8 }; X.cd.dive = ph >= 4 ? 100 : 130;
+        A.fx('cry_dive', { sx:R2(S.x), sz:R2(S.z), tx:R2(c[0]), tz:R2(c[1]), r:4.5, land });
+      } else if(k === 'zero'){
+        const safe = []; for(let i = 0; i < 3; i++){ const an = A.rnd()*6.28, rr = 6 + A.rnd()*12; const c = clampA(hx + Math.sin(an)*rr, hz + Math.cos(an)*rr, CRY_R); safe.push([R2(c[0]), R2(c[1])]); }
+        X.act = { k, t:0, safe, sr:3.6, w:34, end:42 }; X.cd.zero = 170;
+        A.fx('cry_zero', { x:R2(S.x), z:R2(S.z), hx, hz, safe, sr:3.6, w:34, R:CRY_ENG - 4 });
+      }
+    }
+  }
+  if(!(X.act && X.act.k === 'dive')){ const c = clampA(S.x, S.z, CRY_R); S.x = c[0]; S.z = c[1]; }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
-  // ── CRYOTHAR (a548). Sequential 5-attack rotation.
-  //    NOTE: 20_enemy_factory.part carries a SECOND, conflicting CRYOTHAR ladder
-  //    (3 phases at .75/.50/.25). Both ran client-side and fought each other; the
-  //    server settles it on the AI block's ladder. See the a548 changelog note.
+  // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
+  //    _cryBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain moves it
+  //    (move:'self'), aims at every player in the lair and hands back damage, pushes, slows
+  //    and cues here.
   wyvernwastes: {
     x: 180, z: 180,                                   // tile (120,120) * TILE 1.5 — central ice arena
-    spd:    [0, 0.016, 0.022, 0.028, 0.036, 0.044],
-    dmg:    [0, 1.0,   1.5,   2.0,   2.8,   3.8],
+    spd:    [0,0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4, 5],                       // phase index only — damage is in CRY_D
     phases: [0.75, 0.50, 0.25, 0.10],
-    acd:    [0, 20, 22, 19, 17, 15],                  // max(90,160-ph*15)/6
-    tele:   11,                                       // 65 frames
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 5; },
-    attack: (c) => {
-      const { atk, b, mult, ang, nd, aoe, fx, proj, geyser } = c;
-      if (atk === 0) { fx('cr_slam'); aoe(8.0, Math.floor(320 * mult)); }
-      else if (atk === 1) { fx('cr_bite');
-        if (nd < 4.5) aoe(4.5, Math.floor(240 * mult));
-        else for (let i = 0; i < 3; i++) proj(ang + (i-1)*0.4, 0xcc4400, Math.floor(180 * mult), 'plasma'); }
-      else if (atk === 2) { fx('cr_coil');
-        // NOTE: the client scaled Coil Crush's PARTICLES by the phase multiplier but the
-        // actual hit was (200 - r*15) UNSCALED. Preserved verbatim — see a548 changelog.
-        [2,4,6].forEach((r,i) => geyser(b.x, b.z, 2 + i*2, r*1.5, Math.floor(200 - r*15), 0xff4400, { shake:3 })); }
-      else if (atk === 3) { fx('cr_burst');
-        for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0x88cc00, Math.floor(160 * mult), 'plasma'); }
-      else { fx('cr_tremor'); aoe(10.0, Math.floor(260 * mult)); }
-    },
+    acd:    [0, 20, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, aoe, fx } = c;
-      if (ph >= 2 && b._vt % 4 === 0)  { fx('cr_venom_cloud'); aoe(5.0, Math.floor(45 * mult)); }
-      if (ph >= 4 && b._vt % 20 === 0) { fx('cr_tail');        aoe(7.0, Math.floor(200 * mult)); }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _cryBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
-
-
-
-
-
-
-
-
 
 // ── WARLORD VORRAKH (a559). Xu Citadel's general: cleaves, plasma volleys, an
   //    execution lunge, the Iron Guard, and a dominion shockwave.
