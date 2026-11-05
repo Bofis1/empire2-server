@@ -488,6 +488,7 @@ const ENEMY_STATS = {
   xu_solar_lancer:         {hp:360000, atk:480, spd:0.060, aggroRange:16, reward:3400, expR:4500, dmgReduction:0.25},
   xu_harmonic_warden:      {hp:480000, atk:380, spd:0.030, aggroRange:16, reward:3200, expR:4200, dmgReduction:0.42},
   xu_data_construct:       {hp:240000, atk:320, spd:0.045, aggroRange:16, reward:3000, expR:4400, dmgReduction:0.20},
+  xu_prism_seraph:         {hp:200000, atk:470, spd:0.058, aggroRange:18, reward:3100, expR:4400, dmgReduction:0.15},   // a702
   molten_crawler:        {hp:95000,  atk:480, spd:0.078, aggroRange:12, reward:2000, expR:2800, dmgReduction:0.08},
   lava_forged_sentinel:  {hp:220000, atk:620, spd:0.030, aggroRange:18, reward:3000, expR:4300, dmgReduction:0.20},
   forge_technician:      {hp:140000, atk:380, spd:0.046, aggroRange:14, reward:2400, expR:3600, dmgReduction:0.10},
@@ -1054,7 +1055,7 @@ var _XU = (function(){
   // ── the Dominion's forces ──
   var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
     return Math.hypot(px - ARENA[0], pz - ARENA[1]) > ARENA[2] - 2 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 16; };
-  var SPAWNS = [], CAP = { xu_quantum_seeker:24, xu_graviton_manipulator:16, xu_solar_lancer:18, xu_harmonic_warden:13, xu_data_construct:13 }, cnt = {};
+  var SPAWNS = [], CAP = { xu_quantum_seeker:24, xu_graviton_manipulator:16, xu_solar_lancer:18, xu_harmonic_warden:13, xu_data_construct:13, xu_prism_seraph:12 }, cnt = {};
   var put = function(px, pz, type, jit){ if((cnt[type] || 0) >= CAP[type]) return false; for(var tr = 0; tr < 20; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
       if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type] = (cnt[type] || 0) + 1; return true; } } return false; };
   var ROSTER = [['xu_harmonic_warden', 'xu_quantum_seeker', 'xu_quantum_seeker', 'xu_solar_lancer', 'xu_graviton_manipulator'],
@@ -1066,6 +1067,8 @@ var _XU = (function(){
   for(var t3 = 0; t3 < 6000 && SPAWNS.length < 84; t3++){ var ty = ty2[t3 % 5]; if((cnt[ty] || 0) >= CAP[ty]) continue; var a3 = R()*6.2832, rr3 = R() < 0.5 ? 40 : 70, px3 = CX + Math.cos(a3)*rr3, pz3 = CZ + Math.sin(a3)*rr3;
     if(R() < 0.35){ px3 = CX + (R() - 0.5)*4; pz3 = 26 + R()*188; } if(Math.hypot(px3 - ARENA[0], pz3 - ARENA[1]) < 30) continue;
     if(put(px3, pz3, ty)) put(px3 + 1.5, pz3 + 1.5, ty2[(t3 + 2) % 5]); }
+  // a702 — a prism seraph hovers over each outpost, a little outside the ring
+  CAMPS.forEach(function(c){ var a5 = c[2] + 3.4; put(c[0] + Math.cos(a5)*6.0, c[1] + Math.sin(a5)*6.0, 'xu_prism_seraph', 0.5); });
   return { N:N, M:M, CLS:CLS, B:B, CAMPS:CAMPS, TRAPS:TRAPS, SPAWNS:SPAWNS, CX:CX, CZ:CZ, CORE:CORE, ARENA:ARENA, SPAWN:SPAWN, NGATE:NGATE, RINGS:RINGS, AVE:AVE, DIAG:DIAG, WALL:WALL, road:road };
 })();
 function _xuWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XU.M[z*240 + x] === 1; }
@@ -11773,6 +11776,29 @@ function tickGame(game) {
                 _sdSpawnProj(game,zoneName,e,ang,_XP_GOLD,Math.floor((e.atk||480)*1.1),'plasma',null,0);
                 fx('xp_lance',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
           }
+          else if(e.type==='xu_prism_seraph'){
+            // a702 — PRISM SERAPH: circles at mid range; PRISM FAN (five light-lances); HALO NOVA
+            //   (a ring of lances, then a blink away) if you close in; JUDGEMENT (three sun-strikes
+            //   marked in a line toward you)
+            if(e._strafe==null) e._strafe=Math.random()<0.5?1:-1;
+            if(Math.random()<0.036) e._strafe=-e._strafe;
+            const pr=cos, pq=-sin, st=e._strafe;
+            if(dd<6) mv(-sin*0.8+pr*st*0.5,-cos*0.8+pq*st*0.5,SP);
+            else if(dd>12) mv(sin*0.8+pr*st*0.3,cos*0.8+pq*st*0.3,SP);
+            else mv(pr*st,pq*st,SP);
+            if(dd>3 && dd<20 && e.attackTimer%15===0){
+              for(let i=0;i<5;i++) _sdSpawnProj(game,zoneName,e,ang+(i-2)*0.17,i%2?_XP_CYAN:_XP_GOLD,Math.floor((e.atk||470)*0.7),'plasma',null,0);
+              fx('xp_lance',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            e._hn=(e._hn||17)+1;
+            if(dd<5 && e._hn>=40){ e._hn=0;
+              fx('xp_pulse',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              for(let i=0;i<10;i++) _sdSpawnProj(game,zoneName,e,i/10*Math.PI*2,_XP_CYAN,Math.floor((e.atk||470)*0.6),'bolt',null,0);
+              const a2=ang+Math.PI+(Math.random()-0.5)*1.2, nx=e.x+Math.sin(a2)*7, nz=e.z+Math.cos(a2)*7;
+              if(_xuWalkable(nx,nz)){ fx('xp_cloak',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); blink(nx,nz); } }
+            if(dd<18 && e._ab>=50){ e._ab=0;
+              for(let k=0;k<3;k++){ const d=Math.max(2,dd*0.55)+k*3.0;
+                tele(e.x+sin*d, e.z+cos*d, 5+k*3, 2.4, 0.9, _XP_GOLD); } }
+          }
           else {
             // xu_data_construct — SUPPORT NODE: needles and a repair matrix
             if(dd<8) mv(-sin,-cos,SP*0.8);
@@ -12809,7 +12835,7 @@ function _cvTickEnts(game, zoneName, zone){
     else if (!e.active) e._cv.shardAt = null; });
 }
 
-const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1 };
+const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1, xu_prism_seraph:1 };
 const _XP_GOLD=0xffd24a, _XP_CYAN=0x40d0ff, _XP_BLUE=0x6080ff, _XP_HOT=0xffe48a, _XP_VIOLET=0x8040ff;
 const FG_BESPOKE = { molten_crawler:1, lava_forged_sentinel:1, forge_technician:1, industrial_devastator:1 };
 const _FG_LAVA=0xff3200, _FG_HOT=0xff6a26, _FG_CYAN=0x32d8ff, _FG_EMBER=0xff7a1e;
