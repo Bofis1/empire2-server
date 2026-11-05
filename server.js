@@ -568,7 +568,7 @@ const ZONE_BOSS_HP = {
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
   xumen_fortress:   { hp:2800000,  name:'THE APEX PYRAMID' },   // a707 — rebalanced (was 1.2M)
   void_citadel:     { hp:800000,   name:'COMMANDANT XERATH' },
-  neon_hollow:      { hp:1600000,  name:'THE CURATOR' },
+  neon_hollow:      { hp:2800000,  name:'THE CURATOR' },   // a708 — rebuilt (was 1.6M)
   veiled_sanctuary: { hp:4000000,  name:'THE FINAL ABBOT' },  // v92.41 · a614 — 110+ raid boss (was 850k)
   blooming_wilds:   { hp:35000,    name:'THE WILDMOTHER' },   // v92.49
   xeron:            { hp:3000000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
@@ -5123,7 +5123,7 @@ const ZONE_DMG_BASE = {
   forge:           { lvl: 95, mob: 624, boss: 288 },
   lucidwilde:      { lvl:100, mob: 526, boss: 377 },
   necropolis:      { lvl:100, mob: 183, boss: 150 },
-  neon_hollow:     { lvl:100, mob: 275, boss: 118 },
+  neon_hollow:     { lvl:100, mob: 275, boss:1080 },   // a708 — the rebuilt Curator's damage is set in CUR_D directly (k = 1)
   the_reach:       { lvl:100, mob: 422, boss: 316 },
   xeron:           { lvl:100, mob: 290, boss:  97 },
   xumen_fortress:  { lvl:100, mob: 334, boss:1080 }   // a707 — the rebuilt Apex Pyramid's damage is set in APX_D directly (k = 1)
@@ -5589,6 +5589,154 @@ function _apxBrain(S, A){
   // stay over the arena
   const ox = S.x - hx, oz = S.z - hz, od = Math.hypot(ox, oz);
   if(od > APX_R){ S.x = hx + ox/od*APX_R; S.z = hz + oz/od*APX_R; X.vx *= 0.5; X.vz *= 0.5; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// a708 — THE CURATOR, REBUILT. One brain, shared word for word by the server (the authority
+//   in a lobby) and the client (solo). 10 Hz. The city's last citizen keeps its distance and
+//   processes you; every move is telegraphed:
+//     CRASH CAR THROW   P1+  a cruiser manifests in its hand and is hurled at you (more at P3, P5)
+//     NEON LASH         P1+  a whip of neon swept through a cone in front of it
+//     PLASMA FAN        P1+  hardlight bolts fanned at its target (3, then 5)
+//     SCANLINE PURGE    P2+  a laser wall sweeps the whole square — find the gap
+//     PROPAGANDA        P2+  broadcast billboards rise around you; inside their field you're
+//                            slowed and burned by the message
+//     RELOCATE          P3+  it glitches across the square and opens fire from there
+//     THE CITY PROTECTS P5   the grid rains strikes across the square
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), slow(k,f,ms),
+//        fx(vt,obj), rnd() }   S: the Curator's position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const CUR_D  = { car:1500, lash:900, bolt:400, scan:1400, bcast:300, grid:1500 };
+const CUR_PM = [1, 1, 1.1, 1.2, 1.32, 1.45];
+const CUR_R = 24, CUR_ENG = 40;
+const CUR_SAY = 8;   // slogans the client knows (see _CUR_SLOGANS)
+function _curBrain(S, A){
+  const ph = Math.max(1, Math.min(5, A.ph | 0)), M = CUR_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._cu;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._cu = { t:0, vx:0, vz:0, orb:A.rnd()*6.28, ow:(A.rnd() < 0.5 ? -1 : 1),
+      cd:{ car:25, lash:45, scan:60, bcast:50, blink:60, city:30 }, last:{}, gap:20, act:null,
+      bolts:[], hz:[], bs:30, tgt:null, tgtT:0, dmg:false, ph, hitT:{}, say:60 };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < CUR_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+
+  // bolts and delayed strikes run whatever it is doing
+  for(let i = X.bolts.length - 1; i >= 0; i--){ const o = X.bolts[i]; o.x += o.vx; o.z += o.vz; let hit = false;
+    for(const p of inA){ if(D(p, o.x, o.z) < 0.85){ A.hit(p.k, Math.round(CUR_D.bolt*M)); hit = true; break; } }
+    if(hit || --o.l <= 0) X.bolts.splice(i, 1); }
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(CUR_D[o.d]*M)); if(o.push) A.push(p.k, o.x, o.z, o.push); } }); X.hz.splice(i, 1); } }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.2); S.x += dx/d*st; S.z += dz/d*st; } X.vx = X.vz = 0; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  // a new phase: the screens change their message and the shock throws everyone back
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'xform', t:0 }; A.fx('cur_xform', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); }); }
+
+  // propaganda over the loudspeakers
+  if(--X.say <= 0){ X.say = 110 + Math.floor(A.rnd()*60); A.fx('cur_say', { i:Math.floor(A.rnd()*CUR_SAY) }); }
+
+  // the broadcast fields keep burning while they stand
+  if(X.bc){ X.bc.t++;
+    if(X.bc.t > X.bc.w) inA.forEach(p => { for(const q of X.bc.pts){ if(D(p, q[0], q[1]) < X.bc.r){
+      if(once(p.k, 'bc', 6)){ A.hit(p.k, Math.round(CUR_D.bcast*M)); A.slow(p.k, 0.55, 700); } break; } } });
+    if(X.bc.t >= X.bc.w + X.bc.d) X.bc = null; }
+  // the scanline sweeps on its own
+  if(X.sc){ const a = X.sc; a.t++;
+    if(a.t > a.warn){ const o = a.o0 + (a.t - a.warn)*a.spd, nx = Math.sin(a.a), nz = Math.cos(a.a);
+      inA.forEach(p => { const dx = p.x - a.cx, dz = p.z - a.cz, pe = dx*nx + dz*nz, al = dx*nz - dz*nx;
+        if(Math.abs(pe - o) < 0.6 && Math.abs(al - a.gap) > a.gw/2 && Math.abs(al) < a.half && once(p.k, 'sc' + a.id, 99)) A.hit(p.k, Math.round(CUR_D.scan*M)); });
+      if(o > -a.o0) X.sc = null; } }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'xform') done = a.t >= 18;
+    else if(a.k === 'car'){ done = a.t >= a.w; }
+    else if(a.k === 'lash'){
+      if(a.t === a.w) inA.forEach(p => { const dx = p.x - a.x, dz = p.z - a.z, d = Math.hypot(dx, dz); let q = Math.atan2(dx, dz) - a.a;
+        while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI;
+        if(d < a.r && Math.abs(q) < a.ha){ A.hit(p.k, Math.round(CUR_D.lash*M)); A.push(p.k, a.x, a.z, 2.5); } });
+      done = a.t >= a.w + 4; }
+    else if(a.k === 'city'){ done = a.t >= 14; }
+    if(done){ X.act = null; X.gap = ph >= 4 ? 12 : 18; }
+  } else {
+    // ── GLIDE: keep a few metres off the target and drift round it, slow and level
+    X.orb += 0.012*X.ow;
+    let ux = S.x - P.x, uz = S.z - P.z; const ul = Math.hypot(ux, uz) || 1; ux /= ul; uz /= ul;
+    const ca = Math.cos(X.orb*0.3), sa = Math.sin(X.orb*0.3);
+    const tx = P.x + (ux*ca - uz*sa)*6.5, tz = P.z + (ux*sa + uz*ca)*6.5;
+    const vmax = [0, 0.12, 0.14, 0.16, 0.18, 0.20][ph];
+    let wx = (tx - S.x)*0.08, wz = (tz - S.z)*0.08; const wl = Math.hypot(wx, wz); if(wl > vmax){ wx = wx/wl*vmax; wz = wz/wl*vmax; }
+    X.vx += (wx - X.vx)*0.12; X.vz += (wz - X.vz)*0.12; S.x += X.vx; S.z += X.vz;
+    if(X.t % 140 === 0 && A.rnd() < 0.5) X.ow = -X.ow;
+
+    if(X.gap <= 0){
+      const MIN = { car:1, lash:1, scan:2, bcast:2, blink:3, city:5 };
+      let k = null, lk = 1e9;
+      for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; if(m === 'scan' && X.sc) continue; if(m === 'bcast' && X.bc) continue;
+        const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(k) X.last[k] = X.t;
+      if(k === 'car'){
+        // a cruiser manifests in its hand, then it throws — one, two at P3, three at P5
+        const n = ph >= 5 ? 3 : ph >= 3 ? 2 : 1, tg = [];
+        for(let i = 0; i < n; i++){ let px = P.x, pz = P.z;
+          if(i > 0){ const an = A.rnd()*6.28, rr = 3.5 + A.rnd()*2.5; px += Math.sin(an)*rr; pz += Math.cos(an)*rr; }
+          const c = clampA(px, pz, CUR_R + 6); tg.push([R2(c[0]), R2(c[1])]); }
+        const w = 12, fl = 10;
+        tg.forEach((q, i) => X.hz.push({ x:q[0], z:q[1], r:3.0, f:w + fl + i*3, d:'car', push:3 }));
+        X.act = { k, t:0, w:w + 2 }; X.cd.car = ph >= 5 ? 60 : ph >= 3 ? 75 : 90;
+        A.fx('cur_car', { x:R2(S.x), z:R2(S.z), tg, w, fl, st:3, r:3.0 });
+      } else if(k === 'lash'){
+        const a0 = Math.atan2(P.x - S.x, P.z - S.z);
+        X.act = { k, t:0, x:S.x, z:S.z, a:a0, ha:0.85, r:8, w:10 }; X.cd.lash = ph >= 4 ? 60 : 75;
+        A.fx('cur_lash', { x:R2(S.x), z:R2(S.z), a:+a0.toFixed(3), ha:0.85, r:8, w:10 });
+      } else if(k === 'scan'){
+        const a0 = Math.floor(A.rnd()*4)*Math.PI/2 + (A.rnd() - 0.5)*0.6, gap = (A.rnd() - 0.5)*24;
+        X.sc = { id:X.t, t:0, cx:hx, cz:hz, a:a0, o0:-26, spd:0.8, gap, gw:4.5, warn:16, half:30 };
+        X.cd.scan = ph >= 4 ? 110 : 140;
+        A.fx('cur_scan', { cx:hx, cz:hz, a:+a0.toFixed(3), o0:-26, spd:0.8, gap:+gap.toFixed(2), gw:4.5, warn:16, half:30 });
+      } else if(k === 'bcast'){
+        const pts = [], b0 = A.rnd()*6.28;
+        for(let i = 0; i < 3; i++){ const an = b0 + i*2.094, c = clampA(P.x + Math.sin(an)*5.2, P.z + Math.cos(an)*5.2, CUR_R + 6); pts.push([R2(c[0]), R2(c[1])]); }
+        X.bc = { t:0, pts, r:4.2, w:10, d:80 }; X.cd.bcast = ph >= 4 ? 130 : 160;
+        A.fx('cur_bcast', { pts, r:4.2, w:10, d:80, s:[0, 1, 2].map(() => Math.floor(A.rnd()*CUR_SAY)) });
+      } else if(k === 'blink'){
+        let ux = S.x - P.x, uz = S.z - P.z; const ul = Math.hypot(ux, uz) || 1; const an = Math.atan2(ux/ul, uz/ul) + (A.rnd() - 0.5)*1.6;
+        const c = clampA(P.x + Math.sin(an)*11, P.z + Math.cos(an)*11, CUR_R);
+        A.fx('cur_blink', { fx:R2(S.x), fz:R2(S.z), tx:R2(c[0]), tz:R2(c[1]) });
+        S.x = c[0]; S.z = c[1]; X.vx = X.vz = 0; X.cd.blink = 100; X.bs = 4;
+      } else if(k === 'city'){
+        const pts = [];
+        for(let i = 0; i < 12; i++){ const q = inA[i % inA.length], an = A.rnd()*6.28, rr = i < inA.length ? 0 : 2 + A.rnd()*7;
+          const c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, CUR_R + 8), t0 = 6 + i*3;
+          pts.push([R2(c[0]), R2(c[1]), t0]); X.hz.push({ x:c[0], z:c[1], r:3.0, f:t0 + 10, d:'grid' }); }
+        X.act = { k, t:0 }; X.cd.city = 150;
+        A.fx('cur_city', { x:R2(S.x), z:R2(S.z), pts, f:10, r:3.0 });
+      }
+    }
+  }
+  // ── PLASMA FAN: hardlight bolts at the target
+  if(--X.bs <= 0 && !(X.act && X.act.k === 'xform')){
+    X.bs = [0, 34, 30, 26, 22, 18][ph];
+    const n = ph >= 3 ? 5 : 3, a0 = Math.atan2(P.x - S.x, P.z - S.z), sp = 1.2, angs = [];
+    for(let i = 0; i < n; i++){ const an = a0 + (i - (n - 1)/2)*0.22; angs.push(+an.toFixed(3));
+      X.bolts.push({ x:S.x + Math.sin(an)*2.4, z:S.z + Math.cos(an)*2.4, vx:Math.sin(an)*sp, vz:Math.cos(an)*sp, l:24 }); }
+    A.fx('cur_bolts', { x:R2(S.x), z:R2(S.z), a:angs, r0:2.4, s:sp, l:24 });
+  }
+  const c = clampA(S.x, S.z, CUR_R); S.x = c[0]; S.z = c[1];
 }
 
 const ZBOSS_SERVER = {
@@ -7273,69 +7421,28 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE CURATOR (a549). The city's last citizen: hovers, processes, does not chase.
-  //    Attack choice is RANDOM and phase-gated (the client rolled Math.random() per
-  //    client, so no two players ever saw the same attack — worse than CRYOTHAR's
-  //    clock-derived rotation). The server now rolls once, authoritatively.
+  // ── THE CURATOR (a708). Rebuilt: its whole fight lives in the shared brain _curBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). The brain glides it (move:'self'),
+  //    aims at every player in the square and hands back damage, pushes, slows and cues here.
   neon_hollow: {
-    x: 180, z: 180,                                   // tile (120,120) — central laser arena
-    spd:    [0, 0.012, 0.018, 0.024, 0.028, 0.032],
-    dmg:    [0, 1.0,   1.4,   1.9,   2.5,   3.4],
+    x: 180, z: 180,                                   // tile (120,120) — the Curator's square
+    spd:    [0,0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4, 5],                       // phase index only — damage is in CUR_D
     phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 14, 11, 8, 6],                    // 120/85/65/50/38 frames / 6
-    tele:   9,                                        // 55 frames
-    pick:   (b, ph) => Math.floor(Math.random() * Math.min(5, ph + 1)),
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
-      if (atk === 1) {
-        // DISINTEGRATION BEAM — 1.5s painted line, then an 18-long lance along it.
-        // Rendered on the spine as overlapping segments (same trick as the marching
-        // flamebreath) so it reuses the geyser resolver instead of a bespoke line test.
-        fx('cu_beam_charge', { dir:+ang.toFixed(3), len:18 });
-        for (let i = 1; i <= 9; i++)
-          geyser(b.x + Math.sin(ang)*i*2, b.z + Math.cos(ang)*i*2, 15, 1.0, Math.floor(320 * mult), 0x00e0ff);
-      } else if (atk === 2 && ph >= 3) {
-        // HOVER-TELEPORT — vanish, reappear in the arena corner furthest from the target.
-        const corners = [[159,159],[201,159],[159,201],[201,201]];
-        let best = corners[0], bestD = -1;
-        corners.forEach(cn => { const dx=cn[0]-np.x, dz=cn[1]-np.z, d=dx*dx+dz*dz; if (d > bestD) { bestD=d; best=cn; } });
-        fx('cu_blink_out');
-        b.x = best[0]; b.z = best[1];
-        fx('cu_blink_in', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-        const na = Math.atan2(np.x - b.x, np.z - b.z);
-        for (let vi = 0; vi < 5; vi++) proj(na + (vi-2)*0.25, 0xff3cff, Math.floor(140 * mult), 'plasma');
-      } else if (atk === 3 && ph >= 4) {
-        // CRASH CAR SUMMON — the traffic grid weaponises itself, two cars onto the target
-        fx('cu_traffic', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-        geyser(np.x, np.z, 15, 4.5, Math.floor(250 * mult), 0xffa000, { shake:12 });
-        geyser(np.x, np.z, 21, 4.5, Math.floor(250 * mult), 0xffa000, { shake:12 });
-      } else if (atk === 4 && ph >= 5) {
-        // "THE CITY PROTECTS" — ten beams rain across the arena over ~4s
-        fx('cu_city_protects');
-        for (let bi = 0; bi < 10; bi++)
-          geyser(b.x + (Math.random()-0.5)*21, b.z + (Math.random()-0.5)*21,
-                 4 + bi*4, 3.0, Math.floor(200 * mult), 0xff2040);
-      } else {
-        // DRONE SWARM VOLLEY (also the fallback when the roll outruns the phase)
-        fx('cu_drones');
-        const n = (atk === 0) ? (4 + ph*2) : 4;
-        for (let di = 0; di < n; di++) proj(di/n*Math.PI*2, 0x00e0ff, Math.floor(95 * mult), 'plasma');
-      }
-    },
+    acd:    [0, 20, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
-      // P1 — Hardlight Field: the security field reads you as an anomaly (all phases)
-      if (b._vt % 5 === 0) { fx('cu_hardlight'); aoe(5.0, Math.floor(55 * mult)); }
-      // P2 — hatch drones
-      if (ph >= 2 && b._vt % 15 === 0) { for (let i = 0; i < 2; i++) proj(ang, 0x00e0ff, Math.floor(85 * mult), 'plasma'); }
-      // P3 — City Beam Grid: towers rain telegraphed beams around the arena
-      if (ph >= 3 && b._vt % 8 === 0)
-        geyser(b.x + (Math.random()-0.5)*16.5, b.z + (Math.random()-0.5)*16.5, 9, 3.3, Math.floor(140 * mult), 0xff2040);
-      // P4 — autonomous paired plasma cannons
-      if (ph >= 4 && b._vt % 7 === 0) { proj(ang - 0.12, 0xff3cff, Math.floor(130 * mult), 'plasma');
-                                        proj(ang + 0.12, 0xff3cff, Math.floor(130 * mult), 'plasma'); }
-      // P5 — zone-wide grid pulse
-      if (ph >= 5 && b._vt % 10 === 0) { fx('cu_pulse'); aoe(8.0, Math.floor(160 * mult)); }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _curBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 };
