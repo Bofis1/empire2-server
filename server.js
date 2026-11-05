@@ -338,6 +338,12 @@ const ENEMY_STATS = {
   wyvern:            {hp:27000, atk:260, spd:0.058, aggroRange:14, reward:1000, expR:350,  dmgReduction:0},
   void_spider:       {hp:21000, atk:220, spd:0.068, aggroRange:10, reward:850,  expR:290,  dmgReduction:0},
   inferno_golem:     {hp:66000, atk:400, spd:0.018, aggroRange:9,  reward:1500, expR:500,  dmgReduction:0},
+  // ── a704 — VAELTHARAX'S BROOD (exclusive to dragonlair; base HP, the lair doubles it) ──
+  ember_drake:          {hp:34000, atk:300, spd:0.070, aggroRange:14, reward:1300, expR:450, dmgReduction:0.08},
+  dragonkin_warden:     {hp:50000, atk:330, spd:0.042, aggroRange:12, reward:1500, expR:520, dmgReduction:0.20},
+  ashen_flamecaller:    {hp:30000, atk:300, spd:0.045, aggroRange:16, reward:1300, expR:450, dmgReduction:0.05},
+  magma_wurm:           {hp:44000, atk:320, spd:0.053, aggroRange:14, reward:1400, expR:480, dmgReduction:0.12},
+  dragonbone_revenant:  {hp:76000, atk:380, spd:0.027, aggroRange:12, reward:1900, expR:650, dmgReduction:0.22},
   // a209 — Convergence Depth 3 electric tier (mirror of client ENEMY_STATS)
   arc_sentinel:      {hp:52000, atk:420, spd:0.034, aggroRange:13, reward:1700, expR:560,  dmgReduction:0},
   tesla_golem:       {hp:74000, atk:460, spd:0.020, aggroRange:10, reward:1900, expR:620,  dmgReduction:0.3},
@@ -495,6 +501,7 @@ const ENEMY_STATS = {
   xu_solar_lancer:         {hp:360000, atk:480, spd:0.060, aggroRange:16, reward:3400, expR:4500, dmgReduction:0.25},
   xu_harmonic_warden:      {hp:480000, atk:380, spd:0.030, aggroRange:16, reward:3200, expR:4200, dmgReduction:0.42},
   xu_data_construct:       {hp:240000, atk:320, spd:0.045, aggroRange:16, reward:3000, expR:4400, dmgReduction:0.20},
+  xu_prism_seraph:         {hp:200000, atk:470, spd:0.058, aggroRange:18, reward:3100, expR:4400, dmgReduction:0.15},   // a702
   molten_crawler:        {hp:95000,  atk:480, spd:0.078, aggroRange:12, reward:2000, expR:2800, dmgReduction:0.08},
   lava_forged_sentinel:  {hp:220000, atk:620, spd:0.030, aggroRange:18, reward:3000, expR:4300, dmgReduction:0.20},
   forge_technician:      {hp:140000, atk:380, spd:0.046, aggroRange:14, reward:2400, expR:3600, dmgReduction:0.10},
@@ -1061,7 +1068,7 @@ var _XU = (function(){
   // ── the Dominion's forces ──
   var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
     return Math.hypot(px - ARENA[0], pz - ARENA[1]) > ARENA[2] - 2 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 16; };
-  var SPAWNS = [], CAP = { xu_quantum_seeker:24, xu_graviton_manipulator:16, xu_solar_lancer:18, xu_harmonic_warden:13, xu_data_construct:13 }, cnt = {};
+  var SPAWNS = [], CAP = { xu_quantum_seeker:24, xu_graviton_manipulator:16, xu_solar_lancer:18, xu_harmonic_warden:13, xu_data_construct:13, xu_prism_seraph:12 }, cnt = {};
   var put = function(px, pz, type, jit){ if((cnt[type] || 0) >= CAP[type]) return false; for(var tr = 0; tr < 20; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
       if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type] = (cnt[type] || 0) + 1; return true; } } return false; };
   var ROSTER = [['xu_harmonic_warden', 'xu_quantum_seeker', 'xu_quantum_seeker', 'xu_solar_lancer', 'xu_graviton_manipulator'],
@@ -1073,6 +1080,8 @@ var _XU = (function(){
   for(var t3 = 0; t3 < 6000 && SPAWNS.length < 84; t3++){ var ty = ty2[t3 % 5]; if((cnt[ty] || 0) >= CAP[ty]) continue; var a3 = R()*6.2832, rr3 = R() < 0.5 ? 40 : 70, px3 = CX + Math.cos(a3)*rr3, pz3 = CZ + Math.sin(a3)*rr3;
     if(R() < 0.35){ px3 = CX + (R() - 0.5)*4; pz3 = 26 + R()*188; } if(Math.hypot(px3 - ARENA[0], pz3 - ARENA[1]) < 30) continue;
     if(put(px3, pz3, ty)) put(px3 + 1.5, pz3 + 1.5, ty2[(t3 + 2) % 5]); }
+  // a702 — a prism seraph hovers over each outpost, a little outside the ring
+  CAMPS.forEach(function(c){ var a5 = c[2] + 3.4; put(c[0] + Math.cos(a5)*6.0, c[1] + Math.sin(a5)*6.0, 'xu_prism_seraph', 0.5); });
   return { N:N, M:M, CLS:CLS, B:B, CAMPS:CAMPS, TRAPS:TRAPS, SPAWNS:SPAWNS, CX:CX, CZ:CZ, CORE:CORE, ARENA:ARENA, SPAWN:SPAWN, NGATE:NGATE, RINGS:RINGS, AVE:AVE, DIAG:DIAG, WALL:WALL, road:road };
 })();
 function _xuWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XU.M[z*240 + x] === 1; }
@@ -1301,11 +1310,11 @@ var _DL = (function(){
   var put = function(type, reg, sp){ for(var t = 0; t < 3000; t++){ var px = reg[0] + R()*(reg[2] - reg[0]), pz = reg[1] + R()*(reg[3] - reg[1]), qx = Math.floor(px), qz = Math.floor(pz); if(!clear(qx + 0.5, qz + 0.5)) continue;
       var ok = true; for(var i = 0; i < SPAWNS.length; i++) if(Math.hypot(SPAWNS[i].tx - qx, SPAWNS[i].tz - qz) < sp) ok = false; if(!ok) continue; SPAWNS.push({ tx:qx, tz:qz, type:type }); return true; } return false; };
   var GATEZ = [12, 12, 30, 34], ALL = [4, 4, 76, 76];
-  put('ancient_guardian', GATEZ, 4); put('citadel_mage', GATEZ, 4); put('ancient_guardian', GATEZ, 4); put('iron_guard', GATEZ, 4);
-  for(var f = 0; f < 6; f++) put('fire_demon', ALL, 8);
-  for(var w2 = 0; w2 < 5; w2++) put('wyvern', ALL, 8);
-  [[4, 40, 22, 76], [56, 40, 76, 76], [20, 56, 50, 76], [52, 4, 76, 30], [4, 40, 22, 76], [56, 40, 76, 76]].forEach(function(r){ put('void_spider', r, 6); });
-  [[52, 26, 70, 46], [22, 54, 46, 70], [50, 50, 66, 56]].forEach(function(r){ if(!put('inferno_golem', r, 6)) put('inferno_golem', ALL, 6); });
+  put('dragonkin_warden', GATEZ, 4); put('ashen_flamecaller', GATEZ, 4); put('dragonkin_warden', GATEZ, 4); put('ashen_flamecaller', GATEZ, 4);   // a704 — the brood
+  for(var f = 0; f < 6; f++) put('ember_drake', ALL, 8);
+  for(var w2 = 0; w2 < 5; w2++) put(w2 < 3 ? 'dragonkin_warden' : 'ashen_flamecaller', ALL, 8);
+  [[4, 40, 22, 76], [56, 40, 76, 76], [20, 56, 50, 76], [52, 4, 76, 30], [4, 40, 22, 76], [56, 40, 76, 76]].forEach(function(r){ put('magma_wurm', r, 6); });
+  [[52, 26, 70, 46], [22, 54, 46, 70], [50, 50, 66, 56]].forEach(function(r){ if(!put('dragonbone_revenant', r, 6)) put('dragonbone_revenant', ALL, 6); });
   return { N:N, M:M, CLS:CLS, P:P, SPAWNS:SPAWNS, NEST:NEST, GROTTO:GROTTO, VOLC:VOLC, SPAWN:SPAWN, GATE:GATE, CRATER:CRATER, CRY:CRY, RIVA:RIVA, RIVB:RIVB, POOLS:POOLS, BRIDGES:BRIDGES, NGAPS:NGAPS, SEALED:SEALED,
     volcH:volcH, volcRaw:volcRaw, cliff:cliff, lavaF:lavaF, nestRim:nestRim, fbm:fbm, hs:hs, lineD:lineD };
 })();
@@ -9931,7 +9940,29 @@ function tickGame(game) {
           broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'dl_lavapool',zone:zoneName,ex:+tx.toFixed(2),ez:+tz.toFixed(2),ms:ticks*300});
           for(let i=0;i<ticks;i++) game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:2+i*3, dmg:_dlDmgS(e,0.30), eid:e.id, col:_DLV, radius:1.9, soft:1, status:(i%3===0?'burn':null), statusDur:80 }); };
 
-        if(e.type==='fire_demon'){
+        if(DLX_BESPOKE[e.type]){
+          // a704 — Vaeltharax's brood: one shared brain (the client runs the same text offline)
+          const _inZ=(p)=>p.gameId===game.id && p.zone===zoneName && p.x!==undefined;
+          const _hitP=(ws,m,b,hx,hz)=>{ send(ws,{type:'sv_enemy_attack',eid:e.id,dmg:_dlDmgS(e,m),ex:+hx.toFixed(2),ez:+hz.toFixed(2),zone:zoneName});
+            if(b) send(ws,{type:'sv_player_fx',zone:zoneName,eff:'status',status:'burn',statusDur:b}); };
+          const _each=(test,m,b,hx,hz)=>{ players.forEach((p,ws)=>{ if(_inZ(p) && test(p)) _hitP(ws,m,b,hx,hz); }); };
+          const _fx=(vt,d)=>{ const o={type:'sv_fx',vt:vt,zone:zoneName}; for(const k in d) o[k]=(typeof d[k]==='number')?+d[k].toFixed(2):d[k]; broadcastToZone(game.id,zoneName,o); };
+          _dlxBrain(e, { ex:e.x, ez:e.z, px:nearestPlayer.x, pz:nearestPlayer.z, dd:dd, ang:ang, sin:sin, cos:cos, st:strafe, at:e.attackTimer,
+            mv:mv, hit:(m,b)=>hit(m,b), shoot:shoot, fx:_fx,
+            hitAt:(m,x,z,r,b)=>_each(p=>{ const qx=p.x-x, qz=p.z-z; return qx*qx+qz*qz<r*r; },m,b,x,z),
+            hitLine:(m,x0,z0,a,len,w,b)=>_each(p=>_dlxOnLine(p.x,p.z,x0,z0,a,len,w),m,b,x0,z0),
+            hitCone:(m,x,z,a,len,half,b)=>_each(p=>_dlxInCone(p.x,p.z,x,z,a,len,half),m,b,x,z),
+            hitRing:(m,x,z,r0,r1,b)=>_each(p=>{ const q=Math.sqrt((p.x-x)*(p.x-x)+(p.z-z)*(p.z-z)); return q>=r0 && q<r1; },m,b,x,z),
+            pullAt:(x,z,r,amt)=>{ players.forEach((p,ws)=>{ if(!_inZ(p)) return; const qx=p.x-x, qz=p.z-z, q=Math.sqrt(qx*qx+qz*qz); if(q<r && q>0.3)
+              send(ws,{type:'sv_player_fx',zone:zoneName,eff:'pull',px:+x.toFixed(2),pz:+z.toFixed(2),pull:amt}); }); },
+            pushAt:(x,z,r,amt)=>{ players.forEach((p,ws)=>{ if(!_inZ(p)) return; const qx=p.x-x, qz=p.z-z; if(qx*qx+qz*qz<r*r)
+              send(ws,{type:'sv_player_fx',zone:zoneName,eff:'push',px:+x.toFixed(2),pz:+z.toFixed(2),push:amt}); }); },
+            blink:(x,z)=>{ if(_dlWalkable(x,z)){ _fx('dlx_wind',{x:e.x,z:e.z}); e.x=x; e.z=z; _moved=true; _fx('dlx_wind',{x:x,z:z,c:0xffd040}); } },
+            slow:(f,ms)=>toPlayer({slow:f,root:ms}), shake:(n)=>toPlayer({shake:n}),
+            sink:(on)=>{ e._dlxSunk=on?1:0; _fx('dlx_sink',{eid:e.id,on:on?1:0}); },
+            setPos:(x,z)=>{ if(_dlWalkable(x,z)){ e.x=x; e.z=z; _moved=true; } } });
+        }
+        else if(e.type==='fire_demon'){
           // BRIMSTONE FIEND — flame lash, cinder bolts, FISSURE ERUPTION
           const MS=0.264;
           if(dd>2.8) mv(sin*0.9+pr*strafe*0.35, cos*0.9+pq*strafe*0.35, MS); else mv(pr*strafe,pq*strafe,MS);
@@ -11808,6 +11839,29 @@ function tickGame(game) {
                 _sdSpawnProj(game,zoneName,e,ang,_XP_GOLD,Math.floor((e.atk||480)*1.1),'plasma',null,0);
                 fx('xp_lance',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); } }
           }
+          else if(e.type==='xu_prism_seraph'){
+            // a702 — PRISM SERAPH: circles at mid range; PRISM FAN (five light-lances); HALO NOVA
+            //   (a ring of lances, then a blink away) if you close in; JUDGEMENT (three sun-strikes
+            //   marked in a line toward you)
+            if(e._strafe==null) e._strafe=Math.random()<0.5?1:-1;
+            if(Math.random()<0.036) e._strafe=-e._strafe;
+            const pr=cos, pq=-sin, st=e._strafe;
+            if(dd<6) mv(-sin*0.8+pr*st*0.5,-cos*0.8+pq*st*0.5,SP);
+            else if(dd>12) mv(sin*0.8+pr*st*0.3,cos*0.8+pq*st*0.3,SP);
+            else mv(pr*st,pq*st,SP);
+            if(dd>3 && dd<20 && e.attackTimer%15===0){
+              for(let i=0;i<5;i++) _sdSpawnProj(game,zoneName,e,ang+(i-2)*0.17,i%2?_XP_CYAN:_XP_GOLD,Math.floor((e.atk||470)*0.7),'plasma',null,0);
+              fx('xp_lance',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); }
+            e._hn=(e._hn||17)+1;
+            if(dd<5 && e._hn>=40){ e._hn=0;
+              fx('xp_pulse',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)});
+              for(let i=0;i<10;i++) _sdSpawnProj(game,zoneName,e,i/10*Math.PI*2,_XP_CYAN,Math.floor((e.atk||470)*0.6),'bolt',null,0);
+              const a2=ang+Math.PI+(Math.random()-0.5)*1.2, nx=e.x+Math.sin(a2)*7, nz=e.z+Math.cos(a2)*7;
+              if(_xuWalkable(nx,nz)){ fx('xp_cloak',{eid:e.id,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2)}); blink(nx,nz); } }
+            if(dd<18 && e._ab>=50){ e._ab=0;
+              for(let k=0;k<3;k++){ const d=Math.max(2,dd*0.55)+k*3.0;
+                tele(e.x+sin*d, e.z+cos*d, 5+k*3, 2.4, 0.9, _XP_GOLD); } }
+          }
           else {
             // xu_data_construct — SUPPORT NODE: needles and a repair matrix
             if(dd<8) mv(-sin,-cos,SP*0.8);
@@ -12321,7 +12375,116 @@ const VS_BESPOKE = { veiled_acolyte:1, censer_bearer:1, penitent_striker:1, choi
 // a546 — VAELTHARAX'S LAIR volcanic AI (zone-gated to 'dragonlair'). Only these FOUR types get
 //   the bespoke kit — the lair also spawns generic guardians/mages/iron guards which keep their
 //   existing generic AI, exactly as the client kit does. HP unchanged (already E-raid scale).
-const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1 };
+// ── a704 — VAELTHARAX'S BROOD BRAIN: the kit for the lair's five creatures, run at 10Hz. The SAME
+//   text lives in the client (offline/P2P, every 6th frame, movement spread between) and the server
+//   (authoritative online), each passing an adapter P: P.ex/ez, P.px/pz, P.dd/ang/sin/cos, P.st, P.at,
+//   P.mv, P.hit(m,burn), P.hitAt(m,x,z,r,burn), P.hitLine(m,x0,z0,a,len,w,burn), P.hitCone(m,x,z,a,len,half,burn),
+//   P.hitRing(m,x,z,r0,r1,burn), P.pullAt, P.pushAt, P.shoot(a,col,m,n,spread), P.fx, P.blink, P.slow, P.shake,
+//   P.sink(on), P.setPos(x,z).
+function _dlxInCone(px, pz, x, z, a, len, half){ const dx = px - x, dz = pz - z, d = Math.sqrt(dx*dx + dz*dz); if(d > len) return false; if(d < 0.8) return true;
+  let da = Math.atan2(dx, dz) - a; while(da > Math.PI) da -= Math.PI*2; while(da < -Math.PI) da += Math.PI*2; return Math.abs(da) < half; }
+function _dlxOnLine(px, pz, x0, z0, a, len, w){ const dx = Math.sin(a), dz = Math.cos(a), qx = px - x0, qz = pz - z0;
+  const t = Math.max(0, Math.min(len, qx*dx + qz*dz)), rx = qx - dx*t, rz = qz - dz*t; return rx*rx + rz*rz < w*w; }
+function _dlxBrain(e, P){
+  const T = e.type, st = P.st, sin = P.sin, cos = P.cos, pr = cos, pq = -sin, dd = P.dd, ang = P.ang, at = P.at, PI = Math.PI;
+  const LAVA = 0xff5410, EMBER = 0xff8a30, GOLD = 0xffd040, SOUL = 0x6affd0, BONE = 0xe8dcc0;
+  const rnd = (n)=>Math.floor(Math.random()*n);
+  const turn = (a0, a1, mx)=>{ let d = a1 - a0; while(d > PI) d -= PI*2; while(d < -PI) d += PI*2; return a0 + Math.max(-mx, Math.min(mx, d)); };
+  // delayed strikes this mob has queued (meteors, eruptions, shockwave rings): [tick, fn]
+  if(e._q && e._q.length){ e._qt = (e._qt || 0) + 1; for(let i=e._q.length - 1;i>=0;i--){ if(e._qt >= e._q[i][0]){ const f = e._q[i][1]; e._q.splice(i, 1); f(); } } }
+  const later = (n, f)=>{ if(!e._q) e._q = []; e._q.push([(e._qt || 0) + n, f]); };
+
+  if(T === 'ember_drake'){
+    // EMBER DRAKE — fast; bites that burn; FLAME BREATH (a marked cone, then a roaring sweep of fire that
+    //   tracks you slowly); TAIL SWEEP knocks you clear when you crowd it
+    const MS = 0.42;
+    if(e._br){ const B = e._br; B.t++;
+      if(B.t > 7){ B.a = turn(B.a, ang, 0.07);
+        if(B.t % 2 === 0){ P.fx('dlx_breath', {x:P.ex, z:P.ez, a:B.a, len:9, half:0.45}); P.hitCone(0.45, P.ex, P.ez, B.a, 9, 0.45, 90); } }
+      if(B.t >= 17) e._br = null; }
+    else {
+      if(dd > 2.2) P.mv(sin*0.9 + pr*st*0.35, cos*0.9 + pq*st*0.35, MS); else P.mv(pr*st, pq*st, MS*0.5);
+      if(dd < 2.6 && at % 8 === 0){ P.hit(1.0, 60); P.fx('dlx_bite', {x:P.px, z:P.pz, c:EMBER}); }
+      e._bc = (e._bc === undefined ? rnd(25) : e._bc) + 1;
+      if(dd < 8.5 && dd > 2 && e._bc >= 45){ e._bc = 0; e._br = {t:0, a:ang}; P.fx('dlx_cone_warn', {x:P.ex, z:P.ez, a:ang, len:9, half:0.45, ms:700}); } }
+    e._ts = (e._ts || 0) + 1;
+    if(!e._br && dd < 2.4 && e._ts >= 30){ e._ts = 0; P.hitAt(1.1, P.ex, P.ez, 3.0, 0); P.pushAt(P.ex, P.ez, 3.2, 4.5); P.fx('dlx_pulse', {x:P.ex, z:P.ez, r:3, c:EMBER}); }
+  }
+  else if(T === 'dragonkin_warden'){
+    // DRAGONKIN WARDEN — glaive cleaves; SHIELD CHARGE (a wind-up, then a rush that rams you back);
+    //   MOLTEN SHOCKWAVE (it slams the ground and a ring of fire races outward in three bands)
+    const MS = 0.25;
+    if(e._ch){ const C = e._ch; C.t++;
+      if(C.t > 4){ P.mv(Math.sin(C.a), Math.cos(C.a), MS*3.6); if(C.t % 2 === 0) P.fx('dlx_trail', {x:P.ex, z:P.ez});
+        if(!C.h && dd < 2.4){ C.h = 1; P.hit(1.5, 60); P.pushAt(P.ex, P.ez, 3.5, 4.5); P.slow(0.5, 700); P.shake(2); P.fx('dlx_pulse', {x:P.px, z:P.pz, r:2.2, c:GOLD}); } }
+      if(C.t >= 11) e._ch = null; }
+    else {
+      if(dd > 2.4) P.mv(sin*0.95 + pr*st*0.2, cos*0.95 + pq*st*0.2, MS);
+      if(dd < 3.2 && at % 11 === 0){ P.hitCone(1.2, P.ex, P.ez, ang, 3.6, 0.9, 0); P.fx('dlx_cleave', {x:P.ex, z:P.ez, a:ang}); }
+      e._cc = (e._cc === undefined ? rnd(30) : e._cc) + 1;
+      if(dd > 5 && dd < 14 && e._cc >= 50){ e._cc = 0; e._ch = {t:0, a:ang, h:0}; P.fx('dlx_wind', {x:P.ex, z:P.ez, c:GOLD}); P.fx('dlx_lwarn', {x0:P.ex, z0:P.ez, x1:P.ex + sin*15, z1:P.ez + cos*15, ms:450, w:1.3}); }
+      e._sw = (e._sw === undefined ? rnd(40) : e._sw) + 1;
+      if(dd < 9 && e._sw >= 70){ e._sw = 0; const x = P.ex, z = P.ez; P.fx('dlx_ring', {x:x, z:z, r:9, ms:700}); P.shake(2);
+        later(2, ()=>P.hitRing(1.0, x, z, 0, 3.2, 90)); later(4, ()=>P.hitRing(1.0, x, z, 3.0, 6.2, 90)); later(6, ()=>P.hitRing(1.0, x, z, 6.0, 9.2, 90)); } }
+  }
+  else if(T === 'ashen_flamecaller'){
+    // ASHEN FLAMECALLER — keeps its distance; fireball volleys; METEOR CALL (four marked impacts round you);
+    //   HELLFIRE CHAINS (a burning tether that slows you — break range to snap it); a fire-step when crowded
+    const MS = 0.27;
+    if(e._tc){ const C = e._tc; C.t++;
+      if(dd > 12 || C.t > 20){ e._tc = null; P.fx('dlx_chain_end', {}); }
+      else if(C.t % 2 === 0){ P.hit(0.26, 60); P.slow(0.55, 350); P.fx('dlx_chain', {ex:P.ex, ez:P.ez, tx:P.px, tz:P.pz}); } }
+    if(dd < 6.5) P.mv(-sin*0.7 + pr*st*0.6, -cos*0.7 + pq*st*0.6, MS);
+    else if(dd > 12) P.mv(sin*0.8 + pr*st*0.3, cos*0.8 + pq*st*0.3, MS);
+    else P.mv(pr*st, pq*st, MS*0.8);
+    if(!e._tc && dd > 2.5 && dd < 18 && at % 18 === 0) P.shoot(ang, EMBER, 0.55, 3, 0.15);
+    e._mc = (e._mc === undefined ? rnd(30) : e._mc) + 1;
+    if(dd < 18 && e._mc >= 55){ e._mc = 0;
+      for(let k=0;k<4;k++){ const a = Math.random()*PI*2, r = k ? 1.5 + Math.random()*3 : 0, x = P.px + Math.sin(a)*r, z = P.pz + Math.cos(a)*r, fuse = 12 + k*3;
+        P.fx('dlx_meteor_warn', {x:x, z:z, ms:fuse*100}); later(fuse, ()=>{ P.fx('dlx_meteor', {x:x, z:z}); P.hitAt(1.2, x, z, 2.4, 120); }); } }
+    e._hc = (e._hc === undefined ? rnd(35) : e._hc) + 1;
+    if(!e._tc && dd > 3 && dd < 11 && e._hc >= 60){ e._hc = 0; e._tc = {t:0}; P.fx('dlx_chain', {ex:P.ex, ez:P.ez, tx:P.px, tz:P.pz}); }
+    e._fb = (e._fb || 0) + 1;
+    if(dd < 3 && e._fb >= 25){ e._fb = 0; const a2 = ang + PI + (Math.random() - 0.5); P.blink(P.ex + Math.sin(a2)*6, P.ez + Math.cos(a2)*6); }
+  }
+  else if(T === 'magma_wurm'){
+    // MAGMA WURM — spits magma; BURROW (it sinks and tunnels at you, cracks racing across the ground)
+    //   then ERUPTS out from under you, throwing you clear
+    const MS = 0.32;
+    if(e._bu){ const B = e._bu; B.t++;
+      if(B.ph === 0){ P.mv(sin, cos, MS*1.8); if(B.t % 3 === 0) P.fx('dlx_crack', {x:P.ex, z:P.ez, a:ang});
+        if(dd < 1.6 || B.t >= 25){ B.ph = 1; B.t = 0; B.x = P.px; B.z = P.pz; P.fx('dlx_erupt_warn', {x:B.x, z:B.z, r:2.8, ms:600}); } }
+      else if(B.t >= 6){ P.setPos(B.x, B.z); P.sink(0); P.fx('dlx_erupt', {x:B.x, z:B.z, r:2.8}); P.hitAt(1.5, B.x, B.z, 2.8, 90); P.pushAt(B.x, B.z, 3.2, 4); P.shake(3); e._bu = null; } }
+    else {
+      if(dd > 3) P.mv(sin*0.8 + pr*st*0.4, cos*0.8 + pq*st*0.4, MS); else P.mv(pr*st, pq*st, MS*0.6);
+      if(dd < 2.8 && at % 10 === 0){ P.hit(1.0, 60); P.fx('dlx_bite', {x:P.px, z:P.pz, c:LAVA}); }
+      if(dd > 3 && dd < 15 && at % 16 === 0) P.shoot(ang, LAVA, 0.55, 1, 0);
+      e._bc = (e._bc === undefined ? rnd(25) : e._bc) + 1;
+      if(dd > 3 && dd < 16 && e._bc >= 45){ e._bc = 0; e._bu = {t:0, ph:0}; P.sink(1); P.fx('dlx_burrow', {x:P.ex, z:P.ez}); } }
+  }
+  else if(T === 'dragonbone_revenant'){
+    // DRAGONBONE REVENANT — crushing claws; SOULFIRE SWEEP (an arc is marked, then a beam of soulfire rakes
+    //   across it); BONE STORM (shards in every direction); DEATH ROAR (blasts you away and saps your speed)
+    const MS = 0.16;
+    if(e._sw){ const S = e._sw; S.t++;
+      if(S.t > 9){ const k = (S.t - 9)/8, a = S.a0 + (S.a1 - S.a0)*Math.min(1, k);
+        P.fx('dlx_beam', {x0:P.ex, z0:P.ez, x1:P.ex + Math.sin(a)*12, z1:P.ez + Math.cos(a)*12}); P.hitLine(0.6, P.ex, P.ez, a, 12, 1.0, 90); }
+      if(S.t >= 17) e._sw = null; }
+    else {
+      if(dd > 3.0) P.mv(sin*0.95 + pr*st*0.15, cos*0.95 + pq*st*0.15, MS);
+      if(dd < 3.6 && at % 13 === 0){ P.hit(1.4, 0); P.fx('dlx_pulse', {x:P.ex + sin*1.6, z:P.ez + cos*1.6, r:2.4, c:SOUL}); P.shake(2); }
+      e._sc = (e._sc === undefined ? rnd(30) : e._sc) + 1;
+      if(dd < 11 && e._sc >= 60){ e._sc = 0; const s = Math.random() < 0.5 ? 1 : -1, a0 = ang - s*0.9, a1 = ang + s*0.9; e._sw = {t:0, a0:a0, a1:a1};
+        P.fx('dlx_sweep_warn', {x:P.ex, z:P.ez, a0:a0, a1:a1, len:12, ms:900}); } }
+    e._bs = (e._bs === undefined ? rnd(25) : e._bs) + 1;
+    if(dd < 16 && e._bs >= 45){ e._bs = 0; const s0 = Math.random()*PI; for(let i=0;i<10;i++) P.shoot(s0 + i*PI/5, (i % 2) ? SOUL : BONE, 0.45, 1, 0); }
+    e._dr = (e._dr === undefined ? rnd(40) : e._dr) + 1;
+    if(dd < 7 && e._dr >= 80){ e._dr = 0; P.fx('dlx_roar', {x:P.ex, z:P.ez, r:7}); P.hitAt(0.6, P.ex, P.ez, 7, 0); P.pushAt(P.ex, P.ez, 7, 5); P.slow(0.5, 1500); P.shake(3); }
+  }
+}
+
+const DLX_BESPOKE = { ember_drake:1, dragonkin_warden:1, ashen_flamecaller:1, magma_wurm:1, dragonbone_revenant:1 };
+const DL_BESPOKE = { fire_demon:1, wyvern:1, void_spider:1, inferno_golem:1, ember_drake:1, dragonkin_warden:1, ashen_flamecaller:1, magma_wurm:1, dragonbone_revenant:1 };
 // a547 — RIFT VALE void/rift AI (zone-gated to 'riftvale'). CRITICAL: rift_stalker and
 //   rift_weaver ALSO live in void_citadel (not yet migrated) — the zone gate is what keeps
 //   this kit out of that zone. Client bumps HP x1.5 AND ATK x1.5 zone-locally.
@@ -12844,7 +13007,7 @@ function _cvTickEnts(game, zoneName, zone){
     else if (!e.active) e._cv.shardAt = null; });
 }
 
-const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1 };
+const XU_BESPOKE = { xu_quantum_seeker:1, xu_graviton_manipulator:1, xu_solar_lancer:1, xu_harmonic_warden:1, xu_data_construct:1, xu_prism_seraph:1 };
 const _XP_GOLD=0xffd24a, _XP_CYAN=0x40d0ff, _XP_BLUE=0x6080ff, _XP_HOT=0xffe48a, _XP_VIOLET=0x8040ff;
 const FG_BESPOKE = { molten_crawler:1, lava_forged_sentinel:1, forge_technician:1, industrial_devastator:1 };
 const _FG_LAVA=0xff3200, _FG_HOT=0xff6a26, _FG_CYAN=0x32d8ff, _FG_EMBER=0xff7a1e;
@@ -13127,7 +13290,7 @@ const _WW_FIRE=0xff5500, _WW_EMBER=0xff8830, _WW_ICE=0x80c8ff, _WW_FROST=0xd8ecf
 const RV_BESPOKE = { void_colossus:1, rift_stalker:1, psyche_horror:1, rift_weaver:1 };
 const RV_PWR = { void_colossus:220, rift_stalker:170, psyche_horror:160, rift_weaver:150 };
 function _rvDmgS(e, mult){ return Math.floor((RV_PWR[e.type] || e.atk || 150) * 1.5 * mult); }
-const DL_PWR = { void_spider:250, wyvern:270, fire_demon:295, inferno_golem:330 };
+const DL_PWR = { void_spider:250, wyvern:270, fire_demon:295, inferno_golem:330, ember_drake:280, dragonkin_warden:300, ashen_flamecaller:285, magma_wurm:295, dragonbone_revenant:330 };
 function _dlDmgS(e, mult){ return Math.floor((DL_PWR[e.type] || e.atk || 275) * mult); }
 // a561 — final_abbot added. The BOSS routes its damage through _vsDmg the same way the
 //   zone's mobs do, but only the mobs were ever mirrored here, so the boss had no entry.
