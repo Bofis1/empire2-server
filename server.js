@@ -571,7 +571,7 @@ const ZONE_BOSS_HP = {
   neon_hollow:      { hp:2800000,  name:'THE CURATOR' },   // a708 — rebuilt (was 1.6M)
   veiled_sanctuary: { hp:4000000,  name:'THE FINAL ABBOT' },  // v92.41 · a614 — 110+ raid boss (was 850k)
   blooming_wilds:   { hp:35000,    name:'THE WILDMOTHER' },   // v92.49
-  xeron:            { hp:3000000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
+  xeron:            { hp:4500000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
   lucidwilde:       { hp:5000000,  name:'THE PIXIELORD' },     // a297 — Lucidwilde uberzone apex
@@ -5125,7 +5125,7 @@ const ZONE_DMG_BASE = {
   necropolis:      { lvl:100, mob: 183, boss: 150 },
   neon_hollow:     { lvl:100, mob: 275, boss:1080 },   // a708 — the rebuilt Curator's damage is set in CUR_D directly (k = 1)
   the_reach:       { lvl:100, mob: 422, boss: 316 },
-  xeron:           { lvl:100, mob: 290, boss:  97 },
+  xeron:           { lvl:100, mob: 290, boss:1080 },   // a710 — the rebuilt Overseer's damage is set in XO_D directly (k = 1)
   xumen_fortress:  { lvl:100, mob: 334, boss:1080 }   // a707 — the rebuilt Apex Pyramid's damage is set in APX_D directly (k = 1)
 };
 const ZONE_DMG_K = {};
@@ -5870,6 +5870,171 @@ function _cryBrain(S, A){
   }
   if(!(X.act && X.act.k === 'dive')){ const c = clampA(S.x, S.z, CRY_R); S.x = c[0]; S.z = c[1]; }
   S.face = X.face;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// a710 — OVERSEER ZERO, REBUILT. The dominion's last AI, and the last boss. One brain, shared
+//   word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//   Eight phases. She hangs over the command arena and fights with the toys of a spacefaring
+//   empire; every one is telegraphed:
+//     RAILGUN            P1+  a laser sight tracks, locks, and a hypersonic slug rips down the
+//                             line (two rails, at two targets, from P5)
+//     HUNTER SWARM       P1+  homing micro-missiles — turn hard and they overshoot
+//     GRAVITY WELL       P2+  a pocket singularity drags you toward a crushing core, then bursts
+//     PRISM CAGE         P3+  a hexagon of beams closes on you; one side is open — get out
+//     PHASE WARP         P3+  she tears space and steps through it to another part of the arena
+//     DECIMATION GRID    P4+  the arena is cut into squares and the lit ones are struck from
+//                             orbit, then the others
+//     PHOTON LANCE       P5+  a beam from the eye sweeps half the arena (the eye of it is safe)
+//     SINGULARITY        P8   she becomes a black hole: everything falls toward her while void
+//                             spokes turn, then the collapse throws out rings with gaps in them
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), pull(k,x,z,amt), push(k,x,z,amt),
+//        fx(vt,obj), rnd() }   S: her position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const XO_D  = { rail:2100, msl:420, well:380, burst:1500, cage:1100, grid:1700, lance:700, hor:650, nova:1900 };
+const XO_PM = [1, 1, 1.06, 1.12, 1.18, 1.25, 1.32, 1.4, 1.5];
+const XO_R = 20, XO_ENG = 40;
+function _xoBrain(S, A){
+  const ph = Math.max(1, Math.min(8, A.ph | 0)), M = XO_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._xo;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._xo = { t:0, vx:0, vz:0, orb:A.rnd()*6.28, ow:1, cd:{ rail:20, well:30, cage:40, warp:60, grid:40, lance:40, sing:20 }, last:{}, gap:25, act:null,
+      msl:[], mid:0, mcd:40, hz:[], tgt:null, tgtT:0, dmg:false, ph, hitT:{}, well:null, cage:null, grid:null };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < XO_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+  const segHit = (p, ax, az, bx, bz, w) => { const dx = bx - ax, dz = bz - az, L2 = dx*dx + dz*dz || 1; let u = ((p.x - ax)*dx + (p.z - az)*dz)/L2; u = Math.max(0, Math.min(1, u));
+    return Math.hypot(p.x - (ax + dx*u), p.z - (az + dz*u)) < w; };
+
+  // ── things in flight: missiles, delayed strikes
+  if(X.msl.length){
+    const sent = [];
+    for(let i = X.msl.length - 1; i >= 0; i--){ const m = X.msl[i]; m.l--;
+      const tp = inA.find(p => p.k === m.k) || inA[0];
+      if(tp){ const want = Math.atan2(tp.x - m.x, tp.z - m.z); m.a += Math.max(-0.11, Math.min(0.11, dAng(want, m.a))); }
+      m.x += Math.sin(m.a)*0.95; m.z += Math.cos(m.a)*0.95;
+      let hit = false; for(const p of inA){ if(D(p, m.x, m.z) < 0.9){ A.hit(p.k, Math.round(XO_D.msl*M)); hit = true; break; } }
+      if(hit || m.l <= 0){ A.fx('xo_mx', { i:m.id, x:R2(m.x), z:R2(m.z) }); X.msl.splice(i, 1); }
+      else sent.push([m.id, R2(m.x), R2(m.z)]); }
+    if(X.t % 2 === 0 && sent.length) A.fx('xo_mp', { m:sent });
+  }
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(o.sq ? (Math.abs(p.x - o.x) < o.r && Math.abs(p.z - o.z) < o.r) : D(p, o.x, o.z) < o.r) A.hit(p.k, Math.round(XO_D[o.d]*M)); }); X.hz.splice(i, 1); } }
+
+  if(!inA.length){ X.act = null; X.well = X.cage = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.2); S.x += dx/d*st; S.z += dz/d*st; } return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'reboot', t:0 }; X.msl.length = 0; A.fx('xo_reboot', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 4.5); }); }
+
+  // ── standing fields: the gravity well and the prism cage run alongside everything else
+  if(X.well){ const w = X.well; w.t++;
+    if(w.t > w.warn && w.t <= w.warn + w.d) inA.forEach(p => { const d = D(p, w.x, w.z);
+      if(d < w.r && d > 0.6) A.pull(p.k, w.x, w.z, 0.22); if(d < 2.0 && once(p.k, 'wl', 5)) A.hit(p.k, Math.round(XO_D.well*M)); });
+    if(w.t === w.warn + w.d){ inA.forEach(p => { if(D(p, w.x, w.z) < 4.5){ A.hit(p.k, Math.round(XO_D.burst*M)); A.push(p.k, w.x, w.z, 4); } }); X.well = null; } }
+  if(X.cage){ const c = X.cage; c.t++;
+    if(c.t > c.warn){ const u = Math.min(1, (c.t - c.warn)/c.d), R = c.r0*(1 - u) + 0.6;
+      for(let i = 0; i < 6; i++){ if(i === c.gap) continue; const a0 = c.a + i*Math.PI/3, a1 = a0 + Math.PI/3;
+        const ax = c.x + Math.sin(a0)*R, az = c.z + Math.cos(a0)*R, bx = c.x + Math.sin(a1)*R, bz = c.z + Math.cos(a1)*R;
+        inA.forEach(p => { if(segHit(p, ax, az, bx, bz, 0.7) && once(p.k, 'cg', 8)) A.hit(p.k, Math.round(XO_D.cage*M)); }); }
+      if(u >= 1) X.cage = null; } }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'reboot') done = a.t >= 18;
+    else if(a.k === 'rail'){
+      if(a.t <= a.track){ a.lines.forEach(L => { const tp = inA.find(p => p.k === L.k); if(tp){ L.a = Math.atan2(tp.x - S.x, tp.z - S.z); } });
+        if(a.t === a.track) A.fx('xo_raillock', { x:R2(S.x), z:R2(S.z), a:a.lines.map(L => +L.a.toFixed(3)) }); }
+      if(a.t === a.fire){ a.lines.forEach(L => { const ex = S.x + Math.sin(L.a)*a.len, ez = S.z + Math.cos(L.a)*a.len;
+        inA.forEach(p => { if(segHit(p, S.x, S.z, ex, ez, 1.1)) A.hit(p.k, Math.round(XO_D.rail*M)); }); }); }
+      done = a.t >= a.fire + 6; }
+    else if(a.k === 'lance'){
+      if(a.t > a.warn){ const u = Math.min(1, (a.t - a.warn)/a.d), an = a.a0 + a.sw*u, sx = Math.sin(an), sz = Math.cos(an);
+        inA.forEach(p => { const dx = p.x - a.x, dz = p.z - a.z, al = dx*sx + dz*sz, pe = Math.abs(dx*sz - dz*sx);
+          if(al > a.inr && al < a.len && pe < 1.0 && once(p.k, 'ln', 3)) A.hit(p.k, Math.round(XO_D.lance*M)); }); }
+      done = a.t >= a.warn + a.d; }
+    else if(a.k === 'grid'){ done = a.t >= a.end; }
+    else if(a.k === 'sing'){
+      if(a.t > a.warn && a.t <= a.warn + a.d){ const tt = a.t - a.warn;
+        inA.forEach(p => { const d = D(p, S.x, S.z); if(d > 1.0) A.pull(p.k, S.x, S.z, 0.17);
+          if(d < a.hor && once(p.k, 'hz', 4)) A.hit(p.k, Math.round(XO_D.hor*M));
+          for(let i = 0; i < 4; i++){ const an = a.a0 + a.w*tt + i*Math.PI/2, ex = S.x + Math.sin(an)*a.len, ez = S.z + Math.cos(an)*a.len;
+            if(d > a.hor && segHit(p, S.x, S.z, ex, ez, 0.8) && once(p.k, 'sp', 6)){ A.hit(p.k, Math.round(XO_D.hor*M)); break; } } }); }
+      a.rings.forEach((g, ri) => { const rt = a.t - g[0]; if(rt <= 0) return; const r = 1.5 + rt*a.spd; if(r > 34) return;
+        inA.forEach(p => { const d = D(p, S.x, S.z); if(Math.abs(d - r) > 0.7) return; const an = Math.atan2(p.x - S.x, p.z - S.z);
+          if(![g[1], g[2]].some(ga => Math.abs(dAng(an, ga)) < a.hw) && once(p.k, 'nv' + ri, 99)) A.hit(p.k, Math.round(XO_D.nova*M)); }); });
+      done = a.t >= a.end; }
+    if(done){ X.act = null; X.gap = ph >= 6 ? 10 : ph >= 3 ? 14 : 18; }
+  } else {
+    // ── HOLD STATION: drift a slow orbit around the arena heart, keeping her distance
+    X.orb += 0.006*X.ow;
+    const tx = hx + Math.sin(X.orb)*7, tz = hz + Math.cos(X.orb)*7;
+    let wx = (tx - S.x)*0.05, wz = (tz - S.z)*0.05; const wl = Math.hypot(wx, wz), vm = 0.09 + ph*0.01; if(wl > vm){ wx = wx/wl*vm; wz = wz/wl*vm; }
+    X.vx += (wx - X.vx)*0.1; X.vz += (wz - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+    if(X.t % 160 === 0) X.ow = -X.ow;
+
+    if(X.gap <= 0){
+      const MIN = { rail:1, well:2, cage:3, warp:3, grid:4, lance:5, sing:8 };
+      let k = null, lk = 1e9;
+      for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; if(m === 'well' && X.well) continue; if(m === 'cage' && X.cage) continue;
+        const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(k) X.last[k] = X.t;
+      if(k === 'rail'){
+        const lines = [{ k:P.k, a:Math.atan2(P.x - S.x, P.z - S.z) }];
+        if(ph >= 5){ const o = inA.find(p => p.k !== P.k); lines.push(o ? { k:o.k, a:Math.atan2(o.x - S.x, o.z - S.z) } : { k:P.k, a:lines[0].a + 0.3 }); }
+        X.act = { k, t:0, lines, track:10, fire:16, len:46 }; X.cd.rail = ph >= 6 ? 45 : 60;
+        A.fx('xo_rail', { x:R2(S.x), z:R2(S.z), n:lines.length, track:10, fire:16, len:46 });
+      } else if(k === 'well'){
+        const an = A.rnd()*6.28, c = clampA(P.x + Math.sin(an)*3.5, P.z + Math.cos(an)*3.5, XO_R + 8);
+        X.well = { t:0, x:c[0], z:c[1], r:10, warn:8, d:34 }; X.cd.well = ph >= 6 ? 90 : 120;
+        A.fx('xo_well', { x:R2(c[0]), z:R2(c[1]), r:10, warn:8, d:34 });
+      } else if(k === 'cage'){
+        const g = Math.floor(A.rnd()*6), a0 = A.rnd()*1.047;
+        X.cage = { t:0, x:P.x, z:P.z, r0:7.5, a:a0, gap:g, warn:10, d:26 }; X.cd.cage = ph >= 6 ? 90 : 120;
+        A.fx('xo_cage', { x:R2(P.x), z:R2(P.z), r0:7.5, a:+a0.toFixed(3), gap:g, warn:10, d:26 });
+      } else if(k === 'warp'){
+        const an = Math.atan2(S.x - P.x, S.z - P.z) + 1.6 + A.rnd()*3, c = clampA(P.x + Math.sin(an)*10, P.z + Math.cos(an)*10, XO_R);
+        A.fx('xo_warp', { fx:R2(S.x), fz:R2(S.z), tx:R2(c[0]), tz:R2(c[1]) });
+        S.x = c[0]; S.z = c[1]; X.vx = X.vz = 0; X.cd.warp = 110; X.mcd = 3;
+      } else if(k === 'grid'){
+        // the arena cut into 6m squares; the lit half is struck, then the other half
+        const cell = 6, n = 6, ox = hx - cell*n/2, oz = hz - cell*n/2, A1 = [], A2 = [], par = A.rnd() < 0.5 ? 0 : 1;
+        for(let i = 0; i < n; i++) for(let j = 0; j < n; j++){ const cx = ox + (i + 0.5)*cell, cz = oz + (j + 0.5)*cell; ((i + j + par) % 2 ? A2 : A1).push([R2(cx), R2(cz)]); }
+        A1.forEach(q => X.hz.push({ x:q[0], z:q[1], r:cell/2, sq:1, f:18, d:'grid' })); A2.forEach(q => X.hz.push({ x:q[0], z:q[1], r:cell/2, sq:1, f:36, d:'grid' }));
+        X.act = { k, t:0, end:14 }; X.cd.grid = ph >= 6 ? 120 : 150;
+        A.fx('xo_grid', { cell, a:A1, b:A2, fa:18, fb:36 });
+      } else if(k === 'lance'){
+        const a0 = Math.atan2(P.x - S.x, P.z - S.z) - 1.4*(A.rnd() < 0.5 ? 1 : -1), sw = (a0 < Math.atan2(P.x - S.x, P.z - S.z) ? 1 : -1)*2.8;
+        X.act = { k, t:0, x:S.x, z:S.z, a0, sw, inr:3.2, len:30, warn:14, d:30 }; X.cd.lance = ph >= 7 ? 100 : 130;
+        A.fx('xo_lance', { x:R2(S.x), z:R2(S.z), a0:+a0.toFixed(3), sw:+sw.toFixed(3), inr:3.2, len:30, warn:14, d:30 });
+      } else if(k === 'sing'){
+        const rings = [[66, 0, 0], [76, 0, 0], [86, 0, 0]].map(g => { const ga = A.rnd()*6.28; return [g[0], +ga.toFixed(3), +(ga + 2.4 + A.rnd()*1.6).toFixed(3)]; });
+        X.act = { k, t:0, warn:14, d:50, hor:3.6, len:24, a0:A.rnd()*6.28, w:0.045, rings, spd:0.8, hw:0.34, end:122 }; X.cd.sing = 200;
+        A.fx('xo_sing', { x:R2(S.x), z:R2(S.z), warn:14, d:50, hor:3.6, len:24, a0:+X.act.a0.toFixed(3), w:0.045, rings, spd:0.8, hw:0.34 });
+      }
+    }
+  }
+  // ── HUNTER SWARM: launched from the wing tips, homing on the target
+  if(--X.mcd <= 0 && !(X.act && (X.act.k === 'reboot' || X.act.k === 'sing'))){
+    X.mcd = [0, 38, 34, 30, 28, 26, 24, 22, 20][ph];
+    const n = ph >= 6 ? 6 : ph >= 3 ? 4 : 3, base = Math.atan2(P.x - S.x, P.z - S.z), out = [];
+    for(let i = 0; i < n; i++){ const side = i % 2 ? 1 : -1, a = base + side*(1.2 + 0.25*Math.floor(i/2)), id = ++X.mid;
+      const m = { id, k:P.k, x:S.x + Math.sin(base + side*1.57)*6, z:S.z + Math.cos(base + side*1.57)*6, a, l:40 }; X.msl.push(m); out.push([id, R2(m.x), R2(m.z), +a.toFixed(3)]); }
+    A.fx('xo_msl', { m:out });
+  }
+  const c = clampA(S.x, S.z, XO_R); S.x = c[0]; S.z = c[1];
 }
 
 const ZBOSS_SERVER = {
@@ -7438,104 +7603,28 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── OVERSEER ZERO (a550). The dominion's last AI: 3M HP across EIGHT phases, the
-  //    longest fight in the game. She holds the throne and rains fire rather than
-  //    chasing, so she uses 'drift' rather than the marching spine.
-  //    _ozHit(flat, pct) = flat*(1+(p-1)*0.22) + maxHP*pct*(1+(p-1)*0.16). The server
-  //    can't see player maxHP, so `dmg` below IS the flat scalar (1+(p-1)*0.22) and we
-  //    mirror the flat term only — same discipline as every migrated zone.
+  // ── OVERSEER ZERO (a710). Rebuilt: her whole fight lives in the shared brain _xoBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). The brain moves her (move:'self'),
+  //    aims at every player in the arena and hands back damage, pulls, pushes and cues here.
   xeron: {
-    x: 180, z: 180,                                    // tile (120,120) — central command arena
-    spd:    [0,0,0,0,0,0,0,0,0],                       // unused under 'drift'
-    dmg:    [0, 1.00, 1.22, 1.44, 1.66, 1.88, 2.10, 2.32, 2.54],
+    x: 180, z: 180,                                   // tile (120,120) — central command arena
+    spd:    [0,0,0,0,0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4, 5, 6, 7, 8],              // phase index only — damage is in XO_D
     phases: [0.87, 0.75, 0.62, 0.50, 0.37, 0.25, 0.12],
-    acd:    [0, 20, 13, 12, 10, 8, 7, 6, 5],           // 120/80/70/60/50/42/35/28 frames / 6
-    tele:   0,                                         // she charges her own rails
-    move:   'drift', driftR: 1.6, driftPer: 0.18, driftSpd: 0.05,
-    range:  39,                                        // 26 * TILE
-    pick:   () => 0,                                   // not a rotation — a phase-scaling combo
-    attack: (c) => {
-      const { b, ph, mult, np, fx, geyser } = c;
-      // TWIN RAILGUN — always. Aim locks now, lance lands 360ms later, so it is dodgeable.
-      fx('oz_railgun_charge', { tx:+np.x.toFixed(2), tz:+np.z.toFixed(2) });
-      geyser(np.x, np.z, 6, 4.5, Math.floor(160 * mult), 0x00ffff, { shake:12 });
-      // P5+: THE PROTOCOL — orbital bombardment scattered around the target
-      if (ph >= 5) {
-        fx('oz_protocol');
-        const shots = 5 + ph;
-        for (let i = 0; i < shots; i++) {
-          const a = (i/shots)*Math.PI*2 + Math.random()*0.4, r = 2 + Math.random()*5;
-          geyser(np.x + Math.cos(a)*r, np.z + Math.sin(a)*r, 6 + i, 4.2, Math.floor(170 * mult), i%2?0xff44ff:0x00ffff);
-        }
-      }
-      // P7+: PHOTON CONVERGENCE — a screen-clearing lance down your line
-      if (ph >= 7) {
-        const pa = Math.atan2(np.x - b.x, np.z - b.z);
-        fx('oz_photon', { dir:+pa.toFixed(3), len:34 });
-        for (let i = 1; i <= 10; i++)
-          geyser(b.x + Math.sin(pa)*i*3.4, b.z + Math.cos(pa)*i*3.4, 14, 4.8, Math.floor(460 * mult), 0xffffff);
-      }
-    },
+    acd:    [0, 20, 20, 20, 20, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, np, aoe, fx, proj, geyser } = c;
-      const pang = Math.atan2(np.x - b.x, np.z - b.z);
-      // constant aimed bolt stream from the eye, ramping with phase
-      const rate = Math.max(2, Math.round(Math.max(10, 30 - ph*2) / 6));
-      if (b._vt % rate === 0) proj(pang, 0x00ffff, Math.floor(55 * mult), 'plasma');
-      // P2+: lead micro-missile pair
-      if (ph >= 2 && b._vt % Math.max(4, Math.round(Math.max(26, 60 - ph*4) / 6)) === 0) {
-        proj(pang - 0.10, 0x00ffff, Math.floor(48 * mult), 'plasma');
-        proj(pang + 0.10, 0xff44ff, Math.floor(48 * mult), 'plasma');
-      }
-      // P3+: rotating bullet-ring from the core (the bullet-hell layer)
-      if (ph >= 3 && b._vt % Math.max(7, Math.round(Math.max(40, 90 - ph*6) / 6)) === 0) {
-        b._ozSpin = (b._ozSpin || 0) + 0.35;
-        const n = 8 + ph;
-        for (let r = 0; r < n; r++) proj(b._ozSpin + (r/n)*Math.PI*2, r%2?0xff44ff:0x00ffff, Math.floor(42 * mult), 'plasma');
-      }
-      // P6+: searing aura punishes facetanking
-      if (ph >= 6 && b._vt % 3 === 0) aoe(10.5, Math.floor(35 * mult));
-      // P3+: SATELLITE SALVO on its own cooldown, so the sky stays busy
-      if (ph >= 3) {
-        b._salvoCd = (b._salvoCd || 0) - 1;
-        if (b._salvoCd <= 0) {
-          b._salvoCd = Math.max(15, Math.round(Math.max(90, 200 - ph*12) / 6));
-          fx('oz_salvo');
-          for (let i = 0; i < 6; i++) proj(pang + (i-2.5)*0.14, i%2?0x00ffff:0xff44ff, Math.floor(85 * mult), 'plasma');
-        }
-      }
-      // P4+: HOLOGRAPHIC KILL-GRID on its own cooldown. Lethal on the LINES, not the
-      //   cells — so the lattice hit test is done exactly, not approximated by circles.
-      if (ph >= 4) {
-        if (b._kgOn) {
-          b._kgT = (b._kgT || 0) + 1;
-          if (b._kgT >= 8) {
-            b._kgOn = 0; b._kgT = 0;
-            fx('oz_killgrid_fire', { cx:+b._kgX.toFixed(2), cz:+b._kgZ.toFixed(2) });
-            const span = 13.5, n = 5, step = span / n;
-            players.forEach((p, ws) => {
-              if (p.gameId !== c.game.id || p.zone !== c.zoneName || p.x === undefined) return;
-              if (Math.abs(p.x - b._kgX) >= span/2 || Math.abs(p.z - b._kgZ) >= span/2) return;
-              let nearZ = 99, nearX = 99;
-              for (let i = 0; i < n; i++) {
-                const o = (i - (n-1)/2) * step;
-                nearZ = Math.min(nearZ, Math.abs((p.z - b._kgZ) - o));
-                nearX = Math.min(nearX, Math.abs((p.x - b._kgX) - o));
-              }
-              if (nearZ < 1.35 || nearX < 1.35)
-                send(ws, { type:'sv_enemy_attack', eid:-1, dmg:Math.floor(180 * mult),
-                           ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:c.zoneName });
-            });
-          }
-        } else {
-          b._kgCd = (b._kgCd || 0) - 1;
-          if (b._kgCd <= 0) {
-            b._kgCd = Math.max(25, Math.round(Math.max(150, 300 - ph*14) / 6));
-            b._kgOn = 1; b._kgT = 0; b._kgX = np.x; b._kgZ = np.z;
-            fx('oz_killgrid', { cx:+np.x.toFixed(2), cz:+np.z.toFixed(2), span:13.5, n:5 });
-          }
-        }
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _xoBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
