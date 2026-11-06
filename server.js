@@ -561,7 +561,7 @@ const ZONE_BOSS_HP = {
   fungal:           { hp:84000,    name:'MYCELIUM QUEEN' },
   frostveil:        { hp:96000,    name:'FROSTVEIL COLOSSUS' },
   ancient:          { hp:120000,   name:'THE ELDER ARCHITECT' },
-  dragonlair:       { hp:375000,   name:'VAELTHARAX THE UNDYING' },
+  dragonlair:       { hp:650000,   name:'VAELTHARAX THE UNDYING' },   // a712 — rebuilt (was 375k)
   riftvale:         { hp:400000,   name:'THE RIFT SOVEREIGN' },
   wyvernwastes:     { hp:1200000,  name:'CRYOTHAR' },   // a709 — rebuilt (was 500k)
   xumen:            { hp:675000,   name:'THE XU SUPREME OVERLORD' },
@@ -5113,7 +5113,7 @@ const ZONE_DMG_BASE = {
   frostveil:       { lvl: 50, mob: 229, boss: 110 },
   ancient:         { lvl: 58, mob: 348, boss: 114 },
   sunken_sands:    { lvl: 60, mob: 292, boss: 130 },
-  dragonlair:      { lvl: 65, mob: 167, boss: 209 },
+  dragonlair:      { lvl: 65, mob: 167, boss: 392.0282 },   // a712 — the rebuilt Vaeltharax's damage is set in VX_D directly (k = 1)
   riftvale:        { lvl: 65, mob: 274, boss:  45 },
   void_citadel:    { lvl: 70, mob: 216, boss: 191 },
   veiled_sanctuary:{ lvl:110, mob: 228, boss: 217 },   // a614 — 110+ (was 80): hits on the level-110 curve
@@ -6037,6 +6037,149 @@ function _xoBrain(S, A){
   const c = clampA(S.x, S.z, XO_R); S.x = c[0]; S.z = c[1];
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a712 — VAELTHARAX THE UNDYING, REBUILT as a red fire dragon. One brain, shared word for word
+//   by the server (the authority in a lobby) and the client (solo). 10 Hz. She holds her nest
+//   and fights at range, turning to face her prey:
+//     FIREBALL BARRAGE  P1+  her signature: rapid volleys of fireballs fanned at her target —
+//                            three volleys of five, growing to five volleys of nine, and in the
+//                            last phase the fans stagger so the gaps move
+//     FLAME BREATH      P1+  a sweeping cone of fire
+//     TAIL SLAM         P1+  everything behind and beside her, smashed away
+//     MAGMA FISSURES    P2+  the ground splits toward every player, erupts, and keeps burning
+//     METEOR RAIN       P2+  she roars the volcano awake and rocks fall on marked ground
+//     INFERNO DIVE      P3+  she climbs and crashes down in a burst of fire
+//     CATACLYSM         P5   the whole nest erupts — only the cooled obsidian is safe
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), fx(vt,obj), rnd() }
+//   S: her position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const VX_D  = { fb:150, breath:180, tail:450, fis:460, burn:90, meteor:500, dive:640, cata:900 };
+const VX_PM = [1, 1, 1.1, 1.2, 1.32, 1.45];
+const VX_R = 11, VX_ENG = 26;
+function _vxBrain(S, A){
+  const ph = Math.max(1, Math.min(5, A.ph | 0)), M = VX_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._vx;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._vx = { t:0, vx:0, vz:0, face:0, cd:{ barrage:14, breath:40, tail:40, fis:40, meteor:50, dive:50, cata:30 }, last:{}, gap:16, act:null,
+      fb:[], hz:[], lanes:[], tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < VX_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // fireballs in flight, delayed strikes, burning fissures
+  for(let i = X.fb.length - 1; i >= 0; i--){ const o = X.fb[i]; o.x += o.vx; o.z += o.vz; let hit = false;
+    for(const p of inA){ if(D(p, o.x, o.z) < 0.95){ A.hit(p.k, Math.round(VX_D.fb*M)); hit = true; break; } }
+    if(hit || --o.l <= 0) X.fb.splice(i, 1); }
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(VX_D[o.d]*M)); if(o.push) A.push(p.k, o.x, o.z, o.push); } }); X.hz.splice(i, 1); } }
+  for(let i = X.lanes.length - 1; i >= 0; i--){ const L = X.lanes[i]; L.t++;
+    if(L.t > L.w) inA.forEach(p => { const dx = p.x - L.x, dz = p.z - L.z, al = dx*Math.sin(L.a) + dz*Math.cos(L.a), pe = Math.abs(dx*Math.cos(L.a) - dz*Math.sin(L.a));
+      if(al > 0 && al < L.len && pe < 1.2 && once(p.k, 'bn', 5)) A.hit(p.k, Math.round(VX_D.burn*M)); });
+    if(L.t >= L.w + L.d) X.lanes.splice(i, 1); }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.2); S.x += dx/d*st; S.z += dz/d*st; } return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'roar', t:0 }; A.fx('vx_roar', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'roar') done = a.t >= 15;
+    else if(a.k === 'barrage'){
+      // turn with the target between volleys, then fan a volley at it
+      const want = angTo(P.x, P.z); X.face += Math.max(-0.15, Math.min(0.15, dAng(want, X.face)));
+      if(a.t >= a.w && (a.t - a.w) % a.gap === 0 && a.v < a.n){
+        const n = a.per, spread = a.spread, off = (ph >= 5 && a.v % 2) ? spread/(n - 1)/2 : 0, angs = [];
+        for(let i = 0; i < n; i++){ const an = X.face - spread/2 + spread*i/(n - 1) + off; angs.push(+an.toFixed(3));
+          X.fb.push({ x:S.x + Math.sin(an)*2.6, z:S.z + Math.cos(an)*2.6, vx:Math.sin(an)*a.s, vz:Math.cos(an)*a.s, l:a.l }); }
+        a.v++; A.fx('vx_fb', { x:R2(S.x), z:R2(S.z), a:angs, r0:2.6, s:a.s, l:a.l });
+      }
+      done = a.v >= a.n && a.t >= a.w + a.gap*a.n + 2; }
+    else if(a.k === 'breath'){
+      if(a.t > a.w){ const u = (a.t - a.w)/a.d, an = a.a - a.sw + 2*a.sw*u; X.face = an;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(d > a.r || d < 0.5) return;
+          if(Math.abs(dAng(angTo(p.x, p.z), an)) < a.ha && once(p.k, 'br', 4)) A.hit(p.k, Math.round(VX_D.breath*M)); }); }
+      done = a.t >= a.w + a.d; }
+    else if(a.k === 'tail'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.r && Math.abs(dAng(angTo(p.x, p.z), a.a)) > a.front){ A.hit(p.k, Math.round(VX_D.tail*M)); A.push(p.k, a.x, a.z, 3.5); } });
+      done = a.t >= a.w + 5; }
+    else if(a.k === 'dive'){ if(a.t === a.land){ S.x = a.tx; S.z = a.tz; } done = a.t >= a.end; }
+    else if(a.k === 'cata'){
+      if(a.t === a.w) inA.forEach(p => { if(!a.safe.some(q => D(p, q[0], q[1]) < a.sr)) A.hit(p.k, Math.round(VX_D.cata*M)); });
+      done = a.t >= a.end; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : 12; }
+  } else {
+    // ── HOLD THE NEST: face the target, keep it at fireball range
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.12, Math.min(0.12, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.13, 0.15, 0.17, 0.19, 0.21][ph];
+    const sp = d > 10 ? vmax : d < 5 ? -vmax*0.6 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.15; X.vz += (Math.cos(X.face)*sp - X.vz)*0.15; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      // the barrage comes round every other move: it is what she is
+      const MIN = { barrage:1, breath:1, tail:1, fis:2, meteor:2, dive:3, cata:5 };
+      let k = null, lk = 1e9;
+      if(X.cd.barrage <= 0 && X.lastK !== 'barrage') k = 'barrage';
+      else for(const m in MIN){ if(m === 'barrage' || ph < MIN[m] || X.cd[m] > 0) continue;
+        if(m === 'tail' && !inA.some(p => D(p, S.x, S.z) < 7 && Math.abs(dAng(angTo(p.x, p.z), X.face)) > 1.0)) continue;
+        if(m === 'breath' && d > 11) continue;
+        const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.barrage <= 0) k = 'barrage';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'barrage'){
+        const n = ph >= 5 ? 5 : ph >= 3 ? 4 : 3, per = ph >= 5 ? 9 : ph >= 3 ? 7 : 5;
+        X.act = { k, t:0, w:5, gap:3, n, v:0, per, spread:ph >= 3 ? 1.25 : 1.0, s:0.9, l:24 }; X.cd.barrage = ph >= 4 ? 16 : 22;
+        A.fx('vx_barrage', { x:R2(S.x), z:R2(S.z), w:5, n, gap:3 });
+      } else if(k === 'breath'){ X.face = want;
+        X.act = { k, t:0, x:S.x, z:S.z, a:want, sw:0.6, ha:0.34, r:12, w:9, d:20 }; X.cd.breath = ph >= 4 ? 55 : 70;
+        A.fx('vx_breath', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), sw:0.6, ha:0.34, r:12, w:9, d:20 });
+      } else if(k === 'tail'){
+        X.act = { k, t:0, x:S.x, z:S.z, a:X.face, front:1.0, r:7.5, w:8 }; X.cd.tail = 45;
+        A.fx('vx_tail', { x:R2(S.x), z:R2(S.z), a:+X.face.toFixed(3), front:1.0, r:7.5, w:8 });
+      } else if(k === 'fis'){
+        const lines = inA.slice(0, 4).map(p => +angTo(p.x, p.z).toFixed(3)), len = 18, w = 9;
+        lines.forEach(an => { X.lanes.push({ t:0, x:S.x, z:S.z, a:an, len, w:w + 9, d:40 });
+          for(let j = 1; j <= 9; j++) X.hz.push({ x:S.x + Math.sin(an)*j*2, z:S.z + Math.cos(an)*j*2, r:1.7, f:w + j, d:'fis' }); });
+        X.act = { k, t:0, end:w + 4 }; X.cd.fis = ph >= 4 ? 80 : 100;
+        A.fx('vx_fis', { x:R2(S.x), z:R2(S.z), a:lines, len, w, step:2, n:9, d:40 });
+      } else if(k === 'meteor'){
+        const pts = [];
+        for(let i = 0; i < 8 + ph; i++){ const q = inA[i % inA.length], an = A.rnd()*6.28, rr = i < inA.length ? 0 : 1.5 + A.rnd()*6;
+          const c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, VX_ENG - 4), f = 14 + i*2;
+          pts.push([R2(c[0]), R2(c[1]), f]); X.hz.push({ x:c[0], z:c[1], r:2.5, f, d:'meteor' }); }
+        X.act = { k, t:0, end:10 }; X.cd.meteor = ph >= 4 ? 110 : 140;
+        A.fx('vx_meteor', { x:R2(S.x), z:R2(S.z), pts, r:2.5 });
+      } else if(k === 'dive'){
+        const c = clampA(P.x, P.z, VX_R + 4), land = 22;
+        X.hz.push({ x:c[0], z:c[1], r:4.5, f:land, d:'dive', push:4 });
+        X.act = { k, t:0, tx:c[0], tz:c[1], land, end:land + 8 }; X.cd.dive = ph >= 4 ? 100 : 130;
+        A.fx('vx_dive', { sx:R2(S.x), sz:R2(S.z), tx:R2(c[0]), tz:R2(c[1]), r:4.5, land });
+      } else if(k === 'cata'){
+        const safe = []; for(let i = 0; i < 3; i++){ const an = i*2.094 + A.rnd()*1.2, rr = 5 + A.rnd()*8; const c = clampA(hx + Math.sin(an)*rr, hz + Math.cos(an)*rr, VX_R + 4); safe.push([R2(c[0]), R2(c[1])]); }
+        X.act = { k, t:0, safe, sr:3.3, w:32, end:40 }; X.cd.cata = 170;
+        A.fx('vx_cata', { x:R2(S.x), z:R2(S.z), hx, hz, safe, sr:3.3, w:32, R:VX_ENG - 2 });
+      }
+    }
+  }
+  if(!(X.act && X.act.k === 'dive')){ const c = clampA(S.x, S.z, VX_R); S.x = c[0]; S.z = c[1]; }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -6169,203 +6312,27 @@ const ZBOSS_SERVER = {
     passive: (c) => _kxPassive(c),
   },
 
-// ── VAELTHARAX THE UNDYING (a562), Vaeltharax's Lair.
-  //
-  //    READ THIS BEFORE CHANGING `pick`.
-  //    The client selects her attack with:
-  //        _dragonAttack = Math.floor(bATimer/(bACD/6)) % 6
-  //    ...but only fires when bATimer >= bACD, and bACD is 120 for this zone and never
-  //    changes (dragonlair sets no bACD anywhere). At bATimer === 120 that expression is
-  //    floor(120/20) % 6 = 6 % 6 = 0 — every single time. So in the live game Vaeltharax
-  //    only ever casts FIRE BREATH. Tail Sweep, Wing Slam, Meteor Rain, the Roar, the
-  //    Charge Slam and Void Corruption are all written, all finished, and all unreachable.
-  //    (The telegraph ring is computed 70 frames earlier, where the same expression gives
-  //    a DIFFERENT index — which is why the warning sometimes previews an attack that
-  //    never arrives.)
-  //
-  //    All seven bodies are ported below and work. `pick` decides which behaviour ships:
-  //      'faithful' (default) — index 0 always. Byte-for-byte what she does today.
-  //      'full'               — the 6-slot rotation the selector was written for.
-  //      'complete'           — 7 slots, so Void Corruption / Inferno Burst fire too.
-  //    Change ONE word on the `_VX_MODE` line to switch. Default is 'faithful' so this
-  //    patch changes nothing about how the fight plays.
+// ── VAELTHARAX THE UNDYING (a712). Rebuilt as a red fire dragon: her whole fight lives in the
+  //    shared brain _vxBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain
+  //    moves her (move:'self'), aims at every player in the nest and hands back damage, pushes and cues.
   dragonlair: {
-    x: 60, z: 60,                                      // tile (40,40) — not the usual centre
-    spd:    [0, 0.022, 0.030, 0.038, 0.048, 0.060],
-    dmg:    [0, 1.0,   1.4,   1.8,   2.4,   3.2],      // pDmgMult
-    phases: [0.75, 0.50, 0.25, 0.10],                  // the generic ladder, which is what she uses
-    acd:    [0, 20, 20, 20, 20, 20],                   // bACD is a flat 120 for this zone
-    tele:   12,                                        // 70 frames
-    pick:   (b, ph) => {
-      const _VX_MODE = 'complete';                     // 'faithful' | 'full' | 'complete'
-      if (_VX_MODE === 'faithful') return 0;
-      b.atkIdx = (b.atkIdx || 0) + 1;
-      return b.atkIdx % (_VX_MODE === 'complete' ? 7 : 6);
-    },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, nd, zoneName, game, aoe, fx, proj, geyser } = c;
-
-      if (atk === 0) {
-        // ── FIRE BREATH — four waves of five piercing bolts down the line
-        fx('vx_breath', { dir:+ang.toFixed(3) });
-        aoe(6.0, Math.floor(80 * mult));
-        b._vxBreath = 4; b._vxBreathT = 0; b._vxBreathAng = ang;
-        b._vxBreathDmg = Math.floor(160 * mult);
-        b._vxEmberDmg  = Math.floor(60 * mult);
-
-      } else if (atk === 1) {
-        // ── TAIL SWEEP — 360 shockwave, then burning ground
-        fx('vx_tail');
-        if (nd < 7.0) aoe(7.0, Math.floor(280 * mult));
-        aoe(5.5, Math.floor(80 * mult));
-        for (let f = 0; f < 4; f++) {
-          const gx = b.x + (Math.random()-0.5)*8, gz = b.z + (Math.random()-0.5)*8;
-          fx('vx_groundfire', { ex:+gx.toFixed(2), ez:+gz.toFixed(2), d:(2 + f*4)*100 });
-          geyser(gx, gz, 2 + f*4, 1.5, Math.floor(80 * mult), 0xff4400);
-        }
-
-      } else if (atk === 2) {
-        // ── WING SLAM — knockback and a brief stun
-        fx('vx_wing');
-        aoe(6.5, Math.floor(90 * mult));
-        if (nd < 8.0) {
-          aoe(8.0, Math.floor(320 * mult));
-          players.forEach((p, ws) => {
-            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-            const dx = p.x - b.x, dz = p.z - b.z;
-            if (dx*dx + dz*dz < 64) {
-              // push already moves the player AWAY from (px,pz) and its step loop
-              //   needs a POSITIVE distance — a negative value silently does nothing.
-              send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push',
-                         px:+b.x.toFixed(2), pz:+b.z.toFixed(2), push:13.5 });
-              send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:0, root:500 });
-            }
-          });
-        }
-
-      } else if (atk === 3) {
-        // ── METEOR RAIN — 2 + phase strikes walked onto the target
-        const n = 2 + ph;
-        fx('vx_meteor', { n:n });
-        for (let m = 0; m < n; m++) {
-          const tx = np.x + (Math.random()-0.5)*5, tz = np.z + (Math.random()-0.5)*5;
-          const fuse = 9 + m*7;
-          // the client renders the falling rock + ground ring for exactly this long
-          fx('vx_meteor_drop', { ex:+tx.toFixed(2), ez:+tz.toFixed(2), ms:fuse*100 });
-          geyser(tx, tz, fuse, 3.5, Math.floor(300 * mult), 0xff1100, { shake:12 });
-        }
-
-      } else if (atk === 4) {
-        // ── ROAR OF THE UNDYING — arena-wide, and she mends herself
-        fx('vx_roar');
-        aoe(999, Math.floor(220 * mult));              // the roar reaches everywhere
-        const heal = Math.floor(b.maxHp * (0.04 + ph*0.01));
-        b.hp = Math.min(b.maxHp, b.hp + heal);
-        fx('vx_roar_heal', { heal:heal });
-        b._vxRings = 3; b._vxRingT = 0; b._vxRingDmg = Math.floor(80 * mult);
-
-      } else if (atk === 5) {
-        // ── CHARGE SLAM — 0.8s telegraph, then she rockets at the marked ground
-        fx('vx_charge_wind', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-        aoe(5.0, Math.floor(80 * mult));
-        b._vxChargeT = 8;                              // 800ms
-        b._vxChargeX = np.x; b._vxChargeZ = np.z;
-        b._vxChargeDmg  = Math.floor(380 * mult);
-        b._vxImpactDmg  = Math.floor(420 * mult);
-
-      } else {
-        // ── VOID CORRUPTION (phase 3+) / INFERNO BURST (phases 1-2)
-        if (ph >= 3) {
-          fx('vx_void');
-          const n = 3 + ph;
-          for (let i = 0; i < n; i++) proj(ang + (i/8)*Math.PI*2, 0xaa00ff, Math.floor(180 * mult), 'void');
-          aoe(999, Math.floor(260 * mult));
-        } else {
-          fx('vx_inferno');
-          for (let i = 0; i < 5; i++) proj(ang + (Math.random()-0.5)*0.6, 0xff4400, Math.floor(150 * mult), 'plasma');
-          aoe(8.0, Math.floor(200 * mult));
-        }
-      }
-    },
+    x: 60, z: 60,                                      // tile (40,40) — the nest
+    spd:    [0,0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4, 5],                        // phase index only — damage is in VX_D
+    phases: [0.75, 0.50, 0.25, 0.10],
+    acd:    [0, 20, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, ang, np, nd, zoneName, game, aoe, fx, proj } = c;
-
-      // HEAT AURA — phase 3+, anything standing close cooks
-      if (ph >= 3 && b._vt % 5 === 0 && nd < 6.0) {
-        fx('vx_aura');
-        aoe(6.0, ph * 25);
-        if (nd < 4.0) aoe(4.0, ph * 40);
-      }
-
-      // CONTINUOUS BREATH STREAM — phase 5 only
-      if (ph >= 5 && b._vt % 2 === 0) {
-        for (let i = 0; i < 2; i++) proj(ang + (Math.random()-0.5)*0.8, 0xff4400, 150, 'plasma');
-        fx('vx_stream', { dir:+ang.toFixed(3) });
-      }
-
-      // FIRE BREATH waves — four of them, ~220ms apart
-      if (b._vxBreath > 0) {
-        b._vxBreathT--;
-        if (b._vxBreathT <= 0) {
-          b._vxBreathT = 2;
-          b._vxBreath--;
-          const a0 = b._vxBreathAng;
-          for (let i = 0; i < 5; i++) proj(a0 + (Math.random()-0.5)*1.4, 0xff4400, b._vxBreathDmg, 'plasma');
-          fx('vx_breath_wave', { dir:+a0.toFixed(3), w:4 - b._vxBreath });
-          aoe(2.0, b._vxEmberDmg);
-        }
-      }
-
-      // ROAR shockwave rings — three, marching outward
-      if (b._vxRings > 0) {
-        b._vxRingT--;
-        if (b._vxRingT <= 0) {
-          b._vxRingT = 4;                              // ~350ms
-          const r = 4 - b._vxRings;
-          b._vxRings--;
-          fx('vx_roar_ring', { r:r });
-          aoe(r * 3.5 + 1, b._vxRingDmg);
-        }
-      }
-
-      // CHARGE SLAM — wind-up, dash, impact
-      if (b._vxChargeT > 0) {
-        b._vxChargeT--;
-        if (b._vxChargeT === 0) { b._vxCharge = 5; fx('vx_charge_dash'); }
-      } else if (b._vxCharge > 0) {
-        b._vxCharge--;
-        // step toward the marked ground, burning a trail
-        const dx = b._vxChargeX - b.x, dz = b._vxChargeZ - b.z;
-        const d  = Math.sqrt(dx*dx + dz*dz) || 0.001;
-        const step = 1.2 * 6;                          // TILE*0.8 per frame -> per tick
-        if (d > step) {
-          const nx = b.x + (dx/d)*step, nz = b.z + (dz/d)*step;
-          if (nx > 2 && nx < 358 && nz > 2 && nz < 358) { b.x = nx; b.z = nz; }
-          fx('vx_charge_trail');
-          aoe(3.5, b._vxChargeDmg);                    // caught by the dash itself
-          players.forEach((p, ws) => {
-            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-            const qx = p.x - b.x, qz = p.z - b.z;
-            if (qx*qx + qz*qz < 12.25)
-              send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push',
-                         px:+b.x.toFixed(2), pz:+b.z.toFixed(2), push:15.0 });
-          });
-        } else {
-          b.x = b._vxChargeX; b.z = b._vxChargeZ; b._vxCharge = 0;
-          fx('vx_charge_impact');
-          aoe(7.0, Math.floor(100 * mult));
-          if (nd < 5.5) {
-            aoe(5.5, b._vxImpactDmg);
-            players.forEach((p, ws) => {
-              if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-              const qx = p.x - b.x, qz = p.z - b.z;
-              if (qx*qx + qz*qz < 30.25)
-                send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push',
-                           px:+b.x.toFixed(2), pz:+b.z.toFixed(2), push:12.0 });
-            });
-          }
-        }
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _vxBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:60, hz:60,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
