@@ -557,7 +557,7 @@ const ZONE_BOSS_HP = {
   citadel:          { hp:70000,    name:'GENERAL VORRAKH' },
   caves_of_despair: { hp:80000,    name:'FOREMAN DRAX' },
   ashlands:         { hp:160000,   name:'INFERNO COLOSSUS' },   // a716 — rebuilt (was 75k)
-  sunken_sands:     { hp:150000,   name:'KHEPRI THE SAND COLOSSUS' },
+  sunken_sands:     { hp:500000,   name:'KHEPRI THE SAND COLOSSUS' },   // a718 — rebuilt (was 150k)
   fungal:           { hp:84000,    name:'MYCELIUM QUEEN' },
   frostveil:        { hp:96000,    name:'FROSTVEIL COLOSSUS' },
   ancient:          { hp:120000,   name:'THE ELDER ARCHITECT' },
@@ -5112,7 +5112,7 @@ const ZONE_DMG_BASE = {
   fungal:          { lvl: 42, mob:  95, boss: 106 },
   frostveil:       { lvl: 50, mob: 229, boss: 110 },
   ancient:         { lvl: 58, mob: 348, boss: 114 },
-  sunken_sands:    { lvl: 60, mob: 292, boss: 130 },
+  sunken_sands:    { lvl: 60, mob: 292, boss: 339.1915 },   // a718 — the rebuilt Khepri's damage is set in KH_D directly (k = 1)
   dragonlair:      { lvl: 65, mob: 167, boss: 392.0282 },   // a712 — the rebuilt Vaeltharax's damage is set in VX_D directly (k = 1)
   riftvale:        { lvl: 65, mob: 274, boss:  45 },
   void_citadel:    { lvl: 70, mob: 216, boss: 191 },
@@ -6798,6 +6798,165 @@ function _lkBrain(S, A){
   S.face = X.face; S.misted = !!(X.act && X.act.k === 'blink' && X.act.t < X.act.f + 2);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a718 — KHEPRI, REBUILT as a falcon-headed warrior god of the desert: blue plasma from his
+//   staff and his sun disc, and the sand itself turned into a weapon. One brain, shared word for
+//   word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//     SUN LANCE         P1+  his signature: rapid bursts of plasma bolts from his staff
+//     SCIMITAR STORM    P1+  the sand rises into a ring of spinning blades that fly outward
+//     FALCON DIVE       P1+  wings spread, he leaps and dives onto you in a plasma shockwave
+//     SAND TORNADO      P2+  he manifests whirling sand tornadoes that hunt you down
+//     QUICKSAND MAW     P2+  the sand under you turns to a sinkhole that drags you to its heart
+//     OBELISK LATTICE   P3+  sandstone obelisks rise and fire plasma fences between them
+//     SOLAR SPIRAL      P4   his sun disc rains plasma in a spiral that sweeps the arena
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: his position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const KH_D  = { lance:220, blade:260, dive:520, tornado:130, sink:90, crush:600, fence:380, flare:400 };
+const KH_PM = [1, 1, 1.1, 1.22, 1.36];
+const KH_R = 16, KH_ENG = 40;
+// the solar spiral's strikes: [x, z, tick] — two arms winding outward (the client draws the same)
+function _khSpiral(x, z, a0, n){ const P = [];
+  for(let i = 0; i < n; i++){ for(let arm = 0; arm < 2; arm++){ const a = a0 + arm*Math.PI + i*0.42, r = 2.5 + i*0.95; P.push([x + Math.sin(a)*r, z + Math.cos(a)*r, 14 + i*2]); } }
+  return P; }
+function _khSegD(px, pz, a, b){ const dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - a[0])*dx + (pz - a[1])*dz)/L2));
+  return Math.hypot(px - a[0] - dx*u, pz - a[1] - dz*u); }
+function _khBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = KH_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._kh;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._kh = { t:0, vx:0, vz:0, face:0, cd:{ lance:10, blades:25, dive:40, tornado:20, sink:30, lattice:30, spiral:20 }, last:{}, gap:16, act:null,
+      hz:[], bo:[], tn:[], gid:0, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < KH_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // delayed strikes
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(KH_D[o.d]*M)); if(o.push) A.push(p.k, o.x, o.z, o.push); } }); X.hz.splice(i, 1); } }
+  // bolts and blades in flight: straight lines, one hit each
+  for(let i = X.bo.length - 1; i >= 0; i--){ const b = X.bo[i];
+    if(b.dl > 0){ b.dl--; continue; }
+    b.x += Math.sin(b.a)*b.sp; b.z += Math.cos(b.a)*b.sp; b.l--;
+    let hit = false; inA.forEach(p => { if(!hit && D(p, b.x, b.z) < b.r){ hit = true; A.hit(p.k, Math.round(KH_D[b.d]*M)); } });
+    if(hit || b.l <= 0 || Math.hypot(b.x - hx, b.z - hz) > KH_ENG){ if(hit) A.fx('khx_bhit', { i:b.i, x:R2(b.x), z:R2(b.z) }); X.bo.splice(i, 1); } }
+  // sand tornadoes hunt the nearest player, drag them in and grind them
+  if(X.tn.length){
+    for(let i = X.tn.length - 1; i >= 0; i--){ const n = X.tn[i];
+      if(n.w > 0){ n.w--; continue; }
+      let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, n.x, n.z); if(d < bd){ bd = d; best = p; } });
+      n.wa += (A.rnd() - 0.5)*0.5;
+      if(best){ const d = Math.max(0.01, bd); n.vx += ((best.x - n.x)/d*n.sp + Math.sin(n.wa)*0.03 - n.vx)*0.15; n.vz += ((best.z - n.z)/d*n.sp + Math.cos(n.wa)*0.03 - n.vz)*0.15; }
+      const c = clampA(n.x + n.vx, n.z + n.vz, KH_ENG - 6); n.x = c[0]; n.z = c[1];
+      inA.forEach(p => { const d = D(p, n.x, n.z); if(d < 6) A.pull(p.k, n.x, n.z, d < 2.5 ? 0.06 : 0.12);
+        if(d < 2.5 && once(p.k, 'tn', 8)){ A.hit(p.k, Math.round(KH_D.tornado*M)); A.slow(p.k, 0.6, 600); } });
+      if(--n.l <= 0){ A.fx('khx_tend', { i:n.i, x:R2(n.x), z:R2(n.z) }); X.tn.splice(i, 1); } }
+    if(X.t % 2 === 0 && X.tn.length) A.fx('khx_tpos', { n:X.tn.map(n => [n.i, R2(n.x), R2(n.z)]) });
+  }
+
+  if(!inA.length){ X.act = null; X.bo.length = 0; X.tn.length = 0; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.15); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'cry', t:0 }; A.fx('khx_cry', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'cry') done = a.t >= 15;
+    else if(a.k === 'lance'){
+      X.face += Math.max(-0.2, Math.min(0.2, dAng(angTo(P.x, P.z), X.face)));
+      if(a.t >= a.w && (a.t - a.w) % a.gap === 0 && a.v < a.n){
+        const an = angTo(P.x, P.z) + (A.rnd() - 0.5)*0.06, b = { i:X.gid++, x:S.x + Math.sin(an)*1.8, z:S.z + Math.cos(an)*1.8, a:an, sp:1.7, l:26, r:1.0, d:'lance', dl:0 };
+        X.bo.push(b); X.face = an; a.v++; A.fx('khx_bolt', { i:b.i, x:R2(b.x), z:R2(b.z), a:+an.toFixed(3), sp:b.sp }); }
+      done = a.v >= a.n && a.t >= a.w + a.gap*a.n + 2; }
+    else if(a.k === 'blades'){
+      if(a.t === a.w){ const bl = [];
+        for(let i = 0; i < a.n; i++){ const an = a.a0 + i/a.n*2*Math.PI, b = { i:X.gid++, x:S.x + Math.sin(an)*3, z:S.z + Math.cos(an)*3, a:an + a.tw, sp:0.75, l:44, r:1.15, d:'blade', dl:i % 2 ? 5 : 0 };
+          X.bo.push(b); bl.push([b.i, R2(b.x), R2(b.z), +b.a.toFixed(3), b.dl]); }
+        A.fx('khx_bfly', { x:R2(S.x), z:R2(S.z), sp:0.75, b:bl }); }
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'dive'){ if(a.t === a.land){ S.x = a.tx; S.z = a.tz; } done = a.t >= a.land + 8; }
+    else if(a.k === 'sink'){
+      if(a.t > a.w){ inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.r){ A.pull(p.k, a.x, a.z, 0.11); if(once(p.k, 'sk', 5)) A.hit(p.k, Math.round(KH_D.sink*M)); } }); }
+      if(a.t === a.w + a.d) inA.forEach(p => { if(D(p, a.x, a.z) < 2.4){ A.hit(p.k, Math.round(KH_D.crush*M)); A.push(p.k, a.x, a.z, 3); } });
+      done = a.t >= a.w + a.d + 4; }
+    else if(a.k === 'lattice'){
+      a.pulses.forEach(q => { if(a.t === q[0]) inA.forEach(p => { if(q[1].some(pr => _khSegD(p.x, p.z, a.ob[pr[0]], a.ob[pr[1]]) < 1.2)) A.hit(p.k, Math.round(KH_D.fence*M)); }); });
+      done = a.t >= a.pulses[a.pulses.length - 1][0] + 6; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : ph >= 3 ? 10 : 12; }
+  } else {
+    // ── STALK: face the target, keep it at staff's reach
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.12, Math.min(0.12, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.11, 0.12, 0.13, 0.14][ph];
+    const sp = d > 10 ? vmax : d < 5 ? -vmax*0.6 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.12; X.vz += (Math.cos(X.face)*sp - X.vz)*0.12; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { blades:1, dive:1, tornado:2, sink:2, lattice:3, spiral:4 };
+      let k = null, lk = 1e9;
+      if(X.cd.lance <= 0 && X.lastK !== 'lance') k = 'lance';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue;
+        if(m === 'dive' && d < 7) continue;
+        if(m === 'tornado' && X.tn.length) continue;
+        const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.lance <= 0) k = 'lance';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'lance'){
+        const n = [0, 6, 7, 8, 9][ph];
+        X.act = { k, t:0, w:5, gap:3, n, v:0 }; X.cd.lance = ph >= 3 ? 18 : 22;
+        A.fx('khx_aim', { x:R2(S.x), z:R2(S.z), w:5 });
+      } else if(k === 'blades'){
+        const n = ph >= 3 ? 14 : 10, tw = (A.rnd() < 0.5 ? 1 : -1)*0.35;
+        X.act = { k, t:0, w:12, n, a0:A.rnd()*6.283, tw }; X.cd.blades = ph >= 3 ? 50 : 60;
+        A.fx('khx_blades', { x:R2(S.x), z:R2(S.z), w:12, n, r:3 });
+      } else if(k === 'dive'){
+        const c = clampA(P.x, P.z, KH_R + 2), land = 18;
+        X.hz.push({ x:c[0], z:c[1], r:4.2, f:land, d:'dive', push:4 });
+        X.act = { k, t:0, tx:c[0], tz:c[1], land }; X.cd.dive = ph >= 3 ? 60 : 75;
+        A.fx('khx_dive', { sx:R2(S.x), sz:R2(S.z), tx:R2(c[0]), tz:R2(c[1]), r:4.2, land });
+      } else if(k === 'tornado'){
+        const n = ph >= 4 ? 3 : ph >= 3 ? 2 : 1, tn = [];
+        for(let i = 0; i < n; i++){ const an = X.face + (i - (n - 1)/2)*1.2, c = clampA(S.x + Math.sin(an)*5, S.z + Math.cos(an)*5, KH_ENG - 6);
+          const o = { i:X.gid++, x:c[0], z:c[1], vx:0, vz:0, wa:A.rnd()*6.283, w:14, l:110, sp:0.085 + ph*0.006 }; X.tn.push(o); tn.push([o.i, R2(o.x), R2(o.z)]); }
+        X.act = { k, t:0, end:14 }; X.cd.tornado = ph >= 3 ? 120 : 140;
+        A.fx('khx_tornado', { x:R2(S.x), z:R2(S.z), n:tn, w:14, l:110 });
+      } else if(k === 'sink'){
+        const c = clampA(P.x, P.z, KH_ENG - 6);
+        X.act = { k, t:0, x:c[0], z:c[1], r:7, w:8, d:34 }; X.cd.sink = ph >= 3 ? 70 : 85;
+        A.fx('khx_sink', { x:R2(c[0]), z:R2(c[1]), r:7, w:8, d:34, cr:2.4 });
+      } else if(k === 'lattice'){
+        const ob = [], a0 = A.rnd()*6.283;
+        for(let i = 0; i < 4; i++){ const an = a0 + i*Math.PI/2 + (A.rnd() - 0.5)*0.5, rr = 9 + A.rnd()*7; ob.push([R2(hx + Math.sin(an)*rr), R2(hz + Math.cos(an)*rr)]); }
+        const A1 = [[0, 1], [2, 3]], A2 = [[1, 2], [3, 0]], A3 = [[0, 2], [1, 3]];
+        const pulses = [[18, A1], [32, A2], [46, A3], [60, A1], [74, A2], [88, A3]];
+        X.act = { k, t:0, ob, pulses }; X.cd.lattice = 140;
+        A.fx('khx_lattice', { ob, pulses, w:12 });
+      } else if(k === 'spiral'){
+        const pts = _khSpiral(S.x, S.z, A.rnd()*6.283, 16);
+        pts.forEach(q => X.hz.push({ x:q[0], z:q[1], r:2.2, f:q[2], d:'flare' }));
+        X.act = { k, t:0, end:24 }; X.cd.spiral = 130;
+        A.fx('khx_spiral', { x:R2(S.x), z:R2(S.z), pts:pts.map(q => [R2(q[0]), R2(q[1]), q[2]]), r:2.2 });
+      }
+    }
+  }
+  if(!(X.act && X.act.k === 'dive')){ const c = clampA(S.x, S.z, KH_R); S.x = c[0]; S.z = c[1]; }
+  S.face = X.face; S.air = !!(X.act && X.act.k === 'dive' && X.act.t < X.act.land);
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -6954,64 +7113,30 @@ const ZBOSS_SERVER = {
     },
   },
 
-// ── KHEPRI THE SAND COLOSSUS (a561), Sunken Sands. Its rotation is a POOL that grows
-  //    with phase (2 attacks at P1 up to 5 at P4) indexed off its own cycle, not a fixed
-  //    modulo — so early Khepri is a genuinely smaller fight. Most of its damage is flat
-  //    (300 + P*70) rather than table-scaled; only the scarab volley uses the multiplier.
+  // ── KHEPRI (a718). Rebuilt as a falcon warrior god: his whole fight lives in the shared brain
+  //    _khBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain moves him
+  //    (move:'self'), aims at every player in the arena and hands back damage, pushes, pulls,
+  //    slows and cues.
   sunken_sands: {
-    x: 180, z: 180,
-    spd:    [0, 0.016, 0.022, 0.030, 0.040],
-    dmg:    [0, 1.0,   1.6,   2.4,   3.2],
+    x: 180, z: 180,                                    // tile (120,120) — the sunken plaza
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in KH_D
     phases: [0.75, 0.50, 0.25],
-    acd:    [0, 14, 12, 11, 9],               // max(54, 92-P*10), / 6
-    tele:   11,
-    pick:   (b, ph) => {
-      const pool = ph >= 4 ? 5 : ph >= 3 ? 4 : ph >= 2 ? 3 : 2;
-      b.atkIdx = (b.atkIdx || 0) + 1;
-      return b.atkIdx % pool;
-    },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
-      if (atk === 0) {
-        // CATACLYSM — the desert splits, fissures walk outward
-        fx('kh_cataclysm'); aoe(6.5, Math.round(300 + ph*70));
-        for (let f = 0; f < 5; f++) {
-          const fa = ang + (f-2)*0.30, fr = 4 + f*2.2;
-          geyser(b.x + Math.sin(fa)*fr, b.z + Math.cos(fa)*fr, 4 + f, 2.3, Math.round(150 + ph*35), 0xd4a830);
-        }
-      } else if (atk === 1) {
-        // SANDSTORM — an expanding wall of grit
-        fx('kh_sandstorm'); b._khR = 1.0; b._khDmg = Math.round(130 + ph*32);
-      } else if (atk === 2) {
-        // QUICKSAND — the floor opens beneath you
-        fx('kh_quicksand', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-        geyser(np.x, np.z, 5, 2.8, Math.round(180 + ph*45), 0xc89a3a, { slow:0.45, slowDur:900 });
-        geyser(np.x, np.z, 9, 2.8, Math.round(70 + ph*20), 0xc89a3a);
-      } else if (atk === 3) {
-        // SCARAB SWARM — the only attack that uses the phase table
-        fx('kh_scarabs');
-        for (let i = 0; i < 7; i++) proj(ang + (i-3)*0.22, 0x4aaa3a, Math.round((90 + ph*25) * mult), 'plasma');
-      } else {
-        // SUN DISC — judgement, then a solar sweep
-        fx('kh_sundisc'); aoe(13.0, Math.round(240 + ph*55));
-        for (let i = 0; i < 10; i++) proj(i/10*Math.PI*2, 0xffd24a, Math.round(110 + ph*30), 'plasma');
-      }
-    },
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, nd, zoneName, game, aoe } = c;
-      if (b._vt % 4 === 0 && nd < 4.0) aoe(4.0, Math.round(18 * mult));
-      // SANDSTORM ring expands and catches you once as it passes
-      if (b._khR > 0) {
-        const prev = b._khR; b._khR += 0.55 * 6;
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
-          if (pd >= prev - 2.3 && pd <= b._khR + 2.3)
-            send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._khDmg,
-                       ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
-        });
-        if (b._khR >= 20) b._khR = 0;
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _khBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
