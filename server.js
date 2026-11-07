@@ -556,7 +556,7 @@ const ZONE_BOSS_HP = {
   void:             { hp:54000,    name:'VOID WRAITH PRIME' },
   citadel:          { hp:70000,    name:'GENERAL VORRAKH' },
   caves_of_despair: { hp:80000,    name:'FOREMAN DRAX' },
-  ashlands:         { hp:75000,    name:'INFERNO COLOSSUS' },
+  ashlands:         { hp:160000,   name:'INFERNO COLOSSUS' },   // a716 — rebuilt (was 75k)
   sunken_sands:     { hp:150000,   name:'KHEPRI THE SAND COLOSSUS' },
   fungal:           { hp:84000,    name:'MYCELIUM QUEEN' },
   frostveil:        { hp:96000,    name:'FROSTVEIL COLOSSUS' },
@@ -5107,7 +5107,7 @@ const ZONE_DMG_BASE = {
   cemetery:        { lvl: 20, mob:  54, boss: 100 },
   citadel:         { lvl: 25, mob: 161, boss: 123 },
   aviacanyon:      { lvl: 30, mob: 103, boss: 196 },
-  ashlands:        { lvl: 35, mob:  60, boss: 121 },
+  ashlands:        { lvl: 35, mob:  60, boss: 164.4687 },   // a716 — the rebuilt Colossus's damage is set in IC_D directly (k = 1)
   caves_of_despair:{ lvl: 40, mob:  90, boss:  94 },
   fungal:          { lvl: 42, mob:  95, boss: 106 },
   frostveil:       { lvl: 50, mob: 229, boss: 110 },
@@ -6471,6 +6471,155 @@ function _wmBrain(S, A){
   S.face = X.face; S.sunk = !!(X.act && X.act.k === 'walk' && X.act.t < X.act.land);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a716 — THE INFERNO COLOSSUS, REBUILT as a monstrosity of stone, lava and fire. One brain,
+//   shared word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//   A hunched titan of cracked basalt over a molten core, with a live volcano on its back:
+//     VOLCANIC BARRAGE  P1+  its signature: the crater on its back erupts and lobs molten bombs
+//                            onto you and around you; from P2 they leave burning lava pools
+//     FISSURE SLAM      P1+  both fists into the ground: rows of fire pillars burst out ahead
+//     QUAKE STOMP       P1+  anyone at its feet is thrown clear
+//     INFERNO MAW       P2+  its jaw splits and a beam of fire tracks you
+//     ERUPTION FIELD    P2+  the ground cracks under every player and blows out in geysers
+//     CORE NOVA         P3+  it raises obsidian pillars, then its core detonates — only the
+//                            shadow behind a pillar is safe
+//     MELTDOWN          P4   the caldera floods in rings of lava that flip between hot and
+//                            cooling; keep moving to a dark ring
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const IC_D  = { bomb:150, pool:45, fissure:190, stomp:210, maw:70, erupt:200, nova:480, melt:170 };
+const IC_PM = [1, 1, 1.1, 1.22, 1.36];
+const IC_R = 14, IC_ENG = 36;
+// the fissure slam's fire pillars, row by row (the client lays them out with the same function)
+function _icFisPts(x, z, a, ha, rows, r0, step){ const P = [];
+  for(let j = 1; j <= rows; j++){ const n = 2 + (j >> 1), d = r0 + j*step;
+    for(let i = 0; i < n; i++){ const an = a + (i/(n - 1) - 0.5)*2*ha; P.push([x + Math.sin(an)*d, z + Math.cos(an)*d, j]); } }
+  return P; }
+function _icBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = IC_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._ic;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._ic = { t:0, vx:0, vz:0, face:0, cd:{ barrage:12, fissure:30, stomp:30, maw:40, erupt:45, nova:50, melt:20 }, last:{}, gap:16, act:null,
+      hz:[], pools:[], tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < IC_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // delayed strikes (bombs, fire pillars, geysers, the stomp), burning pools
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(IC_D[o.d]*M)); if(o.push) A.push(p.k, o.x, o.z, o.push); } });
+      if(o.pool) X.pools.push({ x:o.x, z:o.z, r:o.r*0.85, l:o.pool }); X.hz.splice(i, 1); } }
+  for(let i = X.pools.length - 1; i >= 0; i--){ const o = X.pools[i];
+    inA.forEach(p => { if(D(p, o.x, o.z) < o.r && once(p.k, 'pl', 6)) A.hit(p.k, Math.round(IC_D.pool*M)); });
+    if(--o.l <= 0) X.pools.splice(i, 1); }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.15); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'roar', t:0 }; A.fx('icx_roar', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'roar') done = a.t >= 15;
+    else if(a.k === 'barrage'){
+      if(a.t >= a.w && (a.t - a.w) % 2 === 0 && a.v < a.n){
+        const q = inA[a.v % inA.length], first = a.v < inA.length, an = A.rnd()*6.283, rr = first ? 0 : 1 + A.rnd()*4;
+        const c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, IC_ENG - 4), f = 12, pool = ph >= 2 ? 40 : 0;
+        X.hz.push({ x:c[0], z:c[1], r:2.0, f, d:'bomb', pool });
+        a.v++; A.fx('icx_bomb', { x:R2(S.x), z:R2(S.z), tx:R2(c[0]), tz:R2(c[1]), f, r:2.0, pool });
+      }
+      done = a.v >= a.n && a.t >= a.w + a.n*2 + 2; }
+    else if(a.k === 'maw'){
+      if(a.t > a.w){ const want = angTo(P.x, P.z); a.a += Math.max(-a.tr, Math.min(a.tr, dAng(want, a.a))); X.face = a.a;
+        if((a.t - a.w) % 2 === 0) A.fx('icx_mawa', { a:+a.a.toFixed(3) });
+        inA.forEach(p => { const dx = p.x - S.x, dz = p.z - S.z, al = dx*Math.sin(a.a) + dz*Math.cos(a.a), pe = Math.abs(dx*Math.cos(a.a) - dz*Math.sin(a.a));
+          if(al > 1 && al < a.len && pe < 1.2 && once(p.k, 'mw', 3)) A.hit(p.k, Math.round(IC_D.maw*M)); }); }
+      done = a.t >= a.w + a.d; }
+    else if(a.k === 'nova'){
+      if(a.t === a.w) inA.forEach(p => { const dp = D(p, a.x, a.z), ap = Math.atan2(p.x - a.x, p.z - a.z);
+        const safe = a.pil.some(q => { const dq = Math.hypot(q[0] - a.x, q[1] - a.z); if(dp < dq + 0.4) return false;
+          return Math.abs(dAng(ap, Math.atan2(q[0] - a.x, q[1] - a.z))) < Math.atan(a.pr/dq) + 0.03; });
+        if(!safe){ A.hit(p.k, Math.round(IC_D.nova*M)); A.push(p.k, a.x, a.z, 3); } });
+      done = a.t >= a.w + 8; }
+    else if(a.k === 'melt'){
+      a.flips.forEach((f, fi) => { if(a.t === f[0]) inA.forEach(p => { const b = Math.floor(D(p, a.x, a.z)/a.bw);
+        if(b < a.n && b % 2 === f[1]) A.hit(p.k, Math.round(IC_D.melt*M)); }); });
+      done = a.t >= a.flips[a.flips.length - 1][0] + 6; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 9 : ph >= 3 ? 11 : 13; }
+  } else {
+    // ── LUMBER AFTER ITS PREY: face the target, keep it in reach of the fists
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.08, Math.min(0.08, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.08, 0.09, 0.1, 0.11][ph];
+    const sp = d > 8 ? vmax : d < 4 ? -vmax*0.4 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      // the barrage comes round every other move: it is what it is
+      const MIN = { barrage:1, fissure:1, stomp:1, maw:2, erupt:2, nova:3, melt:4 };
+      let k = null, lk = 1e9;
+      if(X.cd.barrage <= 0 && X.lastK !== 'barrage') k = 'barrage';
+      else for(const m in MIN){ if(m === 'barrage' || ph < MIN[m] || X.cd[m] > 0) continue;
+        if(m === 'stomp' && !inA.some(p => D(p, S.x, S.z) < 7)) continue;
+        if(m === 'fissure' && d > 18) continue;
+        const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.barrage <= 0) k = 'barrage';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'barrage'){
+        const n = [0, 6, 8, 10, 12][ph];
+        X.act = { k, t:0, w:7, n, v:0 }; X.cd.barrage = ph >= 3 ? 22 : 28;
+        A.fx('icx_barrage', { x:R2(S.x), z:R2(S.z), w:7, n });
+      } else if(k === 'fissure'){ X.face = want;
+        const rows = 7, r0 = 2.5, step = 2.2, ha = 0.5, w = 10, dt = 2;
+        _icFisPts(S.x, S.z, want, ha, rows, r0, step).forEach(q => X.hz.push({ x:q[0], z:q[1], r:1.6, f:w + q[2]*dt, d:'fissure' }));
+        X.act = { k, t:0, end:w + rows*dt + 4 }; X.cd.fissure = ph >= 3 ? 40 : 50;
+        A.fx('icx_fissure', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), ha, rows, r0, step, w, dt });
+      } else if(k === 'stomp'){
+        X.hz.push({ x:S.x, z:S.z, r:6.5, f:9, d:'stomp', push:4 });
+        X.act = { k, t:0, end:14 }; X.cd.stomp = 38;
+        A.fx('icx_stomp', { x:R2(S.x), z:R2(S.z), r:6.5, w:9 });
+      } else if(k === 'maw'){ X.face = want;
+        const w = 11, dd = ph >= 4 ? 36 : 30, tr = ph >= 4 ? 0.05 : 0.035, len = 18;
+        X.act = { k, t:0, a:want, w, d:dd, tr, len }; X.cd.maw = ph >= 4 ? 70 : 90;
+        A.fx('icx_maw', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), w, d:dd, len });
+      } else if(k === 'erupt'){
+        const pts = [];
+        for(let i = 0; i < inA.length + 4; i++){ const q = inA[i % inA.length], an = A.rnd()*6.283, rr = i < inA.length ? 0 : 3 + A.rnd()*7;
+          const c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, IC_ENG - 4), f = 14 + (i % 3)*3;
+          pts.push([R2(c[0]), R2(c[1]), f]); X.hz.push({ x:c[0], z:c[1], r:2.3, f, d:'erupt', push:2 }); }
+        X.act = { k, t:0, end:10 }; X.cd.erupt = ph >= 3 ? 70 : 85;
+        A.fx('icx_erupt', { x:R2(S.x), z:R2(S.z), pts, r:2.3 });
+      } else if(k === 'nova'){
+        const pil = [], base = inA.length ? angTo(inA[0].x, inA[0].z) : A.rnd()*6.283;
+        for(let i = 0; i < 3; i++){ const an = base + (i - 1)*2.094 + (A.rnd() - 0.5)*0.6, rr = 6.5 + A.rnd()*3; pil.push([R2(S.x + Math.sin(an)*rr), R2(S.z + Math.cos(an)*rr)]); }
+        X.act = { k, t:0, x:S.x, z:S.z, pil, pr:1.3, w:32 }; X.cd.nova = 130;
+        A.fx('icx_nova', { x:R2(S.x), z:R2(S.z), pil, pr:1.3, w:32 });
+      } else if(k === 'melt'){
+        const p0 = A.rnd() < 0.5 ? 0 : 1, flips = [[18, p0], [34, 1 - p0], [50, p0], [66, 1 - p0]];
+        X.act = { k, t:0, x:S.x, z:S.z, bw:6, n:5, flips }; X.cd.melt = 150;
+        A.fx('icx_melt', { x:R2(S.x), z:R2(S.z), bw:6, n:5, flips });
+      }
+    }
+  }
+  const c = clampA(S.x, S.z, IC_R); S.x = c[0]; S.z = c[1];
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -7003,41 +7152,28 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE ASHLANDS COLOSSUS (a559). Caldera fists, magma eruptions, meteors and a
-  //    volcanic roar. The only one of this batch that summons nothing.
+  // ── THE INFERNO COLOSSUS (a716). Rebuilt as a monstrosity of stone, lava and fire: its whole
+  //    fight lives in the shared brain _icBrain (above ZBOSS_SERVER; the client runs the same text
+  //    solo). The brain moves it (move:'self'), aims at every player in the caldera and hands back
+  //    damage, pushes and cues.
   ashlands: {
-    x: 180, z: 180,
-    spd:    [0, 0.012, 0.018, 0.025, 0.034, 0.044],
-    dmg:    [0, 1.0,   1.5,   2.0,   2.8,   3.6],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 21, 19, 16, 13],          // 120 then max(80,160-P*16), / 6
-    tele:   11,
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
-      if (atk === 0)      { fx('ac_fist');    aoe(8.0, Math.floor(480 * mult)); aoe(11.0, Math.floor(130 * mult)); }
-      else if (atk === 1) { fx('ac_eruption', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            for (let i = 0; i < 3; i++) proj(ang + (i-1)*0.20, 0xff4400, Math.floor(120 * mult), 'plasma');
-                            geyser(np.x, np.z, 5, 5.5, Math.floor(110 * mult), 0xff6600);
-                            aoe(6.0, Math.floor(300 * mult)); }
-      else if (atk === 2) { fx('ac_torrent');
-                            for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.16, 0xff6600, Math.floor(150 * mult), 'plasma');
-                            aoe(5.0, Math.floor(280 * mult)); }
-      else if (atk === 3) { fx('ac_meteor', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            for (let m = 0; m < 4; m++)
-                              geyser(np.x + (Math.random()-0.5)*8, np.z + (Math.random()-0.5)*8,
-                                     5 + m*2, 4.0, Math.floor(160 * mult), 0xff4400, { shake:10 });
-                            aoe(7.0, Math.floor(420 * mult)); }
-      else if (atk === 4) { fx('ac_roar');    aoe(12.0, Math.floor(380 * mult)); aoe(16.0, Math.floor(150 * mult)); }
-      else                { fx('ac_stomp');   aoe(7.0, Math.floor(340 * mult));
-                            for (let g = 0; g < 4; g++)
-                              geyser(b.x + (Math.random()-0.5)*10, b.z + (Math.random()-0.5)*10,
-                                     4 + g, 3.0, Math.floor(100 * mult), 0xff4400); }
-    },
+    x: 180, z: 180,                                    // tile (120,120) — the caldera
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in IC_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, nd, aoe, fx } = c;
-      if (b._vt % 3 === 0 && nd < 5.5) aoe(5.5, Math.floor(28 * mult));          // lava aura
-      if (b._vt % 5 === 0 && nd < 8.0) { fx('ac_trail'); aoe(4.5, Math.floor(40 * mult)); }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _icBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
