@@ -570,7 +570,7 @@ const ZONE_BOSS_HP = {
   void_citadel:     { hp:800000,   name:'COMMANDANT XERATH' },
   neon_hollow:      { hp:2800000,  name:'THE CURATOR' },   // a708 — rebuilt (was 1.6M)
   veiled_sanctuary: { hp:4000000,  name:'THE FINAL ABBOT' },  // v92.41 · a614 — 110+ raid boss (was 850k)
-  blooming_wilds:   { hp:35000,    name:'THE WILDMOTHER' },   // v92.49
+  blooming_wilds:   { hp:50000,    name:'THE WILDMOTHER' },   // a715 — rebuilt (was 35k)
   xeron:            { hp:4500000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
@@ -5102,7 +5102,7 @@ function dmgCurve(L){
 // measured in a578: average meaningful hit for each zone's mobs and its boss (phase 1)
 const ZONE_DMG_BASE = {
   patrol:          { lvl:  5, mob:  46, boss: 152 },
-  blooming_wilds:  { lvl: 10, mob:  44, boss:  22 },
+  blooming_wilds:  { lvl: 10, mob:  44, boss: 79.7483 },   // a715 — the rebuilt Wildmother's damage is set in WM_D directly (k = 1)
   void:            { lvl: 15, mob:  42, boss: 114 },
   cemetery:        { lvl: 20, mob:  54, boss: 100 },
   citadel:         { lvl: 25, mob: 161, boss: 123 },
@@ -6327,6 +6327,150 @@ function _xlBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a715 — THE WILDMOTHER, REBUILT as a tree god. One brain, shared word for word by the server
+//   (the authority in a lobby) and the client (solo). 10 Hz. A towering dryad goddess grown out
+//   of an ancient tree, gliding over the bloom mandala on a skirt of living roots:
+//     SEED VOLLEY       P1+  her signature: she flings glowing seed pods onto you, re-aiming each
+//                            volley; from P3 the pods sprout bramble patches that keep biting
+//     ROOT SURGE        P1+  roots tear up out of the ground in lines racing toward you (one,
+//                            then a fan of three, then five)
+//     BRAMBLE SWEEP     P1+  a thorned branch arm swept through everything in front of her
+//     STRANGLING VINES  P2+  vines ring every player and close; anyone still inside is held
+//     ROOT WALK         P2+  she sinks into the earth and bursts up under you
+//     WILD BLOOM        P3+  giant flowers burst out of the mandala, open and blow pollen
+//     WRATH OF THE GROVE P4  she roots herself and rings of roots roll out, each with gaps
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: her position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const WM_D  = { seed:70, thorn:22, root:95, sweep:110, snare:60, emerge:120, bloom:110, wrath:130 };
+const WM_PM = [1, 1, 1.1, 1.2, 1.32];
+const WM_R = 14, WM_ENG = 34;
+function _wmBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = WM_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._wm;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._wm = { t:0, vx:0, vz:0, face:0, cd:{ seed:12, roots:30, sweep:30, snare:40, walk:50, bloom:50, wrath:20 }, last:{}, gap:16, act:null,
+      hz:[], lanes:[], patches:[], tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < WM_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // delayed strikes (seed pods, root spikes, flowers, the emerge), bramble patches
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(WM_D[o.d]*M)); if(o.push) A.push(p.k, o.x, o.z, o.push); if(o.root) A.slow(p.k, 0.05, o.root); } });
+      if(o.br) X.patches.push({ x:o.x, z:o.z, r:o.r*0.85, l:o.br }); X.hz.splice(i, 1); } }
+  for(let i = X.patches.length - 1; i >= 0; i--){ const o = X.patches[i];
+    inA.forEach(p => { if(D(p, o.x, o.z) < o.r && once(p.k, 'th', 8)){ A.hit(p.k, Math.round(WM_D.thorn*M)); A.slow(p.k, 0.6, 500); } });
+    if(--o.l <= 0) X.patches.splice(i, 1); }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.15); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'awaken', t:0 }; A.fx('wmx_awaken', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'awaken') done = a.t >= 14;
+    else if(a.k === 'seed'){
+      X.face += Math.max(-0.15, Math.min(0.15, dAng(angTo(P.x, P.z), X.face)));
+      if(a.t >= a.w && (a.t - a.w) % a.gap === 0 && a.v < a.n){
+        const pts = [], f = 11, br = ph >= 3 ? 28 : 0;
+        for(let i = 0; i < a.per; i++){ const q = inA[i % inA.length], an = A.rnd()*6.283, rr = i < inA.length ? 0 : 1.6 + A.rnd()*3.6;
+          const c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, WM_ENG - 4), ff = f + i;
+          pts.push([R2(c[0]), R2(c[1]), ff]); X.hz.push({ x:c[0], z:c[1], r:1.8, f:ff, d:'seed', br }); }
+        a.v++; A.fx('wmx_seed', { x:R2(S.x), z:R2(S.z), f:+X.face.toFixed(3), pts, r:1.8, br, h:a.v % 2 });
+      }
+      done = a.v >= a.n && a.t >= a.w + a.gap*a.n + 2; }
+    else if(a.k === 'sweep'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.r && Math.abs(dAng(angTo(p.x, p.z), a.a)) < a.ha){ A.hit(p.k, Math.round(WM_D.sweep*M)); A.push(p.k, a.x, a.z, 3); } });
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'walk'){ if(a.t === a.land){ S.x = a.tx; S.z = a.tz; } done = a.t >= a.end; }
+    else if(a.k === 'wrath'){
+      a.rings.forEach((g, ri) => {
+        const rt = a.t - g.t0; if(rt <= 0) return; const r = 1.5 + rt*a.spd; if(r > 26) return;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) > 0.75) return;
+          const an = Math.atan2(p.x - a.x, p.z - a.z);
+          const inGap = g.g.some(ga => Math.abs(dAng(an, ga)) < a.hw);
+          if(!inGap && once(p.k, 'wr' + ri, 99)){ A.hit(p.k, Math.round(WM_D.wrath*M)); A.push(p.k, a.x, a.z, 2); } });
+      });
+      done = a.t >= a.rings[a.rings.length - 1].t0 + 34; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 9 : ph >= 3 ? 11 : 13; }
+  } else {
+    // ── GLIDE ON HER ROOTS: face the target, keep it at arm's length
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.1, Math.min(0.1, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.09, 0.1, 0.11, 0.12][ph];
+    const sp = d > 7 ? vmax : d < 3.5 ? -vmax*0.5 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.12; X.vz += (Math.cos(X.face)*sp - X.vz)*0.12; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      // the seed volley comes round every other move: it is what she is
+      const MIN = { seed:1, roots:1, sweep:1, snare:2, walk:2, bloom:3, wrath:4 };
+      let k = null, lk = 1e9;
+      if(X.cd.seed <= 0 && X.lastK !== 'seed') k = 'seed';
+      else for(const m in MIN){ if(m === 'seed' || ph < MIN[m] || X.cd[m] > 0) continue;
+        if(m === 'sweep' && d > 7.5) continue;
+        if(m === 'walk' && d < 6) continue;
+        const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.seed <= 0) k = 'seed';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'seed'){
+        const n = ph >= 3 ? 3 : 2, per = ph >= 4 ? 6 : ph >= 2 ? 5 : 4;
+        X.act = { k, t:0, w:5, gap:7, n, v:0, per }; X.cd.seed = ph >= 3 ? 18 : 24;
+        A.fx('wmx_cast', { x:R2(S.x), z:R2(S.z), w:5 });
+      } else if(k === 'roots'){
+        const n = ph >= 4 ? 5 : ph >= 2 ? 3 : 1, spr = 0.42, a0 = want, angs = [], len = 20, step = 1.8, cnt = 11, w = 9;
+        for(let i = 0; i < n; i++){ const an = a0 + (i - (n - 1)/2)*spr; angs.push(+an.toFixed(3));
+          for(let j = 1; j <= cnt; j++) X.hz.push({ x:S.x + Math.sin(an)*(1.5 + j*step), z:S.z + Math.cos(an)*(1.5 + j*step), r:1.25, f:w + j, d:'root', push:1.5 }); }
+        X.face = want; X.act = { k, t:0, end:w + 6 }; X.cd.roots = ph >= 3 ? 40 : 50;
+        A.fx('wmx_roots', { x:R2(S.x), z:R2(S.z), a:angs, r0:1.5, step, n:cnt, w });
+      } else if(k === 'sweep'){ X.face = want;
+        const sd = A.rnd() < 0.5 ? 1 : -1;
+        X.act = { k, t:0, x:S.x, z:S.z, a:want, ha:1.05, r:8, w:8 }; X.cd.sweep = 34;
+        A.fx('wmx_sweep', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), ha:1.05, r:8, w:8, s:sd });
+      } else if(k === 'snare'){
+        const pts = inA.slice(0, 6).map(p => [R2(p.x), R2(p.z)]), w = 15;
+        pts.forEach(q => X.hz.push({ x:q[0], z:q[1], r:2.6, f:w, d:'snare', root:1500 }));
+        X.act = { k, t:0, end:8 }; X.cd.snare = ph >= 3 ? 70 : 85;
+        A.fx('wmx_snare', { x:R2(S.x), z:R2(S.z), pts, r:2.6, w, root:1500 });
+      } else if(k === 'walk'){
+        const c = clampA(P.x, P.z, WM_R + 2), sink = 9, land = 24;
+        X.hz.push({ x:c[0], z:c[1], r:4, f:land, d:'emerge', push:4 });
+        X.act = { k, t:0, tx:c[0], tz:c[1], land, end:land + 9 }; X.cd.walk = ph >= 3 ? 90 : 110;
+        A.fx('wmx_walk', { sx:R2(S.x), sz:R2(S.z), tx:R2(c[0]), tz:R2(c[1]), r:4, sink, land });
+      } else if(k === 'bloom'){
+        const pts = [];
+        for(let i = 0; i < 6; i++){ const q = inA[i % inA.length], an = A.rnd()*6.283, rr = i < inA.length ? 0.5 : 3 + A.rnd()*6;
+          const c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, WM_ENG - 5), f = 22 + i*3;
+          pts.push([R2(c[0]), R2(c[1]), f]); X.hz.push({ x:c[0], z:c[1], r:3.2, f, d:'bloom' }); }
+        X.act = { k, t:0, end:10 }; X.cd.bloom = ph >= 4 ? 100 : 120;
+        A.fx('wmx_bloom', { x:R2(S.x), z:R2(S.z), pts, r:3.2 });
+      } else if(k === 'wrath'){
+        const rings = [14, 30, 46].map(t0 => ({ t0, g:[A.rnd()*6.283, 0] })); rings.forEach(g => { g.g[1] = g.g[0] + 2.4 + A.rnd()*1.6; });
+        X.act = { k, t:0, x:S.x, z:S.z, rings, spd:0.6, hw:0.36 }; X.cd.wrath = 150;
+        A.fx('wmx_wrath', { x:R2(S.x), z:R2(S.z), spd:0.6, hw:0.36, rings:rings.map(g => [g.t0, +g.g[0].toFixed(3), +g.g[1].toFixed(3)]) });
+      }
+    }
+  }
+  if(!(X.act && X.act.k === 'walk')){ const c = clampA(S.x, S.z, WM_R); S.x = c[0]; S.z = c[1]; }
+  S.face = X.face; S.sunk = !!(X.act && X.act.k === 'walk' && X.act.t < X.act.land);
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -6589,26 +6733,28 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE WILDMOTHER (a561), Blooming Wilds. She has no bespoke AI block at all — she
-  //    falls through to the client's GENERIC boss handler, so this is that handler ported
-  //    faithfully: chase, telegraph, a melee swipe and one-to-three bolts by phase.
-  //    Flat damage, three phases, no rotation.
+  // ── THE WILDMOTHER (a715). Rebuilt as a tree god: her whole fight lives in the shared brain
+  //    _wmBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain moves her
+  //    (move:'self'), aims at every player in the garden and hands back damage, pushes, roots and cues.
   blooming_wilds: {
-    x: 180, z: 180,
-    spd:    [0, 0.025, 0.025, 0.025],
-    dmg:    [0, 1, 1, 1],
-    phases: [0.66, 0.33],
-    acd:    [0, 20, 20, 20],
-    tele:   10,                                          // 60 frames, as the generic handler
-    pick:   () => 0,
-    attack: (c) => {
-      const { b, ph, ang, nd, aoe, fx, proj } = c;
-      fx('wm_strike');
-      if (nd < 3.2) aoe(3.2, ph === 3 ? 42 : ph === 2 ? 30 : 20);
-      const shots = ph >= 2 ? 3 : 1;
-      const col   = ph === 3 ? 0x80ccff : 0xff1020;
-      const dmg   = ph === 3 ? 38 : 22;
-      for (let i = 0; i < shots; i++) proj(ang + (i - (shots-1)/2) * 0.18, col, dmg, ph === 3 ? 'lightning' : 'plasma');
+    x: 180, z: 180,                                    // tile (120,120) — under the rainbow
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in WM_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
+    passive: (c) => {
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _wmBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
