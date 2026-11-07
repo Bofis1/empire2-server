@@ -564,7 +564,7 @@ const ZONE_BOSS_HP = {
   dragonlair:       { hp:650000,   name:'VAELTHARAX THE UNDYING' },   // a712 — rebuilt (was 375k)
   riftvale:         { hp:400000,   name:'THE RIFT SOVEREIGN' },
   wyvernwastes:     { hp:1200000,  name:'CRYOTHAR' },   // a709 — rebuilt (was 500k)
-  xumen:            { hp:675000,   name:'THE XU SUPREME OVERLORD' },
+  xumen:            { hp:1250000,  name:'THE XU SUPREME OVERLORD' },   // a714 — rebuilt (was 675k)
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
   xumen_fortress:   { hp:2800000,  name:'THE APEX PYRAMID' },   // a707 — rebalanced (was 1.2M)
   void_citadel:     { hp:800000,   name:'COMMANDANT XERATH' },
@@ -5118,7 +5118,7 @@ const ZONE_DMG_BASE = {
   void_citadel:    { lvl: 70, mob: 216, boss: 191 },
   veiled_sanctuary:{ lvl:110, mob: 228, boss: 217 },   // a614 — 110+ (was 80): hits on the level-110 curve
   wyvernwastes:    { lvl: 80, mob: 259, boss: 605.2494 },   // a709 — the rebuilt Cryothar's damage is set in CRY_D directly (k = 1)
-  xumen:           { lvl: 80, mob: 267, boss: 183 },
+  xumen:           { lvl: 80, mob: 267, boss: 605.2494 },   // a714 — the rebuilt Overlord's damage is set in XL_D directly (k = 1)
   xulcan:          { lvl: 90, mob: 633, boss: 407 },
   forge:           { lvl: 95, mob: 624, boss: 288 },
   lucidwilde:      { lvl:100, mob: 526, boss: 377 },
@@ -6177,6 +6177,153 @@ function _vxBrain(S, A){
     }
   }
   if(!(X.act && X.act.k === 'dive')){ const c = clampA(S.x, S.z, VX_R); S.x = c[0]; S.z = c[1]; }
+  S.face = X.face;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// a714 — THE XU SUPREME OVERLORD, REBUILT. One brain, shared word for word by the server
+//   (the authority in a lobby) and the client (solo). 10 Hz. A walking war-machine emperor
+//   that strides after its target and fights with lasers and machine guns:
+//     GATLING SWEEP    P1+  both shoulder gatlings spin up, then hose a sweeping arc of tracer
+//                           fire across you (twin sweeps crossing at P4)
+//     CROSS LASERS     P1+  its forearm cannons lock two beams either side of you and close
+//                           them into an X — get out of the middle
+//     WAR STOMP        P1+  it rears up and stamps: a shockwave around its feet
+//     MISSILE RACKS    P2+  the back pods fire a salvo onto marked ground
+//     SENTRY TURRETS   P3+  drop-pods land around the plaza and the turrets inside shoot
+//     ANNIHILATOR RAY  P3+  the chest reactor opens and a huge beam sweeps out of it
+//     SUPREME PROTOCOL P5   six laser spokes turn around it while the gatlings spiral fire
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const XL_D  = { bullet:95, cross:420, stomp:800, msl:700, turret:330, ray:520, spoke:520 };
+const XL_PM = [1, 1, 1.1, 1.2, 1.32, 1.45];
+const XL_R = 18, XL_ENG = 36;
+function _xlBrain(S, A){
+  const ph = Math.max(1, Math.min(5, A.ph | 0)), M = XL_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._xl;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._xl = { t:0, vx:0, vz:0, face:0, cd:{ gat:15, cross:35, stomp:30, msl:40, tur:40, ray:40, proto:30 }, last:{}, gap:16, act:null,
+      bul:[], hz:[], tur:[], tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < XL_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+  const lineHit = (p, x, z, an, len, w, inr) => { const dx = p.x - x, dz = p.z - z, al = dx*Math.sin(an) + dz*Math.cos(an), pe = Math.abs(dx*Math.cos(an) - dz*Math.sin(an)); return al > (inr || 0.5) && al < len && pe < w; };
+  const shoot = (ox, oz, an, sp, l, list) => list.push({ x:ox, z:oz, vx:Math.sin(an)*sp, vz:Math.cos(an)*sp, l });
+
+  // bullets (gatlings and turrets share the list; each carries its damage key)
+  for(let i = X.bul.length - 1; i >= 0; i--){ const o = X.bul[i]; o.x += o.vx; o.z += o.vz; let hit = false;
+    for(const p of inA){ if(D(p, o.x, o.z) < (o.r || 0.7)){ A.hit(p.k, Math.round(XL_D[o.d || 'bullet']*M)); hit = true; break; } }
+    if(hit || --o.l <= 0) X.bul.splice(i, 1); }
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r) A.hit(p.k, Math.round(XL_D[o.d]*M)); }); X.hz.splice(i, 1); } }
+  // sentry turrets keep shooting at whoever is nearest
+  for(let i = X.tur.length - 1; i >= 0; i--){ const T = X.tur[i]; T.t++;
+    if(T.t > T.w && (T.t - T.w) % 12 === T.ph && inA.length){
+      let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, T.x, T.z); if(d < bd){ bd = d; best = p; } });
+      if(bd < 22){ const an = Math.atan2(best.x - T.x, best.z - T.z); X.bul.push({ x:T.x + Math.sin(an)*0.8, z:T.z + Math.cos(an)*0.8, vx:Math.sin(an)*1.1, vz:Math.cos(an)*1.1, l:22, d:'turret', r:0.8 });
+        A.fx('xl_tshot', { i, x:R2(T.x), z:R2(T.z), a:+an.toFixed(3) }); } }
+    if(T.t >= T.w + T.d){ A.fx('xl_tdown', { i, x:R2(T.x), z:R2(T.z) }); X.tur.splice(i, 1); } }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.2); S.x += dx/d*st; S.z += dz/d*st; } return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'reboot', t:0 }; A.fx('xl_reboot', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'reboot') done = a.t >= 16;
+    else if(a.k === 'gat'){
+      if(a.t > a.w && a.t <= a.w + a.d){ const u = (a.t - a.w)/a.d;
+        a.sw.forEach((sw, g) => { const an = a.a - sw + 2*sw*u, side = g ? 1 : -1, an2 = an + (g ? -1 : 1)*0.04;
+          // two guns, one each shoulder; the sweeps cross when there are two
+          const ox = S.x + Math.sin(X.face + side*1.57)*2.0, oz = S.z + Math.cos(X.face + side*1.57)*2.0;
+          shoot(ox, oz, an2, 1.6, 18, X.bul); });
+        if(a.t % 2 === 0) A.fx('xl_gfire', { x:R2(S.x), z:R2(S.z), f:+X.face.toFixed(3), a:a.sw.map(sw => +(a.a - sw + 2*sw*u).toFixed(3)) }); }
+      done = a.t >= a.w + a.d + 2; }
+    else if(a.k === 'cross'){
+      if(a.t > a.w){ const u = Math.min(1, (a.t - a.w)/a.d), off = a.o0*(1 - u);
+        [a.a - off, a.a + off].forEach(an => inA.forEach(p => { if(lineHit(p, a.x, a.z, an, a.len, 0.8, 1.2) && once(p.k, 'cx', 3)) A.hit(p.k, Math.round(XL_D.cross*M)); })); }
+      done = a.t >= a.w + a.d + 4; }
+    else if(a.k === 'stomp'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) < 6.5){ A.hit(p.k, Math.round(XL_D.stomp*M)); A.push(p.k, a.x, a.z, 4); } });
+      done = a.t >= a.w + 5; }
+    else if(a.k === 'ray'){
+      if(a.t > a.w){ const u = Math.min(1, (a.t - a.w)/a.d), an = a.a0 + a.sw*u; X.face = an;
+        inA.forEach(p => { if(lineHit(p, a.x, a.z, an, a.len, 1.5, 1.5) && once(p.k, 'ry', 3)) A.hit(p.k, Math.round(XL_D.ray*M)); }); }
+      done = a.t >= a.w + a.d; }
+    else if(a.k === 'proto'){
+      if(a.t > a.w && a.t <= a.w + a.d){ const tt = a.t - a.w;
+        inA.forEach(p => { const r = D(p, a.x, a.z); if(r < 2 || r > a.len) return;
+          for(let i = 0; i < 6; i++){ const an = a.a0 + a.wv*tt + i*Math.PI/3; if(lineHit(p, a.x, a.z, an, a.len, 0.75, 2) && once(p.k, 'sp', 6)){ A.hit(p.k, Math.round(XL_D.spoke*M)); break; } } });
+        if(tt % 2 === 0){ const sp = a.a0*2 + tt*0.21; for(let i = 0; i < 4; i++) shoot(a.x + Math.sin(sp + i*1.571)*2, a.z + Math.cos(sp + i*1.571)*2, sp + i*1.571, 1.3, 20, X.bul);
+          A.fx('xl_spiral', { x:R2(a.x), z:R2(a.z), a:+sp.toFixed(3) }); } }
+      done = a.t >= a.w + a.d; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : 12; }
+  } else {
+    // ── STRIDE: turn to the target and walk it down, holding a few metres off
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.1, Math.min(0.1, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.12, 0.14, 0.16, 0.18, 0.2][ph];
+    const sp = d > 8 ? vmax : d < 4 ? -vmax*0.5 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.15; X.vz += (Math.cos(X.face)*sp - X.vz)*0.15; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { gat:1, cross:1, stomp:1, msl:2, tur:3, ray:3, proto:5 };
+      let k = null, lk = 1e9;
+      if(X.cd.gat <= 0 && X.lastK !== 'gat') k = 'gat';
+      else for(const m in MIN){ if(m === 'gat' || ph < MIN[m] || X.cd[m] > 0) continue;
+        if(m === 'stomp' && d > 7) continue; if(m === 'tur' && X.tur.length) continue;
+        const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.gat <= 0) k = 'gat';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'gat'){ X.face = want;
+        const sw = ph >= 4 ? [0.9, -0.9] : [0.85];
+        X.act = { k, t:0, a:want, sw, w:9, d:ph >= 3 ? 24 : 20 }; X.cd.gat = ph >= 4 ? 22 : 28;
+        A.fx('xl_gat', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), sw, w:9, d:X.act.d });
+      } else if(k === 'cross'){ X.face = want;
+        X.act = { k, t:0, x:S.x, z:S.z, a:want, o0:0.7, len:26, w:12, d:14 }; X.cd.cross = ph >= 4 ? 60 : 80;
+        A.fx('xl_cross', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), o0:0.7, len:26, w:12, d:14 });
+      } else if(k === 'stomp'){
+        X.act = { k, t:0, x:S.x, z:S.z, w:10 }; X.cd.stomp = 50;
+        A.fx('xl_stomp', { x:R2(S.x), z:R2(S.z), r:6.5, w:10 });
+      } else if(k === 'msl'){
+        const pts = [];
+        for(let i = 0; i < 6 + ph; i++){ const q = inA[i % inA.length], an = A.rnd()*6.28, rr = i < inA.length ? 0 : 2 + A.rnd()*5;
+          const c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, XL_ENG - 4), f = 16 + i*2;
+          pts.push([R2(c[0]), R2(c[1]), f]); X.hz.push({ x:c[0], z:c[1], r:2.4, f, d:'msl' }); }
+        X.act = { k, t:0, end:10 }; X.cd.msl = ph >= 4 ? 90 : 120;
+        A.fx('xl_msl', { x:R2(S.x), z:R2(S.z), f:+X.face.toFixed(3), pts, r:2.4 });
+      } else if(k === 'tur'){
+        const pts = []; for(let i = 0; i < 3; i++){ const an = angTo(P.x, P.z) + (i - 1)*2.1 + (A.rnd() - 0.5)*0.6, c = clampA(P.x + Math.sin(an)*7, P.z + Math.cos(an)*7, XL_R + 8);
+          pts.push([R2(c[0]), R2(c[1])]); X.tur.push({ x:c[0], z:c[1], t:0, w:14, d:80, ph:i*4 }); }
+        X.act = { k, t:0, end:10 }; X.cd.tur = 150;
+        A.fx('xl_tur', { pts, w:14, d:80 });
+      } else if(k === 'ray'){
+        const a0 = want - 1.1*(A.rnd() < 0.5 ? 1 : -1), sw = (dAng(want, a0) > 0 ? 1 : -1)*2.2;
+        X.act = { k, t:0, x:S.x, z:S.z, a0, sw, len:28, w:14, d:26 }; X.face = a0; X.cd.ray = ph >= 4 ? 100 : 130;
+        A.fx('xl_ray', { x:R2(S.x), z:R2(S.z), a0:+a0.toFixed(3), sw:+sw.toFixed(3), len:28, w:14, d:26 });
+      } else if(k === 'proto'){
+        X.act = { k, t:0, x:S.x, z:S.z, a0:A.rnd()*1.0, wv:0.04*(A.rnd() < 0.5 ? 1 : -1), len:20, w:14, d:50 }; X.cd.proto = 170;
+        A.fx('xl_proto', { x:R2(S.x), z:R2(S.z), a0:+X.act.a0.toFixed(3), wv:X.act.wv, len:20, w:14, d:50 });
+      }
+    }
+  }
+  const c = clampA(S.x, S.z, XL_R); S.x = c[0]; S.z = c[1];
   S.face = X.face;
 }
 
@@ -7465,108 +7612,27 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE XU SUPREME OVERLORD (a551). Top of the Xu command chain, 5 phases, a
-  //    SEVEN-attack rotation — the longest rotation of any zone boss so far. The client
-  //    picked it with Math.floor(gameTime/bACD)%7 off each client's own clock, the same
-  //    divergence CRYOTHAR had. Attack 3 summons real adds, which are now spawned into
-  //    the shared zone rather than privately on each client.
-  //    NOTE: like CRYOTHAR, this boss has TWO phase ladders in the client — the AI block's
-  //    (bACD = max(80,162-phase*16)) and a second in 20_enemy_factory.part with cadences
-  //    90/70/55/40. Same thresholds, different cadences. Ported the AI block's, as with
-  //    CRYOTHAR in a548 — see the changelog note.
+  // ── THE XU SUPREME OVERLORD (a714). Rebuilt as a walking war machine: its whole fight lives in
+  //    the shared brain _xlBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain
+  //    moves it (move:'self'), aims at every player in the plaza and hands back damage, pushes and cues.
   xumen: {
     x: 180, z: 180,                                    // tile (120,120) — central plaza
-    spd:    [0, 0.022, 0.030, 0.040, 0.052, 0.066],
-    dmg:    [0, 1.0,   1.5,   2.2,   3.0,   4.0],
+    spd:    [0,0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4, 5],                        // phase index only — damage is in XL_D
     phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 22, 19, 16, 14],                   // 120 then max(80,162-ph*16), / 6
-    tele:   10,                                        // 62 frames
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 7; },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, nd, zone, zoneName, game, aoe, fx, proj, geyser } = c;
-
-      if (atk === 0) {
-        // DOMINION STRIKE — a calculated two-handed cleave
-        fx('ov_strike'); aoe(6.0, Math.floor(520 * mult));
-
-      } else if (atk === 1) {
-        // COMMAND CANNON — a walking burst, heavier with phase
-        fx('ov_cannon');
-        const shots = ph >= 3 ? 8 : ph >= 2 ? 6 : 4;
-        for (let i = 0; i < shots; i++) proj(ang + (i - (shots-1)/2) * 0.16, 0xff8800, Math.floor(160 * mult), 'plasma');
-        aoe(6.0, Math.floor(280 * mult));
-
-      } else if (atk === 2) {
-        // STRATEGIC WITHDRAWAL — teleports, then flanks
-        fx('ov_withdraw');
-        b.x = np.x + (Math.random()-0.5) * 9;
-        b.z = np.z + (Math.random()-0.5) * 9;
-        fx('ov_flank', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-        aoe(6.75, Math.floor(280 * mult));
-
-      } else if (atk === 3) {
-        // CALL ENFORCERS — two real adds, spawned into the SHARED zone.
-        //   Client-side these were pushed straight into the local enemies array, so every
-        //   player fought their own private pair that nobody else could see or damage.
-        //   These are tagged _summoned so the respawn loop reaps them instead of
-        //   resurrecting them forever at their drop point.
-        fx('ov_summon');
-        for (let i = 0; i < 2; i++) {
-          const a = Math.random() * Math.PI * 2, r = 3.75 + Math.random() * 3.0;
-          const ex = b.x + Math.sin(a) * r, ez = b.z + Math.cos(a) * r;
-          if (ex < 2 || ex > 358 || ez < 2 || ez > 358) continue;
-          zone._nextEid = (zone._nextEid || 100000) + 1;
-          const add = {
-            id: zone._nextEid, type:'xu_enforcer',
-            x: ex, z: ez, spawnX: ex, spawnZ: ez,
-            hp: 3200, maxHp: 3200, atk: 160, spd: 0.090, aggroRange: 16,
-            reward: 300, expR: 100, dmgReduction: 0.32,
-            active: true, aggroed: true, respawnTimer: 0, attackTimer: 0,
-            _summoned: 1,
-          };
-          zone.enemies.push(add);
-          broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName,
-            ids:[add.id], xs:[+ex.toFixed(2)], zs:[+ez.toFixed(2)],
-            hps:[add.hp], acts:[1], types:[add.type] });
-          fx('ov_drop', { ex:+ex.toFixed(2), ez:+ez.toFixed(2) });
-        }
-
-      } else if (atk === 4) {
-        // ORBITAL BOMBARDMENT — four overlapping strikes
-        fx('ov_orbital');
-        for (let ob = 0; ob < 4; ob++)
-          geyser(np.x + (Math.random()-0.5) * 7.5, np.z + (Math.random()-0.5) * 7.5,
-                 6 + ob*6, 6.0, Math.floor(360 * mult), 0x00ffff, { shake:10 });
-
-      } else if (atk === 5) {
-        // VOID SUPPRESSION FIELD — a ring of plasma spirals outward
-        fx('ov_suppress');
-        const n = ph >= 3 ? 12 : 8;
-        for (let si = 0; si < n; si++) proj(si/n*Math.PI*2, 0x00ccff, Math.floor(120 * mult), 'plasma');
-        aoe(7.0, Math.floor(280 * mult));
-
-      } else {
-        if (ph >= 3) {
-          // ABSOLUTE AUTHORITY — reality-warping detonation
-          fx('ov_authority'); aoe(11.0, Math.floor(440 * mult));
-        } else {
-          // PRECISION BURST — phases 1-2
-          fx('ov_precision');
-          for (let i = 0; i < 3; i++) proj(ang, 0x00ffff, Math.floor(200 * mult), 'plasma');
-          aoe(8.0, Math.floor(300 * mult));
-        }
-      }
-    },
+    acd:    [0, 20, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, ang, aoe, fx, proj } = c;
-      // Command aura — void energy radiates at all times
-      if (b._vt % 4 === 0) aoe(5.5, Math.floor(30 * mult));
-      // P2+: shoulder-cannon auto-fire
-      if (ph >= 2 && b._vt % 5 === 0) proj(ang, 0x00ccff, Math.floor(80 * mult), 'plasma');
-      // P4+: void field shrinks the arena
-      if (ph >= 4 && b._vt % 7 === 0) { fx('ov_field'); aoe(7.0, Math.floor(40 * mult)); }
-      // P5: continuous void suppression fire
-      if (ph >= 5 && b._vt % 3 === 0) proj(ang, 0x00ffff, Math.floor(55 * mult), 'plasma');
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _xlBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
