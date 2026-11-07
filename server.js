@@ -552,7 +552,7 @@ const TILE = 1.5; // a486 — MUST equal the client TILE (10_core_setup: const T
 // ══════════════════════════════════════════════════════════
 const ZONE_BOSS_HP = {
   patrol:           { hp:18000,    name:'SERPENT TITAN MK-VII' },
-  cemetery:         { hp:64000,    name:'THE LICH KING' },
+  cemetery:         { hp:90000,    name:'THE LICH KING' },   // a717 — rebuilt (was 64k)
   void:             { hp:54000,    name:'VOID WRAITH PRIME' },
   citadel:          { hp:70000,    name:'GENERAL VORRAKH' },
   caves_of_despair: { hp:80000,    name:'FOREMAN DRAX' },
@@ -5104,7 +5104,7 @@ const ZONE_DMG_BASE = {
   patrol:          { lvl:  5, mob:  46, boss: 152 },
   blooming_wilds:  { lvl: 10, mob:  44, boss: 79.7483 },   // a715 — the rebuilt Wildmother's damage is set in WM_D directly (k = 1)
   void:            { lvl: 15, mob:  42, boss: 114 },
-  cemetery:        { lvl: 20, mob:  54, boss: 100 },
+  cemetery:        { lvl: 20, mob:  54, boss: 106.5286 },   // a717 — the rebuilt Lich King's damage is set in LK_D directly (k = 1)
   citadel:         { lvl: 25, mob: 161, boss: 123 },
   aviacanyon:      { lvl: 30, mob: 103, boss: 196 },
   ashlands:        { lvl: 35, mob:  60, boss: 164.4687 },   // a716 — the rebuilt Colossus's damage is set in IC_D directly (k = 1)
@@ -6620,6 +6620,184 @@ function _icBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a717 — THE LICH KING, REBUILT: a towering skeletal sorcerer-king floating over the ritual
+//   ground of the Xu Cemetery. One brain, shared word for word by the server (the authority in a
+//   lobby) and the client (solo). 10 Hz.
+//     WAILING SKULLS    P1+  his signature: a fan of shrieking spectral skulls flies out at you;
+//                            they travel, so step out of their path
+//     REAPER'S SCYTHE   P1+  a spectral scythe sweeps the whole circle around him but one gap
+//     GRASPING DEAD     P1+  skeletal hands claw up out of the ground under you and hold you
+//     MIST STEP         P1+  crowd him and he dissolves into mist, reappears away, and the
+//                            place he left bursts with soul-frost
+//     RAISE THE DEAD    P2+  skeletons crawl out of the earth and shamble after you, bursting
+//                            when they reach you (or when they rot)
+//     SOUL SIPHON       P2+  chains of soul tie him to everyone near him; get out of reach
+//                            before he tears your soul out
+//     MARCH OF THE DEAD P3+  a wall of ghosts marches across the ritual ground; find the gap
+//     PENTAGRAM OF DOOM P4   the pentagram cut into the ritual ground ignites line by line
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: his position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const LK_D  = { skull:95, scythe:140, grasp:85, frost:90, ghoul:120, siphon:22, tear:160, march:130, penta:140 };
+const LK_PM = [1, 1, 1.1, 1.22, 1.36];
+const LK_R = 15, LK_ENG = 38;
+// the pentagram's five lines, as [[x0,z0],[x1,z1]] (the client draws the same lines)
+function _lkPenta(hx, hz, R, a0){ const V = []; for(let k = 0; k < 5; k++){ const a = a0 + k*2*Math.PI/5; V.push([hx + Math.sin(a)*R, hz + Math.cos(a)*R]); }
+  return [0, 1, 2, 3, 4].map(i => [V[i], V[(i + 2) % 5]]); }
+function _lkSegD(px, pz, a, b){ const dx = b[0] - a[0], dz = b[1] - a[1], L2 = dx*dx + dz*dz, u = Math.max(0, Math.min(1, ((px - a[0])*dx + (pz - a[1])*dz)/L2));
+  return Math.hypot(px - a[0] - dx*u, pz - a[1] - dz*u); }
+function _lkBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = LK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._lk;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._lk = { t:0, vx:0, vz:0, face:0, cd:{ skulls:10, scythe:30, grasp:30, blink:60, raise:30, siphon:40, march:40, penta:20 }, last:{}, gap:16, act:null,
+      hz:[], sk:[], gh:[], gid:0, close:0, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < LK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // delayed strikes (grasping hands, the frost left by a mist step)
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(LK_D[o.d]*M)); if(o.root) A.slow(p.k, 0.05, o.root); if(o.chill) A.slow(p.k, 0.5, o.chill); } }); X.hz.splice(i, 1); } }
+  // wailing skulls in flight
+  for(let i = X.sk.length - 1; i >= 0; i--){ const s = X.sk[i];
+    if(s.dl > 0){ s.dl--; continue; }
+    s.x += Math.sin(s.a)*s.sp; s.z += Math.cos(s.a)*s.sp; s.l--;
+    let hit = false; inA.forEach(p => { if(!hit && D(p, s.x, s.z) < 1.05){ hit = true; A.hit(p.k, Math.round(LK_D.skull*M)); } });
+    if(hit || s.l <= 0 || Math.hypot(s.x - hx, s.z - hz) > LK_ENG){ if(hit) A.fx('lkx_skhit', { i:s.i, x:R2(s.x), z:R2(s.z) }); X.sk.splice(i, 1); } }
+  // the risen dead shamble after the nearest player and burst
+  if(X.gh.length){
+    for(let i = X.gh.length - 1; i >= 0; i--){ const g = X.gh[i];
+      if(g.w > 0){ g.w--; continue; }
+      let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, g.x, g.z); if(d < bd){ bd = d; best = p; } });
+      if(best){ const d = Math.max(0.01, bd), st = Math.min(d, g.sp); g.x += (best.x - g.x)/d*st; g.z += (best.z - g.z)/d*st; }
+      if(--g.l <= 0 || (best && bd < 1.3)){ inA.forEach(p => { if(D(p, g.x, g.z) < 2.6){ A.hit(p.k, Math.round(LK_D.ghoul*M)); A.push(p.k, g.x, g.z, 1.5); } });
+        A.fx('lkx_gboom', { i:g.i, x:R2(g.x), z:R2(g.z) }); X.gh.splice(i, 1); } }
+    if(X.t % 3 === 0 && X.gh.length) A.fx('lkx_gpos', { g:X.gh.map(g => [g.i, R2(g.x), R2(g.z)]) });
+  }
+
+  if(!inA.length){ X.act = null; X.sk.length = 0; X.gh.length = 0; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.15); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  X.close = inA.some(p => D(p, S.x, S.z) < 4.5) ? X.close + 1 : 0;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'wail', t:0 }; A.fx('lkx_wail', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'wail') done = a.t >= 15;
+    else if(a.k === 'skulls'){
+      X.face += Math.max(-0.12, Math.min(0.12, dAng(angTo(P.x, P.z), X.face)));
+      if(a.t === a.w){ const an = angTo(P.x, P.z), sks = [];
+        for(let i = 0; i < a.n; i++){ const o = (i - (a.n - 1)/2)*a.spr, s = { i:X.gid++, x:S.x + Math.sin(an + o)*1.5, z:S.z + Math.cos(an + o)*1.5, a:an + o, sp:a.sp, l:40, dl:i % 2 ? 2 : 0 };
+          X.sk.push(s); sks.push([s.i, R2(s.x), R2(s.z), +s.a.toFixed(3), s.dl]); }
+        X.face = an; A.fx('lkx_skulls', { x:R2(S.x), z:R2(S.z), sp:a.sp, sk:sks }); a.v++; if(a.v < a.waves) a.w += 9; }
+      done = a.v >= a.waves && a.t >= a.w + 4; }
+    else if(a.k === 'scythe'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.r && Math.abs(dAng(Math.atan2(p.x - a.x, p.z - a.z), a.g)) > a.gw){ A.hit(p.k, Math.round(LK_D.scythe*M)); A.push(p.k, a.x, a.z, 2.5); } });
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'blink'){ if(a.t === a.f){ S.x = a.tx; S.z = a.tz; } done = a.t >= a.f + 6; }
+    else if(a.k === 'siphon'){
+      if(a.t > a.w){ inA.forEach(p => { if(D(p, S.x, S.z) < a.R){ a.tied[p.k] = (a.tied[p.k] || 0) + 1; if(once(p.k, 'sf', 6)) A.hit(p.k, Math.round(LK_D.siphon*M)); } else a.tied[p.k] = 0; }); }
+      if(a.t === a.w + a.d) inA.forEach(p => { if(D(p, S.x, S.z) < a.R){ A.hit(p.k, Math.round(LK_D.tear*M)); A.slow(p.k, 0.5, 1500); } });
+      done = a.t >= a.w + a.d + 4; }
+    else if(a.k === 'march'){
+      a.walls.forEach((W, wi) => { const tt = a.t - W.t0; if(tt < 0) return; const s = -a.L + tt*a.sp; if(s > a.L + 1) return;
+        const cx = a.x + W.dx*s, cz = a.z + W.dz*s;
+        inA.forEach(p => { const al = (p.x - cx)*W.dx + (p.z - cz)*W.dz, lat = (p.x - cx)*W.dz - (p.z - cz)*W.dx;
+          if(Math.abs(al) < 0.8 && Math.abs(lat) < a.L && Math.abs(lat - W.g) > a.gw && once(p.k, 'mw' + wi, 30)){ A.hit(p.k, Math.round(LK_D.march*M)); A.push(p.k, p.x - W.dx, p.z - W.dz, 2); } }); });
+      done = a.t >= a.end; }
+    else if(a.k === 'penta'){
+      a.seq.forEach(q => { if(a.t === q[0]) inA.forEach(p => { if(q[1].some(li => _lkSegD(p.x, p.z, a.L[li][0], a.L[li][1]) < a.w2) && once(p.k, 'pn' + q[0], 3)) A.hit(p.k, Math.round(LK_D.penta*M)); }); });
+      done = a.t >= a.seq[a.seq.length - 1][0] + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 9 : ph >= 3 ? 11 : 12; }
+  } else {
+    // ── DRIFT: he floats, keeps his distance and turns to face you
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.1, Math.min(0.1, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.08, 0.09, 0.1, 0.11][ph];
+    const sp = d > 11 ? vmax : d < 6 ? -vmax*0.8 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      // crowd him and he steps away through the mist first
+      let k = null;
+      if(X.close > 25 && X.cd.blink <= 0) k = 'blink';
+      else if(X.cd.skulls <= 0 && X.lastK !== 'skulls') k = 'skulls';
+      else { const MIN = { scythe:1, grasp:1, raise:2, siphon:2, march:3, penta:4 }; let lk = 1e9;
+        for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue;
+          if(m === 'scythe' && !inA.some(p => D(p, S.x, S.z) < 7.5)) continue;
+          if(m === 'raise' && X.gh.length) continue;
+          if(m === 'siphon' && !inA.some(p => D(p, S.x, S.z) < 12)) continue;
+          const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } } }
+      if(!k && X.cd.skulls <= 0) k = 'skulls';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'skulls'){
+        const n = ph >= 3 ? 7 : ph >= 2 ? 6 : 5, waves = ph >= 3 ? 3 : 2;
+        X.act = { k, t:0, w:7, n, spr:0.2, sp:0.85 + ph*0.08, waves, v:0 }; X.cd.skulls = ph >= 3 ? 18 : 22;
+        A.fx('lkx_cast', { x:R2(S.x), z:R2(S.z), w:7, kind:'skulls' });
+      } else if(k === 'scythe'){
+        const g = want + Math.PI + (A.rnd() - 0.5)*1.2;
+        X.act = { k, t:0, x:S.x, z:S.z, r:7.5, g, gw:0.55, w:12 }; X.cd.scythe = 40;
+        A.fx('lkx_scythe', { x:R2(S.x), z:R2(S.z), r:7.5, g:+g.toFixed(3), gw:0.55, w:12 });
+      } else if(k === 'grasp'){
+        const pts = [];
+        inA.forEach(p => { pts.push([R2(p.x), R2(p.z)]); for(let j = 0; j < 4; j++){ const an = j*1.571 + A.rnd()*0.5, c = clampA(p.x + Math.sin(an)*3.2, p.z + Math.cos(an)*3.2, LK_ENG - 3); pts.push([R2(c[0]), R2(c[1])]); } });
+        pts.forEach(q => X.hz.push({ x:q[0], z:q[1], r:1.7, f:13, d:'grasp', root:1200 }));
+        X.act = { k, t:0, end:10 }; X.cd.grasp = ph >= 3 ? 45 : 55;
+        A.fx('lkx_grasp', { x:R2(S.x), z:R2(S.z), pts, r:1.7, w:13, root:1200 });
+      } else if(k === 'blink'){
+        let best = null, bf = -1;
+        for(let i = 0; i < 10; i++){ const an = A.rnd()*6.283, rr = 5 + A.rnd()*(LK_R - 5), x = hx + Math.sin(an)*rr, z = hz + Math.cos(an)*rr;
+          const f = Math.min(...inA.map(p => D(p, x, z))); if(f > bf && f < 16){ bf = f; best = [x, z]; } }
+        if(!best) best = clampA(S.x - Math.sin(want)*9, S.z - Math.cos(want)*9, LK_R);
+        X.hz.push({ x:S.x, z:S.z, r:3.4, f:9, d:'frost', chill:1500 });
+        X.act = { k, t:0, tx:best[0], tz:best[1], f:5 }; X.cd.blink = 70; X.close = 0;
+        A.fx('lkx_blink', { sx:R2(S.x), sz:R2(S.z), tx:R2(best[0]), tz:R2(best[1]), r:3.4, f:5, w:9 });
+      } else if(k === 'raise'){
+        const n = ph >= 4 ? 5 : ph >= 3 ? 4 : 3, gs = [];
+        for(let i = 0; i < n; i++){ const q = inA[i % inA.length], an = A.rnd()*6.283, rr = 6 + A.rnd()*4, c = clampA(q.x + Math.sin(an)*rr, q.z + Math.cos(an)*rr, LK_ENG - 3);
+          const g = { i:X.gid++, x:c[0], z:c[1], w:16, l:100, sp:0.075 + ph*0.008 }; X.gh.push(g); gs.push([g.i, R2(g.x), R2(g.z)]); }
+        X.act = { k, t:0, end:12 }; X.cd.raise = ph >= 3 ? 90 : 110;
+        A.fx('lkx_raise', { x:R2(S.x), z:R2(S.z), g:gs, w:16 });
+      } else if(k === 'siphon'){
+        X.act = { k, t:0, w:8, d:40, R:14, tied:{} }; X.cd.siphon = ph >= 3 ? 90 : 110;
+        A.fx('lkx_siphon', { x:R2(S.x), z:R2(S.z), w:8, d:40, R:14 });
+      } else if(k === 'march'){
+        const n = ph >= 4 ? 2 : 1, L = 26, walls = [];
+        for(let i = 0; i < n; i++){ const a = (inA.length ? Math.atan2(P.x - hx, P.z - hz) : 0) + Math.PI + (i ? Math.PI/2 : 0) + (A.rnd() - 0.5)*0.6;
+          walls.push({ t0:12 + i*22, dx:Math.sin(a + Math.PI), dz:Math.cos(a + Math.PI), g:(A.rnd() - 0.5)*24 }); }
+        // the wall travels from the far side (-L) to the near side (+L) through the arena centre
+        X.act = { k, t:0, x:hx, z:hz, L, sp:0.55, gw:1.9, walls, end:walls[walls.length - 1].t0 + Math.ceil(2*L/0.55) + 4 }; X.cd.march = 120;
+        A.fx('lkx_march', { x:R2(hx), z:R2(hz), L, sp:0.55, gw:1.9, walls:walls.map(W => [W.t0, +W.dx.toFixed(4), +W.dz.toFixed(4), +W.g.toFixed(2)]) });
+      } else if(k === 'penta'){
+        const a0 = A.rnd()*1.2566, Lp = _lkPenta(hx, hz, 18, a0), seq = [];
+        for(let i = 0; i < 5; i++) seq.push([16 + i*7, [i]]);
+        for(let i = 0; i < 5; i++) seq.push([56 + i*4, [(i*2) % 5]]);
+        seq.push([86, [0, 1, 2, 3, 4]]);
+        X.act = { k, t:0, L:Lp, seq, w2:1.35 }; X.cd.penta = 150;
+        A.fx('lkx_penta', { x:R2(hx), z:R2(hz), R:18, a0:+a0.toFixed(4), w2:1.35, seq });
+      }
+    }
+  }
+  if(!(X.act && X.act.k === 'blink')){ const c = clampA(S.x, S.z, LK_R); S.x = c[0]; S.z = c[1]; }
+  S.face = X.face; S.misted = !!(X.act && X.act.k === 'blink' && X.act.t < X.act.f + 2);
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -7051,35 +7229,28 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE LICH KING (a560), Xu Cemetery. Five attacks that UNLOCK with phase — the
-  //    only boss whose rotation widens as it escalates rather than re-weighting a pool.
-  //    Death Nova and the Curse are deliberately NOT phase-scaled, as client-side.
+  // ── THE LICH KING (a717). Rebuilt: his whole fight lives in the shared brain _lkBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). The brain moves him (move:'self'), aims
+  //    at every player on the ritual ground and hands back damage, pushes, roots and cues.
   cemetery: {
-    x: 180, z: 180,
-    spd:    [0, 0.018, 0.026, 0.034, 0.044, 0.055],
-    dmg:    [0, 1.0,   1.4,   1.9,   2.5,   3.2],
-    phases: [0.75, 0.50, 0.25, 0.10],
-    acd:    [0, 16, 15, 13, 11, 9],           // max(50,95-P*10) cycle, / 6
-    tele:   11,
-    pick:   (b, ph) => {
-      // attacks unlock with phase: 1 and 2 at P2, 3 at P3, 4 at P4
-      b.atkIdx = (b.atkIdx || 0) + 1;
-      let a = b.atkIdx % 5;
-      if ((a === 1 || a === 2) && ph < 2) a = 0;
-      if (a === 3 && ph < 3) a = 0;
-      if (a === 4 && ph < 4) a = 0;
-      return a;
-    },
-    attack: (c) => {
-      const { atk, b, mult, ang, np, aoe, fx, proj, geyser } = c;
-      if (atk === 0)      { fx('lk_bolt');
-                            geyser(np.x, np.z, 4, 3.5, Math.floor(100 * mult), 0x9900ff); }
-      else if (atk === 1) { fx('lk_raise'); _zbSummon(c, 'skeleton_warrior', 3, 900, 60, 0.045, 90, 30, 0, 2.8); }
-      else if (atk === 2) { fx('lk_nova');  aoe(7.0, 170); }          // unscaled, as client-side
-      else if (atk === 3) { fx('lk_lance');
-                            for (let i = 0; i < 3; i++) proj(ang + (i-1)*0.18, 0xff00ff, Math.floor(125 * mult), 'void');
-                            aoe(5.0, Math.floor(125 * mult)); }
-      else                { fx('lk_curse');  aoe(9.0, 50); }          // unscaled, as client-side
+    x: 180, z: 180,                                    // tile (120,120) — the ritual ground
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in LK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
+    passive: (c) => {
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _lkBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
