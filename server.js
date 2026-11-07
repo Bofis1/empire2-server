@@ -577,7 +577,7 @@ const ZONE_BOSS_HP = {
   lucidwilde:       { hp:5000000,  name:'THE PIXIELORD' },     // a297 — Lucidwilde uberzone apex
   xulcan:           { hp:2000000,  name:'XU ZET-HORAK' },      // a342 — Lv 90 apex, below Overseer Zero's 3M
   aviacanyon:       { hp:600000,   name:'XUBERRY' },          // a347 — Lv 30 parrot-warlord apex
-  forge:            { hp:1500000,  name:'THE FURNACE CORE' },  // a361 — Lv 95 foundry titan (client-auth mobs, server-auth boss)
+  forge:            { hp:2600000,  name:'THE FURNACE CORE' },   // a719 — rebuilt (was 1.5M)  // a361 — Lv 95 foundry titan (client-auth mobs, server-auth boss)
 };
 
 // ══════════════════════════════════════════════════════════
@@ -5120,7 +5120,7 @@ const ZONE_DMG_BASE = {
   wyvernwastes:    { lvl: 80, mob: 259, boss: 605.2494 },   // a709 — the rebuilt Cryothar's damage is set in CRY_D directly (k = 1)
   xumen:           { lvl: 80, mob: 267, boss: 605.2494 },   // a714 — the rebuilt Overlord's damage is set in XL_D directly (k = 1)
   xulcan:          { lvl: 90, mob: 633, boss: 407 },
-  forge:           { lvl: 95, mob: 624, boss: 288 },
+  forge:           { lvl: 95, mob: 624, boss: 934.44 },   // a719 — the rebuilt Furnace Core's damage is set in FC_D directly (k = 1)
   lucidwilde:      { lvl:100, mob: 526, boss: 377 },
   necropolis:      { lvl:100, mob: 183, boss: 150 },
   neon_hollow:     { lvl:100, mob: 275, boss:1080 },   // a708 — the rebuilt Curator's damage is set in CUR_D directly (k = 1)
@@ -6957,6 +6957,154 @@ function _khBrain(S, A){
   S.face = X.face; S.air = !!(X.act && X.act.k === 'dive' && X.act.t < X.act.land);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a719 — THE FURNACE CORE, REBUILT as a living foundry: a towering riveted crucible on a
+//   clawed iron cradle, its molten heart behind armoured shutters, a foundry ladle on one arm
+//   and a drop-forge hammer on the other. Everything she does is molten steel. One brain,
+//   shared word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//     LADLE SWEEP       P1+  her signature: the ladle swings through an arc pouring a curtain
+//                            of molten steel; the trail it leaves keeps burning until it cools
+//     DROP FORGE        P1+  the hammer comes down on you (twice, then three times)
+//     RIVET STORM       P1+  her vents spray red-hot rivets in turning spirals
+//     CORE VENT         P1+  the shutters open: her core takes heavy damage (the WEAK POINT)
+//                            but throws out heat pulses while it is open
+//     INGOT CASTING     P2+  ingot moulds outline the floor and flood with steel
+//     CRUCIBLE OVERFLOW P3+  she tips the crucible and a wave of steel floods everything in front
+//     FOUNDRY CHANNELS  P4   channels cut in the floor fill with steel, turning between pours
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: her position {x,z} (read and written); S._fcWeak is set while the core is exposed
+// ═══════════════════════════════════════════════════════════════════════════════
+const FC_D  = { pour:700, trail:300, hammer:1100, rivet:380, pulse:500, mold:900, flood:1300, chan:900 };
+const FC_PM = [1, 1, 1.1, 1.22, 1.36];
+const FC_R = 9, FC_ENG = 36;
+// ingot moulds: [cx, cz, angle, half-length, half-width]
+function _fcMolds(x, z, a, n, sp){ const M = []; for(let i = 0; i < n; i++){ const o = (i - (n - 1)/2)*sp; M.push([x + Math.cos(a)*o, z - Math.sin(a)*o, a, 3.4, 1.1]); } return M; }
+function _fcInMold(px, pz, m){ const dx = px - m[0], dz = pz - m[1], al = dx*Math.sin(m[2]) + dz*Math.cos(m[2]), la = dx*Math.cos(m[2]) - dz*Math.sin(m[2]); return Math.abs(al) < m[3] && Math.abs(la) < m[4]; }
+function _fcBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = FC_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._fc;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._fc = { t:0, vx:0, vz:0, face:0, cd:{ sweep:10, hammer:25, rivets:30, molds:30, flood:40, chans:20 }, last:{}, gap:16, act:null,
+      hz:[], tr:[], bo:[], gid:0, vent:0, ventCD:90, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < FC_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // delayed strikes (hammer blows)
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(FC_D[o.d]*M)); if(o.push) A.push(p.k, o.x, o.z, o.push); } }); X.hz.splice(i, 1); } }
+  // molten-steel trail: burns until it cools
+  for(let i = X.tr.length - 1; i >= 0; i--){ const o = X.tr[i];
+    inA.forEach(p => { if(D(p, o.x, o.z) < o.r && once(p.k, 'tr', 5)){ A.hit(p.k, Math.round(FC_D.trail*M)); A.slow(p.k, 0.6, 500); } });
+    if(--o.l <= 0) X.tr.splice(i, 1); }
+  // rivets in flight
+  for(let i = X.bo.length - 1; i >= 0; i--){ const b = X.bo[i];
+    b.x += Math.sin(b.a)*b.sp; b.z += Math.cos(b.a)*b.sp; b.l--;
+    let hit = false; inA.forEach(p => { if(!hit && D(p, b.x, b.z) < 0.85){ hit = true; A.hit(p.k, Math.round(FC_D.rivet*M)); } });
+    if(hit || b.l <= 0){ X.bo.splice(i, 1); } }
+  // the core vent runs on its own clock, between and through her other moves
+  if(X.vent > 0){ X.vent--;
+    if(X.vent % 10 === 5){ X.pulses = X.pulses || []; X.pulses.push({ t:0 }); }
+    if(X.vent === 0){ S._fcWeak = 0; X.ventCD = ph >= 3 ? 80 : 110; A.fx('fcx_ventend', {}); } }
+  else if(inA.length && --X.ventCD <= 0){ X.vent = ph >= 3 ? 50 : 40; S._fcWeak = 1; A.fx('fcx_vent', { x:R2(S.x), z:R2(S.z), d:X.vent, sp:0.7 }); }
+  if(X.pulses){ for(let i = X.pulses.length - 1; i >= 0; i--){ const q = X.pulses[i]; q.t++; const r = 2 + q.t*0.7;
+      inA.forEach(p => { if(Math.abs(D(p, S.x, S.z) - r) < 0.8 && once(p.k, 'pu', 6)) A.hit(p.k, Math.round(FC_D.pulse*M)); });
+      if(r > 16) X.pulses.splice(i, 1); } }
+
+  if(!inA.length){ X.act = null; X.bo.length = 0; X.vent = 0; S._fcWeak = 0; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.1); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'roar', t:0 }; A.fx('fcx_roar', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'roar') done = a.t >= 15;
+    else if(a.k === 'sweep'){
+      if(a.t > a.w && a.t <= a.w + a.d){ const u = (a.t - a.w)/a.d, an = a.a0 + a.sw*u, x = S.x + Math.sin(an)*a.r, z = S.z + Math.cos(an)*a.r;
+        X.face = an; inA.forEach(p => { if(D(p, x, z) < 1.8 && once(p.k, 'po', 10)){ A.hit(p.k, Math.round(FC_D.pour*M)); A.push(p.k, x, z, 1.5); } });
+        if((a.t - a.w) % 2 === 0) X.tr.push({ x, z, r:1.5, l:a.life }); }
+      done = a.t >= a.w + a.d + 3; }
+    else if(a.k === 'rivets'){
+      if(a.t >= a.w && (a.t - a.w) % 3 === 0 && a.v < a.n){ const bs = [];
+        for(let j = 0; j < a.arms; j++){ const an = a.a0 + j*2*Math.PI/a.arms + a.v*a.tw, b = { i:X.gid++, x:S.x + Math.sin(an)*2.5, z:S.z + Math.cos(an)*2.5, a:an, sp:0.9, l:40 }; X.bo.push(b); bs.push([b.i, R2(b.x), R2(b.z), +an.toFixed(3)]); }
+        a.v++; A.fx('fcx_rivet', { sp:0.9, b:bs }); }
+      done = a.v >= a.n && a.t >= a.w + a.n*3 + 2; }
+    else if(a.k === 'molds'){
+      if(a.t === a.w) inA.forEach(p => { if(a.m.some(m => _fcInMold(p.x, p.z, m))){ A.hit(p.k, Math.round(FC_D.mold*M)); A.slow(p.k, 0.5, 1200); } });
+      done = a.t >= a.w + 8; }
+    else if(a.k === 'flood'){
+      if(a.t > a.w){ const r = 2 + (a.t - a.w)*0.9; if(r < 22) inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) < 1.1 && Math.abs(dAng(Math.atan2(p.x - a.x, p.z - a.z), a.a)) < a.ha && once(p.k, 'fl', 30)){ A.hit(p.k, Math.round(FC_D.flood*M)); A.push(p.k, a.x, a.z, 3); } }); }
+      done = a.t >= a.w + 26; }
+    else if(a.k === 'chans'){
+      a.pours.forEach(q => { if(a.t === q[0]) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < 2 || d > 30) return; const an = Math.atan2(p.x - a.x, p.z - a.z);
+        for(let s = 0; s < a.n; s++){ const ca = q[1] + s*2*Math.PI/a.n, lat = Math.abs(Math.sin(dAng(an, ca)))*d; if(Math.abs(dAng(an, ca)) < Math.PI/2 && lat < a.w2){ A.hit(p.k, Math.round(FC_D.chan*M)); break; } } }); });
+      done = a.t >= a.pours[a.pours.length - 1][0] + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : ph >= 3 ? 10 : 12; }
+  } else {
+    // ── TETHERED: she grinds a little way toward you on her claws, never far from her socket
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.09, Math.min(0.09, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.05, 0.055, 0.06, 0.065][ph], sp = d > 9 ? vmax : d < 5 ? -vmax*0.6 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { hammer:1, rivets:1, molds:2, flood:3, chans:4 };
+      let k = null, lk = 1e9;
+      if(X.cd.sweep <= 0 && X.lastK !== 'sweep') k = 'sweep';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.sweep <= 0) k = 'sweep';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'sweep'){
+        const sd = A.rnd() < 0.5 ? 1 : -1, sw = sd*(ph >= 3 ? 2.6 : 2.0), r = Math.max(5, Math.min(13, d)), dd = ph >= 3 ? 20 : 24;
+        const a0 = want - sw/2, life = ph >= 2 ? 50 : 36;
+        X.act = { k, t:0, w:10, d:dd, a0, sw, r, life }; X.cd.sweep = ph >= 3 ? 20 : 26;
+        A.fx('fcx_sweep', { x:R2(S.x), z:R2(S.z), a0:+a0.toFixed(3), sw:+sw.toFixed(3), r:R2(r), w:10, d:dd, life });
+      } else if(k === 'hammer'){
+        const n = ph >= 3 ? 3 : 2, pts = []; let px = P.x, pz = P.z;
+        for(let i = 0; i < n; i++){ const c = clampA(px, pz, FC_ENG - 4), f = 14 + i*10; pts.push([R2(c[0]), R2(c[1]), f]); X.hz.push({ x:c[0], z:c[1], r:3.6, f, d:'hammer', push:3 });
+          const ex = inA[(i + 1) % inA.length]; px = c[0] + (ex.x - c[0])*0.6 + (A.rnd() - 0.5)*4; pz = c[1] + (ex.z - c[1])*0.6 + (A.rnd() - 0.5)*4; }
+        X.act = { k, t:0, end:14 + (n - 1)*10 + 4 }; X.cd.hammer = ph >= 3 ? 40 : 50;
+        A.fx('fcx_hammer', { x:R2(S.x), z:R2(S.z), pts, r:3.6 });
+      } else if(k === 'rivets'){
+        const arms = ph >= 3 ? 8 : 6;
+        X.act = { k, t:0, w:8, n:ph >= 3 ? 7 : 5, v:0, arms, a0:A.rnd()*6.283, tw:(A.rnd() < 0.5 ? 1 : -1)*0.18 }; X.cd.rivets = ph >= 3 ? 50 : 60;
+        A.fx('fcx_rivets', { x:R2(S.x), z:R2(S.z), w:8 });
+      } else if(k === 'molds'){
+        const a = A.rnd()*Math.PI, m = [];
+        inA.forEach(p => _fcMolds(p.x, p.z, a, 2, 3.4).forEach(q => m.push(q)));
+        _fcMolds(S.x, S.z, a + Math.PI/2, 4, 6).forEach(q => { if(Math.hypot(q[0] - S.x, q[1] - S.z) > 4) m.push(q); });
+        const ms = m.map(q => [R2(q[0]), R2(q[1]), +q[2].toFixed(3), q[3], q[4]]);
+        X.act = { k, t:0, w:16, m:ms }; X.cd.molds = ph >= 3 ? 70 : 85;
+        A.fx('fcx_molds', { m:ms, w:16 });
+      } else if(k === 'flood'){
+        X.face = want;
+        X.act = { k, t:0, x:S.x, z:S.z, a:want, ha:1.35, w:16 }; X.cd.flood = 110;
+        A.fx('fcx_flood', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), ha:1.35, w:16, sp:0.9, R:22 });
+      } else if(k === 'chans'){
+        const a0 = A.rnd()*6.283, n = 6, pours = [[16, a0], [36, a0 + Math.PI/6], [56, a0], [76, a0 + Math.PI/6]];
+        X.act = { k, t:0, x:hx, z:hz, n, w2:1.6, pours }; X.cd.chans = 150;
+        A.fx('fcx_chans', { x:R2(hx), z:R2(hz), n, w2:1.6, R:30, pours:pours.map(q => [q[0], +q[1].toFixed(3)]) });
+      }
+    }
+  }
+  const c = clampA(S.x, S.z, FC_R); S.x = c[0]; S.z = c[1];
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -7804,130 +7952,30 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE FURNACE CORE (a555). Three phases, no fixed rotation — a pool that grows and
-  //    re-weights with phase, drawn at random. The client rolled that draw on each machine
-  //    independently, so no two players saw the same ability.
-  //    She is TETHERED to her socket: she tracks toward you but never leaves a 10-unit
-  //    leash around home, so 'drift' and 'chase' both fit badly and the movement is done
-  //    in passive() under 'hold'.
-  //    Her signature is the WEAK POINT WINDOW — the core exposes on its own cycle and
-  //    takes 1.6x damage, applied in sv_hit_boss above.
+  // ── THE FURNACE CORE (a719). Rebuilt as a living foundry: her whole fight lives in the shared
+  //    brain _fcBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain moves her
+  //    (move:'self', tethered to her socket), aims at every player in the arena and hands back
+  //    damage, pushes, slows and cues. It sets b._fcWeak while her core is open, and sv_hit_boss
+  //    still multiplies damage by 1.6 then.
   forge: {
     x: 180, z: 60,                                     // tile (120,40) — the core-reactor arena
-    spd:    [0,0,0,0],
-    dmg:    [0, 1, 1, 1],
-    phases: [0.70, 0.30],
-    acd:    [0, 18, 14, 11],                           // 110 then max(54,130-P*22), / 6
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in FC_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
     tele:   0,
-    move:   'hold',
-    pick:   (b, ph) => {
-      const pool = ['meteor', 'drones', 'eruption'];
-      if (ph >= 2) pool.push('eruption', 'meteor', 'overclock');
-      if (ph >= 3) pool.push('eruption', 'meteor', 'eruption', 'meteor');
-      b._fcPick = pool[Math.floor(Math.random() * pool.length)];
-      return 0;
-    },
-    attack: (c) => {
-      const { b, ph, np, zone, zoneName, game, fx } = c;
-      const ATK = 360;                                  // _FC_ATK
-      let kind = b._fcPick || 'meteor';
-      if (kind === 'overclock' && b._fcRage > 0) kind = 'meteor';   // already raging
-
-      if (kind === 'eruption') {
-        // CORE ERUPTION — expanding rings from the socket. Crossing-tested, as with the
-        //   PIXIELORD's nova: a fixed band would be stepped over at 10Hz.
-        b._erR = 1.0; b._erDmg = Math.floor(ATK * (0.7 + ph*0.1)); b._erHit = 0;
-        fx('fc_eruption', { p:ph });
-
-      } else if (kind === 'meteor') {
-        // MOLTEN METEOR — a scatter of orbital strikes around the target
-        const n = 4 + ph*2;
-        fx('fc_meteor', { n:n });
-        for (let i = 0; i < n; i++) {
-          const tx = np.x + (Math.random()-0.5)*26, tz = np.z + (Math.random()-0.5)*26;
-          if (tx < 2 || tx > 358 || tz < 2 || tz > 358) continue;
-          const ent = _fgSpawnEnt(game, zoneName, zone,
-            { kind:'meteor', x:tx, z:tz, r:3.4, life:999, fall:6 + i, dmg:Math.floor(ATK*0.85) });
-          if (ent) broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fg_meteor', zone:zoneName,
-            did:ent.eid, ex:+tx.toFixed(2), ez:+tz.toFixed(2), r:3.4, fall:ent.fall });
-        }
-
-      } else if (kind === 'drones') {
-        // SALVAGE DRONES — homing charges that arm, close, and detonate
-        const n = 2 + ph;
-        fx('fc_drones', { n:n });
-        for (let i = 0; i < n; i++) {
-          const a = Math.random()*6.28, r = 6 + Math.random()*4;
-          const dx2 = b.x + Math.cos(a)*r, dz2 = b.z + Math.sin(a)*r;
-          const ent = _fgSpawnEnt(game, zoneName, zone,
-            { kind:'drone', x:dx2, z:dz2, life:100, armed:5, dmg:Math.floor(ATK*0.6) });
-          if (ent) broadcastToZone(game.id, zoneName, { type:'sv_fx', vt:'fg_drone', zone:zoneName,
-            did:ent.eid, ex:+dx2.toFixed(2), ez:+dz2.toFixed(2) });
-        }
-
-      } else {
-        // OVERCLOCK — she runs hot: faster cadence for a while
-        b._fcRage = 70;                                 // 420 frames
-        fx('fc_overclock');
-      }
-    },
+    move:   'self',
     passive: (c) => {
-      const { b, ph, np, nd, ang, zoneName, game, fx } = c;
-      const ATK = 360;
-
-      // Tether: she tracks toward you but stays within 10 units of her socket.
-      if (b._homeX === undefined) { b._homeX = b.x; b._homeZ = b.z; }
-      const hdx = np.x - b._homeX, hdz = np.z - b._homeZ;
-      const hd = Math.sqrt(hdx*hdx + hdz*hdz);
-      if (hd > 6) {
-        const reach = Math.min(hd - 4, 10);
-        const tx = b._homeX + (hdx/hd)*reach, tz = b._homeZ + (hdz/hd)*reach;
-        b.x += (tx - b.x) * 0.06; b.z += (tz - b.z) * 0.06;
-      }
-
-      if (b._fcRage > 0) b._fcRage--;
-
-      // WEAK POINT WINDOW — the core opens on its own cycle, wider during meltdown.
-      if (b._fcWeak) {
-        b._fcWeakT--;
-        if (b._fcWeakT <= 0) { b._fcWeak = 0; fx('fc_weak_end'); }
-      } else {
-        b._fcWeakCD = (b._fcWeakCD != null ? b._fcWeakCD : 50) - 1;
-        if (b._fcWeakCD <= 0) {
-          b._fcWeak = 1;
-          b._fcWeakT  = (ph >= 3 ? 43 : 30);            // 260 / 180 frames
-          b._fcWeakCD = (ph >= 3 ? 43 : 77);            // 260 / 460 frames
-          fx('fc_weak', { ms:(ph >= 3 ? 4300 : 3000) });
-        }
-      }
-
-      // CORE ERUPTION rings — expand outward, hit once as they cross
-      if (b._erR > 0) {
-        const prevR = b._erR;
-        b._erR += 0.55 * 6;
-        if (!b._erHit) {
-          players.forEach((p, ws) => {
-            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-            const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
-            if (pd >= prevR - 2.0 && pd <= b._erR + 2.0) {
-              send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._erDmg,
-                         ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
-            }
-          });
-        }
-        fx('fc_eruption_ring', { r:+b._erR.toFixed(2) });
-        if (b._erR >= 22) { b._erR = 0; b._erHit = 0; }
-      }
-
-      // Meltdown aura — phase 3 cooks anything close to the socket
-      if (ph >= 3 && b._vt % 4 === 0) {
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          const qx = p.x - b.x, qz = p.z - b.z;
-          if (qx*qx + qz*qz < 81) send(ws, { type:'sv_enemy_attack', eid:-1,
-            dmg:Math.floor(ATK*0.18), ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
-        });
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _fcBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:60,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
