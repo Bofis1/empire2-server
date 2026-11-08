@@ -574,7 +574,7 @@ const ZONE_BOSS_HP = {
   xeron:            { hp:4500000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
-  lucidwilde:       { hp:5000000,  name:'THE PIXIELORD' },     // a297 — Lucidwilde uberzone apex
+  lucidwilde:       { hp:4000000,  name:'THE PIXIELORD' },     // a727 — rebuilt (was 5M, level with the Keeper of the End)  // a297 — Lucidwilde uberzone apex
   xulcan:           { hp:2000000,  name:'XU ZET-HORAK' },      // a342 — Lv 90 apex, below Overseer Zero's 3M
   aviacanyon:       { hp:600000,   name:'XUBERRY' },          // a347 — Lv 30 parrot-warlord apex
   forge:            { hp:2600000,  name:'THE FURNACE CORE' },   // a719 — rebuilt (was 1.5M)  // a361 — Lv 95 foundry titan (client-auth mobs, server-auth boss)
@@ -5121,7 +5121,7 @@ const ZONE_DMG_BASE = {
   xumen:           { lvl: 80, mob: 267, boss: 605.2494 },   // a714 — the rebuilt Overlord's damage is set in XL_D directly (k = 1)
   xulcan:          { lvl: 90, mob: 633, boss: 407 },
   forge:           { lvl: 95, mob: 624, boss: 934.44 },   // a719 — the rebuilt Furnace Core's damage is set in FC_D directly (k = 1)
-  lucidwilde:      { lvl:100, mob: 526, boss: 377 },
+  lucidwilde:      { lvl:100, mob: 526, boss: 1080 },   // a727 — the rebuilt Pixielord's damage is set in PZ_D directly (k = 1)
   necropolis:      { lvl:100, mob: 183, boss: 150 },
   neon_hollow:     { lvl:100, mob: 275, boss:1080 },   // a708 — the rebuilt Curator's damage is set in CUR_D directly (k = 1)
   the_reach:       { lvl:100, mob: 422, boss: 316 },
@@ -7550,6 +7550,153 @@ function _vpBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a727 — THE PIXIELORD, REBUILT: the queen of the Dreaming Canopy, a towering fae of light
+//   floating over her kaleidoscope mandala. One brain, shared word for word by the server (the
+//   authority in a lobby) and the client (solo). 10 Hz. Her arena is the mandala (about 36
+//   across) under the heart tree.
+//     PRISM KISS        P1+  her signature: she blows a kiss and prism hearts fly out along lanes
+//     KALEIDOSCOPE      P1+  the mandala folds into turning wedges of light; the lit wedges burst,
+//                            so keep to the dark ones as they turn
+//     DREAM BUBBLES     P1+  soap-bubble dreams drift after you and pop when they touch you
+//     BUTTERFLY SPIRAL  P2+  three rivers of butterflies spiral out of her and wheel round
+//     LOVESTRUCK        P2+  you fall for her and drift toward her; be far enough away when
+//                            the spell breaks, or your heart breaks with it
+//     MIRROR DREAM      P3+  three reflections of her sweep rainbow beams across the mandala
+//     DREAM'S END       P4   the dream ends: flowers of light orbit her and only their hearts
+//                            are safe when the mandala detonates
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: her position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const PZ_D  = { kiss:950, kal:1150, bub:720, swarm:600, love:1600, mirror:900, end:2300 };
+const PZ_PM = [1, 1, 1.1, 1.22, 1.36];
+const PZ_R = 10, PZ_ENG = 34;
+function _pzSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _pzWrap(q){ while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+function _pzBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = PZ_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._pz;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._pz = { t:0, vx:0, vz:0, face:0, cd:{ kiss:10, kal:25, bub:30, swarm:30, love:40, mirror:30, end:15 }, last:{}, gap:16, act:null,
+      bb:[], tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < PZ_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const pull = (k, x, z, amt) => { if(A.pull) A.pull(k, x, z, amt); };
+
+  // dream bubbles drift after the nearest dreamer and pop on touch (or when they fade)
+  for(let i = X.bb.length - 1; i >= 0; i--){ const b = X.bb[i]; b.t++;
+    if(b.t > b.w){ let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, b.x, b.z); if(d < bd){ bd = d; best = p; } });
+      if(best && bd > 0.01){ b.x += (best.x - b.x)/bd*b.sp; b.z += (best.z - b.z)/bd*b.sp; }
+      const pop = inA.filter(p => D(p, b.x, b.z) < 1.7);
+      if(pop.length || b.t >= b.w + b.life){ inA.forEach(p => { if(D(p, b.x, b.z) < 2.6){ A.hit(p.k, Math.round(PZ_D.bub*M)); A.slow(p.k, 0.6, 1100); } });
+        A.fx('pzx_pop', { i:b.i, x:R2(b.x), z:R2(b.z) }); X.bb.splice(i, 1); continue; } } }
+  if(X.bb.length && X.t % 2 === 0) A.fx('pzx_bpos', { b:X.bb.filter(b => b.t > b.w).map(b => [b.i, R2(b.x), R2(b.z)]) });
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.1); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'decree', t:0 }; A.fx('pzx_decree', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); });
+    if(ph >= 4) X.cd.end = 20; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'decree') done = a.t >= 16;
+    else if(a.k === 'kiss'){
+      a.ln.forEach(l => { const tt = a.t - l[0]; if(tt < 0) return; const r0 = Math.max(0, (tt - 1)*a.sp), r1 = tt*a.sp; if(r0 > a.L) return;
+        const x0 = a.x + Math.sin(l[1])*r0, z0 = a.z + Math.cos(l[1])*r0, x1 = a.x + Math.sin(l[1])*Math.min(a.L, r1), z1 = a.z + Math.cos(l[1])*Math.min(a.L, r1);
+        inA.forEach(p => { if(_pzSegD(p.x, p.z, x0, z0, x1, z1) < a.hw && once(p.k, 'ks' + l[1], 30)){ A.hit(p.k, Math.round(PZ_D.kiss*M)); A.push(p.k, a.x, a.z, 2); } }); });
+      done = a.t >= a.end; }
+    else if(a.k === 'kal'){
+      a.pu.forEach(q => { if(a.t === q[0]) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < 1.5 || d > a.R) return;
+        const rot = a.a0 + a.w*q[0], an = Math.atan2(p.x - a.x, p.z - a.z), idx = Math.floor(((an - rot)%(2*Math.PI) + 4*Math.PI)%(2*Math.PI)/(2*Math.PI/a.n));
+        if(idx % 2 === q[1]) A.hit(p.k, Math.round(PZ_D.kal*M)); }); });
+      done = a.t >= a.pu[a.pu.length - 1][0] + 6; }
+    else if(a.k === 'swarm'){
+      if(a.t > a.w && a.t <= a.w + a.d){ const tt = a.t - a.w;
+        inA.forEach(p => { const r = D(p, a.x, a.z); if(r < 2.5 || r > a.R) return; const an = Math.atan2(p.x - a.x, p.z - a.z);
+          for(let i = 0; i < 3; i++){ const th = a.a0 + i*2*Math.PI/3 + a.k2*r + a.om*tt; if(Math.abs(_pzWrap(an - th))*r < 1.5 && once(p.k, 'sw', 12)){ A.hit(p.k, Math.round(PZ_D.swarm*M)); A.slow(p.k, 0.7, 700); } } }); }
+      done = a.t >= a.w + a.d + 4; }
+    else if(a.k === 'love'){
+      if(a.t > 6 && a.t < a.w && a.t % 2 === 0) inA.forEach(p => { if(D(p, S.x, S.z) > 2) pull(p.k, S.x, S.z, a.pl*2); });
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.R){ A.hit(p.k, Math.round(PZ_D.love*M)); A.push(p.k, S.x, S.z, 5); A.slow(p.k, 0.5, 1500); } });
+      done = a.t >= a.w + 8; }
+    else if(a.k === 'mirror'){
+      if(a.t > a.w && a.t <= a.w + a.d){ const tt = a.t - a.w;
+        a.im.forEach((m, mi) => { const th = m[2] + m[3]*tt, x1 = m[0] + Math.sin(th)*a.L, z1 = m[1] + Math.cos(th)*a.L;
+          inA.forEach(p => { if(_pzSegD(p.x, p.z, m[0], m[1], x1, z1) < a.hw && once(p.k, 'mr' + mi, 15)){ A.hit(p.k, Math.round(PZ_D.mirror*M)); } }); }); }
+      done = a.t >= a.w + a.d + 4; }
+    else if(a.k === 'end'){
+      if(a.t === a.w){ const fl = []; for(let i = 0; i < a.n; i++){ const an = a.a0 + i*2*Math.PI/a.n + a.om*a.w; fl.push([a.x + Math.sin(an)*a.fr, a.z + Math.cos(an)*a.fr]); }
+        inA.forEach(p => { if(!fl.some(f => D(p, f[0], f[1]) < a.fs)){ A.hit(p.k, Math.round(PZ_D.end*M)); A.push(p.k, a.x, a.z, 3); A.slow(p.k, 0.45, 1600); } }); }
+      done = a.t >= a.w + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 7 : ph >= 3 ? 9 : 11; }
+  } else {
+    // ── SHE DRIFTS: floats about the mandala, keeping you at a dreamy distance
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.12, Math.min(0.12, _pzWrap(want - X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.06, 0.065, 0.07, 0.08][ph], sp = d > 11 ? vmax : d < 6 ? -vmax*0.8 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { kal:1, bub:1, swarm:2, love:2, mirror:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.end <= 0) k = 'end';
+      else if(X.cd.kiss <= 0 && X.lastK !== 'kiss') k = 'kiss';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.kiss <= 0) k = 'kiss';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'kiss'){
+        const n = [0, 3, 4, 4, 5][ph], ln = [], spread = 0.42;
+        for(let i = 0; i < n; i++) ln.push([10 + (i % 2)*3, +(want + (i - (n - 1)/2)*spread).toFixed(3)]);
+        const sp = 0.9, L = 26; X.act = { k, t:0, x:S.x, z:S.z, L, hw:1.4, sp, ln, end:13 + Math.ceil(L/sp) + 2 }; X.cd.kiss = ph >= 3 ? 22 : 28; X.face = want; X.vx = X.vz = 0;
+        A.fx('pzx_kiss', { x:R2(S.x), z:R2(S.z), L, hw:1.4, sp, ln });
+      } else if(k === 'kal'){
+        const n = 10, a0 = A.rnd()*6.283, w = (A.rnd() < 0.5 ? 1 : -1)*(0.018 + ph*0.004), p0 = A.rnd() < 0.5 ? 0 : 1, pu = [[22, p0], [36, 1 - p0]]; if(ph >= 3) pu.push([48, p0]);
+        X.act = { k, t:0, x:R2(hx), z:R2(hz), R:24, n, a0, w, pu }; X.cd.kal = ph >= 3 ? 75 : 90;
+        A.fx('pzx_kal', { x:R2(hx), z:R2(hz), R:24, n, a0:+a0.toFixed(3), w:+w.toFixed(4), pu });
+      } else if(k === 'bub'){
+        const bl = [], n = Math.min(8, inA.length*([0, 2, 2, 3, 3][ph]));
+        for(let i = 0; i < n; i++){ const a = A.rnd()*6.283, o = { i:X.t*10 + i, x:S.x + Math.sin(a)*2.5, z:S.z + Math.cos(a)*2.5, t:0, w:12 + i*3, life:70, sp:0.2 + ph*0.02 }; X.bb.push(o); bl.push([o.i, R2(o.x), R2(o.z), o.w]); }
+        X.act = { k, t:0, end:10 }; X.cd.bub = ph >= 3 ? 70 : 85;
+        A.fx('pzx_bub', { b:bl, life:70 });
+      } else if(k === 'swarm'){
+        const a0 = A.rnd()*6.283, om = (A.rnd() < 0.5 ? 1 : -1)*0.035, k2 = 0.12;
+        X.act = { k, t:0, x:S.x, z:S.z, R:24, w:16, d:ph >= 3 ? 70 : 55, a0, om, k2 }; X.cd.swarm = ph >= 3 ? 100 : 120; X.vx = X.vz = 0;
+        A.fx('pzx_swarm', { x:R2(S.x), z:R2(S.z), R:24, w:16, d:X.act.d, a0:+a0.toFixed(3), om, k2 });
+      } else if(k === 'love'){
+        X.act = { k, t:0, w:42, R:6, pl:0.14 }; X.cd.love = ph >= 3 ? 110 : 130; X.vx = X.vz = 0;
+        A.fx('pzx_love', { w:42, R:6 });
+      } else if(k === 'mirror'){
+        const a0 = A.rnd()*6.283, im = [], dir = A.rnd() < 0.5 ? 1 : -1;
+        for(let i = 0; i < 3; i++){ const a = a0 + i*2*Math.PI/3, x = hx + Math.sin(a)*13, z = hz + Math.cos(a)*13; im.push([R2(x), R2(z), +(a + Math.PI + dir*0.9).toFixed(3), +(dir*-0.045).toFixed(4)]); }
+        X.act = { k, t:0, w:16, d:40, L:28, hw:1.25, im }; X.cd.mirror = ph >= 4 ? 90 : 110;
+        A.fx('pzx_mirror', { w:16, d:40, L:28, hw:1.25, im });
+      } else if(k === 'end'){
+        const a0 = A.rnd()*6.283, om = (A.rnd() < 0.5 ? 1 : -1)*0.03;
+        X.act = { k, t:0, x:hx, z:hz, w:58, n:5, fr:13, fs:2.6, a0, om }; X.cd.end = 320; X.vx = X.vz = 0;
+        A.fx('pzx_end', { x:R2(hx), z:R2(hz), w:58, n:5, fr:13, fs:2.6, a0:+a0.toFixed(3), om, R:26 });
+      }
+    }
+  }
+  const dx = S.x - hx, dz = S.z - hz, dd = Math.hypot(dx, dz); if(dd > PZ_R){ const st = Math.min(dd - PZ_R, 0.2); S.x -= dx/dd*st; S.z -= dz/dd*st; }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -8393,131 +8540,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE PIXIELORD (a554). 5M HP, the largest health pool in the game, across five
-  //    themed phases. She does not chase: she hovers, backs off if you crowd her, and
-  //    BLINKS to a flanking spot on a wall-clock cadence that tightens with phase.
-  //    Her ability is drawn at random from a pool that GROWS with phase — the client
-  //    rolled that pool on each machine independently, so no two players in a party
-  //    ever saw the same ability. The server rolls once.
-  //    Her damage numbers are absolute and already fold the phase in (280 + P*80 etc.),
-  //    so `dmg` stays flat at 1 and each handler computes from ph directly.
+  // ── THE PIXIELORD (a727). Rebuilt: her whole fight lives in the shared brain _pzBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). The brain moves her (move:'self'), aims at
+  //    every player on the mandala and hands back damage, pushes, pulls, slows and cues.
   lucidwilde: {
     x: 180, z: 144,                                    // tile (120,96) — the Dreaming Canopy heart
-    spd:    [0,0,0,0,0,0],
-    dmg:    [0, 1, 1, 1, 1, 1],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 16, 14, 11, 9],                    // 120 then max(56,120-P*13), / 6
-    tele:   0,                                         // she has her own cast tell
-    move:   'hold',
-    pick:   (b, ph) => {
-      // pool grows with phase, exactly as the client built it
-      const pool = ['lance', 'bloom'];
-      if (ph >= 2) pool.push('nova');
-      if (ph >= 3) { pool.push('break'); pool.push('lance'); }
-      if (ph >= 5) { pool.push('break'); pool.push('nova'); }
-      b._pixPick = pool[Math.floor(Math.random() * pool.length)];
-      return 0;
-    },
-    attack: (c) => {
-      const { b, ph, np, fx, geyser } = c;
-      const kind = b._pixPick || 'lance';
-      if (kind === 'lance') {
-        // PRISM LANCE — three sweeping fans, each re-aimed live at the target
-        b._lanceW = 3; b._lanceT = 0; b._lanceDmg = 280 + ph*80;
-        fx('px_lance');
-      } else if (kind === 'bloom') {
-        // KALEIDO BLOOM — four rotating petals of orbs
-        b._bloomW = 4; b._bloomT = 0; b._bloomDmg = 300 + ph*80;
-        fx('px_bloom');
-      } else if (kind === 'nova') {
-        // CHROMATIC NOVA — a vast expanding rainbow ring. Hits once, as it passes you.
-        b._novaR = 1.0; b._novaHit = 0; b._novaDmg = 650 + ph*130;
-        fx('px_nova');
-      } else {
-        // REALITY BREAK — the ground fractures into a hex grid, then SHATTERS
-        b._rbT = 12; b._rbX = np.x; b._rbZ = np.z; b._rbDmg = 850 + ph*180;
-        fx('px_break', { cx:+np.x.toFixed(2), cz:+np.z.toFixed(2) });
-      }
-    },
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in PZ_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, np, nd, ang, zoneName, game, aoe, fx, proj } = c;
-
-      // She backs away if you crowd her, and otherwise holds station.
-      if (nd < 4) {
-        const bx = b.x - Math.sin(ang)*0.24, bz = b.z - Math.cos(ang)*0.24;
-        if (bx > 2 && bx < 358 && bz > 2 && bz < 358) { b.x = bx; b.z = bz; }
-      }
-
-      // BLINK — wall-clock cadence so it holds regardless of tick jitter, tightening
-      //   with phase, to a flanking spot 8-14 units off the target.
-      if (!b._tpAt) b._tpAt = Date.now() + 3500;
-      if (Date.now() >= b._tpAt) {
-        b._tpAt = Date.now() + Math.max(3000, 6000 - ph*600);
-        const a = Math.random()*6.283, r = 8 + Math.random()*6;
-        const tx = np.x + Math.sin(a)*r, tz = np.z + Math.cos(a)*r;
-        if (tx > 2 && tx < 358 && tz > 2 && tz < 358) { b.x = tx; b.z = tz; }
-        fx('px_blink', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-      }
-
-      // PRISM LANCE waves — 9 oversized bolts per wave, re-aimed each time
-      if (b._lanceW > 0) {
-        b._lanceT--;
-        if (b._lanceT <= 0) {
-          b._lanceT = 2;
-          const w = 3 - b._lanceW;
-          const aim = Math.atan2(np.x - b.x, np.z - b.z), sweep = (w-1)*0.14;
-          for (let i = -4; i <= 4; i++) proj(aim + i*0.16 + sweep, _lwCol(i+4+w), b._lanceDmg, 'magic');
-          fx('px_lance_wave', { w:w });
-          b._lanceW--;
-        }
-      }
-
-      // KALEIDO BLOOM petals — 12 orbs per wave, rotating between waves
-      if (b._bloomW > 0) {
-        b._bloomT--;
-        if (b._bloomT <= 0) {
-          b._bloomT = 2;
-          const w = 4 - b._bloomW, N = 12, rot = w*0.26;
-          for (let i = 0; i < N; i++) proj((i/N)*6.283 + rot, _LW_PRISM[(i+w)%_LW_PRISM.length], b._bloomDmg, 'magic');
-          fx('px_bloom_wave', { w:w });
-          b._bloomW--;
-        }
-      }
-
-      // CHROMATIC NOVA ring — expands outward and hits once as it crosses you.
-      //   The client tested a 1.5-wide band each frame; at 10Hz the ring advances 3.7
-      //   units a tick and would step straight over that band, so this tests whether the
-      //   ring CROSSED the target between ticks instead. Same feel, no skipped hits.
-      if (b._novaR > 0) {
-        const prevR = b._novaR;
-        b._novaR += 0.62 * 6;
-        if (!b._novaHit) {
-          players.forEach((p, ws) => {
-            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-            const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
-            if (pd >= prevR - 1.5 && pd <= b._novaR + 1.5) {
-              send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._novaDmg,
-                         ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
-            }
-          });
-        }
-        fx('px_nova_ring', { r:+b._novaR.toFixed(2) });
-        if (b._novaR >= 19) { b._novaR = 0; b._novaHit = 0; }
-      }
-
-      // REALITY BREAK — the grid holds, then shatters
-      if (b._rbT > 0) {
-        b._rbT--;
-        if (b._rbT === 0) {
-          fx('px_break_shatter', { cx:+b._rbX.toFixed(2), cz:+b._rbZ.toFixed(2) });
-          players.forEach((p, ws) => {
-            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-            const qx = p.x - b._rbX, qz = p.z - b._rbZ;
-            if (qx*qx + qz*qz < 121) send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._rbDmg,
-              ex:+b._rbX.toFixed(2), ez:+b._rbZ.toFixed(2), zone:zoneName });
-          });
-        }
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _pzBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:144,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
