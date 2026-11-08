@@ -553,7 +553,7 @@ const TILE = 1.5; // a486 — MUST equal the client TILE (10_core_setup: const T
 const ZONE_BOSS_HP = {
   patrol:           { hp:18000,    name:'SERPENT TITAN MK-VII' },
   cemetery:         { hp:90000,    name:'THE LICH KING' },   // a717 — rebuilt (was 64k)
-  void:             { hp:54000,    name:'VOID WRAITH PRIME' },
+  void:             { hp:70000,    name:'VOID WRAITH PRIME' },   // a725 — rebuilt (was 54k)
   citadel:          { hp:120000,   name:'GENERAL VORRAKH' },   // a722 — rebuilt (was 70k)
   caves_of_despair: { hp:80000,    name:'FOREMAN DRAX' },
   ashlands:         { hp:160000,   name:'INFERNO COLOSSUS' },   // a716 — rebuilt (was 75k)
@@ -5103,7 +5103,7 @@ function dmgCurve(L){
 const ZONE_DMG_BASE = {
   patrol:          { lvl:  5, mob:  46, boss: 152 },
   blooming_wilds:  { lvl: 10, mob:  44, boss: 79.7483 },   // a715 — the rebuilt Wildmother's damage is set in WM_D directly (k = 1)
-  void:            { lvl: 15, mob:  42, boss: 114 },
+  void:            { lvl: 15, mob:  42, boss: 92.1709 },   // a725 — the rebuilt Wraith's damage is set in VP_D directly (k = 1)
   cemetery:        { lvl: 20, mob:  54, boss: 106.5286 },   // a717 — the rebuilt Lich King's damage is set in LK_D directly (k = 1)
   citadel:         { lvl: 25, mob: 161, boss: 123.1228 },   // a722 — the rebuilt Vorrakh's damage is set in VK_D directly (k = 1)
   aviacanyon:      { lvl: 30, mob: 103, boss: 196 },
@@ -7401,6 +7401,155 @@ function _vkBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a725 — VOID WRAITH PRIME, REBUILT: a towering spectral horror whose body is a window into
+//   the void itself, floating over the arena island of the Void Wastes under the Maw. One
+//   brain, shared word for word by the server (the authority in a lobby) and the client
+//   (solo). 10 Hz. Its arena is the island (about 30 across), ringed by a moat of nothing.
+//     TENTACLE LASH      P1+  its signature: tentacles rear up and slam down along lanes
+//     SOUL RIP           P1+  soul tethers latch onto everyone in reach; get far enough away
+//                             to snap yours before it tears your soul out and drags you in
+//     REALITY RIFTS      P1+  the ground under you tears open into the void; the rifts linger
+//     THE WRAITH HOST    P2+  a host of wraiths sweeps across the island from its edge
+//     VOID BLINK         P2+  it unravels and re-forms on top of one of you, imploding
+//     SCREAM OF THE VOID P3+  the skull screams: rings of force with gaps roll out of it
+//     EVENT HORIZON      P4   a singularity forms over the heart of the island and drags you
+//                             toward it; be outside its reach when it collapses
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const VP_D  = { lash:135, rip:125, rift:105, riftT:28, host:110, blink:150, scream:140, horizon:230 };
+const VP_PM = [1, 1, 1.1, 1.22, 1.36];
+const VP_R = 9, VP_ENG = 30;
+function _vpSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _vpInGap(a, g, hw){ let q = a - g; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return Math.abs(q) < hw; }
+function _vpBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = VP_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._vp;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._vp = { t:0, vx:0, vz:0, face:0, cd:{ lash:12, rip:30, rift:25, host:30, blink:30, scream:30, horizon:15 }, last:{}, gap:16, act:null,
+      rf:[], tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < VP_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+  const pull = (k, x, z, amt) => { if(A.pull) A.pull(k, x, z, amt); };
+
+  // open rifts: a burst when they tear open, then they burn while they stay open
+  for(let i = X.rf.length - 1; i >= 0; i--){ const o = X.rf[i]; o.t++;
+    if(o.t === o.f) inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(VP_D.rift*M)); A.push(p.k, o.x, o.z, 2); } });
+    else if(o.t > o.f) inA.forEach(p => { if(D(p, o.x, o.z) < o.r*0.85 && once(p.k, 'rf' + o.i, 8)) A.hit(p.k, Math.round(VP_D.riftT*M)); });
+    if(o.t >= o.f + o.d) X.rf.splice(i, 1); }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.1); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'decree', t:0 }; A.fx('vpx_decree', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); });
+    if(ph >= 4) X.cd.horizon = 20; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'decree') done = a.t >= 16;
+    else if(a.k === 'lash'){
+      a.ln.forEach(l => { if(a.t === l[0]){ const x1 = a.x + Math.sin(l[1])*a.L, z1 = a.z + Math.cos(l[1])*a.L;
+        inA.forEach(p => { if(_vpSegD(p.x, p.z, a.x, a.z, x1, z1) < a.hw){ A.hit(p.k, Math.round(VP_D.lash*M)); const s = Math.sign(Math.sin(l[1])*(p.z - a.z) - Math.cos(l[1])*(p.x - a.x)) || 1;
+          A.push(p.k, p.x + Math.cos(l[1])*s, p.z - Math.sin(l[1])*s, 2.5); } }); } });
+      done = a.t >= a.ln[a.ln.length - 1][0] + 6; }
+    else if(a.k === 'rip'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.R){ A.hit(p.k, Math.round(VP_D.rip*M)); pull(p.k, S.x, S.z, 4); A.slow(p.k, 0.55, 1400); } });
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'host'){
+      a.wr.forEach((W, wi) => { const tt = a.t - W[0]; if(tt < 0 || tt*a.sp > W[5]) return; const x = W[1] + W[3]*tt*a.sp, z = W[2] + W[4]*tt*a.sp;
+        inA.forEach(p => { if(D(p, x, z) < 1.7 && once(p.k, 'hw' + wi, 30)){ A.hit(p.k, Math.round(VP_D.host*M)); A.slow(p.k, 0.6, 900); } }); });
+      done = a.t >= a.end; }
+    else if(a.k === 'blink'){
+      if(a.t === a.f){ S.x = a.bx; S.z = a.bz; X.vx = X.vz = 0;
+        inA.forEach(p => { if(D(p, a.bx, a.bz) < a.r){ A.hit(p.k, Math.round(VP_D.blink*M)); A.push(p.k, a.bx, a.bz, 4); } }); }
+      if(a.t === a.f + 6 && a.n2 && inA.length){   // P4: it unravels again, on someone else if it can
+        const o = inA.length > 1 ? inA.filter(p => D(p, S.x, S.z) > 3) : inA, q = o[Math.floor(A.rnd()*o.length)] || inA[0], c = clampA(q.x, q.z, VP_ENG - 8);
+        a.n2 = 0; a.bx = c[0]; a.bz = c[1]; a.t = 0; A.fx('vpx_blink', { x0:R2(S.x), z0:R2(S.z), x:R2(a.bx), z:R2(a.bz), f:a.f, r:a.r }); }
+      done = a.t >= a.f + 8; }
+    else if(a.k === 'scream'){
+      a.wv.forEach((W, wi) => { const tt = a.t - W[0]; if(tt <= 0) return; const r = 1.5 + tt*a.sp; if(r > 27) return;
+        inA.forEach(p => { const d = D(p, a.x, a.z), an = Math.atan2(p.x - a.x, p.z - a.z);
+          if(Math.abs(d - r) < 0.8 && !_vpInGap(an, W[1], a.hw) && !_vpInGap(an, W[2], a.hw) && once(p.k, 'sc' + wi, 40)){ A.hit(p.k, Math.round(VP_D.scream*M)); A.push(p.k, a.x, a.z, 2.5); } }); });
+      done = a.t >= a.wv[a.wv.length - 1][0] + 50; }
+    else if(a.k === 'horizon'){
+      if(a.t < a.w && a.t % 2 === 0) inA.forEach(p => { if(D(p, a.x, a.z) > 1.2) pull(p.k, a.x, a.z, a.pl*2); });
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) < a.R){ A.hit(p.k, Math.round(VP_D.horizon*M)); A.push(p.k, a.x, a.z, 6); A.slow(p.k, 0.5, 1500); } });
+      done = a.t >= a.w + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 7 : ph >= 3 ? 9 : 11; }
+  } else {
+    // ── IT DRIFTS: floats toward you over the island, keeping a few strides off
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.1, Math.min(0.1, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.05, 0.055, 0.06, 0.07][ph], sp = d > 7 ? vmax : d < 4 ? -vmax*0.6 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { rip:1, rift:1, host:2, blink:2, scream:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.horizon <= 0) k = 'horizon';
+      else if(X.cd.lash <= 0 && X.lastK !== 'lash') k = 'lash';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.lash <= 0) k = 'lash';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'lash'){
+        const n = ph + 1, ln = [], sd = A.rnd() < 0.5 ? 1 : -1;
+        for(let i = 0; i < n; i++){ const tg = inA[i % inA.length], base = i < inA.length ? angTo(tg.x, tg.z) : want;
+          ln.push([12 + i*5, +(base + (i >= inA.length ? sd*(i % 2 ? -1 : 1)*0.6 : 0)).toFixed(3)]); }
+        X.act = { k, t:0, x:S.x, z:S.z, L:17, hw:1.4, ln }; X.cd.lash = ph >= 3 ? 24 : 30; X.face = want; X.vx = X.vz = 0;
+        A.fx('vpx_lash', { x:R2(S.x), z:R2(S.z), L:17, hw:1.4, ln });
+      } else if(k === 'rip'){
+        X.act = { k, t:0, w:26, R:13 }; X.cd.rip = ph >= 3 ? 80 : 95; X.vx = X.vz = 0;
+        A.fx('vpx_rip', { x:R2(S.x), z:R2(S.z), w:26, R:13 });
+      } else if(k === 'rift'){
+        const m = [], f = 18, d2 = ph >= 3 ? 40 : 30;
+        inA.forEach(p => { m.push([R2(p.x), R2(p.z)]); if(ph >= 3){ const a = A.rnd()*6.283, c = clampA(p.x + Math.sin(a)*5, p.z + Math.cos(a)*5, VP_ENG - 6); m.push([R2(c[0]), R2(c[1])]); } });
+        m.forEach((q, qi) => X.rf.push({ i:X.t*10 + qi, x:q[0], z:q[1], r:3.2, f, d:d2, t:0 }));
+        X.act = { k, t:0, end:10 }; X.cd.rift = ph >= 3 ? 60 : 75;
+        A.fx('vpx_rift', { r:3.2, f, d:d2, m });
+      } else if(k === 'host'){
+        const n = ph >= 3 ? 8 : 6, wr = [], a0 = A.rnd()*6.283, L = 48, R = 24;
+        for(let i = 0; i < n; i++){ const a = a0 + i/n*2*Math.PI, sx = hx + Math.sin(a)*R, sz = hz + Math.cos(a)*R, off = (A.rnd()*2 - 1)*7;
+          const tx = hx + Math.cos(a)*off, tz = hz - Math.sin(a)*off; let dx = tx - sx, dz = tz - sz; const dd = Math.hypot(dx, dz) || 1; dx /= dd; dz /= dd;
+          wr.push([14 + i*4, R2(sx), R2(sz), +dx.toFixed(4), +dz.toFixed(4), L]); }
+        const sp = 0.8; X.act = { k, t:0, sp, wr, end:14 + (n - 1)*4 + Math.ceil(L/sp) + 2 }; X.cd.host = ph >= 3 ? 100 : 120;
+        A.fx('vpx_host', { sp, w:wr });
+      } else if(k === 'blink'){
+        const q = inA[Math.floor(A.rnd()*inA.length)], c = clampA(q.x, q.z, VP_ENG - 8);
+        X.act = { k, t:0, bx:c[0], bz:c[1], f:15, r:5.5, n2:ph >= 4 ? 1 : 0 }; X.cd.blink = ph >= 4 ? 70 : 90; X.vx = X.vz = 0;
+        A.fx('vpx_blink', { x0:R2(S.x), z0:R2(S.z), x:R2(c[0]), z:R2(c[1]), f:15, r:5.5 });
+      } else if(k === 'scream'){
+        const n = ph >= 4 ? 3 : 2, wv = [], g0 = A.rnd()*6.283;
+        for(let i = 0; i < n; i++){ const g = g0 + i*1.1*(A.rnd() < 0.5 ? 1 : -1); wv.push([14 + i*11, +g.toFixed(3), +(g + Math.PI*(0.7 + A.rnd()*0.6)).toFixed(3)]); }
+        X.act = { k, t:0, x:S.x, z:S.z, sp:0.55, hw:0.38, wv }; X.cd.scream = ph >= 4 ? 85 : 100; X.vx = X.vz = 0;
+        A.fx('vpx_scream', { x:R2(S.x), z:R2(S.z), sp:0.55, hw:0.38, w:wv });
+      } else if(k === 'horizon'){
+        X.act = { k, t:0, x:hx, z:hz, w:55, R:10, pl:0.16 }; X.cd.horizon = 320; X.vx = X.vz = 0;
+        A.fx('vpx_horizon', { x:R2(hx), z:R2(hz), w:55, R:10 });
+      }
+    }
+  }
+  if(X.act && X.act.k === 'blink'){ const c = clampA(S.x, S.z, VP_ENG - 8); S.x = c[0]; S.z = c[1]; }
+  else { const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > VP_R){ const st = Math.min(d - VP_R, 0.15); S.x -= dx/d*st; S.z -= dz/d*st; } }   // drifts back to its ground after a blink
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -7835,36 +7984,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-// ── THE VOID WRAITH (a559). Soul drain aura, void blinks, tentacle slams, a
-  //    reality tear, and a scream that fills the arena. 6-attack rotation, was picked
-  //    from each client's own gameTime.
+// ── VOID WRAITH PRIME (a725). Rebuilt: its whole fight lives in the shared brain _vpBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). The brain moves it (move:'self'), aims at
+  //    every player on the arena island and hands back damage, pushes, pulls, slows and cues.
   void: {
-    x: 180, z: 180,
-    spd:    [0, 0.014, 0.020, 0.028, 0.038, 0.050],
-    dmg:    [0, 1.0,   1.5,   2.1,   2.8,   3.8],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 21, 18, 16, 13],          // 120 then max(80,155-P*15), / 6
-    tele:   10,                               // 60 frames
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, aoe, fx, proj } = c;
-      if (atk === 0)      { fx('vw_soulrip');  aoe(6.0, Math.floor(380 * mult)); aoe(9.0, Math.floor(100 * mult)); }
-      else if (atk === 1) { fx('vw_blink', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            b.x = np.x + (Math.random()-0.5)*6; b.z = np.z + (Math.random()-0.5)*6;
-                            aoe(5.0, Math.floor(300 * mult)); }
-      else if (atk === 2) { fx('vw_tentacle');
-                            for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.22, 0xcc00ff, Math.floor(110 * mult), 'void');
-                            aoe(7.0, Math.floor(320 * mult)); }
-      else if (atk === 3) { fx('vw_summon'); _zbSummon(c, 'wraith', 2, 1800, 95, 0.060, 180, 55, 0, 3.0); }
-      else if (atk === 4) { fx('vw_scream'); aoe(10.0, Math.floor(400 * mult)); aoe(14.0, Math.floor(140 * mult)); }
-      else                { fx('vw_tear');
-                            for (let i = 0; i < 4; i++) proj(ang + (i-1.5)*0.30, 0xff00ff, Math.floor(180 * mult), 'void');
-                            aoe(8.0, Math.floor(260 * mult)); }
-    },
+    x: 180, z: 180,                                   // tile (120,120) — the arena island under the Maw
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in VP_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, ang, nd, aoe, proj } = c;
-      if (b._vt % 3 === 0 && nd < 5.0) aoe(5.0, Math.floor(22 * mult));          // soul drain aura
-      if (b._vt % 6 === 0 && nd < 18) proj(ang, 0xcc00ff, Math.floor(60 * mult), 'void');
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _vpBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
