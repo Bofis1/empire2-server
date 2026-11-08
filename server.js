@@ -15142,6 +15142,54 @@ setInterval(()=>{
   });
 }, 20000);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a721 — GROUND DROPS. A player can drag anything out of their bag onto the ground;
+//   it lands a few steps in front of them and anyone in the zone can walk over it to
+//   pick it up. The server owns every dropped item so exactly one player gets it: the
+//   first pickup request wins, everyone else is told it's gone. The whole bag entry
+//   travels (affixes, sockets, gems, upgrades, stack size). Items stay 5 minutes.
+//   Party games share the ground per zone; a player not in a party gets a private one.
+// ═══════════════════════════════════════════════════════════════════════════════
+const _GD = new Map();           // 'scope|zone' -> Map(gid -> drop)
+const _GD_LIFE = 5 * 60 * 1000, _GD_CAP = 150;
+let _gdSeq = 0;
+function _gdScope(p){ return p.gameId ? 'g:' + p.gameId : 's:' + p.pid; }
+function _gdZoneOk(z){ return typeof z === 'string' && z.length > 0 && z.length <= 40; }
+function _gdBucket(scope, zone, make){
+  const k = scope + '|' + zone; let b = _GD.get(k);
+  if (!b && make) { b = new Map(); _GD.set(k, b); }
+  return b;
+}
+function _gdSend(scope, zone, msg){
+  const s = JSON.stringify(msg);
+  players.forEach((p, w) => { if (w.readyState === 1 && p.zone === zone && _gdScope(p) === scope) w.send(s); });
+}
+function _gdClean(e){
+  if (!e || typeof e !== 'object') return null;
+  let s; try { s = JSON.stringify(e); } catch (x) { return null; }
+  if (s.length > 4000) return null;
+  const c = JSON.parse(s);
+  if (typeof c.id !== 'string' || !c.id || c.id.length > 64) return null;
+  c.qty = Math.max(1, Math.min(99999, parseInt(c.qty, 10) || 1));
+  return c;
+}
+function _gdPub(d){ return { gid:d.gid, zone:d.zone, x:d.x, z:d.z, e:d.e, by:d.by, t:d.t }; }
+function _gdSnapshot(ws, p, zone){
+  const b = _gdBucket(_gdScope(p), zone, false);
+  const list = b ? [...b.values()].map(_gdPub) : [];
+  send(ws, { type:'sv_gsnap', zone, list });
+}
+setInterval(() => {
+  const now = Date.now();
+  _GD.forEach((b, k) => {
+    const scope = k.slice(0, k.indexOf('|'));
+    b.forEach((d, gid) => {
+      if (now - d.t > _GD_LIFE) { b.delete(gid); _gdSend(scope, d.zone, { type:'sv_ggone', gid, zone:d.zone }); }
+    });
+    if (!b.size) _GD.delete(k);
+  });
+}, 10000);
+
 wss.on('connection', ws => {
   ws.isAlive = true;
   ws.on('pong', ()=>{ ws.isAlive = true; });
@@ -15586,6 +15634,7 @@ wss.on('connection', ws => {
 
         console.log(`[sv_enter_zone] player=${player.name} zone=${data.zone} gameId=${player.gameId} games=${games.size}`);
 
+        if (_gdZoneOk(data.zone)) _gdSnapshot(ws, player, data.zone);   // a721 — what's lying on the floor here
         if (!player.gameId) {
           console.log(`[sv_enter_zone] DROPPED — no gameId for ${player.name}`);
           break;
@@ -16084,6 +16133,41 @@ wss.on('connection', ws => {
             maxHp: zone.boss.maxHp,
           });
         }
+        break;
+      }
+
+      // ── a721 — GROUND DROPS (see _GD) ──
+      case 'sv_gdrop': {
+        const zone = _gdZoneOk(data.zone) ? data.zone : player.zone;
+        if (_gdZoneOk(zone)) player.zone = zone;   // the client's own zone is the freshest (solo players send no state packets)
+        const e = _gdClean(data.e);
+        if (!_gdZoneOk(zone) || !e || !isFinite(+data.x) || !isFinite(+data.z)) { if (e) send(ws, { type:'sv_gback', e }); break; }
+        const scope = _gdScope(player), b = _gdBucket(scope, zone, true);
+        if (b.size >= _GD_CAP) {   // full: the oldest item on the floor makes room
+          const old = b.keys().next().value; b.delete(old);
+          _gdSend(scope, zone, { type:'sv_ggone', gid:old, zone });
+        }
+        const d = { gid:'g' + (++_gdSeq), zone, x:+(+data.x).toFixed(2), z:+(+data.z).toFixed(2), e, by:player.name || '', t:Date.now() };
+        b.set(d.gid, d);
+        _gdSend(scope, zone, Object.assign({ type:'sv_gdrop' }, _gdPub(d)));
+        break;
+      }
+      case 'sv_gpick': {
+        const zone = _gdZoneOk(data.zone) ? data.zone : player.zone;
+        if (_gdZoneOk(zone)) player.zone = zone;   // the client's own zone is the freshest (solo players send no state packets)
+        if (!_gdZoneOk(zone) || typeof data.gid !== 'string') break;
+        const scope = _gdScope(player), b = _gdBucket(scope, zone, false);
+        const d = b && b.get(data.gid);
+        if (!d) { send(ws, { type:'sv_ggone', gid:data.gid, zone }); break; }
+        b.delete(d.gid);
+        send(ws, { type:'sv_gtake', gid:d.gid, zone, e:d.e, by:d.by });
+        _gdSend(scope, zone, { type:'sv_ggone', gid:d.gid, zone, who:player.name || '' });
+        break;
+      }
+      case 'sv_gsnap_req': {
+        const zone = _gdZoneOk(data.zone) ? data.zone : player.zone;
+        if (_gdZoneOk(zone)) player.zone = zone;   // the client's own zone is the freshest (solo players send no state packets)
+        if (_gdZoneOk(zone)) _gdSnapshot(ws, player, zone);
         break;
       }
 
