@@ -569,7 +569,7 @@ const ZONE_BOSS_HP = {
   xumen_fortress:   { hp:2800000,  name:'THE APEX PYRAMID' },   // a707 — rebalanced (was 1.2M)
   void_citadel:     { hp:800000,   name:'COMMANDANT XERATH' },
   neon_hollow:      { hp:2800000,  name:'THE CURATOR' },   // a708 — rebuilt (was 1.6M)
-  veiled_sanctuary: { hp:4000000,  name:'THE FINAL ABBOT' },  // v92.41 · a614 — 110+ raid boss (was 850k)
+  veiled_sanctuary: { hp:6000000,  name:'THE FINAL ABBOT' },   // a720 — rebuilt (was 4M)  // v92.41 · a614 — 110+ raid boss (was 850k)
   blooming_wilds:   { hp:50000,    name:'THE WILDMOTHER' },   // a715 — rebuilt (was 35k)
   xeron:            { hp:4500000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
@@ -5116,7 +5116,7 @@ const ZONE_DMG_BASE = {
   dragonlair:      { lvl: 65, mob: 167, boss: 392.0282 },   // a712 — the rebuilt Vaeltharax's damage is set in VX_D directly (k = 1)
   riftvale:        { lvl: 65, mob: 274, boss:  45 },
   void_citadel:    { lvl: 70, mob: 216, boss: 191 },
-  veiled_sanctuary:{ lvl:110, mob: 228, boss: 217 },   // a614 — 110+ (was 80): hits on the level-110 curve
+  veiled_sanctuary:{ lvl:110, mob: 228, boss: 1442.6748 },   // a720 — the rebuilt Abbot's damage is set in FA_D directly (k = 1)   // a614 — 110+ (was 80): hits on the level-110 curve
   wyvernwastes:    { lvl: 80, mob: 259, boss: 605.2494 },   // a709 — the rebuilt Cryothar's damage is set in CRY_D directly (k = 1)
   xumen:           { lvl: 80, mob: 267, boss: 605.2494 },   // a714 — the rebuilt Overlord's damage is set in XL_D directly (k = 1)
   xulcan:          { lvl: 90, mob: 633, boss: 407 },
@@ -7105,6 +7105,151 @@ function _fcBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a720 — THE FINAL ABBOT, REBUILT as a sovereign pontiff-king: gold, ermine, purple and
+//   crimson, a triple crown, a sunburst halo and a turning rose window of stained glass behind
+//   him. He fights with golden holy light and the trappings of a coronation. One brain, shared
+//   word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//   His arena is the ROTUNDA: a round hall about 16 across, with four kneeling brothers frozen
+//   round the seal — so everything here is sized to fit inside it.
+//     CRESCENTS OF GOLD P1+  his signature: sweeps of the sceptre send crescent waves of gold
+//                            rolling outward, alternating sides; step through the gap
+//     THE THURIBLES     P1+  two golden censers on chains swing round him and burn
+//     THE ROSE WINDOW   P1+  light through the rose window paints petals on the floor; the
+//                            lit petals burn, then the others
+//     THE CROWNING      P2+  a crown forms over each head, follows you, stops, and falls
+//     THE ROYAL GUARD   P2+  gilded knights appear at the wall and charge across the hall
+//     ABSOLUTION        P3+  his judgement falls on everyone not kneeling in a seal of light
+//     DIVINE CORONATION P4   a colossal crown descends over the hall; only the circles under
+//                            its jewels are safe
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: his position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const FA_D  = { arc:1100, censer:700, petal:1200, crown:1300, knight:1300, judge:2600, coron:2400 };
+const FA_PM = [1, 1, 1.1, 1.22, 1.36];
+const FA_R = 5, FA_ENG = 19;
+// the four seals of absolution, just inside the kneeling brothers (world units)
+function _faSeals(hx, hz){ return [0.785, 2.356, 3.927, 5.498].map(a => [hx + Math.cos(a)*9.6, hz + Math.sin(a)*9.6]); }
+// the jewels of the descending crown: [x, z] safe circles on a ring
+function _faJewels(hx, hz, a0, n, R){ const J = []; for(let i = 0; i < n; i++){ const a = a0 + i/n*2*Math.PI; J.push([hx + Math.sin(a)*R, hz + Math.cos(a)*R]); } return J; }
+function _faBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = FA_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._fa;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._fa = { t:0, vx:0, vz:0, face:0, cd:{ arcs:10, censer:25, rose:30, crown:30, guard:40, judge:40, coron:20 }, last:{}, gap:16, act:null,
+      hz:[], cs:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < FA_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // delayed strikes (crowns)
+  for(let i = X.hz.length - 1; i >= 0; i--){ const o = X.hz[i];
+    if(o.trk !== undefined && o.f > o.lock){ const p = inA.find(q => q.k === o.trk); if(p){ o.x += (p.x - o.x)*0.25; o.z += (p.z - o.z)*0.25; } }
+    if(o.f === o.lock + 1 && o.trk !== undefined) A.fx('fax_clock', { i:o.i, x:R2(o.x), z:R2(o.z) });
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(FA_D[o.d]*M)); if(o.push) A.push(p.k, o.x, o.z, o.push); } }); X.hz.splice(i, 1); } }
+  if(X.hz.some(o => o.trk !== undefined) && X.t % 2 === 0) A.fx('fax_cpos', { c:X.hz.filter(o => o.trk !== undefined && o.f > o.lock).map(o => [o.i, R2(o.x), R2(o.z)]) });
+  // the thuribles: two censers swinging round him on long chains
+  if(X.cs){ const c = X.cs; c.t++; if(c.t > c.w){ const a = c.a0 + (c.t - c.w)*c.sp;
+      for(let j = 0; j < 2; j++){ const an = a + j*Math.PI, r = c.r + Math.sin((c.t - c.w)*0.08 + j*Math.PI)*c.dr, x = S.x + Math.sin(an)*r, z = S.z + Math.cos(an)*r;
+        inA.forEach(p => { if(D(p, x, z) < 1.7 && once(p.k, 'cs', 6)){ A.hit(p.k, Math.round(FA_D.censer*M)); A.push(p.k, x, z, 1.5); } }); } }
+    if(c.t >= c.w + c.d){ X.cs = null; } }
+
+  if(!inA.length){ X.act = null; X.cs = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.1); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'decree', t:0 }; A.fx('fax_decree', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); }); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'decree') done = a.t >= 15;
+    else if(a.k === 'arcs'){
+      a.waves.forEach((W, wi) => { const tt = a.t - W[0]; if(tt <= 0) return; const r = 1.5 + tt*a.sp; if(r > 20) return;
+        inA.forEach(p => { if(Math.abs(D(p, a.x, a.z) - r) < 0.75 && Math.abs(dAng(Math.atan2(p.x - a.x, p.z - a.z), W[1])) < a.ha && once(p.k, 'ar' + wi, 40)) A.hit(p.k, Math.round(FA_D.arc*M)); }); });
+      done = a.t >= a.waves[a.waves.length - 1][0] + 30; }
+    else if(a.k === 'rose'){
+      a.seq.forEach(q => { if(a.t === q[0]) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < 1.5 || d > a.R) return;
+        const an = Math.atan2(p.x - a.x, p.z - a.z), pi = ((Math.floor(((an - a.a0)/(2*Math.PI/a.n)) % a.n) + a.n) % a.n);
+        if(pi % 2 === q[1]) A.hit(p.k, Math.round(FA_D.petal*M)); }); });
+      done = a.t >= a.seq[a.seq.length - 1][0] + 6; }
+    else if(a.k === 'guard'){
+      a.kn.forEach((K, ki) => { const tt = a.t - K.t0; if(tt < 0 || tt > K.L/a.sp) return; const x = K.x + K.dx*tt*a.sp, z = K.z + K.dz*tt*a.sp;
+        inA.forEach(p => { if(D(p, x, z) < 1.6 && once(p.k, 'kn' + ki, 30)){ A.hit(p.k, Math.round(FA_D.knight*M)); A.push(p.k, x - K.dx, z - K.dz, 3); } }); });
+      done = a.t >= a.end; }
+    else if(a.k === 'judge'){
+      if(a.t === a.w) inA.forEach(p => { if(!a.seals.some(s => D(p, s[0], s[1]) < a.sr)){ A.hit(p.k, Math.round(FA_D.judge*M)); A.slow(p.k, 0.4, 1500); } });
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'coron'){
+      a.drops.forEach(q => { if(a.t === q[0]){ const J = _faJewels(hx, hz, q[1], a.n, a.jr); inA.forEach(p => { if(!J.some(j => D(p, j[0], j[1]) < a.js)){ A.hit(p.k, Math.round(FA_D.coron*M)); A.push(p.k, hx, hz, 2); } }); } });
+      done = a.t >= a.drops[a.drops.length - 1][0] + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : ph >= 3 ? 10 : 12; }
+  } else {
+    // ── HE HOLDS COURT: drifts about the heart of the rotunda, turning to face you
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.1, Math.min(0.1, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.05, 0.055, 0.06, 0.065][ph], sp = d > 8 ? vmax : d < 4 ? -vmax*0.7 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { censer:1, rose:1, crown:2, guard:2, judge:3, coron:4 };
+      let k = null, lk = 1e9;
+      if(X.cd.arcs <= 0 && X.lastK !== 'arcs') k = 'arcs';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; if(m === 'censer' && X.cs) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.arcs <= 0) k = 'arcs';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'arcs'){
+        const n = ph >= 3 ? 4 : 3, side = A.rnd() < 0.5 ? 1 : -1, waves = [];
+        for(let i = 0; i < n; i++) waves.push([8 + i*7, +(want + side*(i % 2 ? -1 : 1)*0.75).toFixed(3)]);
+        X.act = { k, t:0, x:S.x, z:S.z, sp:0.65, ha:1.05, waves }; X.cd.arcs = ph >= 3 ? 20 : 26; X.face = want;
+        A.fx('fax_arcs', { x:R2(S.x), z:R2(S.z), sp:0.65, ha:1.05, waves });
+      } else if(k === 'censer'){
+        X.cs = { t:0, w:8, d:ph >= 3 ? 70 : 55, a0:A.rnd()*6.283, sp:(A.rnd() < 0.5 ? 1 : -1)*(0.075 + ph*0.008), r:6.5, dr:2.0 };
+        X.act = { k, t:0, end:8 }; X.cd.censer = ph >= 3 ? 100 : 120;
+        A.fx('fax_censer', { w:8, d:X.cs.d, a0:+X.cs.a0.toFixed(3), sp:+X.cs.sp.toFixed(4), r:6.5, dr:2.0 });
+      } else if(k === 'rose'){
+        const n = 8, a0 = A.rnd()*6.283, p0 = A.rnd() < 0.5 ? 0 : 1, seq = [[16, p0], [30, 1 - p0]]; if(ph >= 3) seq.push([42, p0]);
+        X.act = { k, t:0, x:hx, z:hz, R:17, n, a0, seq }; X.cd.rose = ph >= 3 ? 70 : 85;
+        A.fx('fax_rose', { x:R2(hx), z:R2(hz), R:17, n, a0:+a0.toFixed(3), seq });
+      } else if(k === 'crown'){
+        const cr = [];
+        inA.forEach(p => { const o = { i:X.t*10 + cr.length, x:p.x, z:p.z, r:2.6, f:22, lock:5, trk:p.k, d:'crown', push:2 }; X.hz.push(o); cr.push([o.i, R2(o.x), R2(o.z)]); });
+        X.act = { k, t:0, end:10 }; X.cd.crown = ph >= 3 ? 55 : 70;
+        A.fx('fax_crown', { c:cr, r:2.6, f:22, lock:5 });
+      } else if(k === 'guard'){
+        const n = ph >= 3 ? 4 : 3, kn = [], L = 30;
+        for(let i = 0; i < n; i++){ const tg = inA[i % inA.length], a = A.rnd()*6.283, sx = hx + Math.sin(a)*15, sz = hz + Math.cos(a)*15;
+          let dx = tg.x - sx, dz = tg.z - sz; const dd = Math.hypot(dx, dz) || 1; dx /= dd; dz /= dd;
+          kn.push({ t0:14 + i*6, x:sx, z:sz, dx, dz, L }); }
+        X.act = { k, t:0, sp:0.9, kn, end:14 + (n - 1)*6 + Math.ceil(L/0.9) + 2 }; X.cd.guard = ph >= 3 ? 80 : 100;
+        A.fx('fax_guard', { sp:0.9, k:kn.map(K => [K.t0, R2(K.x), R2(K.z), +K.dx.toFixed(4), +K.dz.toFixed(4), K.L]) });
+      } else if(k === 'judge'){
+        const seals = _faSeals(hx, hz);
+        X.act = { k, t:0, w:40, seals, sr:2.3 }; X.cd.judge = 130;
+        A.fx('fax_judge', { x:R2(S.x), z:R2(S.z), seals:seals.map(q => [R2(q[0]), R2(q[1])]), sr:2.3, w:40 });
+      } else if(k === 'coron'){
+        const n = 6, a0 = A.rnd()*6.283, drops = [[34, a0], [70, a0 + Math.PI/n]];
+        X.act = { k, t:0, n, jr:9.5, js:2.0, drops }; X.cd.coron = 160;
+        A.fx('fax_coron', { x:R2(hx), z:R2(hz), n, jr:9.5, js:2.0, drops:drops.map(q => [q[0], +q[1].toFixed(3)]) });
+      }
+    }
+  }
+  const c = clampA(S.x, S.z, FA_R); S.x = c[0]; S.z = c[1];
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -7288,48 +7433,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE FINAL ABBOT (a561), Veiled Sanctuary. Five phases, six attacks, summons that
-  //    unlock at phase 3, and two censers that orbit him and burn anything they brush.
+  // ── THE FINAL ABBOT (a720). Rebuilt as a sovereign pontiff-king: his whole fight lives in the
+  //    shared brain _faBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain
+  //    moves him (move:'self'), aims at every player in the rotunda and hands back damage,
+  //    pushes, slows and cues.
   veiled_sanctuary: {
-    // a614 — the Sanctuary is still the compact monastery (tiles 4-76 x 22-58); its
-    //   apse is tile (74,40). a561 placed the Abbot at the 240-map centre like the
-    //   rebuilt zones, so he spawned outside the walls and fought from across the map.
     x: 100.5, z: 60,                                   // a670 — tile (67,40), the heart of the rotunda
-    spd:    [0, 0.016, 0.020, 0.024, 0.030, 0.036],
-    dmg:    [0, 1.0,   1.3,   1.7,   2.2,   2.8],       // faMul
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 25, 22, 18, 15],                    // max(95,190-P*20), / 6
-    tele:   12,
-    pick:   (b, ph) => {
-      b.atkIdx = (b.atkIdx || 0) + 1;
-      let a = b.atkIdx % 6;
-      if (a === 2 && ph < 3) a = 0;                     // the choir only rises at phase 3
-      return a;
-    },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
-      const D = (m) => Math.floor(380 * m * mult);      // mirrors faD -> _vsDmg flat term
-      if (atk === 0)      { fx('fa_censer');
-                            proj(ang - 0.22, 0xff8a3c, D(0.55), 'magic');
-                            proj(ang + 0.22, 0x8a5cff, D(0.55), 'magic');
-                            aoe(4.2, D(1.1)); }
-      else if (atk === 1) { fx('fa_litany', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            geyser(b.x, b.z, 5, 3.0, D(0.75), 0xffd24a);
-                            geyser(np.x, np.z, 7, 4.2, D(1.3), 0x8a5cff); }
-      else if (atk === 2) { fx('fa_choir'); _zbSummon(c, 'choir_wraith', 2, 16000, 300, 0.050, 900, 280, 0, 3.4); }
-      else if (atk === 3) { fx('fa_excomm'); aoe(4.5, D(0.5)); aoe(6.0, D(1.6)); }
-      else if (atk === 4) { fx('fa_unmaking'); aoe(20.0, D(0.35));
-                            for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0xffd24a, D(0.45), 'magic'); }
-      else                { fx('fa_miserere'); aoe(9.0, D(0.4)); aoe(12.0, D(1.2)); }
-    },
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in FA_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, nd, aoe, fx } = c;
-      // the two orbiting censers — brush one and it burns
-      b._faA = (b._faA || 0) + 0.05*6;
-      if (b._vt % 3 === 0) {
-        fx('fa_censer_orbit', { a:+b._faA.toFixed(3) });
-        if (nd < 3.2) aoe(3.2, Math.floor(380 * 0.30 * mult));
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _faBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:100.5, hz:60,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
