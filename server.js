@@ -5237,7 +5237,7 @@ const AGGRO_FLOOR    = 26;
 //   If that player stops hitting it for this long it falls back to the nearest player.
 const HIT_LOCK_MS    = 30000;
 const CONV_SIGHT     = 16;      // a601 — Convergence: sight range, and it needs a clear line through the maze
-const RESPAWN_TICKS  = 300; // 30 seconds at 10Hz
+const RESPAWN_TICKS  = 3000; // a723 — 5 minutes at 10Hz (was 30 s: the zone refilled behind you before you could reach the boss)
 
 // ──────────────────────────────────────────────────────────
 // a146 — WORLD BOSS HELPERS (server-authoritative)
