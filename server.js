@@ -576,7 +576,7 @@ const ZONE_BOSS_HP = {
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
   lucidwilde:       { hp:4000000,  name:'THE PIXIELORD' },     // a727 — rebuilt (was 5M, level with the Keeper of the End)  // a297 — Lucidwilde uberzone apex
   xulcan:           { hp:2200000,  name:'XU ZET-HORAK' },   // a730 — rebuilt (was 2M); Lv 90, between Lv 80 (~1.25M) and the Forge at Lv 95 (2.6M)      // a342 — Lv 90 apex, below Overseer Zero's 3M
-  aviacanyon:       { hp:600000,   name:'XUBERRY' },          // a347 — Lv 30 parrot-warlord apex
+  aviacanyon:       { hp:150000,   name:'XUBERRY' },          // a733 — rebuilt (was 600k); Lv 30, between Vorrakh (Lv 25, 120k) and the Inferno Colossus (Lv 35, 160k)
   forge:            { hp:2600000,  name:'THE FURNACE CORE' },   // a719 — rebuilt (was 1.5M)  // a361 — Lv 95 foundry titan (client-auth mobs, server-auth boss)
 };
 
@@ -5106,7 +5106,7 @@ const ZONE_DMG_BASE = {
   void:            { lvl: 15, mob:  42, boss: 92.1709 },   // a725 — the rebuilt Wraith's damage is set in VP_D directly (k = 1)
   cemetery:        { lvl: 20, mob:  54, boss: 106.5286 },   // a717 — the rebuilt Lich King's damage is set in LK_D directly (k = 1)
   citadel:         { lvl: 25, mob: 161, boss: 123.1228 },   // a722 — the rebuilt Vorrakh's damage is set in VK_D directly (k = 1)
-  aviacanyon:      { lvl: 30, mob: 103, boss: 196 },
+  aviacanyon:      { lvl: 30, mob: 103, boss: 142.3019 },   // a733 — the rebuilt Xuberry's damage is set in QBK_D directly (k = 1)
   ashlands:        { lvl: 35, mob:  60, boss: 164.4687 },   // a716 — the rebuilt Colossus's damage is set in IC_D directly (k = 1)
   caves_of_despair:{ lvl: 40, mob:  90, boss:  94 },
   fungal:          { lvl: 42, mob:  95, boss: 106 },
@@ -8342,6 +8342,175 @@ function _bnBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a733 — XUBERRY, rebuilt: the cybernetic parrot warlord of Avia Canyon. Half bird, half
+//   gunship: it never stops moving — it circles you, swoops through you, climbs out of sight
+//   and drops on you like a hawk. It rules the open arena at the north of the canyon (tile
+//   120,42; about 45 across). One brain, shared word for word by the server (the authority in a
+//   lobby) and the client (solo). 10 Hz.
+//     DIVE BOMB        P1+  its signature: it climbs into the sky, locks on, and stoops onto you
+//                           like a falcon; the impact throws out a shock ring (P3: two dives,
+//                           P4: three, each on whoever it likes)
+//     STRAFING SWOOP   P1+  it banks away, comes back low and rakes straight through you across
+//                           the whole arena (P3: a second pass crossing the first)
+//     FEATHER BARRAGE  P1+  three fans of razor feathers fired off its wings
+//     SONIC SCREECH    P1+  a deafening screech that blasts a wide cone in front of its beak
+//     TWISTERS         P2+  wingbeats whip up tornadoes that sweep across the arena on curving
+//                           paths (P4: four)
+//     BOMBING RUN      P2+  it flies a line over you dropping cyber-eggs that blow up where they
+//                           land
+//     THE FLOCK        P3+  it calls its flock: streams of cyber-birds dive through each of you
+//                           from every side
+//     HURRICANE        P4   it takes the eye of a hurricane over the arena; the wind throws you
+//                           outward while it dive-bombs you again and again — then the big one
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const QBK_D  = { dive:240, quake:150, swoop:210, feather:120, screech:200, twister:60, egg:170, flock:190, hdive:210, mega:330 };
+const QBK_PM = [1, 1, 1.1, 1.22, 1.36];
+const QBK_R = 22, QBK_ENG = 44, QBK_IN = 40;
+function _qbSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _qbDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// a twister's path: a quadratic curve from p0 through the control point to p2, u in 0..1
+function _qbBez(tw, u){ const a = (1 - u)*(1 - u), b = 2*u*(1 - u), c = u*u; return [a*tw[0] + b*tw[2] + c*tw[4], a*tw[1] + b*tw[3] + c*tw[5]]; }
+function _qbBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = QBK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._qb;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._qb = { t:0, face:0, orb:0, cd:{ dive:12, swoop:30, feather:20, screech:40, twister:30, egg:40, flock:30, hurricane:15 }, last:{}, gap:12, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < QBK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const pick = (not) => { const o = inA.length > 1 && not !== undefined ? inA.filter(p => p.k !== not) : inA; return o[Math.floor(A.rnd()*o.length)] || inA[0]; };
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.15); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'squawk', t:0 }; A.fx('qbx_squawk', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 9) A.push(p.k, S.x, S.z, 4); });
+    if(ph >= 4) X.cd.hurricane = 22; }
+
+  // a dive bomb landing at (x,z): the impact, then the shock ring (handled in the act)
+  const diveHit = (x, z, r, dmg) => inA.forEach(p => { if(D(p, x, z) < r){ A.hit(p.k, Math.round(dmg*M)); A.push(p.k, x, z, 3.5); A.slow(p.k, 0.5, 800); } });
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'squawk') done = a.t >= 16;
+    else if(a.k === 'dive'){
+      if(a.t === a.w){ S.x = a.x; S.z = a.z; diveHit(a.x, a.z, a.r, QBK_D.dive); }
+      if(a.t > a.w){ const r = a.r + (a.t - a.w)*0.9; if(r < a.rr) inA.forEach(p => { const d = D(p, a.x, a.z); if(d > a.r && Math.abs(d - r) < 0.8 && once(p.k, 'dq' + a.id, 30)) A.hit(p.k, Math.round(QBK_D.quake*M)); }); }
+      if(a.t === a.w + 10 && a.left > 0){ const q = pick(X.tgt), c = clampA(q.x, q.z, QBK_IN); a.left--; a.t = 0; a.id++; a.x = c[0]; a.z = c[1]; a.w = 13; X.tgt = q.k;
+        A.fx('qbx_dive', { x0:R2(S.x), z0:R2(S.z), x:R2(c[0]), z:R2(c[1]), w:13, r:a.r, rr:a.rr, chain:1 }); }
+      done = a.t >= a.w + 14 && a.left <= 0; }
+    else if(a.k === 'swoop'){
+      a.p.forEach((pp, pi) => { const tt = a.t - pp[4]; if(tt < 0 || tt > a.dur) return; const u = tt/a.dur, x = pp[0] + (pp[2] - pp[0])*u, z = pp[1] + (pp[3] - pp[1])*u;
+        S.x = x; S.z = z; inA.forEach(p => { if(D(p, x, z) < a.hw && once(p.k, 'sw' + pi + '_' + a.id, 30)){ A.hit(p.k, Math.round(QBK_D.swoop*M)); A.push(p.k, x, z, 3); } }); });
+      done = a.t >= a.p[a.p.length - 1][4] + a.dur + 6; }
+    else if(a.k === 'feather'){
+      a.v.forEach((v, vi) => { const tt = a.t - v[0]; if(tt <= 0) return; const r = 2 + tt*a.sp; if(r > a.L) return;
+        for(let i = 0; i < a.n; i++){ const an = v[1] + (i - (a.n - 1)/2)*a.spr;
+          inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) < 1.2 && Math.abs(Math.sin(_qbDA(Math.atan2(p.x - a.x, p.z - a.z), an)))*d < a.hw && Math.abs(_qbDA(Math.atan2(p.x - a.x, p.z - a.z), an)) < 1.5 && once(p.k, 'fe' + vi + '_' + a.id, 6)) A.hit(p.k, Math.round(QBK_D.feather*M)); }); } });
+      done = a.t >= a.v[a.v.length - 1][0] + Math.ceil(a.L/a.sp) + 2; }
+    else if(a.k === 'screech'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.R && Math.abs(_qbDA(Math.atan2(p.x - a.x, p.z - a.z), a.a)) < a.hw){ A.hit(p.k, Math.round(QBK_D.screech*M)); A.slow(p.k, 0.4, 1500); A.push(p.k, a.x, a.z, 3); } });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'twister'){
+      const tt = a.t - a.w;
+      if(tt >= 0 && tt < a.dur){ const u = tt/a.dur; a.tw.forEach((tw, ti) => { const c = _qbBez(tw, u);
+        inA.forEach(p => { if(D(p, c[0], c[1]) < a.r && once(p.k, 'tw' + ti, 6)){ A.hit(p.k, Math.round(QBK_D.twister*M)); const an = Math.atan2(p.x - c[0], p.z - c[1]); A.push(p.k, p.x - Math.cos(an), p.z + Math.sin(an), 1.8); } }); }); }
+      done = tt >= a.dur + 2; }
+    else if(a.k === 'egg'){
+      const tt = a.t - a.w; if(tt >= 0 && tt <= a.dur){ const u = tt/a.dur; S.x = a.x0 + (a.x1 - a.x0)*u; S.z = a.z0 + (a.z1 - a.z0)*u; }
+      a.e.forEach((e, ei) => { if(a.t === e[2]) inA.forEach(p => { if(D(p, e[0], e[1]) < a.r){ A.hit(p.k, Math.round(QBK_D.egg*M)); A.push(p.k, e[0], e[1], 2.5); } }); });
+      done = a.t >= a.e[a.e.length - 1][2] + 4; }
+    else if(a.k === 'flock'){
+      a.m.forEach(m => { if(a.t === m[3]) inA.forEach(p => { if(D(p, m[0], m[1]) < a.r){ A.hit(p.k, Math.round(QBK_D.flock*M)); A.slow(p.k, 0.55, 900); } }); });
+      done = a.t >= a.m[a.m.length - 1][3] + 8; }
+    else if(a.k === 'hurricane'){
+      if(a.t === 1){ S.x = a.x; S.z = a.z; }
+      if(a.t > 10 && a.t < a.nv && a.t % 4 === 0) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < QBK_ENG && d > 1) A.push(p.k, a.x, a.z, 0.4); });
+      if(a.next < a.nd && a.t === 22 + a.next*11){ const q = inA[a.next % inA.length], c = clampA(q.x, q.z, QBK_IN), it = a.t + 12; a.ds.push([c[0], c[1], it]); a.next++;
+        A.fx('qbx_hdive', { x:R2(c[0]), z:R2(c[1]), x0:R2(a.x), z0:R2(a.z), w:12, r:a.dr }); }
+      a.ds.forEach(dv => { if(a.t === dv[2]) diveHit(dv[0], dv[1], a.dr, QBK_D.hdive); });
+      if(a.t === a.nv) diveHit(a.x, a.z, a.R, QBK_D.mega);
+      done = a.t >= a.nv + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 6 : ph >= 3 ? 8 : 10; }
+  } else {
+    // ── IT CIRCLES: a hawk's orbit round its prey, never still
+    const d = D(P, S.x, S.z), want = angTo(P.x, P.z);
+    X.orb += (ph >= 3 ? 0.03 : 0.024)*(X.t % 400 < 200 ? 1 : -1);
+    const rr = 10, tx = P.x + Math.sin(X.orb)*rr, tz = P.z + Math.cos(X.orb)*rr, c = clampA(tx, tz, QBK_IN), dx = c[0] - S.x, dz = c[1] - S.z, dd = Math.hypot(dx, dz), st = Math.min(dd, [0, 0.16, 0.17, 0.19, 0.21][ph]);
+    if(dd > 0.05){ S.x += dx/dd*st; S.z += dz/dd*st; }
+    X.face += Math.max(-0.15, Math.min(0.15, _qbDA(dd > 0.5 ? Math.atan2(dx, dz) : want, X.face)));
+
+    if(X.gap <= 0){
+      const MIN = { swoop:1, feather:1, screech:1, twister:2, egg:2, flock:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.hurricane <= 0) k = 'hurricane';
+      else if(X.cd.dive <= 0 && X.lastK !== 'dive') k = 'dive';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.dive <= 0) k = 'dive';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'dive'){
+        const c = clampA(P.x, P.z, QBK_IN);
+        X.act = { k, t:0, id, x:c[0], z:c[1], w:16, r:4.5, rr:13, left:ph >= 4 ? 2 : ph >= 3 ? 1 : 0 }; X.cd.dive = ph >= 3 ? 34 : 38;
+        A.fx('qbx_dive', { x0:R2(S.x), z0:R2(S.z), x:R2(c[0]), z:R2(c[1]), w:16, r:4.5, rr:13 });
+      } else if(k === 'swoop'){
+        const mk = (q, an, t0) => { const a0 = clampA(q.x - Math.sin(an)*24, q.z - Math.cos(an)*24, QBK_IN), a1 = clampA(q.x + Math.sin(an)*24, q.z + Math.cos(an)*24, QBK_IN); return [R2(a0[0]), R2(a0[1]), R2(a1[0]), R2(a1[1]), t0]; };
+        const an = Math.atan2(P.x - S.x, P.z - S.z), p = [mk(P, an, 16)]; if(ph >= 3) p.push(mk(P, an + Math.PI/2, 16 + 16 + 12));
+        X.act = { k, t:0, id, p, dur:16, hw:3.2 }; X.cd.swoop = ph >= 3 ? 70 : 80;
+        A.fx('qbx_swoop', { x0:R2(S.x), z0:R2(S.z), p, dur:16, hw:3.2 });
+      } else if(k === 'feather'){
+        const v = [0, 1, 2].map(i => { const q = inA[i % inA.length]; return [10 + i*7, +Math.atan2(q.x - S.x, q.z - S.z).toFixed(3)]; });
+        X.act = { k, t:0, id, x:S.x, z:S.z, v, n:ph >= 3 ? 9 : 7, spr:0.17, sp:1.5, L:32, hw:0.8 }; X.cd.feather = ph >= 3 ? 55 : 65;
+        A.fx('qbx_feather', { x:R2(S.x), z:R2(S.z), v, n:ph >= 3 ? 9 : 7, spr:0.17, sp:1.5, L:32 });
+      } else if(k === 'screech'){
+        X.act = { k, t:0, id, x:S.x, z:S.z, a:want, w:14, R:24, hw:0.75 }; X.cd.screech = ph >= 3 ? 60 : 70; X.face = want;
+        A.fx('qbx_screech', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), w:14, R:24, hw:0.75 });
+      } else if(k === 'twister'){
+        const n = ph >= 4 ? 4 : 3, tw = [];
+        for(let i = 0; i < n; i++){ const q = inA[i % inA.length], s0 = A.rnd()*6.283, p0 = clampA(hx + Math.sin(s0)*QBK_IN*0.9, hz + Math.cos(s0)*QBK_IN*0.9, QBK_IN), an = Math.atan2(q.x - p0[0], q.z - p0[1]), p2 = clampA(q.x + Math.sin(an + (A.rnd() - 0.5))*30, q.z + Math.cos(an + (A.rnd() - 0.5))*30, QBK_IN);
+          tw.push([R2(p0[0]), R2(p0[1]), R2(q.x), R2(q.z), R2(p2[0]), R2(p2[1])]); }
+        X.act = { k, t:0, id, tw, w:14, dur:80, r:2.6 }; X.cd.twister = ph >= 3 ? 100 : 115;
+        A.fx('qbx_twister', { tw, w:14, dur:80, r:2.6 });
+      } else if(k === 'egg'){
+        const an = Math.atan2(P.x - S.x, P.z - S.z) + (A.rnd() - 0.5)*0.6, a0 = clampA(P.x - Math.sin(an)*20, P.z - Math.cos(an)*20, QBK_IN), a1 = clampA(P.x + Math.sin(an)*20, P.z + Math.cos(an)*20, QBK_IN);
+        const L = Math.hypot(a1[0] - a0[0], a1[1] - a0[1]), n = Math.max(5, Math.round(L/3.2)), w = 14, dur = 26, e = [];
+        for(let i = 0; i < n; i++){ const u = (i + 0.5)/n, side = (i % 2 ? 1 : -1)*1.2; e.push([R2(a0[0] + (a1[0] - a0[0])*u + Math.cos(an)*side), R2(a0[1] + (a1[1] - a0[1])*u - Math.sin(an)*side), w + Math.round(u*dur) + 14]); }
+        X.act = { k, t:0, id, x0:a0[0], z0:a0[1], x1:a1[0], z1:a1[1], w, dur, e, r:2.8 }; X.cd.egg = ph >= 3 ? 85 : 100;
+        A.fx('qbx_egg', { sx:R2(S.x), sz:R2(S.z), x0:R2(a0[0]), z0:R2(a0[1]), x1:R2(a1[0]), z1:R2(a1[1]), w, dur, e, r:2.8 });
+      } else if(k === 'flock'){
+        const m = []; inA.forEach((p, i) => { m.push([R2(p.x), R2(p.z), +(A.rnd()*6.283).toFixed(3), 18 + i*6]); if(ph >= 4){ const c = clampA(p.x + (A.rnd() - 0.5)*8, p.z + (A.rnd() - 0.5)*8, QBK_IN); m.push([R2(c[0]), R2(c[1]), +(A.rnd()*6.283).toFixed(3), 30 + i*6]); } });
+        m.sort((a, b) => a[3] - b[3]);
+        X.act = { k, t:0, id, m, r:3.4 }; X.cd.flock = ph >= 4 ? 80 : 95;
+        A.fx('qbx_flock', { m, r:3.4 });
+      } else if(k === 'hurricane'){
+        const nd = 8;
+        X.act = { k, t:0, id, x:hx, z:hz, nd, next:0, ds:[], dr:4.2, nv:22 + nd*11 + 22, R:9 }; X.cd.hurricane = 330;
+        A.fx('qbx_hurricane', { x0:R2(S.x), z0:R2(S.z), x:hx, z:hz, nv:22 + nd*11 + 22, R:9, IN:QBK_IN });
+      }
+    }
+  }
+  const ac = X.act;
+  if(!ac){ const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > QBK_IN){ S.x = hx + dx/d*QBK_IN; S.z = hz + dz/d*QBK_IN; } }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -8571,111 +8740,30 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── XUBERRY (a561), Avia Canyon. A hovering parrot-warlord: her ability is drawn from
-  //    a pool that grows with phase, and she periodically DIVES out of the rotation
-  //    entirely. She hovers at 3.5 and only descends on a dive, which the client renders
-  //    from the xb_dive cue — the server owns the ground track.
+  // ── XUBERRY (a733). Rebuilt as the cybernetic parrot: her whole fight lives in the shared brain
+  //    _qbBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain moves her
+  //    (move:'self'), aims at every player in the north arena and hands back damage, pushes, slows
+  //    and cues. Her flight in the air is drawn by the client from the cues.
   aviacanyon: {
-    x: 180, z: 180,
-    spd:    [0, 0.020, 0.026, 0.034, 0.042],
-    dmg:    [0, 1, 1, 1, 1],
+    x: 180, z: 63,                                     // tile (120,42) — the north arena (it was 180,180 by mistake)
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in QBK_D
     phases: [0.75, 0.50, 0.25],
-    acd:    [0, 20, 17, 14, 11],                        // max(60,132-P*16), / 6
-    tele:   0,                                          // she screeches her own tell
-    pick:   (b, ph) => {
-      const pool = ['screech','volley','rain'];
-      if (ph >= 2) { pool.push('beam','summon'); }
-      if (ph >= 3) { pool.push('screech','beam','volley'); }
-      if (ph >= 4) { pool.push('rain','screech','beam'); }
-      b._xbPick = pool[Math.floor(Math.random() * pool.length)];
-      return 0;
-    },
-    attack: (c) => {
-      const { b, ph, ang, np, aoe, fx, proj, geyser } = c;
-      const A = 230;                                     // _XB_ATK
-      const k = b._xbPick || 'screech';
-      if (k === 'screech')      { fx('xb_screech'); b._xbR = 1.0; b._xbRDmg = Math.floor(A * 0.85); }
-      else if (k === 'volley')  { fx('xb_volley');
-                                  const n = 5 + ph*2;
-                                  for (let i = 0; i < n; i++) proj(ang + (i-(n-1)/2)*0.16, 0x5ce4f0, Math.floor(A * 0.55), 'plasma'); }
-      else if (k === 'rain')    { fx('xb_rain');
-                                  for (let r = 0; r < 6; r++)
-                                    geyser(np.x + (Math.random()-0.5)*9, np.z + (Math.random()-0.5)*9,
-                                           4 + r, 2.2, Math.floor(A * 0.9), 0x5ce4f0); }
-      else if (k === 'beam')    { fx('xb_beam', { dir:+ang.toFixed(3), len:26 });
-                                  for (let i = 1; i <= 8; i++)
-                                    geyser(b.x + Math.sin(ang)*i*3.2, b.z + Math.cos(ang)*i*3.2,
-                                           6, 1.4, Math.floor(A * 0.7), 0xfff06a); }
-      else                      { fx('xb_flock');
-                                  // the flock is skyscouts and beakdrones, 2 (+1 at phase 3), as client-side
-                                  const n = 2 + (ph >= 3 ? 1 : 0);
-                                  _zbSummon(c, Math.random() < 0.55 ? 'skyscout' : 'beakdrone', n,
-                                            4200, 150, 0.070, 300, 95, 0, 6.0); }
-    },
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, np, nd, ang, zoneName, game, aoe, fx } = c;
-      const A = 230;
-      // TALON DIVE — steps outside the rotation on its own cooldown
-      if (b._xbDive > 0) {
-        b._xbDive--;
-        if (b._xbDive === 3) {
-          fx('xb_dive', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-          b.x = np.x; b.z = np.z;
-          aoe(4.0, Math.floor(A * 1.4));
-        }
-        if (b._xbDive === 0) fx('xb_dive_up');
-      } else {
-        b._xbDiveCd = (b._xbDiveCd != null ? b._xbDiveCd : 20) - 1;
-        if (b._xbDiveCd <= 0) {
-          b._xbDiveCd = Math.max(22, Math.round((250 - ph*28) / 6));
-          b._xbDive = 6;
-          fx('xb_dive_wind');
-        }
-      }
-      // SCREECH rings expand outward and catch you once
-      if (b._xbR > 0) {
-        const prev = b._xbR; b._xbR += 0.6 * 6;
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
-          if (pd >= prev - 1.8 && pd <= b._xbR + 1.8)
-            send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._xbRDmg,
-                       ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
-        });
-        if (b._xbR >= 18) b._xbR = 0;
-      }
-    },
-  },
-
-// ── DRAX (a560), Caves of Despair. Drill charges, pile-drivers, a called-in mining
-  //    crew and a cave-in. Straight 6-attack rotation.
-  caves_of_despair: {
-    x: 93, z: 93,                                      // a671 — tile (62,62), the heart of Drax's pit (was the 240-map centre: outside this 80-tile mine)
-    spd:    [0, 0.022, 0.030, 0.040, 0.052, 0.065],
-    dmg:    [0, 1.0,   1.5,   2.1,   2.8,   3.6],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 19, 17, 15, 13],          // 120 then max(80,150-P*18), / 6
-    tele:   11,
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, aoe, fx, proj } = c;
-      if (atk === 0)      { fx('dx_drill', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            b.x = np.x - Math.sin(ang)*2.0; b.z = np.z - Math.cos(ang)*2.0;
-                            aoe(6.0, Math.floor(340 * mult)); }
-      else if (atk === 1) { fx('dx_pile');   aoe(6.0, Math.floor(400 * mult)); }
-      else if (atk === 2) { fx('dx_miners');
-                            // phase 3+ sends overseers instead of miners, as client-side
-                            const _t = ph >= 3 ? 'xu_overseer' : 'xu_miner';
-                            _zbSummon(c, _t, 3, ph >= 3 ? 1100 : 820, ph >= 3 ? 95 : 68, 0.050, 140, 44, 0, 3.0); }
-      else if (atk === 3) { fx('dx_shock');
-                            for (let i = 0; i < 6; i++) proj(i/6*Math.PI*2, 0x66ddff, Math.floor(90 * mult), 'plasma');
-                            aoe(5.0, Math.floor(240 * mult)); }
-      else if (atk === 4) { fx('dx_cavein'); aoe(7.0, Math.floor(280 * mult)); aoe(10.0, Math.floor(100 * mult)); }
-      else                { fx('dx_spin');   aoe(5.0, Math.floor(260 * mult)); }
-    },
-    passive: (c) => {
-      const { b, mult, nd, aoe } = c;
-      if (b._vt % 3 === 0 && nd < 4.0) aoe(4.0, Math.floor(32 * mult));   // engine heat
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _qbBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:63,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
