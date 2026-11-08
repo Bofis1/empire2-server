@@ -554,7 +554,7 @@ const ZONE_BOSS_HP = {
   patrol:           { hp:18000,    name:'SERPENT TITAN MK-VII' },
   cemetery:         { hp:90000,    name:'THE LICH KING' },   // a717 — rebuilt (was 64k)
   void:             { hp:54000,    name:'VOID WRAITH PRIME' },
-  citadel:          { hp:70000,    name:'GENERAL VORRAKH' },
+  citadel:          { hp:120000,   name:'GENERAL VORRAKH' },   // a722 — rebuilt (was 70k)
   caves_of_despair: { hp:80000,    name:'FOREMAN DRAX' },
   ashlands:         { hp:160000,   name:'INFERNO COLOSSUS' },   // a716 — rebuilt (was 75k)
   sunken_sands:     { hp:500000,   name:'KHEPRI THE SAND COLOSSUS' },   // a718 — rebuilt (was 150k)
@@ -5105,7 +5105,7 @@ const ZONE_DMG_BASE = {
   blooming_wilds:  { lvl: 10, mob:  44, boss: 79.7483 },   // a715 — the rebuilt Wildmother's damage is set in WM_D directly (k = 1)
   void:            { lvl: 15, mob:  42, boss: 114 },
   cemetery:        { lvl: 20, mob:  54, boss: 106.5286 },   // a717 — the rebuilt Lich King's damage is set in LK_D directly (k = 1)
-  citadel:         { lvl: 25, mob: 161, boss: 123 },
+  citadel:         { lvl: 25, mob: 161, boss: 123.1228 },   // a722 — the rebuilt Vorrakh's damage is set in VK_D directly (k = 1)
   aviacanyon:      { lvl: 30, mob: 103, boss: 196 },
   ashlands:        { lvl: 35, mob:  60, boss: 164.4687 },   // a716 — the rebuilt Colossus's damage is set in IC_D directly (k = 1)
   caves_of_despair:{ lvl: 40, mob:  90, boss:  94 },
@@ -7250,6 +7250,157 @@ function _faBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a722 — GENERAL VORRAKH, REBUILT: the traitor of the Citadel. A Free Races commander who sold
+//   the Coalition every map, every supply route and every position it had, and was paid with
+//   the Citadel and a garrison of ten thousand. He fights like a general: with orders, maps and
+//   his men. One brain, shared word for word by the server (the authority in a lobby) and the
+//   client (solo). 10 Hz. His arena is the throne plaza under the Royal Spire.
+//     COMMAND BLADE        P1+  his signature: the greatsword sweeps a wide arc in front of him,
+//                               twice from P2 and three times from P4
+//     EVERY POSITION KNOWN P1+  a holographic war map spreads over the plaza; every one of you is
+//                               marked on it and the Citadel's batteries fire on the marks
+//     SEVERED SUPPLY LINES P1+  supply routes are drawn across the map, then burn
+//     THE GARRISON         P2+  a shield wall of his garrison marches across the plaza; there is
+//                               one gap in the line
+//     THE BETRAYAL         P3+  he marks one of you, vanishes and steps out behind them, blade first
+//     SELL THE SUNRISE     P4   veth-karal: he plants his banners and brings the sun down on the
+//                               plaza; only the shade behind a banner is safe
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: his position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const VK_D  = { cleave:165, shell:125, route:85, march:140, betray:210, sun:270 };
+const VK_PM = [1, 1, 1.1, 1.22, 1.36];
+const VK_R = 11, VK_ENG = 30;
+// distance from a point to a segment
+function _vkSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+// in the shade of a banner at (bx,bz) whose shadow runs along (ux,uz): the client draws the same wedge
+function _vkShade(px, pz, b, L, hw, sp){ const vx = px - b[0], vz = pz - b[1], al = vx*b[2] + vz*b[3], lat = Math.abs(vx*b[3] - vz*b[2]);
+  return al > 0.2 && al < L && lat < hw + al*sp; }
+function _vkBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = VK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._vk;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._vk = { t:0, vx:0, vz:0, face:0, cd:{ cleave:12, maps:30, routes:45, garrison:30, betray:30, sunrise:10 }, last:{}, gap:16, act:null,
+      sh:[], rt:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < VK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const dAng = (a, b) => { let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; };
+
+  // the batteries' shells, in flight
+  for(let i = X.sh.length - 1; i >= 0; i--){ const o = X.sh[i];
+    if(--o.f <= 0){ inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ A.hit(p.k, Math.round(VK_D.shell*M)); A.push(p.k, o.x, o.z, 1.5); } }); X.sh.splice(i, 1); } }
+  // burning supply routes (they burn on while he does other things)
+  if(X.rt){ const r = X.rt; r.t++;
+    if(r.t > r.w) inA.forEach(p => { if(r.L.some(l => _vkSegD(p.x, p.z, l[0], l[1], l[2], l[3]) < r.hw) && once(p.k, 'rt', 8)){ A.hit(p.k, Math.round(VK_D.route*M)); A.slow(p.k, 0.7, 700); } });
+    if(r.t >= r.w + r.d) X.rt = null; }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.12); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; S.walk = d > 0.3 ? 1 : 0; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  S.walk = 0;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'decree', t:0 }; A.fx('vkx_decree', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); });
+    if(ph >= 4) X.cd.sunrise = 18; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'decree') done = a.t >= 16;
+    else if(a.k === 'cleave'){
+      a.sw.forEach((W, wi) => { if(a.t === W[0]) inA.forEach(p => { if(D(p, a.x, a.z) < a.r && Math.abs(dAng(Math.atan2(p.x - a.x, p.z - a.z), W[1])) < a.ha){ A.hit(p.k, Math.round(VK_D.cleave*M)); A.push(p.k, a.x, a.z, 2.5); } }); });
+      done = a.t >= a.sw[a.sw.length - 1][0] + 6; }
+    else if(a.k === 'garrison'){
+      a.rk.forEach((K, ki) => { const tt = a.t - K[0]; if(tt < 0) return; const s = -a.R + tt*a.sp; if(s > a.R) return;
+        const ux = Math.sin(K[1]), uz = Math.cos(K[1]);
+        inA.forEach(p => { const vx = p.x - hx, vz = p.z - hz, al = vx*ux + vz*uz, lat = vx*uz - vz*ux;
+          if(Math.abs(al - s) < 1.0 && Math.abs(lat) < a.R && Math.abs(lat - K[2]) > a.gw && once(p.k, 'gr' + ki, 25)){ A.hit(p.k, Math.round(VK_D.march*M)); A.push(p.k, p.x - ux, p.z - uz, 3.5); } }); });
+      done = a.t >= a.end; }
+    else if(a.k === 'betray'){
+      const tg = inA.find(p => p.k === a.k2);
+      if(a.t < a.lk && tg && a.t % 2 === 0) A.fx('vkx_bpos', { x:R2(tg.x), z:R2(tg.z) });
+      if(a.t === a.lk){ const L = tg ? [tg.x, tg.z] : [a.lx, a.lz]; let dx = L[0] - S.x, dz = L[1] - S.z; const dd = Math.hypot(dx, dz) || 1; dx /= dd; dz /= dd;
+        const ax = L[0] + dx*2.6, az = L[1] + dz*2.6, c = clampA(ax, az, VK_R + 4); a.ax = c[0]; a.az = c[1]; a.ang = Math.atan2(L[0] - a.ax, L[1] - a.az);
+        A.fx('vkx_blink', { x0:R2(S.x), z0:R2(S.z), x1:R2(a.ax), z1:R2(a.az), lx:R2(L[0]), lz:R2(L[1]), a:+a.ang.toFixed(3), f:a.st - a.lk, r:7, ha:0.42 }); }
+      if(a.t === a.lk + 2){ S.x = a.ax; S.z = a.az; X.vx = X.vz = 0; X.face = a.ang; }
+      if(a.t === a.st) inA.forEach(p => { if(D(p, a.ax, a.az) < 7 && Math.abs(dAng(Math.atan2(p.x - a.ax, p.z - a.az), a.ang)) < 0.42){ A.hit(p.k, Math.round(VK_D.betray*M)); A.slow(p.k, 0.5, 1200); } });
+      if(a.t === a.st + 8 && a.n2 && inA.length > 1){   // P4: the second betrayal, on someone else
+        const o = inA.filter(p => p.k !== a.k2), q = o[Math.floor(A.rnd()*o.length)]; a.n2 = 0; a.k2 = q.k; a.lx = q.x; a.lz = q.z; a.t = 0;
+        A.fx('vkx_betray', { x:R2(q.x), z:R2(q.z), lk:a.lk }); }
+      if(a.ax !== undefined) X.face = a.ang;
+      done = a.t >= a.st + 10; }
+    else if(a.k === 'sunrise'){
+      if(a.t === a.w) inA.forEach(p => { if(!a.b.some(b => _vkShade(p.x, p.z, b, a.L, a.hw, a.sp))){ A.hit(p.k, Math.round(VK_D.sun*M)); A.slow(p.k, 0.45, 1600); } });
+      done = a.t >= a.w + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 7 : ph >= 3 ? 9 : 11; }
+  } else {
+    // ── THE GENERAL ADVANCES: walks you down with the blade, but never leaves his plaza
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.12, Math.min(0.12, dAng(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.07, 0.08, 0.09, 0.1][ph], sp = d > 4 ? vmax : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.15; X.vz += (Math.cos(X.face)*sp - X.vz)*0.15; S.x += X.vx; S.z += X.vz; S.walk = sp > 0 ? 1 : 0;
+
+    if(X.gap <= 0){
+      const MIN = { maps:1, routes:1, garrison:2, betray:3, sunrise:4 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.sunrise <= 0) k = 'sunrise';
+      else if(X.cd.cleave <= 0 && X.lastK !== 'cleave' && d < 9) k = 'cleave';
+      else for(const m in MIN){ if(m === 'sunrise' || ph < MIN[m] || X.cd[m] > 0) continue; if(m === 'routes' && X.rt) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.cleave <= 0 && d < 9) k = 'cleave';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'cleave'){
+        const n = ph >= 4 ? 3 : ph >= 2 ? 2 : 1, side = A.rnd() < 0.5 ? 1 : -1, sw = [];
+        for(let i = 0; i < n; i++) sw.push([11 + i*8, +(want + (n > 1 ? side*(i % 2 ? -1 : 1)*0.55 : 0)).toFixed(3)]);
+        X.act = { k, t:0, x:S.x, z:S.z, r:8.5, ha:1.15, sw }; X.cd.cleave = ph >= 3 ? 22 : 28; X.face = want; X.vx = X.vz = 0;
+        A.fx('vkx_cleave', { x:R2(S.x), z:R2(S.z), r:8.5, ha:1.15, sw });
+      } else if(k === 'maps'){
+        const m = [], f = 20;
+        inA.forEach(p => { m.push([R2(p.x), R2(p.z), f]); for(let j = 0; j < (ph >= 3 ? 2 : 1); j++){ const a = A.rnd()*6.283, r = 3 + A.rnd()*3; const c = clampA(p.x + Math.sin(a)*r, p.z + Math.cos(a)*r, VK_ENG - 6); m.push([R2(c[0]), R2(c[1]), f + 4 + j*4]); } });
+        m.forEach(q => X.sh.push({ x:q[0], z:q[1], f:q[2], r:3.0 }));
+        X.act = { k, t:0, end:12 }; X.cd.maps = ph >= 3 ? 65 : 80;
+        A.fx('vkx_map', { x:R2(hx), z:R2(hz), R:24, r:3.0, m });
+      } else if(k === 'routes'){
+        const n = ph >= 3 ? 4 : 3, L = [], R = 24;
+        for(let i = 0; i < n; i++){ const th = A.rnd()*Math.PI, o = (A.rnd()*2 - 1)*11, ux = Math.sin(th), uz = Math.cos(th), nx = uz, nz = -ux, cx = hx + nx*o, cz = hz + nz*o, h = Math.sqrt(R*R - o*o);
+          L.push([R2(cx - ux*h), R2(cz - uz*h), R2(cx + ux*h), R2(cz + uz*h)]); }
+        X.rt = { t:0, w:18, d:ph >= 3 ? 50 : 40, hw:1.35, L };
+        X.act = { k, t:0, end:10 }; X.cd.routes = ph >= 3 ? 80 : 95;
+        A.fx('vkx_routes', { w:18, d:X.rt.d, hw:1.35, L });
+      } else if(k === 'garrison'){
+        const R = 22, a0 = A.rnd()*6.283, rk = [[16, +a0.toFixed(3), R2((A.rnd()*2 - 1)*14)]];
+        if(ph >= 3) rk.push([46, +(a0 + Math.PI/2*(A.rnd() < 0.5 ? 1 : -1)).toFixed(3), R2((A.rnd()*2 - 1)*14)]);
+        const sp = 0.55, end = rk[rk.length - 1][0] + Math.ceil(2*R/sp) + 2;
+        X.act = { k, t:0, R, sp, gw:2.3, rk, end }; X.cd.garrison = ph >= 3 ? 110 : 130;
+        A.fx('vkx_garrison', { x:R2(hx), z:R2(hz), R, sp, gw:2.3, rk });
+      } else if(k === 'betray'){
+        const q = inA[Math.floor(A.rnd()*inA.length)];
+        X.act = { k, t:0, k2:q.k, lx:q.x, lz:q.z, lk:16, st:22, n2:ph >= 4 ? 1 : 0 }; X.cd.betray = ph >= 4 ? 75 : 90;
+        A.fx('vkx_betray', { x:R2(q.x), z:R2(q.z), lk:16 });
+      } else if(k === 'sunrise'){
+        const a0 = A.rnd()*6.283, b = [];
+        for(let i = 0; i < 4; i++){ const a = a0 + i*Math.PI/2, ux = Math.sin(a), uz = Math.cos(a); b.push([R2(hx + ux*11), R2(hz + uz*11), +ux.toFixed(4), +uz.toFixed(4)]); }
+        X.act = { k, t:0, w:50, b, L:7.5, hw:1.15, sp:0.13 }; X.cd.sunrise = 260;
+        A.fx('vkx_sun', { x:R2(hx), z:R2(hz), w:50, b, L:7.5, hw:1.15, sp:0.13 });
+      }
+    }
+  }
+  const c = clampA(S.x, S.z, X.act && X.act.k === 'betray' ? VK_R + 4 : VK_R); S.x = c[0]; S.z = c[1];
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -7278,34 +7429,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-// ── WARLORD VORRAKH (a559). Xu Citadel's general: cleaves, plasma volleys, an
-  //    execution lunge, the Iron Guard, and a dominion shockwave.
+// ── GENERAL VORRAKH (a722). Rebuilt as the traitor of the Citadel: his whole fight lives in the
+  //    shared brain _vkBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain
+  //    moves him (move:'self'), aims at every player on the throne plaza and hands back damage,
+  //    pushes, slows and cues.
   citadel: {
-    x: 180, z: 180,
-    spd:    [0, 0.018, 0.026, 0.034, 0.044, 0.056],
-    dmg:    [0, 1.0,   1.4,   1.9,   2.5,   3.2],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 21, 19, 16, 13],          // 120 then max(80,160-P*16), / 6
-    tele:   11,
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, mult, ang, np, aoe, fx, proj } = c;
-      if (atk === 0)      { fx('vk_cleave');  aoe(5.0, Math.floor(420 * mult)); }
-      else if (atk === 1) { fx('vk_volley');
-                            for (let i = 0; i < 6; i++) proj(ang + (i-2.5)*0.17, 0xff6622, Math.floor(120 * mult), 'plasma');
-                            aoe(5.0, Math.floor(260 * mult)); }
-      else if (atk === 2) { fx('vk_lunge', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            b.x = np.x - Math.sin(ang)*1.8; b.z = np.z - Math.cos(ang)*1.8;
-                            aoe(7.0, Math.floor(500 * mult)); }
-      else if (atk === 3) { fx('vk_guard'); _zbSummon(c, 'iron_guard', 2, 1400, 110, 0.030, 220, 70, 0, 3.0); }
-      else if (atk === 4) { fx('vk_shock');  aoe(9.0, Math.floor(350 * mult)); aoe(13.0, Math.floor(120 * mult)); }
-      else                { fx('vk_order');
-                            for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0xffaa33, Math.floor(110 * mult), 'plasma');
-                            aoe(10.0, Math.floor(300 * mult)); }
-    },
+    x: 180, z: 180,                                   // tile (120,120) — the throne dais under the Royal Spire
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in VK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, nd, aoe } = c;
-      if (b._vt % 3 === 0 && nd < 6.0) aoe(6.0, Math.floor(35 * mult));   // aura of dominion
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _vkBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
