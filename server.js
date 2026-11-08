@@ -575,7 +575,7 @@ const ZONE_BOSS_HP = {
   convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
   lucidwilde:       { hp:4000000,  name:'THE PIXIELORD' },     // a727 — rebuilt (was 5M, level with the Keeper of the End)  // a297 — Lucidwilde uberzone apex
-  xulcan:           { hp:2000000,  name:'XU ZET-HORAK' },      // a342 — Lv 90 apex, below Overseer Zero's 3M
+  xulcan:           { hp:2200000,  name:'XU ZET-HORAK' },   // a730 — rebuilt (was 2M); Lv 90, between Lv 80 (~1.25M) and the Forge at Lv 95 (2.6M)      // a342 — Lv 90 apex, below Overseer Zero's 3M
   aviacanyon:       { hp:600000,   name:'XUBERRY' },          // a347 — Lv 30 parrot-warlord apex
   forge:            { hp:2600000,  name:'THE FURNACE CORE' },   // a719 — rebuilt (was 1.5M)  // a361 — Lv 95 foundry titan (client-auth mobs, server-auth boss)
 };
@@ -5119,7 +5119,7 @@ const ZONE_DMG_BASE = {
   veiled_sanctuary:{ lvl:110, mob: 228, boss: 1442.6748 },   // a720 — the rebuilt Abbot's damage is set in FA_D directly (k = 1)   // a614 — 110+ (was 80): hits on the level-110 curve
   wyvernwastes:    { lvl: 80, mob: 259, boss: 605.2494 },   // a709 — the rebuilt Cryothar's damage is set in CRY_D directly (k = 1)
   xumen:           { lvl: 80, mob: 267, boss: 605.2494 },   // a714 — the rebuilt Overlord's damage is set in XL_D directly (k = 1)
-  xulcan:          { lvl: 90, mob: 633, boss: 407 },
+  xulcan:          { lvl: 90, mob: 633, boss: 808.4982 },   // a730 — the rebuilt Zet-Horak's damage is set in ZKK_D directly (k = 1)
   forge:           { lvl: 95, mob: 624, boss: 934.44 },   // a719 — the rebuilt Furnace Core's damage is set in FC_D directly (k = 1)
   lucidwilde:      { lvl:100, mob: 526, boss: 1080 },   // a727 — the rebuilt Pixielord's damage is set in PZ_D directly (k = 1)
   necropolis:      { lvl:100, mob: 183, boss: 150 },
@@ -8023,6 +8023,172 @@ function _rzBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a730 — XU ZET-HORAK, rebuilt: the Golden Magician of Xulcan Prime. A Xu arch-magician in
+//   mirror-polished gold who fights by dazzling: every spell is a show, and every show cuts.
+//   Holds the harmonic arena (tile 120,110; about 39 across). One brain, shared word for word by
+//   the server (the authority in a lobby) and the client (solo). 10 Hz.
+//     PRISMATIC LANCE     P1+  the signature: a rainbow beam from the wand sweeps an arc
+//                              (P3: two beams scissoring through each other)
+//     AURORA CURTAINS     P1+  curtains of aurora sweep across the arena, each with one gap
+//                              (P3: four, P4: from two directions)
+//     KALEIDOSCOPE        P1+  a mandala opens under each of you; its petals erupt — stand
+//                              between them (they lock in place just before)
+//     HARMONIC WAVES      P2+  rings of rainbow light roll out from it, each with gaps that turn
+//     MIRROR PRISMS       P2+  five prisms hang round the arena and the light bounces between
+//                              them into a star — stay off its lines
+//     GRAND ILLUSION      P3+  it vanishes; four of it appear round the arena, every one of them
+//                              bursts, and the real one is left standing at one of them
+//     THE GRAND FINALE    P4   it rises over the arena and the floor becomes a light show: a
+//                              chequerboard, its inverse, the inner ring, the outer ring,
+//                              stripes — each lights up, then erupts — and a last nova from it
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const ZKK_D  = { lance:1250, curtain:1100, kaleido:1150, wave:950, prism:1050, illusion:1300, finale:1250, nova:1700 };
+const ZKK_PM = [1, 1, 1.1, 1.22, 1.36];
+const ZKK_R = 14, ZKK_ENG = 36, ZKK_IN = 33;
+function _zkSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _zkDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// the finale's patterns: is the cell under (x,z) lit by pattern p?
+function _zkCell(p, x, z, hx, hz){ const cx = Math.floor((x - hx)/6), cz = Math.floor((z - hz)/6), d = Math.hypot(x - hx, z - hz);
+  if(p === 0) return ((cx + cz) & 1) === 0; if(p === 1) return ((cx + cz) & 1) === 1;
+  if(p === 2) return d < 14; if(p === 3) return d >= 14;
+  if(p === 4) return (((cx - cz) % 3) + 3) % 3 !== 0; return (((cx - cz) % 3) + 3) % 3 !== 1; }
+function _zkBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = ZKK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._zk;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._zk = { t:0, vx:0, vz:0, face:0, cd:{ lance:12, curtain:30, kaleido:40, wave:30, prism:40, illusion:30, finale:15 }, last:{}, gap:14, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < ZKK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  S.air = 0;
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.1); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'encore', t:0 }; A.fx('zkx_encore', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 5); });
+    if(ph >= 4) X.cd.finale = 22; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'encore') done = a.t >= 16;
+    else if(a.k === 'lance'){
+      a.bm.forEach((b, bi) => { const tt = a.t - a.w; if(tt < 0 || tt > a.sw) return; const th = b[0] + (b[1] - b[0])*tt/a.sw, x1 = a.x + Math.sin(th)*a.L, z1 = a.z + Math.cos(th)*a.L;
+        inA.forEach(p => { if(_zkSegD(p.x, p.z, a.x, a.z, x1, z1) < a.hw && once(p.k, 'ln' + bi + '_' + a.id, 40)){ A.hit(p.k, Math.round(ZKK_D.lance*M)); A.slow(p.k, 0.6, 800); } }); });
+      done = a.t >= a.w + a.sw + 4; }
+    else if(a.k === 'curtain'){
+      a.c.forEach((c, ci) => { const tt = a.t - c[4]; if(tt < 0) return; const s = -a.R + tt*a.sp; if(s > a.R) return;
+        const dx = Math.sin(c[0]), dz = Math.cos(c[0]);   // the curtain travels along (dx,dz); it lies along the perpendicular
+        inA.forEach(p => { const along = (p.x - hx)*dx + (p.z - hz)*dz, across = -(p.x - hx)*dz + (p.z - hz)*dx;
+          if(Math.abs(along - s) < 0.9 && Math.abs(across - c[1]) > c[2] && once(p.k, 'cu' + ci + '_' + a.id, 30)){ A.hit(p.k, Math.round(ZKK_D.curtain*M)); A.push(p.k, p.x - dx, p.z - dz, 2); } }); });
+      done = a.t >= a.end; }
+    else if(a.k === 'kaleido'){
+      if(a.t === a.w) a.m.forEach(q => inA.forEach(p => { const d = D(p, q[0], q[1]); if(d > a.r || d < 0.8) return; const an = Math.atan2(p.x - q[0], p.z - q[1]);
+        const rel = ((_zkDA(an, q[2]) % (Math.PI/3)) + Math.PI/3) % (Math.PI/3);
+        if(rel < Math.PI/6 && once(p.k, 'ka' + a.id, 10)){ A.hit(p.k, Math.round(ZKK_D.kaleido*M)); A.slow(p.k, 0.5, 900); } }));
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'wave'){
+      a.rg.forEach((g, gi) => { const tt = a.t - g[0]; if(tt <= 0) return; const r = 1.5 + tt*a.sp; if(r > ZKK_ENG) return; const gc = g[1] + tt*g[2];
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) > 0.8) return; const an = Math.atan2(p.x - a.x, p.z - a.z);
+          let inGap = false; for(let k = 0; k < a.ng; k++){ if(Math.abs(_zkDA(an, gc + k*2*Math.PI/a.ng)) < a.gw/Math.max(r, 3)) inGap = true; }
+          if(!inGap && once(p.k, 'wv' + gi + '_' + a.id, 30)){ A.hit(p.k, Math.round(ZKK_D.wave*M)); A.push(p.k, a.x, a.z, 2); } }); });
+      done = a.t >= a.rg[a.rg.length - 1][0] + Math.ceil(ZKK_ENG/a.sp) + 2; }
+    else if(a.k === 'prism'){
+      if(a.t >= a.w && a.t < a.w + a.dur){ const n = a.pr.length;
+        for(let i = 0; i < n; i++){ const q0 = a.pr[i], q1 = a.pr[(i + a.st) % n];
+          inA.forEach(p => { if(_zkSegD(p.x, p.z, q0[0], q0[1], q1[0], q1[1]) < a.hw && once(p.k, 'pr' + a.id, 6)){ A.hit(p.k, Math.round(ZKK_D.prism*M*(a.t === a.w ? 1 : 0.35))); A.slow(p.k, 0.6, 600); } }); } }
+      done = a.t >= a.w + a.dur + 4; }
+    else if(a.k === 'illusion'){
+      if(a.t > 2 && a.t < a.w) S.air = 1;
+      if(a.t === a.w){ const real = a.sp[a.real]; S.x = real[0]; S.z = real[1]; X.vx = X.vz = 0;
+        a.sp.forEach((q, qi) => inA.forEach(p => { if(D(p, q[0], q[1]) < a.r && once(p.k, 'il' + qi + '_' + a.id, 20)){ A.hit(p.k, Math.round(ZKK_D.illusion*M)); A.push(p.k, q[0], q[1], 4); } })); }
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'finale'){
+      S.air = 1;
+      a.st.forEach((s, si) => { if(a.t === s[1]) inA.forEach(p => { if(D(p, a.x, a.z) < ZKK_IN + 1 && _zkCell(s[0], p.x, p.z, a.x, a.z)){ A.hit(p.k, Math.round(ZKK_D.finale*M)); A.slow(p.k, 0.55, 900); } }); });
+      if(a.t === a.nv) inA.forEach(p => { if(D(p, a.x, a.z) < a.R){ A.hit(p.k, Math.round(ZKK_D.nova*M)); A.push(p.k, a.x, a.z, 6); } });
+      if(a.t === a.nv){ S.x = a.x; S.z = a.z; }
+      done = a.t >= a.nv + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 7 : ph >= 3 ? 9 : 11; }
+  } else {
+    // ── IT GLIDES: unhurried, keeping its audience at a showman's distance
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.1, Math.min(0.1, _zkDA(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.06, 0.065, 0.072, 0.08][ph], sp = d > 12 ? vmax : d < 7 ? -vmax*0.8 : 0, side = Math.sin(X.t*0.015)*vmax*0.7;
+    const tx = Math.sin(X.face)*sp + Math.cos(X.face)*side, tz = Math.cos(X.face)*sp - Math.sin(X.face)*side;
+    X.vx += (tx - X.vx)*0.1; X.vz += (tz - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { curtain:1, kaleido:1, wave:2, prism:2, illusion:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.finale <= 0) k = 'finale';
+      else if(X.cd.lance <= 0 && X.lastK !== 'lance') k = 'lance';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.lance <= 0) k = 'lance';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'lance'){
+        const sd = A.rnd() < 0.5 ? 1 : -1, bm = [[+(want - sd*1.0).toFixed(3), +(want + sd*1.0).toFixed(3)]];
+        if(ph >= 3) bm.push([+(want + sd*1.0).toFixed(3), +(want - sd*1.0).toFixed(3)]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, w:12, sw:14, L:32, hw:1.3, bm }; X.cd.lance = ph >= 3 ? 24 : 30; X.face = want; X.vx = X.vz = 0;
+        A.fx('zkx_lance', { x:R2(S.x), z:R2(S.z), w:12, sw:14, L:32, hw:1.3, bm });
+      } else if(k === 'curtain'){
+        const n = ph >= 3 ? 4 : 3, dir0 = A.rnd()*6.283, c = [], sp = 0.75, R = ZKK_IN;
+        for(let i = 0; i < n; i++){ const dir = ph >= 4 && i % 2 ? dir0 + Math.PI/2 : dir0, q = inA[i % inA.length], dx = Math.sin(dir), dz = Math.cos(dir);
+          const across = -(q.x - hx)*dz + (q.z - hz)*dx, gapC = Math.max(-R + 6, Math.min(R - 6, across + (A.rnd() < 0.5 ? 1 : -1)*(5 + A.rnd()*8)));
+          c.push([+dir.toFixed(3), R2(gapC), 2.6, 0, 14 + i*16]); }
+        const end = c[c.length - 1][4] + Math.ceil(2*R/sp) + 2;
+        X.act = { k, t:0, id, c, sp, R, end }; X.cd.curtain = ph >= 3 ? 90 : 105;
+        A.fx('zkx_curtain', { x:hx, z:hz, c, sp, R });
+      } else if(k === 'kaleido'){
+        const m = inA.map(p => [R2(p.x), R2(p.z), +(A.rnd()*Math.PI).toFixed(3)]);
+        X.act = { k, t:0, id, w:22, r:5.0, m }; X.cd.kaleido = ph >= 3 ? 70 : 85;
+        A.fx('zkx_kaleido', { w:22, r:5.0, m });
+      } else if(k === 'wave'){
+        const n = ph >= 3 ? 5 : 4, rg = [], sp = 0.7;
+        for(let i = 0; i < n; i++) rg.push([10 + i*8, +(A.rnd()*6.283).toFixed(3), +((i % 2 ? 1 : -1)*0.02).toFixed(3)]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, sp, rg, ng:ph >= 3 ? 2 : 3, gw:3.4 }; X.cd.wave = ph >= 3 ? 85 : 100; X.vx = X.vz = 0;
+        A.fx('zkx_wave', { x:R2(S.x), z:R2(S.z), sp, rg, ng:ph >= 3 ? 2 : 3, gw:3.4 });
+      } else if(k === 'prism'){
+        const n = 5, a0 = A.rnd()*6.283, pr = [];
+        for(let i = 0; i < n; i++){ const a = a0 + i/n*6.283, r = 18 + A.rnd()*8; pr.push([R2(hx + Math.sin(a)*r), R2(hz + Math.cos(a)*r)]); }
+        X.act = { k, t:0, id, pr, st:2, w:20, dur:22, hw:1.1 }; X.cd.prism = ph >= 3 ? 90 : 110;
+        A.fx('zkx_prism', { pr, st:2, w:20, dur:22, hw:1.1 });
+      } else if(k === 'illusion'){
+        const sp = [], a0 = A.rnd()*6.283;
+        for(let i = 0; i < 4; i++){ const q = inA[i % inA.length], a = a0 + i*Math.PI/2, c = clampA(q.x + Math.sin(a)*6, q.z + Math.cos(a)*6, ZKK_IN - 3); sp.push([R2(c[0]), R2(c[1])]); }
+        const real = Math.floor(A.rnd()*4);
+        X.act = { k, t:0, id, sp, real, w:20, r:5.5 }; X.cd.illusion = ph >= 4 ? 90 : 105; X.vx = X.vz = 0;
+        A.fx('zkx_illusion', { x0:R2(S.x), z0:R2(S.z), sp, real, w:20, r:5.5 });
+      } else if(k === 'finale'){
+        const order = [0, 1, 2, 3, A.rnd() < 0.5 ? 4 : 5, A.rnd() < 0.5 ? 0 : 1], st = order.map((p, i) => [p, 30 + i*15]), nv = st[st.length - 1][1] + 22;
+        X.act = { k, t:0, id, x:hx, z:hz, st, nv, R:9 }; X.cd.finale = 330; X.vx = X.vz = 0;
+        A.fx('zkx_finale', { x0:R2(S.x), z0:R2(S.z), x:hx, z:hz, st, nv, R:9, IN:ZKK_IN });
+      }
+    }
+  }
+  const ac = X.act;
+  if(!(ac && (ac.k === 'illusion' || ac.k === 'finale'))){ const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > ZKK_R){ const st = Math.min(d - ZKK_R, 0.15); S.x -= dx/d*st; S.z -= dz/d*st; } }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -8675,157 +8841,30 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── XU ZET-HORAK (a557). 2M HP across five themed phases. Like THE PIXIELORD she
-  //    does not chase — she holds the arena, backs off if crowded, and blinks. Her
-  //    ability is drawn from a pool that GROWS and re-weights with phase, rolled at
-  //    random; the client rolled it on each machine independently, so no two players
-  //    in a party ever saw the same one.
-  //    Damage numbers are absolute and already fold the phase in (280 + P*75 etc.),
-  //    so `dmg` stays flat at 1 and each handler computes from ph directly.
+  // ── XU ZET-HORAK (a730). Rebuilt as the Golden Magician: its whole fight lives in the shared brain
+  //    _zkBrain (above ZBOSS_SERVER; the client runs the same text solo). The brain moves it
+  //    (move:'self'), aims at every player in the harmonic arena and hands back damage, pushes,
+  //    pulls, slows and cues.
   xulcan: {
     x: 180, z: 165,                                    // tile (120,110) — the harmonic arena
-    spd:    [0,0,0,0,0,0],
-    dmg:    [0, 1, 1, 1, 1, 1],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 16, 14, 11, 9],                    // 120 then max(54,120-P*13), / 6
-    tele:   0,                                         // she has her own cast tell
-    move:   'hold',
-    pick:   (b, ph) => {
-      const pool = ['bolts', 'cataclysm'];
-      if (ph >= 2) pool.push('chrono');
-      if (ph >= 3) pool.push('fracture', 'bolts', 'overload');
-      if (ph >= 5) pool.push('fracture', 'cataclysm', 'chrono');
-      b._zhPick = pool[Math.floor(Math.random() * pool.length)];
-      return 0;
-    },
-    attack: (c) => {
-      const { b, ph, np, zoneName, game, fx, proj, geyser } = c;
-      const kind = b._zhPick || 'bolts';
-
-      if (kind === 'bolts') {
-        // HARMONIC BOLTS — three live-aimed fans
-        b._zhBoltW = 3; b._zhBoltT = 0; b._zhBoltDmg = 280 + ph*75;
-        fx('zh_bolts');
-
-      } else if (kind === 'cataclysm') {
-        // HARMONIC CATACLYSM — a vast expanding ring. Crossing-tested, as with the
-        //   PIXIELORD's nova: a fixed 1.6 band would be stepped over at 10Hz.
-        b._zhCatR = 1.0; b._zhCatDmg = 620 + ph*125;
-        fx('zh_cataclysm');
-
-      } else if (kind === 'chrono') {
-        // CHRONO DISPLACEMENT — time drags, then seven strikes walk the floor
-        b._zhChrN = 0; b._zhChrT = 0; b._zhChrDmg = 240 + ph*60;
-        fx('zh_chrono');
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          send(ws, { type:'sv_player_fx', zone:zoneName, eff:'slow', slow:0.55, root:2200 });
-        });
-
-      } else if (kind === 'overload') {
-        // HARMONIC OVERLOAD — five orbs orbit her and fire on a cycle
-        b._zhOrbT = 50; b._zhOrbA = 0; b._zhOrbDmg = 200 + ph*55;
-        fx('zh_overload');
-
-      } else {
-        // REALITY FRACTURE — the arena floor breaks into a hex lattice, then shatters
-        b._zhFrT = 13; b._zhFrX = np.x; b._zhFrZ = np.z; b._zhFrDmg = 820 + ph*175;
-        fx('zh_fracture', { cx:+np.x.toFixed(2), cz:+np.z.toFixed(2) });
-        const aimRF = Math.atan2(np.x - b.x, np.z - b.z);
-        for (let i = 0; i < 6; i++) proj(aimRF, _XP_GOLD, 0, 'magic');   // visual lead-in, dmg 0 as client
-      }
-    },
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in ZKK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, np, nd, ang, zoneName, game, fx, proj } = c;
-
-      // She backs away if you crowd her, and otherwise holds the arena.
-      if (nd < 4.5) {
-        const bx = b.x - Math.sin(ang)*0.27, bz = b.z - Math.cos(ang)*0.27;
-        if (bx > 2 && bx < 358 && bz > 2 && bz < 358) { b.x = bx; b.z = bz; }
-      }
-
-      // BLINK — reposition 8-14 units off the target on a phase-tightening cadence
-      if (!b._zhTpAt) b._zhTpAt = Date.now() + 4000;
-      if (Date.now() >= b._zhTpAt) {
-        b._zhTpAt = Date.now() + Math.max(3200, 6500 - ph*650);
-        const a = Math.random()*6.283, r = 8 + Math.random()*6;
-        const tx = np.x + Math.sin(a)*r, tz = np.z + Math.cos(a)*r;
-        if (tx > 2 && tx < 358 && tz > 2 && tz < 358) { b.x = tx; b.z = tz; }
-        fx('zh_blink', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-      }
-
-      // HARMONIC BOLTS waves — 9 bolts per wave, re-aimed each time
-      if (b._zhBoltW > 0) {
-        b._zhBoltT--;
-        if (b._zhBoltT <= 0) {
-          b._zhBoltT = 2;
-          const w = 3 - b._zhBoltW;
-          const aim = Math.atan2(np.x - b.x, np.z - b.z), sweep = (w-1)*0.12;
-          for (let i = -4; i <= 4; i++) proj(aim + i*0.15 + sweep, (i+w)%2 ? _XP_GOLD : _XP_CYAN, b._zhBoltDmg, 'magic');
-          fx('zh_bolts_wave', { w:w });
-          b._zhBoltW--;
-        }
-      }
-
-      // HARMONIC CATACLYSM ring — expands and hits once as it crosses
-      if (b._zhCatR > 0) {
-        const prevR = b._zhCatR;
-        b._zhCatR += 0.64 * 6;
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          const qx = p.x - b.x, qz = p.z - b.z, pd = Math.sqrt(qx*qx + qz*qz);
-          if (pd >= prevR - 1.6 && pd <= b._zhCatR + 1.6) {
-            send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._zhCatDmg,
-                       ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName });
-          }
-        });
-        fx('zh_cataclysm_ring', { r:+b._zhCatR.toFixed(2) });
-        if (b._zhCatR >= 20) b._zhCatR = 0;
-      }
-
-      // CHRONO DISPLACEMENT — seven telegraphed strikes, 2 ticks apart
-      if (b._zhChrN !== undefined && b._zhChrN < 7) {
-        b._zhChrT++;
-        if (b._zhChrT >= 1 + b._zhChrN*2) {
-          const k = b._zhChrN; b._zhChrN++;
-          const tx = np.x + (Math.random()-0.5)*8, tz = np.z + (Math.random()-0.5)*8;
-          if (!game._sdGeyser) game._sdGeyser = [];
-          game._sdGeyser.push({ zone:zoneName, x:tx, z:tz, fuse:5, dmg:b._zhChrDmg,
-                                eid:-1, col:_XP_VIOLET, radius:2.7 });
-          fx('zh_chrono_mark', { ex:+tx.toFixed(2), ez:+tz.toFixed(2), k:k });
-        }
-        if (b._zhChrN >= 7) b._zhChrN = undefined;
-      }
-
-      // HARMONIC OVERLOAD — five orbiting orbs firing every 8 ticks
-      if (b._zhOrbT > 0) {
-        b._zhOrbT--;
-        b._zhOrbA = (b._zhOrbA || 0) + 0.04*6;
-        fx('zh_overload_tick', { a:+b._zhOrbA.toFixed(3) });
-        if (b._zhOrbT % 8 === 0) {
-          for (let i = 0; i < 5; i++) {
-            const oa = b._zhOrbA + (i/5)*Math.PI*2;
-            const ox = b.x + Math.cos(oa)*4.5, oz = b.z + Math.sin(oa)*4.5;
-            const aim = Math.atan2(np.x - ox, np.z - oz);
-            _sdSpawnProj(game, zoneName, { id:-1, x:ox, z:oz }, aim,
-              i%2 ? _XP_CYAN : _XP_GOLD, b._zhOrbDmg, 'magic', null, 0);
-          }
-        }
-      }
-
-      // REALITY FRACTURE — the lattice holds, then shatters
-      if (b._zhFrT > 0) {
-        b._zhFrT--;
-        if (b._zhFrT === 0) {
-          fx('zh_fracture_shatter', { cx:+b._zhFrX.toFixed(2), cz:+b._zhFrZ.toFixed(2) });
-          players.forEach((p, ws) => {
-            if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-            const qx = p.x - b._zhFrX, qz = p.z - b._zhFrZ;
-            if (qx*qx + qz*qz < 121) send(ws, { type:'sv_enemy_attack', eid:-1, dmg:b._zhFrDmg,
-              ex:+b._zhFrX.toFixed(2), ez:+b._zhFrZ.toFixed(2), zone:zoneName });
-          });
-        }
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _zkBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:165,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
