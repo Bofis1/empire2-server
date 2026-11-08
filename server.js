@@ -565,7 +565,7 @@ const ZONE_BOSS_HP = {
   riftvale:         { hp:650000,   name:'THE RIFT SOVEREIGN' },   // a729 — rebuilt (was 400k)
   wyvernwastes:     { hp:1200000,  name:'CRYOTHAR' },   // a709 — rebuilt (was 500k)
   xumen:            { hp:1250000,  name:'THE XU SUPREME OVERLORD' },   // a714 — rebuilt (was 675k)
-  necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
+  necropolis:       { hp:2800000,  name:'THE BONE COLOSSUS' },   // a732 — rebuilt (was 1.4M); matches the Curator and the Apex Pyramid at Lv 100
   xumen_fortress:   { hp:2800000,  name:'THE APEX PYRAMID' },   // a707 — rebalanced (was 1.2M)
   void_citadel:     { hp:850000,   name:'XERATH, THE VOID KING' },   // a728 — rebuilt (was 800k)
   neon_hollow:      { hp:2800000,  name:'THE CURATOR' },   // a708 — rebuilt (was 1.6M)
@@ -5122,7 +5122,7 @@ const ZONE_DMG_BASE = {
   xulcan:          { lvl: 90, mob: 633, boss: 808.4982 },   // a730 — the rebuilt Zet-Horak's damage is set in ZKK_D directly (k = 1)
   forge:           { lvl: 95, mob: 624, boss: 934.44 },   // a719 — the rebuilt Furnace Core's damage is set in FC_D directly (k = 1)
   lucidwilde:      { lvl:100, mob: 526, boss: 1080 },   // a727 — the rebuilt Pixielord's damage is set in PZ_D directly (k = 1)
-  necropolis:      { lvl:100, mob: 183, boss: 150 },
+  necropolis:      { lvl:100, mob: 183, boss: 1080 },   // a732 — the rebuilt Bone Colossus's damage is set in BNK_D directly (k = 1)
   neon_hollow:     { lvl:100, mob: 275, boss:1080 },   // a708 — the rebuilt Curator's damage is set in CUR_D directly (k = 1)
   the_reach:       { lvl:100, mob: 422, boss: 316 },
   xeron:           { lvl:100, mob: 290, boss:1080 },   // a710 — the rebuilt Overseer's damage is set in XO_D directly (k = 1)
@@ -8189,6 +8189,159 @@ function _zkBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a732 — THE BONE COLOSSUS, rebuilt: a giant built out of the Necropolis's dead — thousands
+//   of bones fused into a walking cathedral with a soul-furnace burning in its ribcage. It holds
+//   the bone arena at the heart of the city (tile 120,120; about 40 across). One brain, shared
+//   word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//     GRAVE SLAM        P1+  its signature: a fist comes down on you and three rings of bone
+//                            spikes ripple out of the crater (P3: both fists, one after the other)
+//     DEATH'S GRASP     P1+  a giant skeletal hand claws up out of the ground under each of you
+//                            and closes into a fist
+//     SOUL STORM        P1+  its ribcage opens and streams of screaming skulls spiral out of the
+//                            furnace, turning as they go (P3: four streams)
+//     BONE SPEARS       P2+  it rips out ribs and hurls one at each of you; each spear shatters
+//                            along its line into spikes
+//     THE GRAVEYARD     P2+  tombstones rise all over the arena and each one erupts in a column
+//                            of soul fire (P3: they erupt twice)
+//     NECROTIC TIDE     P3+  a tide of death floods in from the edge of the arena; only the
+//                            ground near the Colossus stays dry until it ebbs
+//     REQUIEM           P4   the whole arena becomes its sigil: rings of bone erupt from the
+//                            edge to the centre, then from the centre back out; then the furnace
+//                            bursts
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const BNK_D  = { slam:1500, wave:950, grasp:1300, soul:900, spear:1300, grave:1150, tide:380, ring:1500, nova:2200 };
+const BNK_PM = [1, 1, 1.1, 1.22, 1.36];
+const BNK_R = 11, BNK_ENG = 37, BNK_IN = 33;
+function _bnSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _bnDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+function _bnBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = BNK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._bn;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._bn = { t:0, vx:0, vz:0, face:0, cd:{ slam:12, grasp:30, soul:40, spear:30, grave:40, tide:30, requiem:15 }, last:{}, gap:14, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < BNK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.08); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'howl', t:0 }; A.fx('bnx_howl', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 9) A.push(p.k, S.x, S.z, 5); });
+    if(ph >= 4) X.cd.requiem = 22; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'howl') done = a.t >= 18;
+    else if(a.k === 'slam'){
+      a.f.forEach((f, fi) => { const tt = a.t - f[2];
+        if(tt === 0) inA.forEach(p => { if(D(p, f[0], f[1]) < a.r){ A.hit(p.k, Math.round(BNK_D.slam*M)); A.push(p.k, f[0], f[1], 4); A.slow(p.k, 0.5, 900); } });
+        for(let k = 0; k < 3; k++){ const t2 = tt - k*5; if(t2 <= 0) continue; const r = a.r + t2*a.sp; if(r > a.rr) continue;
+          inA.forEach(p => { const d = D(p, f[0], f[1]); if(d > a.r && Math.abs(d - r) < 0.9 && once(p.k, 'sw' + fi + k + '_' + a.id, 30)){ A.hit(p.k, Math.round(BNK_D.wave*M)); A.push(p.k, f[0], f[1], 2); } }); } });
+      done = a.t >= a.f[a.f.length - 1][2] + 10 + Math.ceil((a.rr - a.r)/a.sp) + 2; }
+    else if(a.k === 'grasp'){
+      if(a.t === a.w) a.m.forEach(q => inA.forEach(p => { if(D(p, q[0], q[1]) < a.r && once(p.k, 'gr' + a.id, 10)){ A.hit(p.k, Math.round(BNK_D.grasp*M)); A.slow(p.k, 0.1, 1600); } }));
+      done = a.t >= a.w + 14; }
+    else if(a.k === 'soul'){
+      const tt = a.t - a.w;
+      if(tt >= 0 && tt < a.dur){ const th = a.a0 + tt*a.om;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(d < 2.5 || d > 27) return;
+          for(let i = 0; i < a.n; i++){ const s = th + i*2*Math.PI/a.n - (d - 2.5)*a.curl, perp = Math.abs(Math.sin(_bnDA(Math.atan2(p.x - a.x, p.z - a.z), s)))*d;
+            if(perp < a.hw && Math.abs(_bnDA(Math.atan2(p.x - a.x, p.z - a.z), s)) < 1.5 && once(p.k, 'ss', 7)){ A.hit(p.k, Math.round(BNK_D.soul*M)); A.slow(p.k, 0.6, 700); break; } } }); }
+      done = tt >= a.dur + 4; }
+    else if(a.k === 'spear'){
+      if(a.t === a.w) a.ln.forEach((l, li) => { const x1 = a.x + Math.sin(l[0])*l[1], z1 = a.z + Math.cos(l[0])*l[1];
+        inA.forEach(p => { if(_bnSegD(p.x, p.z, a.x, a.z, x1, z1) < a.hw && once(p.k, 'sp' + li + '_' + a.id, 20)){ A.hit(p.k, Math.round(BNK_D.spear*M)); A.slow(p.k, 0.5, 900); } }); });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'grave'){
+      a.g.forEach((g, gi) => { [g[2], g[3]].forEach((te, ei) => { if(te > 0 && a.t === te) inA.forEach(p => { if(D(p, g[0], g[1]) < a.r){ A.hit(p.k, Math.round(BNK_D.grave*M)); A.push(p.k, g[0], g[1], 2.5); } }); }); });
+      done = a.t >= a.end; }
+    else if(a.k === 'tide'){
+      const tt = a.t - a.w;
+      if(tt >= 0 && tt < a.dur){ const u = Math.min(1, tt/a.flood), R = BNK_IN - (BNK_IN - a.rmin)*u;
+        inA.forEach(p => { if(D(p, a.x, a.z) > R && once(p.k, 'td', 5)){ A.hit(p.k, Math.round(BNK_D.tide*M)); A.slow(p.k, 0.55, 600); } }); }
+      done = tt >= a.dur + 4; }
+    else if(a.k === 'requiem'){
+      a.rg.forEach(g => { if(a.t === g[2]) inA.forEach(p => { const d = D(p, a.x, a.z); if(d >= g[0] && d < g[1]){ A.hit(p.k, Math.round(BNK_D.ring*M)); A.slow(p.k, 0.5, 800); } }); });
+      if(a.t === a.nv) inA.forEach(p => { if(D(p, a.x, a.z) < a.R){ A.hit(p.k, Math.round(BNK_D.nova*M)); A.push(p.k, a.x, a.z, 7); } });
+      done = a.t >= a.nv + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : ph >= 3 ? 10 : 12; }
+  } else {
+    // ── IT WALKS: slow and enormous, turning to whoever is closest
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.07, Math.min(0.07, _bnDA(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.05, 0.055, 0.06, 0.068][ph], sp = d > 8 ? vmax : d < 4.5 ? -vmax*0.5 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { grasp:1, soul:1, spear:2, grave:2, tide:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.requiem <= 0) k = 'requiem';
+      else if(X.cd.slam <= 0 && X.lastK !== 'slam') k = 'slam';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.slam <= 0) k = 'slam';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'slam'){
+        const fist = (q, t0) => { const dx = q.x - S.x, dz = q.z - S.z, dd = Math.hypot(dx, dz) || 1, r = Math.min(dd, 10), c = clampA(S.x + dx/dd*r, S.z + dz/dd*r, BNK_IN); return [R2(c[0]), R2(c[1]), t0]; };
+        const f = [fist(P, 16)]; if(ph >= 3){ const o = inA.length > 1 ? inA.find(p => p.k !== P.k) : P; f.push(fist(o, 28)); }
+        X.act = { k, t:0, id, f, r:4.6, sp:0.75, rr:20 }; X.cd.slam = ph >= 3 ? 28 : 32; X.face = want; X.vx = X.vz = 0;
+        A.fx('bnx_slam', { x:R2(S.x), z:R2(S.z), f, r:4.6, sp:0.75, rr:20 });
+      } else if(k === 'grasp'){
+        const m = inA.map(p => [R2(p.x), R2(p.z), +(A.rnd()*6.283).toFixed(2)]);
+        X.act = { k, t:0, id, w:18, r:3.2, m }; X.cd.grasp = ph >= 3 ? 65 : 80;
+        A.fx('bnx_grasp', { w:18, r:3.2, m });
+      } else if(k === 'soul'){
+        const n = ph >= 3 ? 4 : 3, a0 = A.rnd()*6.283, om = (A.rnd() < 0.5 ? 1 : -1)*0.028, curl = (om > 0 ? 1 : -1)*0.045;
+        X.act = { k, t:0, id, x:S.x, z:S.z, w:14, dur:50, n, a0, om, curl, hw:1.3 }; X.cd.soul = ph >= 3 ? 90 : 105; X.vx = X.vz = 0;
+        A.fx('bnx_soul', { x:R2(S.x), z:R2(S.z), w:14, dur:50, n, a0:+a0.toFixed(3), om, curl, hw:1.3 });
+      } else if(k === 'spear'){
+        const ln = inA.map(p => { const a = Math.atan2(p.x - S.x, p.z - S.z), L = Math.min(34, D(p, S.x, S.z) + 7); return [+a.toFixed(3), +L.toFixed(1)]; });
+        X.act = { k, t:0, id, x:S.x, z:S.z, w:14, hw:1.25, ln }; X.cd.spear = ph >= 3 ? 60 : 75; X.vx = X.vz = 0;
+        A.fx('bnx_spear', { x:R2(S.x), z:R2(S.z), w:14, hw:1.25, ln });
+      } else if(k === 'grave'){
+        const n = ph >= 3 ? 12 : 9, g = [], twice = ph >= 3;
+        for(let i = 0; i < n; i++){ let x, z; if(i < inA.length*2){ const q = inA[i % inA.length], a = A.rnd()*6.283, r = 1 + A.rnd()*3; x = q.x + Math.sin(a)*r; z = q.z + Math.cos(a)*r; }
+          else { const a = A.rnd()*6.283, r = 5 + Math.sqrt(A.rnd())*(BNK_IN - 6); x = hx + Math.sin(a)*r; z = hz + Math.cos(a)*r; }
+          const c = clampA(x, z, BNK_IN - 1), t1 = 20 + i*2; g.push([R2(c[0]), R2(c[1]), t1, twice ? t1 + 26 : 0]); }
+        const end = Math.max.apply(null, g.map(q => Math.max(q[2], q[3]))) + 8;
+        X.act = { k, t:0, id, r:3.0, g, end }; X.cd.grave = ph >= 3 ? 95 : 110;
+        A.fx('bnx_grave', { r:3.0, g });
+      } else if(k === 'tide'){
+        X.act = { k, t:0, id, x:S.x, z:S.z, w:12, flood:30, dur:70, rmin:7.5 }; X.cd.tide = ph >= 4 ? 110 : 125; X.vx = X.vz = 0;
+        A.fx('bnx_tide', { x:R2(S.x), z:R2(S.z), w:12, flood:30, dur:70, rmin:7.5, R:BNK_IN });
+      } else if(k === 'requiem'){
+        const bands = [[28, 34], [23, 28], [18, 23], [13, 18], [8, 13], [2.5, 8]], rg = [];
+        bands.forEach((b, i) => rg.push([b[0], b[1], 36 + i*9]));
+        const back = rg[rg.length - 1][2] + 16; bands.slice().reverse().forEach((b, i) => rg.push([b[0], b[1], back + i*9]));
+        const nv = rg[rg.length - 1][2] + 20;
+        X.act = { k, t:0, id, x:hx, z:hz, rg, nv, R:9 }; X.cd.requiem = 340; X.vx = X.vz = 0; S.x = hx; S.z = hz;
+        A.fx('bnx_requiem', { x:hx, z:hz, rg, nv, R:9 });
+      }
+    }
+  }
+  const ac = X.act;
+  if(!(ac && ac.k === 'requiem')){ const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > BNK_R){ const st = Math.min(d - BNK_R, 0.12); S.x -= dx/d*st; S.z -= dz/d*st; } }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -8526,39 +8679,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE BONE COLOSSUS (a560), Necropolis. Four phases, the heaviest single hit in
-  //    the mid game (skull slam), and a standing army of raised dead.
+  // ── THE BONE COLOSSUS (a732). Rebuilt: its whole fight lives in the shared brain _bnBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). The brain moves it (move:'self'), aims at
+  //    every player in the bone arena and hands back damage, pushes, pulls, slows and cues.
   necropolis: {
-    x: 180, z: 180,
-    spd:    [0, 0.008, 0.013, 0.018, 0.024],
-    dmg:    [0, 1.0,   1.6,   2.4,   3.4],
+    x: 180, z: 180,                                    // tile (120,120) — the bone arena
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in BNK_D
     phases: [0.75, 0.50, 0.25],
-    acd:    [0, 20, 26, 23, 19],              // 120 then max(100,200-P*22), / 6
-    tele:   12,                               // 70 frames
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, mult, ang, np, aoe, fx, proj, geyser } = c;
-      if (atk === 0)      { fx('bc_slam');   aoe(9.0, Math.floor(650 * mult)); }
-      else if (atk === 1) { fx('bc_beam');
-                            for (let i = 0; i < 4; i++) proj(ang + (i-1.5)*0.16, 0x9944ff, Math.floor(150 * mult), 'void');
-                            aoe(9.0, Math.floor(400 * mult)); }
-      else if (atk === 2) { fx('bc_raise'); _zbSummon(c, 'skeleton_warrior', 3, 5000, 180, 0.040, 320, 100, 0, 3.4); }
-      else if (atk === 3) { fx('bc_bones');
-                            for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0xddccaa, Math.floor(120 * mult), 'plasma');
-                            aoe(10.0, Math.floor(360 * mult)); }
-      else if (atk === 4) { fx('bc_harvest'); aoe(12.0, Math.floor(420 * mult));
-                            // the colossus mends itself on a harvest, as client-side
-                            b.hp = Math.min(b.maxHp, b.hp + Math.floor(b.maxHp * 0.03)); }
-      else                { fx('bc_pound');  aoe(7.0, Math.floor(480 * mult));
-                            for (let g = 0; g < 4; g++)
-                              geyser(np.x + (Math.random()-0.5)*7, np.z + (Math.random()-0.5)*7,
-                                     4 + g, 3.3, Math.floor(220 * mult), 0x9944ff); }
-    },
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, np, nd, aoe, fx, geyser } = c;
-      if (b._vt % 3 === 0 && nd < 6.0) aoe(6.0, Math.floor(40 * mult));                     // ribcage aura
-      if (b._vt % 7 === 0 && nd < 16) geyser(np.x, np.z, 4, 3.75, Math.floor(80 * mult), 0x9944ff);   // lightning
-      if (b._vt % 11 === 0 && nd < 12) { fx('bc_pillar'); aoe(7.5, Math.floor(110 * mult)); }          // void flame pillar
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _bnBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
