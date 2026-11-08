@@ -562,7 +562,7 @@ const ZONE_BOSS_HP = {
   frostveil:        { hp:96000,    name:'FROSTVEIL COLOSSUS' },
   ancient:          { hp:120000,   name:'THE ELDER ARCHITECT' },
   dragonlair:       { hp:650000,   name:'VAELTHARAX THE UNDYING' },   // a712 — rebuilt (was 375k)
-  riftvale:         { hp:400000,   name:'THE RIFT SOVEREIGN' },
+  riftvale:         { hp:650000,   name:'THE RIFT SOVEREIGN' },   // a729 — rebuilt (was 400k)
   wyvernwastes:     { hp:1200000,  name:'CRYOTHAR' },   // a709 — rebuilt (was 500k)
   xumen:            { hp:1250000,  name:'THE XU SUPREME OVERLORD' },   // a714 — rebuilt (was 675k)
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
@@ -5114,7 +5114,7 @@ const ZONE_DMG_BASE = {
   ancient:         { lvl: 58, mob: 348, boss: 114 },
   sunken_sands:    { lvl: 60, mob: 292, boss: 339.1915 },   // a718 — the rebuilt Khepri's damage is set in KH_D directly (k = 1)
   dragonlair:      { lvl: 65, mob: 167, boss: 392.0282 },   // a712 — the rebuilt Vaeltharax's damage is set in VX_D directly (k = 1)
-  riftvale:        { lvl: 65, mob: 274, boss:  45 },
+  riftvale:        { lvl: 65, mob: 274, boss: 392.0282 },   // a729 — the rebuilt Rift Sovereign's damage is set in RZK_D directly (k = 1)
   void_citadel:    { lvl: 70, mob: 216, boss: 453.0954 },   // a728 — the rebuilt Void King's damage is set in VLK_D directly (k = 1)
   veiled_sanctuary:{ lvl:110, mob: 228, boss: 1442.6748 },   // a720 — the rebuilt Abbot's damage is set in FA_D directly (k = 1)   // a614 — 110+ (was 80): hits on the level-110 curve
   wyvernwastes:    { lvl: 80, mob: 259, boss: 605.2494 },   // a709 — the rebuilt Cryothar's damage is set in CRY_D directly (k = 1)
@@ -7859,6 +7859,170 @@ function _vlBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a729 — THE RIFT SOVEREIGN, rebuilt: an alien engine of a being that cuts through dimensions.
+//   It hovers over the Breach Island at the heart of the Rift Vale (tile 120,120; the island is
+//   about 27 across, ringed by the chasm). One brain, shared word for word by the server (the
+//   authority in a lobby) and the client (solo). 10 Hz.
+//     RIFT TEAR        P1+  its signature: a claw rakes the air and a rift tears open across the
+//                          ground toward you, staying open and bleeding for a few seconds
+//                          (P3: three rifts in a fan)
+//     VOID PORTALS     P1+  portals open round the rim of the island, each aimed at one of you;
+//                          each fires a lance of rift light straight across (P3: five, staggered)
+//     PHASE STEP       P1+  it steps into a portal and out of another behind one of you, and the
+//                          whole space around the exit is cut (P4: it steps twice)
+//     SINGULARITY      P2+  a singularity opens on the island and drags everyone toward it; its
+//                          heart burns, and when it collapses it blows outward
+//     RIFT STORM       P2+  small rifts burst open all over the island, one after another
+//     ECHOES           P3+  echoes of the Sovereign step out of portals round one of you and tear
+//                          rifts that cross where you stand
+//     THE BREACH       P4   it rises into the Singularity overhead and the island splits into six
+//                          wedges; five tear open one after another. One stays whole: get to it
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const RZK_D  = { tear:620, bleed:120, lance:540, step:680, sing:130, implode:760, storm:460, echo:560, breach:880, scar:150 };
+const RZK_PM = [1, 1, 1.1, 1.22, 1.36];
+const RZK_R = 12, RZK_ENG = 27;
+function _rzSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _rzDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+function _rzBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = RZK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._rz;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._rz = { t:0, vx:0, vz:0, face:0, cd:{ tear:12, portal:30, step:40, sing:30, storm:40, echo:30, breach:15 }, last:{}, gap:14, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < RZK_ENG + 2);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const pull = (k, x, z, amt) => { if(A.pull) A.pull(k, x, z, amt); };
+  S.air = 0;
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.1); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'shift', t:0 }; A.fx('rzx_shift', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); });
+    if(ph >= 4) X.cd.breach = 22; }
+
+  // a rift (a line from x0,z0 out along ang for L): hits once when it opens, then bleeds while it stays
+  const riftHit = (a, ln, li) => { const x1 = ln[0] + Math.sin(ln[2])*a.L, z1 = ln[1] + Math.cos(ln[2])*a.L;
+    inA.forEach(p => { if(_rzSegD(p.x, p.z, ln[0], ln[1], x1, z1) >= a.hw) return;
+      if(a.t === a.w){ if(once(p.k, 'rt' + li + '_' + a.id, 40)){ A.hit(p.k, Math.round(a.dmg*M)); A.slow(p.k, 0.5, 1000); } }
+      else if(once(p.k, 'rb' + a.id, 5)){ A.hit(p.k, Math.round(RZK_D.bleed*M)); A.slow(p.k, 0.6, 600); } }); };
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'shift') done = a.t >= 16;
+    else if(a.k === 'tear' || a.k === 'echo'){
+      if(a.t >= a.w && a.t <= a.w + a.dur) a.ln.forEach((ln, li) => riftHit(a, ln, li));
+      done = a.t >= a.w + a.dur; }
+    else if(a.k === 'portal'){
+      a.pt.forEach((q, i) => { if(a.t !== q[3]) return; const x1 = q[0] + Math.sin(q[2])*a.L, z1 = q[1] + Math.cos(q[2])*a.L;
+        inA.forEach(p => { if(_rzSegD(p.x, p.z, q[0], q[1], x1, z1) < a.hw && once(p.k, 'pl' + i + '_' + a.id, 30)){ A.hit(p.k, Math.round(RZK_D.lance*M)); A.push(p.k, p.x - Math.cos(q[2]), p.z + Math.sin(q[2]), 1.5); } }); });
+      done = a.t >= a.pt[a.pt.length - 1][3] + 6; }
+    else if(a.k === 'step'){
+      if(a.t > 3 && a.t < a.w) S.air = 1;                         // between dimensions
+      if(a.t === a.w){ S.x = a.x; S.z = a.z; X.vx = X.vz = 0;
+        inA.forEach(p => { if(D(p, a.x, a.z) < a.r){ A.hit(p.k, Math.round(RZK_D.step*M)); A.push(p.k, a.x, a.z, 3); } }); }
+      if(a.t === a.w + 8 && a.n2 && inA.length){
+        const o = inA.length > 1 ? inA.filter(p => D(p, S.x, S.z) > 4) : inA, q = o[Math.floor(A.rnd()*o.length)] || inA[0], dx = q.x - S.x, dz = q.z - S.z, dd = Math.hypot(dx, dz) || 1, c = clampA(q.x + dx/dd*3, q.z + dz/dd*3, RZK_ENG - 4);
+        a.n2 = 0; a.x0 = S.x; a.z0 = S.z; a.x = c[0]; a.z = c[1]; a.t = 0; a.id++; A.fx('rzx_step', { x0:R2(S.x), z0:R2(S.z), x:R2(c[0]), z:R2(c[1]), w:a.w, r:a.r }); }
+      done = a.t >= a.w + 10 && !a.n2; }
+    else if(a.k === 'sing'){
+      const tt = a.t - a.w;
+      if(tt >= 0 && tt < a.dur){
+        if(tt % 3 === 0) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.R && d > 0.6) pull(p.k, a.x, a.z, 0.32*(ph >= 3 ? 1.15 : 1)); });
+        inA.forEach(p => { if(D(p, a.x, a.z) < a.r && once(p.k, 'sg' + a.id, 5)){ A.hit(p.k, Math.round(RZK_D.sing*M)); } }); }
+      if(tt === a.dur) inA.forEach(p => { if(D(p, a.x, a.z) < a.rr){ A.hit(p.k, Math.round(RZK_D.implode*M)); A.push(p.k, a.x, a.z, 5); A.slow(p.k, 0.5, 1200); } });
+      done = tt >= a.dur + 6; }
+    else if(a.k === 'storm'){
+      a.c.forEach((c, i) => { if(a.t === c[2]) inA.forEach(p => { if(D(p, c[0], c[1]) < a.r){ A.hit(p.k, Math.round(RZK_D.storm*M)); A.slow(p.k, 0.6, 700); } }); });
+      done = a.t >= a.c[a.c.length - 1][2] + 6; }
+    else if(a.k === 'breach'){
+      S.air = 1;
+      const wedge = p => { const d = D(p, a.x, a.z); if(d < a.hub || d > a.R + 2) return -1; const an = Math.atan2(p.x - a.x, p.z - a.z); return ((Math.floor(((an - a.a0)/(2*Math.PI))*6 + 600)) % 6); };
+      a.ord.forEach(o => { if(a.t === o[1]) inA.forEach(p => { if(wedge(p) === o[0]){ A.hit(p.k, Math.round(RZK_D.breach*M)); A.slow(p.k, 0.45, 1500); } }); });
+      if(a.t > a.ord[0][1] && a.t < a.end) inA.forEach(p => { const wi = wedge(p); if(wi < 0) return; const o = a.ord.find(q => q[0] === wi);
+        if(o && a.t > o[1] && once(p.k, 'bs', 8)) A.hit(p.k, Math.round(RZK_D.scar*M)); });
+      if(a.t === a.end){ S.x = a.x; S.z = a.z; }
+      done = a.t >= a.end + 4; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 7 : ph >= 3 ? 9 : 11; }
+  } else {
+    // ── IT DRIFTS: hovering at middle distance, circling a little, never quite still
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.1, Math.min(0.1, _rzDA(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.065, 0.07, 0.078, 0.086][ph], sp = d > 9 ? vmax : d < 5 ? -vmax*0.7 : 0, side = Math.sin(X.t*0.02)*vmax*0.6;
+    const tx = Math.sin(X.face)*sp + Math.cos(X.face)*side, tz = Math.cos(X.face)*sp - Math.sin(X.face)*side;
+    X.vx += (tx - X.vx)*0.1; X.vz += (tz - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { portal:1, step:1, sing:2, storm:2, echo:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.breach <= 0) k = 'breach';
+      else if(X.cd.tear <= 0 && X.lastK !== 'tear') k = 'tear';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.tear <= 0) k = 'tear';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'tear'){
+        const fan = ph >= 3 ? [-0.42, 0, 0.42] : [0], ln = fan.map(o => [R2(S.x), R2(S.z), +(want + o).toFixed(3)]);
+        X.act = { k, t:0, id, w:12, dur:32, L:24, hw:1.25, dmg:RZK_D.tear, ln }; X.cd.tear = ph >= 3 ? 24 : 30; X.face = want; X.vx = X.vz = 0;
+        A.fx('rzx_tear', { ln, w:12, dur:32, L:24, hw:1.25 });
+      } else if(k === 'portal'){
+        const n = ph >= 3 ? 5 : 3, pt = [], a0 = A.rnd()*6.283;
+        for(let i = 0; i < n; i++){ const q = inA[i % inA.length], ang = a0 + i/n*6.283 + (A.rnd() - 0.5)*0.5, px = hx + Math.sin(ang)*25, pz = hz + Math.cos(ang)*25;
+          pt.push([R2(px), R2(pz), +Math.atan2(q.x - px, q.z - pz).toFixed(3), 16 + (ph >= 3 ? i*3 : 0)]); }
+        X.act = { k, t:0, id, L:52, hw:1.1, pt }; X.cd.portal = ph >= 3 ? 70 : 85;
+        A.fx('rzx_portal', { L:52, hw:1.1, pt });
+      } else if(k === 'step'){
+        const dx = P.x - S.x, dz = P.z - S.z, dd = Math.hypot(dx, dz) || 1, c = clampA(P.x + dx/dd*3, P.z + dz/dd*3, RZK_ENG - 4);
+        X.act = { k, t:0, id, x0:S.x, z0:S.z, x:c[0], z:c[1], w:13, r:4.6, n2:ph >= 4 ? 1 : 0 }; X.cd.step = ph >= 4 ? 70 : 85; X.vx = X.vz = 0;
+        A.fx('rzx_step', { x0:R2(S.x), z0:R2(S.z), x:R2(c[0]), z:R2(c[1]), w:13, r:4.6 });
+      } else if(k === 'sing'){
+        const c = clampA((S.x + P.x)/2 + (A.rnd() - 0.5)*4, (S.z + P.z)/2 + (A.rnd() - 0.5)*4, RZK_ENG - 8);
+        X.act = { k, t:0, id, x:c[0], z:c[1], w:10, dur:40, r:3.2, rr:6.5, R:24 }; X.cd.sing = ph >= 3 ? 100 : 120;
+        A.fx('rzx_sing', { x:R2(c[0]), z:R2(c[1]), w:10, dur:40, r:3.2, rr:6.5, R:24 });
+      } else if(k === 'storm'){
+        const n = ph >= 3 ? 16 : 11, c = [];
+        for(let i = 0; i < n; i++){ let x, z; if(i % 2 === 0){ const q = inA[(i/2) % inA.length], a = A.rnd()*6.283, r = A.rnd()*3.5; x = q.x + Math.sin(a)*r; z = q.z + Math.cos(a)*r; }
+          else { const a = A.rnd()*6.283, r = Math.sqrt(A.rnd())*(RZK_ENG - 2); x = hx + Math.sin(a)*r; z = hz + Math.cos(a)*r; }
+          const cc = clampA(x, z, RZK_ENG - 1); c.push([R2(cc[0]), R2(cc[1]), 12 + i*3]); }
+        X.act = { k, t:0, id, r:2.5, c }; X.cd.storm = ph >= 3 ? 90 : 105;
+        A.fx('rzx_storm', { r:2.5, c });
+      } else if(k === 'echo'){
+        const n = ph >= 4 ? 3 : 2, a0 = A.rnd()*6.283, ln = [];
+        for(let i = 0; i < n; i++){ const an = a0 + i/n*Math.PI + (A.rnd() - 0.5)*0.3, c = clampA(P.x + Math.sin(an)*10, P.z + Math.cos(an)*10, RZK_ENG - 1);
+          ln.push([R2(c[0]), R2(c[1]), +Math.atan2(P.x - c[0], P.z - c[1]).toFixed(3)]); }
+        X.act = { k, t:0, id, w:16, dur:24, L:22, hw:1.3, dmg:RZK_D.echo, ln }; X.cd.echo = ph >= 4 ? 85 : 100;
+        A.fx('rzx_echo', { x:R2(P.x), z:R2(P.z), ln, w:16, dur:24, L:22, hw:1.3 });
+      } else if(k === 'breach'){
+        const a0 = A.rnd()*6.283, safe = Math.floor(A.rnd()*6), rest = [0, 1, 2, 3, 4, 5].filter(i => i !== safe);
+        for(let i = rest.length - 1; i > 0; i--){ const j = Math.floor(A.rnd()*(i + 1)); const tmp = rest[i]; rest[i] = rest[j]; rest[j] = tmp; }
+        const ord = rest.map((w, i) => [w, 34 + i*7]), end = ord[ord.length - 1][1] + 24;
+        X.act = { k, t:0, id, x:hx, z:hz, a0, safe, ord, R:RZK_ENG, hub:2.5, end }; X.cd.breach = 340; X.vx = X.vz = 0;
+        A.fx('rzx_breach', { x0:R2(S.x), z0:R2(S.z), x:R2(hx), z:R2(hz), a0:+a0.toFixed(3), safe, ord, R:RZK_ENG, hub:2.5, end });
+      }
+    }
+  }
+  const ac = X.act;
+  if(!(ac && (ac.k === 'step' || ac.k === 'breach'))){ const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > RZK_R){ const st = Math.min(d - RZK_R, 0.15); S.x -= dx/d*st; S.z -= dz/d*st; } }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -8257,39 +8421,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE RIFT SOVEREIGN (a560), Rift Vale. No attack rotation at all — five abilities
-  //    on five independent timers that unlock with phase, same shape as THE APEX PYRAMID.
+  // ── THE RIFT SOVEREIGN (a729). Rebuilt: its whole fight lives in the shared brain _rzBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). The brain moves it (move:'self'), aims at
+  //    every player on the Breach Island and hands back damage, pushes, pulls, slows and cues.
   riftvale: {
-    x: 180, z: 180,
-    spd:    [0, 0.020, 0.028, 0.038, 0.050, 0.064],
-    dmg:    [0, 1.0,   1.5,   2.1,   2.9,   3.8],
-    phases: [0.75, 0.50, 0.25, 0.10],
-    acd:    [0, 20, 20, 20, 20, 20],          // unused — no rotation
+    x: 180, z: 180,                                    // tile (120,120) — the Breach Island
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in RZK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
     tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, ang, np, nd, aoe, fx, proj } = c;
-      // VOID PULSE — the sovereign's constant bleed
-      if (b._vt % 5 === 0 && nd < 5.5) { fx('rs_pulse'); aoe(4.5, Math.floor(35 * mult)); }
-      // P2+ RIFT SPIKES — four bolts radiate out
-      if (ph >= 2 && b._vt % 8 === 0) {
-        fx('rs_spikes');
-        for (let i = 0; i < 4; i++) proj(i/4*Math.PI*2, 0x440088, Math.floor(45 * mult), 'void');
-      }
-      // P3+ PHASE WARP — it blinks onto you and cuts
-      if (ph >= 3 && b._vt % 30 === 0) {
-        fx('rs_warp', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-        b.x = np.x + (Math.random()-0.5)*3; b.z = np.z + (Math.random()-0.5)*3;
-        aoe(3.0, Math.floor(60 * mult));
-      }
-      // P4+ DIMENSIONAL TEAR
-      if (ph >= 4 && b._vt % 15 === 0) { fx('rs_tear'); aoe(5.5, Math.floor(80 * mult)); }
-      // SOVEREIGN CLAW + aimed volley, widening with phase
-      if (b._vt % 9 === 0) {
-        if (nd < 3.0) aoe(3.0, Math.floor(50 * mult));
-        const shots = ph >= 3 ? 4 : ph >= 2 ? 2 : 1;
-        for (let i = 0; i < shots; i++)
-          proj(ang + (i - (shots-1)/2) * 0.18, 0x9900ff, Math.floor(40 * mult), 'plasma');
-      }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _rzBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
