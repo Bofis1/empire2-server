@@ -567,7 +567,7 @@ const ZONE_BOSS_HP = {
   xumen:            { hp:1250000,  name:'THE XU SUPREME OVERLORD' },   // a714 — rebuilt (was 675k)
   necropolis:       { hp:1400000,  name:'THE BONE COLOSSUS' },
   xumen_fortress:   { hp:2800000,  name:'THE APEX PYRAMID' },   // a707 — rebalanced (was 1.2M)
-  void_citadel:     { hp:800000,   name:'COMMANDANT XERATH' },
+  void_citadel:     { hp:850000,   name:'XERATH, THE VOID KING' },   // a728 — rebuilt (was 800k)
   neon_hollow:      { hp:2800000,  name:'THE CURATOR' },   // a708 — rebuilt (was 1.6M)
   veiled_sanctuary: { hp:6000000,  name:'THE FINAL ABBOT' },   // a720 — rebuilt (was 4M)  // v92.41 · a614 — 110+ raid boss (was 850k)
   blooming_wilds:   { hp:50000,    name:'THE WILDMOTHER' },   // a715 — rebuilt (was 35k)
@@ -5115,7 +5115,7 @@ const ZONE_DMG_BASE = {
   sunken_sands:    { lvl: 60, mob: 292, boss: 339.1915 },   // a718 — the rebuilt Khepri's damage is set in KH_D directly (k = 1)
   dragonlair:      { lvl: 65, mob: 167, boss: 392.0282 },   // a712 — the rebuilt Vaeltharax's damage is set in VX_D directly (k = 1)
   riftvale:        { lvl: 65, mob: 274, boss:  45 },
-  void_citadel:    { lvl: 70, mob: 216, boss: 191 },
+  void_citadel:    { lvl: 70, mob: 216, boss: 453.0954 },   // a728 — the rebuilt Void King's damage is set in VLK_D directly (k = 1)
   veiled_sanctuary:{ lvl:110, mob: 228, boss: 1442.6748 },   // a720 — the rebuilt Abbot's damage is set in FA_D directly (k = 1)   // a614 — 110+ (was 80): hits on the level-110 curve
   wyvernwastes:    { lvl: 80, mob: 259, boss: 605.2494 },   // a709 — the rebuilt Cryothar's damage is set in CRY_D directly (k = 1)
   xumen:           { lvl: 80, mob: 267, boss: 605.2494 },   // a714 — the rebuilt Overlord's damage is set in XL_D directly (k = 1)
@@ -7697,6 +7697,168 @@ function _pzBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a728 — XERATH, THE VOID KING: the old Commandant of the Void Citadel, crowned by the dark
+//   between the stars — a towering horned prince of darkness in black and crimson. He holds
+//   the Keep at the heart of the Citadel (tile 120,120; the island is about 29 across, ringed
+//   by the moat). One brain, shared word for word by the server (the authority in a lobby)
+//   and the client (solo). 10 Hz.
+//     SOVEREIGN'S EDGE   P1+  his signature: the greatsword cleaves a wide arc and a crescent of
+//                             black fire runs on out of it; from P3 he swings back the other way
+//     CHAINS OF DOMINION P1+  seals open under every one of you; chains burst out of them and
+//                             bind whoever is still standing inside
+//     ABYSSAL SPIRES     P1+  he stabs the floor: rows of black spires erupt outward from him
+//                             along spokes; stand between them (P4: a second set fills the gaps)
+//     DARK DESCENT       P2+  he spreads his wings, takes to the sky and crashes down on one of
+//                             you; the landing throws out a shock ring (P4: he does it twice)
+//     BLACK SUN          P2+  a black sun rises over him and its corona burns the whole island —
+//                             except his shadow. Come and kneel at his feet, or burn
+//     KING'S JUDGEMENT   P3+  a crown of judgement falls where one of you stands: whoever is
+//                             under it SHARES the blow; if nobody takes it, everyone does, harder
+//     NIGHT ETERNAL      P4   he rises over the heart of the island and three blades of night
+//                             sweep round it like the hands of a clock; then he falls on the
+//                             centre. Keep moving with the gaps and stay off the heart
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: his position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const VLK_D  = { edge:720, wave:430, chain:540, spire:580, descent:780, shock:430, sun:860, judge:700, night:300, nova:980 };
+const VLK_PM = [1, 1, 1.1, 1.22, 1.36];
+const VLK_R = 10, VLK_ENG = 30;
+function _vlSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _vlDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+function _vlBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = VLK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._vl;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._vl = { t:0, vx:0, vz:0, face:0, cd:{ edge:14, chain:30, spire:40, descent:30, sun:40, judge:30, night:15 }, last:{}, gap:16, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{}, air:0 };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < VLK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const pull = (k, x, z, amt) => { if(A.pull) A.pull(k, x, z, amt); };
+  S.air = 0;
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.1); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'decree', t:0 }; A.fx('vlx_decree', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4); });
+    if(ph >= 4) X.cd.night = 22; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'decree') done = a.t >= 16;
+    else if(a.k === 'edge'){
+      a.sw.forEach((W, wi) => { const tt = a.t - W[0];
+        if(tt === 0) inA.forEach(p => { if(D(p, a.x, a.z) < a.R && Math.abs(_vlDA(Math.atan2(p.x - a.x, p.z - a.z), W[1])) < a.hw){ A.hit(p.k, Math.round(VLK_D.edge*M)); A.push(p.k, a.x, a.z, 3); } });
+        else if(tt > 0){ const r = a.R*0.7 + tt*a.sp; if(r < 27) inA.forEach(p => { const d = D(p, a.x, a.z);
+          if(Math.abs(d - r) < 0.9 && Math.abs(_vlDA(Math.atan2(p.x - a.x, p.z - a.z), W[1])) < a.hw*0.92 && once(p.k, 'ew' + wi + '_' + a.id, 40)){ A.hit(p.k, Math.round(VLK_D.wave*M)); A.push(p.k, a.x, a.z, 2); } }); } });
+      done = a.t >= a.sw[a.sw.length - 1][0] + Math.ceil((27 - a.R*0.7)/a.sp) + 2; }
+    else if(a.k === 'chain'){
+      if(a.t === a.f) a.m.forEach(q => inA.forEach(p => { if(D(p, q[0], q[1]) < a.r && once(p.k, 'ch' + a.id, 20)){ A.hit(p.k, Math.round(VLK_D.chain*M)); A.slow(p.k, 0.12, 1600); pull(p.k, q[0], q[1], 1.2); } }));
+      done = a.t >= a.f + 8; }
+    else if(a.k === 'spire'){
+      a.ln.forEach((l, li) => { const tt = a.t - l[0]; if(tt <= 0) return; const fr = 2 + tt*a.sp; if(fr > 27) return;
+        const x1 = a.x + Math.sin(l[1])*27, z1 = a.z + Math.cos(l[1])*27;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - fr) < 1.3 && _vlSegD(p.x, p.z, a.x, a.z, x1, z1) < a.hw && once(p.k, 'sp' + li + '_' + a.id, 40)){ A.hit(p.k, Math.round(VLK_D.spire*M)); A.slow(p.k, 0.5, 700); } }); });
+      done = a.t >= a.end; }
+    else if(a.k === 'descent'){
+      if(a.t < a.f) S.air = 1;
+      if(a.t === a.f){ S.x = a.bx; S.z = a.bz; X.vx = X.vz = 0;
+        inA.forEach(p => { if(D(p, a.bx, a.bz) < a.r){ A.hit(p.k, Math.round(VLK_D.descent*M)); A.push(p.k, a.bx, a.bz, 4); } }); }
+      if(a.t > a.f){ const r = 1 + (a.t - a.f)*a.sp; if(r < a.rr) inA.forEach(p => { if(Math.abs(D(p, a.bx, a.bz) - r) < 0.8 && D(p, a.bx, a.bz) > a.r && once(p.k, 'ds' + a.id, 30)){ A.hit(p.k, Math.round(VLK_D.shock*M)); A.push(p.k, a.bx, a.bz, 2); } }); }
+      if(a.t === a.f + 12 && a.n2 && inA.length){   // P4: he takes to the sky again, on someone else if he can
+        const o = inA.length > 1 ? inA.filter(p => D(p, S.x, S.z) > 4) : inA, q = o[Math.floor(A.rnd()*o.length)] || inA[0], c = clampA(q.x, q.z, VLK_ENG - 6);
+        a.n2 = 0; a.x0 = S.x; a.z0 = S.z; a.bx = c[0]; a.bz = c[1]; a.t = 0; a.id++; A.fx('vlx_descent', { x0:R2(S.x), z0:R2(S.z), x:R2(a.bx), z:R2(a.bz), f:a.f, r:a.r, sp:a.sp, rr:a.rr }); }
+      done = a.t >= a.f + Math.ceil(a.rr/a.sp) + 2; }
+    else if(a.k === 'sun'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) > a.R){ A.hit(p.k, Math.round(VLK_D.sun*M)); A.slow(p.k, 0.5, 1500); } });
+      done = a.t >= a.w + 8; }
+    else if(a.k === 'judge'){
+      if(a.t === a.w){ const under = inA.filter(p => D(p, a.x, a.z) < a.r);
+        if(under.length){ const n = under.length, dmg = Math.round(VLK_D.judge*M/n); under.forEach(p => { A.hit(p.k, dmg); A.slow(p.k, 0.6, 900); }); }
+        else inA.forEach(p => { A.hit(p.k, Math.round(VLK_D.judge*M*1.3)); A.push(p.k, a.x, a.z, 3); });
+        A.fx('vlx_verdict', { x:R2(a.x), z:R2(a.z), r:a.r, n:under.length }); }
+      done = a.t >= a.w + 8; }
+    else if(a.k === 'night'){
+      if(a.t < a.t0) S.air = 1;
+      if(a.t === a.t0){ S.x = a.x; S.z = a.z; X.vx = X.vz = 0; }
+      if(a.t >= a.t0 && a.t < a.t1){ const th = a.a0 + (a.t - a.t0)*a.om;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(d > 27) return; const an = Math.atan2(p.x - a.x, p.z - a.z);
+          for(let i = 0; i < a.n; i++){ const s = th + i*Math.PI/a.n; const perp = Math.abs(Math.sin(_vlDA(an, s)))*d;
+            if(perp < a.hw && once(p.k, 'nt', 6)){ A.hit(p.k, Math.round(VLK_D.night*M)); const sg = Math.sign(Math.sin(_vlDA(an, s))) || 1; A.push(p.k, p.x - Math.cos(an)*sg, p.z + Math.sin(an)*sg, 1.5); break; } } }); }
+      if(a.t === a.nv) inA.forEach(p => { if(D(p, a.x, a.z) < a.R){ A.hit(p.k, Math.round(VLK_D.nova*M)); A.push(p.k, a.x, a.z, 6); A.slow(p.k, 0.5, 1500); } });
+      done = a.t >= a.nv + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 7 : ph >= 3 ? 9 : 11; }
+  } else {
+    // ── HE ADVANCES: a slow, certain walk, sword low, keeping just out of arm's reach
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.09, Math.min(0.09, _vlDA(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.06, 0.065, 0.072, 0.08][ph], sp = d > 5 ? vmax : d < 2.5 ? -vmax*0.5 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.12; X.vz += (Math.cos(X.face)*sp - X.vz)*0.12; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { chain:1, spire:1, descent:2, sun:2, judge:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.night <= 0) k = 'night';
+      else if(X.cd.edge <= 0 && X.lastK !== 'edge') k = 'edge';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.edge <= 0) k = 'edge';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'edge'){
+        const sd = A.rnd() < 0.5 ? 1 : -1, sw = [[14, +want.toFixed(3)]];
+        if(ph >= 3) sw.push([24, +(want + sd*0.9).toFixed(3)]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, R:10, hw:1.05, sp:1.1, sw }; X.cd.edge = ph >= 3 ? 22 : 28; X.face = want; X.vx = X.vz = 0;
+        A.fx('vlx_edge', { x:R2(S.x), z:R2(S.z), R:10, hw:1.05, sp:1.1, sw });
+      } else if(k === 'chain'){
+        const m = [], f = 16;
+        inA.forEach(p => { m.push([R2(p.x), R2(p.z)]); if(ph >= 3){ const a = A.rnd()*6.283, c = clampA(p.x + Math.sin(a)*4.5, p.z + Math.cos(a)*4.5, VLK_ENG - 5); m.push([R2(c[0]), R2(c[1])]); } });
+        X.act = { k, t:0, id, f, r:3.0, m }; X.cd.chain = ph >= 3 ? 62 : 75; X.vx = X.vz = 0;
+        A.fx('vlx_chain', { x:R2(S.x), z:R2(S.z), f, r:3.0, m });
+      } else if(k === 'spire'){
+        const n = ph >= 3 ? 7 : 5, a0 = want + (A.rnd() - 0.5)*0.4, ln = [], sp = 0.9;
+        for(let i = 0; i < n; i++) ln.push([12, +(a0 + i/n*2*Math.PI).toFixed(3)]);
+        if(ph >= 4) for(let i = 0; i < n; i++) ln.push([30, +(a0 + (i + 0.5)/n*2*Math.PI).toFixed(3)]);
+        const last = ln[ln.length - 1][0];
+        X.act = { k, t:0, id, x:S.x, z:S.z, sp, hw:1.25, ln, end:last + Math.ceil(25/sp) + 3 }; X.cd.spire = ph >= 3 ? 70 : 85; X.vx = X.vz = 0;
+        A.fx('vlx_spire', { x:R2(S.x), z:R2(S.z), sp, hw:1.25, ln });
+      } else if(k === 'descent'){
+        const q = inA[Math.floor(A.rnd()*inA.length)], c = clampA(q.x, q.z, VLK_ENG - 6);
+        X.act = { k, t:0, id, x0:S.x, z0:S.z, bx:c[0], bz:c[1], f:18, r:5.5, sp:0.8, rr:15, n2:ph >= 4 ? 1 : 0 }; X.cd.descent = ph >= 4 ? 80 : 95; X.vx = X.vz = 0;
+        A.fx('vlx_descent', { x0:R2(S.x), z0:R2(S.z), x:R2(c[0]), z:R2(c[1]), f:18, r:5.5, sp:0.8, rr:15 });
+      } else if(k === 'sun'){
+        X.act = { k, t:0, id, x:S.x, z:S.z, w:32, R:6.5 }; X.cd.sun = ph >= 3 ? 105 : 120; X.vx = X.vz = 0;
+        A.fx('vlx_sun', { x:R2(S.x), z:R2(S.z), w:32, R:6.5 });
+      } else if(k === 'judge'){
+        const q = inA[Math.floor(A.rnd()*inA.length)];
+        X.act = { k, t:0, id, x:q.x, z:q.z, w:30, r:3.6 }; X.cd.judge = ph >= 4 ? 100 : 115;
+        A.fx('vlx_judge', { x:R2(q.x), z:R2(q.z), w:30, r:3.6 });
+      } else if(k === 'night'){
+        const a0 = A.rnd()*Math.PI, om = (A.rnd() < 0.5 ? 1 : -1)*0.021;
+        X.act = { k, t:0, id, x:hx, z:hz, a0, om, n:3, hw:1.25, t0:14, t1:88, nv:98, R:7 }; X.cd.night = 330; X.vx = X.vz = 0;
+        A.fx('vlx_night', { x0:R2(S.x), z0:R2(S.z), x:R2(hx), z:R2(hz), a0:+a0.toFixed(3), om, n:3, hw:1.25, t0:14, t1:88, nv:98, R:7 });
+      }
+    }
+  }
+  const ac = X.act;
+  if(!(ac && (ac.k === 'descent' || ac.k === 'night'))){ const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > VLK_R){ const st = Math.min(d - VLK_R, 0.15); S.x -= dx/d*st; S.z -= dz/d*st; } }   // walks back to his ground after a descent
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -8566,108 +8728,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── COMMANDANT XERATH (a553). Five phases, a SIX-attack rotation picked from each
-  //    client's own clock (Math.floor(gameTime/bACD)%6) — the same divergence CRYOTHAR
-  //    and the Overlord had. Also summons, so it reuses the a551 shared-spawn path.
-  //    NOTE: a third boss with TWO phase ladders in the client — the AI block's
-  //    (bACD = max(75,150-phase*15)) and 20_enemy_factory.part's (85/65/50/38). Same
-  //    thresholds, different cadences. Ported the AI block's, as with CRYOTHAR (a548)
-  //    and THE XU SUPREME OVERLORD (a551).
+  // ── XERATH, THE VOID KING (a728). Rebuilt: his whole fight lives in the shared brain _vlBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). The brain moves him (move:'self'), aims at
+  //    every player on the Keep and hands back damage, pushes, pulls, slows and cues.
   void_citadel: {
-    x: 180, z: 180,                                    // tile (120,120) — central void arena
-    spd:    [0, 0.032, 0.042, 0.054, 0.068, 0.082],
-    dmg:    [0, 1.0,   1.5,   2.2,   3.0,   3.8],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 20, 18, 15, 13],                   // 120 then max(75,150-ph*15), / 6
-    tele:   10,                                        // 60 frames
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, nd, zone, zoneName, game, aoe, fx, proj, geyser } = c;
-
-      if (atk === 0) {
-        // VOID BLADE SLASH — a close cleave with a shockwave
-        fx('xe_blade'); aoe(6.0, Math.floor(460 * mult));
-
-      } else if (atk === 1) {
-        // COMMAND ORBS — a widening fan, more orbs each phase
-        fx('xe_orbs');
-        const n = [0, 3, 5, 7, 9, 11][ph];
-        for (let i = 0; i < n; i++) proj(ang + (i - (n-1)*0.5) * 0.20, 0xaa00ff, Math.floor(160 * mult), 'void');
-        aoe(6.0, Math.floor(220 * mult));
-
-      } else if (atk === 2) {
-        // VOID SURGE — reality bows outward
-        fx('xe_surge'); aoe(8.5, Math.floor(380 * mult));
-
-      } else if (atk === 3) {
-        // RIFT STRIKE — teleports BEHIND you, then backstabs. Phase 3+ strikes twice.
-        const btx = np.x - Math.sin(ang) * 1.6, btz = np.z - Math.cos(ang) * 1.6;
-        if (btx > 2 && btx < 358 && btz > 2 && btz < 358) { b.x = btx; b.z = btz; }
-        fx('xe_rift', { ex:+b.x.toFixed(2), ez:+b.z.toFixed(2) });
-        aoe(5.5, Math.floor(540 * mult));
-        if (ph >= 3) { b._rsFollow = 4; b._rsDmg = Math.floor(380 * mult); }
-
-      } else if (atk === 4) {
-        // SUMMON VOID LEGION — real adds in the SHARED zone (a551 pattern).
-        //   These carry their own small HP on purpose and are NOT touched by
-        //   ZONE_TYPE_HP, which only applies to ZONE_SPAWNS entries.
-        fx('xe_legion');
-        const n = ph >= 4 ? 4 : 3;
-        for (let si = 0; si < n; si++) {
-          const sa = Math.random() * Math.PI * 2, sr = 3.3 + Math.random() * 2.7;
-          const ssx = b.x + Math.sin(sa) * sr, ssz = b.z + Math.cos(sa) * sr;
-          if (ssx < 2 || ssx > 358 || ssz < 2 || ssz > 358) continue;
-          const useConstruct = si % 2 === 0;
-          zone._nextEid = (zone._nextEid || 100000) + 1;
-          const add = {
-            id: zone._nextEid,
-            type: useConstruct ? 'singularity_hound' : 'abyss_wraith',   // a703 — the citadel's own garrison
-            x: ssx, z: ssz, spawnX: ssx, spawnZ: ssz,
-            hp: useConstruct ? 1800 : 2200, maxHp: useConstruct ? 1800 : 2200,
-            atk: useConstruct ? 130 : 160, spd: 0.055, aggroRange: 14,
-            reward: 280, expR: 110, dmgReduction: useConstruct ? 0 : 0.10,
-            active: true, aggroed: true, respawnTimer: 0, attackTimer: 0,
-            _summoned: 1,
-          };
-          zone.enemies.push(add);
-          broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName,
-            ids:[add.id], xs:[+ssx.toFixed(2)], zs:[+ssz.toFixed(2)],
-            hps:[add.hp], acts:[1], types:[add.type] });
-          fx('xe_legion_drop', { ex:+ssx.toFixed(2), ez:+ssz.toFixed(2) });
-        }
-
-      } else {
-        // FULL VOID MERGE — the showpiece
-        fx('xe_merge');
-        const n = ph >= 4 ? 12 : 8;
-        for (let vi = 0; vi < n; vi++) proj(vi/n*Math.PI*2, 0xcc44ff, Math.floor(170 * mult), 'void');
-        aoe(10.0, Math.floor(460 * mult));
-      }
-    },
+    x: 180, z: 180,                                    // tile (120,120) — the Keep at the heart of the Citadel
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in VLK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, ang, np, nd, zoneName, game, aoe, fx, proj, geyser } = c;
-
-      // RIFT STRIKE follow-up (phase 3+), scheduled by the attack above
-      if (b._rsFollow > 0) {
-        b._rsFollow--;
-        if (b._rsFollow === 0) {
-          fx('xe_rift_followup');
-          aoe(5.0, b._rsDmg || Math.floor(380 * mult));
-        }
-      }
-
-      // Void Commander Aura — always on
-      if (b._vt % 5 === 0) aoe(5.5, Math.floor(45 * mult));
-      // P2+ Rift Lightning — strikes scattered around the target
-      if (ph >= 2 && b._vt % 9 === 0)
-        geyser(np.x + (Math.random()-0.5)*10.5, np.z + (Math.random()-0.5)*10.5, 3, 3.3, Math.floor(95 * mult), 0xcc00ff);
-      // P3+ Void Rain — drops across the arena
-      if (ph >= 3 && b._vt % 7 === 0)
-        geyser(b.x + (Math.random()-0.5)*15, b.z + (Math.random()-0.5)*15, 3, 2.7, Math.floor(100 * mult), 0x8800ff);
-      // P4+ autoshot command orb
-      if (ph >= 4 && b._vt % 8 === 0 && nd < 16) proj(ang, 0xaa00ff, Math.floor(110 * mult), 'void');
-      // P5 Reality Collapse — continuous ring pulse
-      if (ph >= 5 && b._vt % 5 === 0) { fx('xe_collapse'); aoe(5.5, Math.floor(90 * mult)); }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _vlBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
