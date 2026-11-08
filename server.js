@@ -4917,7 +4917,7 @@ var _CT = (function(){
   C.push([57.5,109,3.6,'gatehouse',14],[57.5,131,3.6,'gatehouse',14],[182.5,109,3.6,'gatehouse',14],[182.5,131,3.6,'gatehouse',14]);
   C.push([57.5,57.5,5.5,'itower',22],[182.5,57.5,5.5,'itower',22],[57.5,182.5,5.5,'itower',22],[182.5,182.5,5.5,'itower',22]);
   // the Royal Spire's four legs over the throne plaza
-  C.push([110,110,2.6,'leg',0],[130,110,2.6,'leg',0],[110,130,2.6,'leg',0],[130,130,2.6,'leg',0]);
+  // a724 — the Royal Spire is gone: no legs to walk around
   // the four high spires of the Royal Ward + their halls
   C.push([84,84,7,'spire',46],[156,84,7,'spire',52],[84,156,7,'spire',50],[156,156,7,'spire',44]);
   R.push([64,64,74,96,'hall',8],[90,64,106,74,'hall',7],[166,64,176,96,'hall',8],[134,64,150,74,'hall',7]);
