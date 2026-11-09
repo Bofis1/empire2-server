@@ -560,7 +560,7 @@ const ZONE_BOSS_HP = {
   sunken_sands:     { hp:500000,   name:'KHEPRI THE SAND COLOSSUS' },   // a718 — rebuilt (was 150k)
   fungal:           { hp:84000,    name:'MYCELIUM QUEEN' },
   frostveil:        { hp:96000,    name:'FROSTVEIL COLOSSUS' },
-  ancient:          { hp:120000,   name:'THE ELDER ARCHITECT' },
+  ancient:          { hp:450000,   name:'THE ELDER ARCHITECT' },   // a734 — rebuilt (was 120k); Lv 58, just under Khepri (Lv 60, 500k)
   dragonlair:       { hp:650000,   name:'VAELTHARAX THE UNDYING' },   // a712 — rebuilt (was 375k)
   riftvale:         { hp:650000,   name:'THE RIFT SOVEREIGN' },   // a729 — rebuilt (was 400k)
   wyvernwastes:     { hp:1200000,  name:'CRYOTHAR' },   // a709 — rebuilt (was 500k)
@@ -5111,7 +5111,7 @@ const ZONE_DMG_BASE = {
   caves_of_despair:{ lvl: 40, mob:  90, boss:  94 },
   fungal:          { lvl: 42, mob:  95, boss: 106 },
   frostveil:       { lvl: 50, mob: 229, boss: 110 },
-  ancient:         { lvl: 58, mob: 348, boss: 114 },
+  ancient:         { lvl: 58, mob: 348, boss: 320.1076 },   // a734 — the rebuilt Elder Architect's damage is set in QLK_D directly (k = 1)
   sunken_sands:    { lvl: 60, mob: 292, boss: 339.1915 },   // a718 — the rebuilt Khepri's damage is set in KH_D directly (k = 1)
   dragonlair:      { lvl: 65, mob: 167, boss: 392.0282 },   // a712 — the rebuilt Vaeltharax's damage is set in VX_D directly (k = 1)
   riftvale:        { lvl: 65, mob: 274, boss: 392.0282 },   // a729 — the rebuilt Rift Sovereign's damage is set in RZK_D directly (k = 1)
@@ -8511,6 +8511,166 @@ function _qbBrain(S, A){
   S.face = X.face;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// a734 — THE ELDER ARCHITECT, rebuilt: a god-machine of the old sun-builders — part temple,
+//   part engine, basalt and jade and gold, wired with light. It keeps the golden mandala plaza at
+//   the heart of the Ancient Realm (tile 120,120; about 40 across inside the jade moat). One
+//   brain, shared word for word by the server (the authority in a lobby) and the client (solo).
+//   10 Hz.
+//     OBSIDIAN CLEAVE   P1+  its signature: two great obsidian-edged blades sweep the ground in
+//                           front of it, one from each side (P3: then an overhead chop)
+//     THE SUN STONE     P1+  its calendar disc projects onto the plaza: three rings turn, each
+//                           with one gap; when they lock, everything but the gaps burns
+//     FEATHERED SERPENTS P1+ serpents of jade light burst out of the floor and race across the
+//                           plaza through you, weaving as they go (P3: three)
+//     THE BUILDER       P2+  it builds: stepped pyramids assemble in the air over each of you
+//                           and come down
+//     TEMPLE RISE       P2+  square waves of stone columns rise out from it, ring after ring,
+//                           each with one gap
+//     GLYPH FUSE        P3+  a step-fret glyph lights across the floor and burns along its
+//                           length tile by tile, like a fuse (P4: two)
+//     THE FIFTH SUN     P4   the four dead suns return — jaguar, wind, fire-rain and flood —
+//                           each striking one quarter of the plaza in turn; then the fifth sun
+//                           bursts from its heart
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ═══════════════════════════════════════════════════════════════════════════════
+const QLK_D  = { cleave:520, chop:600, sun:560, serpent:500, pyramid:540, wave:420, glyph:460, quad:620, nova:800 };
+const QLK_PM = [1, 1, 1.1, 1.22, 1.36];
+const QLK_R = 12, QLK_ENG = 38, QLK_IN = 34;
+function _qlSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _qlDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// a serpent's head after travelling s along its path
+function _qlSerp(sp, s){ const dx = Math.sin(sp[2]), dz = Math.cos(sp[2]), w = Math.sin(s*0.63 + sp[3])*2.5; return [sp[0] + dx*s + dz*w, sp[1] + dz*s - dx*w]; }
+// which quarter of the plaza (N/E/S/W wedges) a point is in
+function _qlQuad(x, z, hx, hz){ const a = Math.atan2(x - hx, z - hz); return ((Math.floor((a + Math.PI/4)/(Math.PI/2)) % 4) + 4) % 4; }
+function _qlBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = QLK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._ql;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._ql = { t:0, vx:0, vz:0, face:0, cd:{ cleave:12, sun:30, serpent:40, pyramid:30, wave:40, glyph:30, fifth:15 }, last:{}, gap:14, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < QLK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const clampA = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.08); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'ascend', t:0 }; A.fx('qlx_ascend', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 4); });
+    if(ph >= 4) X.cd.fifth = 22; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'ascend') done = a.t >= 16;
+    else if(a.k === 'cleave'){
+      a.sw.forEach((w, wi) => { if(a.t !== w[0]) return;
+        if(w[3]){ const x1 = a.x + Math.sin(w[1])*18, z1 = a.z + Math.cos(w[1])*18; inA.forEach(p => { if(_qlSegD(p.x, p.z, a.x, a.z, x1, z1) < 1.6){ A.hit(p.k, Math.round(QLK_D.chop*M)); A.slow(p.k, 0.5, 900); } }); }
+        else inA.forEach(p => { const d = D(p, a.x, a.z), an = Math.atan2(p.x - a.x, p.z - a.z); if(d < a.R && _qlDA(an, w[1]) >= 0 && _qlDA(an, w[2]) <= 0){ A.hit(p.k, Math.round(QLK_D.cleave*M)); A.push(p.k, a.x, a.z, 3); } }); });
+      done = a.t >= a.sw[a.sw.length - 1][0] + 8; }
+    else if(a.k === 'sun'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z), an = Math.atan2(p.x - a.x, p.z - a.z);
+        a.rg.forEach(r => { if(d < r[0] || d >= r[1]) return; const g = r[2] + r[3]*(a.w - 8), gw = 3.2/((r[0] + r[1])/2); if(Math.abs(_qlDA(an, g)) > gw && once(p.k, 'su' + a.id, 10)){ A.hit(p.k, Math.round(QLK_D.sun*M)); A.slow(p.k, 0.5, 1000); } }); });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'serpent'){
+      a.s.forEach((sp, si) => { const tt = a.t - a.w; if(tt < 0) return; const s = tt*a.sp; if(s > sp[4]) return; const h = _qlSerp(sp, s);
+        inA.forEach(p => { if(D(p, h[0], h[1]) < 2.3 && once(p.k, 'se' + si + '_' + a.id, 30)){ A.hit(p.k, Math.round(QLK_D.serpent*M)); A.push(p.k, h[0], h[1], 3); } }); });
+      done = a.t >= a.w + Math.ceil(Math.max.apply(null, a.s.map(s => s[4]))/a.sp) + 3; }
+    else if(a.k === 'pyramid'){
+      if(a.t === a.w) a.m.forEach(q => inA.forEach(p => { if(Math.max(Math.abs(p.x - q[0]), Math.abs(p.z - q[1])) < a.r && once(p.k, 'py' + a.id, 10)){ A.hit(p.k, Math.round(QLK_D.pyramid*M)); A.slow(p.k, 0.4, 1200); } }));
+      done = a.t >= a.w + 12; }
+    else if(a.k === 'wave'){
+      a.wv.forEach((w, wi) => { const tt = a.t - w[0]; if(tt <= 0) return; const r = 2 + tt*a.sp; if(r > a.rr) return;
+        inA.forEach(p => { const dx = p.x - a.x, dz = p.z - a.z, ch = Math.max(Math.abs(dx), Math.abs(dz)); if(Math.abs(ch - r) > 0.9) return;
+          const side = Math.abs(dx) >= Math.abs(dz) ? (dx > 0 ? 0 : 1) : (dz > 0 ? 2 : 3), along = side < 2 ? dz : dx;
+          if(side === w[1] && Math.abs(along - w[2]*r) < a.gw) return;
+          if(once(p.k, 'wv' + wi + '_' + a.id, 30)){ A.hit(p.k, Math.round(QLK_D.wave*M)); A.push(p.k, a.x, a.z, 2.5); } }); });
+      done = a.t >= a.wv[a.wv.length - 1][0] + Math.ceil(a.rr/a.sp) + 2; }
+    else if(a.k === 'glyph'){
+      a.f.forEach((f, fi) => f.c.forEach((c, ci) => { const te = f.t0 + ci*a.st; if(a.t !== te) return; const cx = a.x + c[0]*6 + 3, cz = a.z + c[1]*6 + 3;
+        inA.forEach(p => { if(Math.max(Math.abs(p.x - cx), Math.abs(p.z - cz)) < 3.1 && once(p.k, 'gl' + fi + ci + '_' + a.id, 4)){ A.hit(p.k, Math.round(QLK_D.glyph*M)); A.slow(p.k, 0.55, 700); } }); }));
+      done = a.t >= Math.max.apply(null, a.f.map(f => f.t0 + f.c.length*a.st)) + 6; }
+    else if(a.k === 'fifth'){
+      a.q.forEach(q => { if(a.t === q[1]) inA.forEach(p => { if(D(p, a.x, a.z) > 3 && _qlQuad(p.x, p.z, a.x, a.z) === q[0]){ A.hit(p.k, Math.round(QLK_D.quad*M)); A.slow(p.k, 0.5, 1000); } }); });
+      if(a.t === a.nv) inA.forEach(p => { if(D(p, a.x, a.z) < a.R){ A.hit(p.k, Math.round(QLK_D.nova*M)); A.push(p.k, a.x, a.z, 6); } });
+      done = a.t >= a.nv + 8; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : ph >= 3 ? 10 : 12; }
+  } else {
+    // ── IT ADVANCES: slow, enormous, deliberate
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.08, Math.min(0.08, _qlDA(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.05, 0.055, 0.062, 0.07][ph], sp = d > 7 ? vmax : d < 4 ? -vmax*0.5 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { sun:1, serpent:1, pyramid:2, wave:2, glyph:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.fifth <= 0) k = 'fifth';
+      else if(X.cd.cleave <= 0 && X.lastK !== 'cleave') k = 'cleave';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.cleave <= 0) k = 'cleave';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'cleave'){
+        const sw = [[12, +(want - 1.25).toFixed(3), +(want + 0.15).toFixed(3), 0], [20, +(want - 0.15).toFixed(3), +(want + 1.25).toFixed(3), 0]];
+        if(ph >= 3) sw.push([30, +want.toFixed(3), 0, 1]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, R:11, sw }; X.cd.cleave = ph >= 3 ? 30 : 32; X.face = want; X.vx = X.vz = 0;
+        A.fx('qlx_cleave', { x:R2(S.x), z:R2(S.z), R:11, sw });
+      } else if(k === 'sun'){
+        const rg = [[4, 12], [12, 20], [20, 28]].map((r, i) => [r[0], r[1], +(A.rnd()*6.283).toFixed(3), (A.rnd() < 0.5 ? 1 : -1)*[0.04, 0.032, 0.026][i]]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, w:38, rg }; X.cd.sun = ph >= 3 ? 95 : 110; X.vx = X.vz = 0;
+        A.fx('qlx_sun', { x:R2(S.x), z:R2(S.z), w:38, rg });
+      } else if(k === 'serpent'){
+        const n = ph >= 3 ? 3 : 2, s = [];
+        for(let i = 0; i < n; i++){ const q = inA[i % inA.length], a0 = A.rnd()*6.283, st = clampA(q.x + Math.sin(a0)*40, q.z + Math.cos(a0)*40, QLK_IN), dir = Math.atan2(q.x - st[0], q.z - st[1]), L = Math.hypot(q.x - st[0], q.z - st[1]) + 26;
+          s.push([R2(st[0]), R2(st[1]), +dir.toFixed(3), +(A.rnd()*6.283).toFixed(2), +L.toFixed(1)]); }
+        X.act = { k, t:0, id, w:16, sp:0.85, s }; X.cd.serpent = ph >= 3 ? 75 : 90;
+        A.fx('qlx_serpent', { w:16, sp:0.85, s });
+      } else if(k === 'pyramid'){
+        const m = inA.map(p => [R2(p.x), R2(p.z)]); if(ph >= 3) inA.forEach(p => { const c = clampA(p.x + (A.rnd() - 0.5)*12, p.z + (A.rnd() - 0.5)*12, QLK_IN - 3); m.push([R2(c[0]), R2(c[1])]); });
+        X.act = { k, t:0, id, w:20, r:3.8, m }; X.cd.pyramid = ph >= 3 ? 75 : 90;
+        A.fx('qlx_pyramid', { x:R2(S.x), z:R2(S.z), w:20, r:3.8, m });
+      } else if(k === 'wave'){
+        const wv = [0, 1, 2].map(i => [12 + i*9, Math.floor(A.rnd()*4), +((A.rnd() - 0.5)*1.1).toFixed(2)]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, wv, sp:0.75, rr:32, gw:2.4 }; X.cd.wave = ph >= 3 ? 85 : 100; X.vx = X.vz = 0;
+        A.fx('qlx_wave', { x:R2(S.x), z:R2(S.z), wv, sp:0.75, rr:32, gw:2.4 });
+      } else if(k === 'glyph'){
+        // a step-fret meander of 6-unit tiles, from the edge in toward whoever it hunts
+        const fuse = (q, t0) => { const gx = Math.floor((q.x - hx)/6), gz = Math.floor((q.z - hz)/6), c = []; let x = gx + (A.rnd() < 0.5 ? -5 : 5), z = gz + (A.rnd() < 0.5 ? -4 : 4);
+          const sx = Math.sign(gx - x) || 1, sz = Math.sign(gz - z) || 1; c.push([x, z]);
+          for(let i = 0; i < 26 && c.length < 24; i++){ const m = i % 4; if(m < 2 && x !== gx) x += sx; else if(z !== gz) z += sz; else if(x !== gx) x += sx; else { x += (i % 2 ? 1 : -1); } c.push([x, z]); }
+          return { c:c.filter(cc => Math.hypot(cc[0]*6 + 3, cc[1]*6 + 3) < QLK_IN), t0 }; };
+        const f = [fuse(P, 18)]; if(ph >= 4){ const o = inA.length > 1 ? inA.find(p => p.k !== P.k) : P; f.push(fuse(o, 24)); }
+        X.act = { k, t:0, id, x:hx, z:hz, f, st:2.5 };
+        X.act.f.forEach(ff => { ff.t0 = Math.round(ff.t0); }); X.act.st = 3; X.cd.glyph = ph >= 4 ? 85 : 100;
+        A.fx('qlx_glyph', { x:hx, z:hz, st:3, f:X.act.f });
+      } else if(k === 'fifth'){
+        const ord = [0, 1, 2, 3]; for(let i = 3; i > 0; i--){ const j = Math.floor(A.rnd()*(i + 1)); const t2 = ord[i]; ord[i] = ord[j]; ord[j] = t2; }
+        const q = ord.map((o, i) => [o, 34 + i*16]), nv = q[3][1] + 24;
+        X.act = { k, t:0, id, x:hx, z:hz, q, nv, R:10 }; X.cd.fifth = 340; X.vx = X.vz = 0; S.x = hx; S.z = hz;
+        A.fx('qlx_fifth', { x:hx, z:hz, q, nv, R:10, IN:QLK_IN });
+      }
+    }
+  }
+  const ac = X.act;
+  if(!(ac && ac.k === 'fifth')){ const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > QLK_R){ const st = Math.min(d - QLK_R, 0.12); S.x -= dx/d*st; S.z -= dz/d*st; } }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -8895,36 +9055,30 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE ANCIENT ARCHITECT (a559). Stone cleaves, void orb barrages, rune sigils,
-  //    awakened guardians and a shockwave that covers the realm.
+  // ── THE ELDER ARCHITECT (a734). Rebuilt as the god-machine of the sun-builders: the whole fight
+  //    lives in the shared brain _qlBrain (above ZBOSS_SERVER; the client runs the same text solo).
+  //    The brain moves it (move:'self'), aims at every player on the temple plaza and hands back
+  //    damage, pushes, slows and cues.
   ancient: {
     x: 180, z: 180,
-    spd:    [0, 0.010, 0.015, 0.022, 0.030, 0.040],
-    dmg:    [0, 1.0,   1.5,   2.0,   2.7,   3.5],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 21, 19, 16, 13],          // 120 then max(80,160-P*16), / 6
-    tele:   11,
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
-      if (atk === 0)      { fx('aa_cleave');  aoe(6.5, Math.floor(480 * mult)); aoe(9.0, Math.floor(130 * mult)); }
-      else if (atk === 1) { fx('aa_barrage');
-                            for (let i = 0; i < 6; i++) proj(ang + (i-2.5)*0.18, 0x8844ff, Math.floor(140 * mult), 'void');
-                            aoe(6.0, Math.floor(300 * mult)); }
-      else if (atk === 2) { fx('aa_sigil', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            geyser(np.x, np.z, 6, 6.0, Math.floor(160 * mult), 0xffdd40);
-                            aoe(7.0, Math.floor(350 * mult)); }
-      else if (atk === 3) { fx('aa_guardians'); _zbSummon(c, 'ancient_guardian', 2, 3200, 140, 0.045, 280, 88, 0, 3.2); }
-      else if (atk === 4) { fx('aa_shockwave'); aoe(13.0, Math.floor(420 * mult)); aoe(17.0, Math.floor(170 * mult)); }
-      else                { fx('aa_storm');
-                            for (let i = 0; i < 8; i++) proj(i/8*Math.PI*2, 0xffdd40, Math.floor(110 * mult), 'plasma');
-                            aoe(8.0, Math.floor(350 * mult)); }
-    },
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in QLK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, ang, nd, aoe, fx, proj } = c;
-      if (b._vt % 3 === 0 && nd < 5.5) aoe(5.5, Math.floor(25 * mult));          // ancient aura
-      if (b._vt % 6 === 0 && nd < 18) proj(ang, 0xffcc00, Math.floor(65 * mult), 'plasma');
-      if (nd < 4.0 && b._vt % 8 === 0) { fx('aa_blade'); aoe(4.0, Math.floor(60 * mult)); }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _qlBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
