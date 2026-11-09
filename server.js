@@ -558,7 +558,7 @@ const ZONE_BOSS_HP = {
   caves_of_despair: { hp:240000,   name:'FOREMAN DRAX' },   // a736 — rebuilt (was 80k); Lv 40, between the Inferno Colossus (Lv 35, 160k) and the Architect (Lv 58, 450k)
   ashlands:         { hp:160000,   name:'INFERNO COLOSSUS' },   // a716 — rebuilt (was 75k)
   sunken_sands:     { hp:500000,   name:'KHEPRI THE SAND COLOSSUS' },   // a718 — rebuilt (was 150k)
-  fungal:           { hp:84000,    name:'MYCELIUM QUEEN' },
+  fungal:           { hp:270000,   name:'MYCELIUM QUEEN' },   // a737 — rebuilt (was 84k); Lv 42, just above Foreman Drax (Lv 40, 240k)
   frostveil:        { hp:96000,    name:'FROSTVEIL COLOSSUS' },
   ancient:          { hp:450000,   name:'THE ELDER ARCHITECT' },   // a734 — rebuilt (was 120k); Lv 58, just under Khepri (Lv 60, 500k)
   dragonlair:       { hp:650000,   name:'VAELTHARAX THE UNDYING' },   // a712 — rebuilt (was 375k)
@@ -5035,7 +5035,7 @@ const ZONE_DMG_BASE = {
   aviacanyon:      { lvl: 30, mob: 103, boss: 142.3019 },   // a733 — the rebuilt Xuberry's damage is set in QBK_D directly (k = 1)
   ashlands:        { lvl: 35, mob:  60, boss: 164.4687 },   // a716 — the rebuilt Colossus's damage is set in IC_D directly (k = 1)
   caves_of_despair:{ lvl: 40, mob:  90, boss: 190.0884 },   // a736 — the rebuilt Foreman Drax's damage is set in FMK_D directly (k = 1)
-  fungal:          { lvl: 42, mob:  95, boss: 106 },
+  fungal:          { lvl: 42, mob:  95, boss: 201.4209 },   // a737 — the rebuilt Mycelium Queen's damage is set in MYK_D directly (k = 1)
   frostveil:       { lvl: 50, mob: 229, boss: 110 },
   ancient:         { lvl: 58, mob: 348, boss: 320.1076 },   // a734 — the rebuilt Elder Architect's damage is set in QLK_D directly (k = 1)
   sunken_sands:    { lvl: 60, mob: 292, boss: 339.1915 },   // a718 — the rebuilt Khepri's damage is set in KH_D directly (k = 1)
@@ -8784,6 +8784,176 @@ function _fmBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a737 — THE MYCELIUM QUEEN, rebuilt: a gaunt, rotting thing half-eaten by the fungus that now
+//   wears her, drifting over a mass of roots in her grove (tile 120,120; open to about 36 out).
+//   One brain, shared word for word by the server (the authority in a lobby) and the client
+//   (solo). 10 Hz.
+//     ROOT ERUPTION    P1+  her signature, alternating with the spore burst: hyphae tear up out of
+//                           the ground in lines toward everyone (P3: a second fan behind it)
+//     SPORE BURST      P1+  the other signature: the sacs on her back burst; spore clouds settle
+//                           over you and poison whoever stands in them
+//     BILE SPIT        P1+  globs of venom arc in; a direct hit poisons you, the puddle lingers
+//     FAIRY RING       P1+  a ring of mushrooms sprouts around you and closes — get out
+//     PUFFBALLS        P2+  puffballs swell all over the grove and pop one after another
+//     SPORE BREATH     P2+  a long cone of spores breathed over the grove
+//     MYCELIAL WEB     P3+  glowing hyphae spread in a web from her; stand between the threads
+//     MINDBLOOM        P3+  she reaches into your head. Stand in a pocket of clean air or your
+//                           brain fries: heavy damage, poison, and the world melts into colour
+//     THE GREAT BLOOM  P4   three rings of spores roll out of her, each with two gaps
+//   Poison is a damage-over-time she keeps per player (X.dot). Damage is RAW (before your defence);
+//   the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: her position {x,z} (read and written)
+// ════════════════════════════════════════════════════════════════════════════════════════
+const MYK_D  = { root:300, cloud:35, spit:260, pud:35, ring:340, puff:280, breath:70, web:300, mind:380, bloom:400, dot:40, mdot:60 };
+const MYK_PM = [1, 1, 1.1, 1.22, 1.36];
+const MYK_R = 14, MYK_ENG = 38, MYK_IN = 34;
+function _mySegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _myDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+function _myBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = MYK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._my;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._my = { t:0, vx:0, vz:0, face:0, cd:{ main:10, spit:20, ring:40, puff:30, breath:30, web:40, mind:50, bloom:20 }, last:{}, gap:14, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{}, Z:[], dot:{} };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < MYK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const rndPt = (r0, r1) => { const a = A.rnd()*6.283, r = r0 + Math.sqrt(A.rnd())*(r1 - r0); return [hx + Math.sin(a)*r, hz + Math.cos(a)*r]; };
+  const POISON = (p, n, d) => { const o = X.dot[p.k]; if(!o || o.n < n) X.dot[p.k] = { n, d, nx:X.t + 5 }; };
+
+  // ── lingering poison: spore clouds and bile puddles (X.Z: {x,z,r,t1,d,slow}) and per-player poison
+  X.Z = X.Z.filter(z => X.t < z.t1);
+  X.Z.forEach((z, zi) => inA.forEach(p => { if(D(p, z.x, z.z) < z.r && once(p.k, 'z' + z.id, 5)){ A.hit(p.k, Math.round(z.d*M)); if(z.slow) A.slow(p.k, z.slow, 600); } }));
+  inA.forEach(p => { const o = X.dot[p.k]; if(o && o.n > 0 && X.t >= o.nx){ A.hit(p.k, Math.round(o.d*M)); o.n--; o.nx = X.t + 5; } });
+  for(const k in X.dot) if(X.dot[k].n <= 0) delete X.dot[k];
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.08); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; A.fx('myx_rise', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 5); });
+    if(ph >= 4) X.cd.bloom = 30; if(ph >= 3) X.cd.mind = Math.min(X.cd.mind, 60); }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 20;
+    else if(a.k === 'roots'){
+      a.ln.forEach((l, li) => { if(a.t !== l[1]) return; const x1 = a.x + Math.sin(l[0])*a.L, z1 = a.z + Math.cos(l[0])*a.L;
+        inA.forEach(p => { if(_mySegD(p.x, p.z, a.x, a.z, x1, z1) < a.hw + 0.5 && once(p.k, 'rt' + li + '_' + a.id, 4)){ A.hit(p.k, Math.round(MYK_D.root*M)); A.slow(p.k, 0.25, 1200); } }); });
+      done = a.t >= Math.max.apply(null, a.ln.map(l => l[1])) + 8; }
+    else if(a.k === 'burst'){
+      if(a.t === a.t0){ a.c.forEach((c, ci) => X.Z.push({ id:'b' + a.id + '_' + ci, x:c[0], z:c[1], r:a.r, t1:X.t + a.dur, d:MYK_D.cloud, slow:0.7 })); }
+      done = a.t >= a.t0 + 6; }
+    else if(a.k === 'spit'){
+      a.g.forEach((g, gi) => { if(a.t !== g[2]) return;
+        inA.forEach(p => { if(D(p, g[0], g[1]) < a.r){ A.hit(p.k, Math.round(MYK_D.spit*M)); POISON(p, 4, MYK_D.dot); } });
+        X.Z.push({ id:'s' + a.id + '_' + gi, x:g[0], z:g[1], r:a.pr, t1:X.t + a.pd, d:MYK_D.pud }); });
+      done = a.t >= Math.max.apply(null, a.g.map(g => g[2])) + 4; }
+    else if(a.k === 'ring'){
+      if(a.t === a.w) a.c.forEach((c, ci) => inA.forEach(p => { if(D(p, c[0], c[1]) < a.r && once(p.k, 'fr_' + a.id, 6)){ A.hit(p.k, Math.round(MYK_D.ring*M)); POISON(p, 3, MYK_D.dot); } }));
+      done = a.t >= a.w + 8; }
+    else if(a.k === 'puff'){
+      a.p.forEach((q, qi) => { if(a.t !== q[2]) return;
+        inA.forEach(p => { if(D(p, q[0], q[1]) < a.r){ A.hit(p.k, Math.round(MYK_D.puff*M)); A.push(p.k, q[0], q[1], 2); } });
+        X.Z.push({ id:'p' + a.id + '_' + qi, x:q[0], z:q[1], r:a.r*0.9, t1:X.t + a.cd, d:MYK_D.cloud }); });
+      done = a.t >= Math.max.apply(null, a.p.map(q => q[2])) + 6; }
+    else if(a.k === 'breath'){
+      if(a.t >= a.w && a.t < a.w + a.d && (a.t - a.w) % 3 === 0) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.R && Math.abs(_myDA(Math.atan2(p.x - a.x, p.z - a.z), a.a)) < a.hw){ A.hit(p.k, Math.round(MYK_D.breath*M)); A.slow(p.k, 0.55, 700); POISON(p, 2, MYK_D.dot); } });
+      done = a.t >= a.w + a.d + 6; }
+    else if(a.k === 'web'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z), an = Math.atan2(p.x - a.x, p.z - a.z); let on = false;
+        for(let i = 0; i < a.n; i++){ const sa = a.a0 + i*2*Math.PI/a.n; if(Math.abs(_myDA(an, sa))*d < 1.3 && d < a.R) on = true; }
+        a.rr.forEach(r => { if(Math.abs(d - r) < 1.3) on = true; });
+        if(on){ A.hit(p.k, Math.round(MYK_D.web*M)); A.slow(p.k, 0.3, 1500); } });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'mind'){
+      if(a.t === a.w) inA.forEach(p => { if(!a.c.some(c => D(p, c[0], c[1]) < a.r)){ A.hit(p.k, Math.round(MYK_D.mind*M)); X.dot[p.k] = { n:6, d:MYK_D.mdot, nx:X.t + 8 }; A.slow(p.k, 0.6, 3000); } });
+      done = a.t >= a.w + 12; }
+    else if(a.k === 'bloom'){
+      a.rg.forEach((g, gi) => { const tt = a.t - g[0]; if(tt < 0) return; const r = 2 + tt*a.sp; if(r > a.R + a.bw) return;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) < a.bw/2 + 0.4){ const an = Math.atan2(p.x - a.x, p.z - a.z); if(Math.abs(_myDA(an, g[1])) > a.gh && Math.abs(_myDA(an, g[2])) > a.gh && once(p.k, 'bl' + gi + '_' + a.id, 40)){ A.hit(p.k, Math.round(MYK_D.bloom*M)); POISON(p, 3, MYK_D.dot); } } }); });
+      done = a.t >= a.rg[a.rg.length - 1][0] + Math.ceil(a.R/a.sp) + 6; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : ph >= 3 ? 10 : 12; }
+  } else {
+    // ── SHE DRIFTS after you over her roots
+    const want = Math.atan2(P.x - S.x, P.z - S.z); X.face += Math.max(-0.08, Math.min(0.08, _myDA(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.05, 0.058, 0.066, 0.075][ph], sp = d > 7 ? vmax : d < 3 ? -vmax*0.6 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.1; X.vz += (Math.cos(X.face)*sp - X.vz)*0.1; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { spit:1, ring:1, puff:2, breath:2, web:3, mind:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.bloom <= 0) k = 'bloom';
+      else if(ph >= 3 && X.cd.mind <= 0) k = 'mind';
+      else if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'main'){ X.mainN = (X.mainN || 0) + 1; k = X.mainN % 2 ? 'roots' : 'burst'; X.cd.main = ph >= 3 ? 26 : 30; }
+      const id = X.t;
+      if(k === 'roots'){
+        const ln = []; inA.slice(0, 4).forEach(p => ln.push([+Math.atan2(p.x - S.x, p.z - S.z).toFixed(3), 14]));
+        if(ln.length < 3) for(let i = ln.length; i < 3; i++) ln.push([+(want + (i % 2 ? 1 : -1)*0.7*Math.ceil(i/2)).toFixed(3), 14]);
+        if(ph >= 3) ln.slice().forEach(l => { ln.push([+(l[0] + 0.32).toFixed(3), 24]); ln.push([+(l[0] - 0.32).toFixed(3), 24]); });
+        X.act = { k, t:0, id, x:S.x, z:S.z, L:24, hw:1.5, ln }; X.vx = X.vz = 0;
+        A.fx('myx_roots', { x:R2(S.x), z:R2(S.z), L:24, hw:1.5, ln });
+      } else if(k === 'burst'){
+        const c = []; inA.forEach(p => { if(c.length < 4) c.push([R2(p.x), R2(p.z)]); });
+        for(let t2 = 0; t2 < 60 && c.length < 3 + ph; t2++){ const q = rndPt(6, MYK_IN - 3); if(c.every(o => Math.hypot(o[0] - q[0], o[1] - q[1]) > 7)) c.push([R2(q[0]), R2(q[1])]); }
+        X.act = { k, t:0, id, c, r:4.2, t0:12, dur:50 };
+        A.fx('myx_burst', { x:R2(S.x), z:R2(S.z), c, r:4.2, t0:12, dur:50 });
+      } else if(k === 'spit'){
+        const g = []; inA.forEach(p => { if(g.length < 4) g.push([R2(p.x), R2(p.z)]); });
+        for(let t2 = 0; t2 < 40 && g.length < 3 + ph; t2++){ const q = rndPt(5, MYK_IN - 3); g.push([R2(q[0]), R2(q[1])]); }
+        g.forEach((q, i) => q.push(10 + i*3));
+        X.act = { k, t:0, id, g, r:2.2, pr:3.2, pd:60 }; X.cd.spit = 60; X.face = want;
+        A.fx('myx_spit', { x:R2(S.x), z:R2(S.z), g, r:2.2, pr:3.2, pd:60 });
+      } else if(k === 'ring'){
+        const c = []; inA.forEach(p => { if(c.length < 3){ const q = inG(p.x, p.z, MYK_IN - 2); c.push([R2(q[0]), R2(q[1])]); } });
+        X.act = { k, t:0, id, c, r:5.5, w:22 }; X.cd.ring = 80;
+        A.fx('myx_ring', { x:R2(S.x), z:R2(S.z), c, r:5.5, w:22 });
+      } else if(k === 'puff'){
+        const p2 = []; inA.forEach(p => { if(p2.length < 3) p2.push([R2(p.x), R2(p.z)]); });
+        for(let t2 = 0; t2 < 80 && p2.length < 6 + ph; t2++){ const q = rndPt(5, MYK_IN - 2); if(p2.every(o => Math.hypot(o[0] - q[0], o[1] - q[1]) > 6)) p2.push([R2(q[0]), R2(q[1])]); }
+        p2.forEach((q, i) => q.push(20 + i*4));
+        X.act = { k, t:0, id, p:p2, r:3.6, cd:30 }; X.cd.puff = 100;
+        A.fx('myx_puff', { x:R2(S.x), z:R2(S.z), p:p2, r:3.6, cd:30 });
+      } else if(k === 'breath'){
+        X.act = { k, t:0, id, x:S.x, z:S.z, a:want, hw:0.55, R:20, w:16, d:12 }; X.cd.breath = 70; X.face = want; X.vx = X.vz = 0;
+        A.fx('myx_breath', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), hw:0.55, R:20, w:16, d:12 });
+      } else if(k === 'web'){
+        const a0 = +(A.rnd()*6.283).toFixed(3);
+        X.act = { k, t:0, id, x:S.x, z:S.z, a0, n:8, rr:[11, 21], R:34, w:24 }; X.cd.web = 110; X.vx = X.vz = 0;
+        A.fx('myx_web', { x:R2(S.x), z:R2(S.z), a0, n:8, rr:[11, 21], R:34, w:24 });
+      } else if(k === 'mind'){
+        const c = []; for(let t2 = 0; t2 < 80 && c.length < 3; t2++){ const q = rndPt(9, MYK_IN - 6); if(c.every(o => Math.hypot(o[0] - q[0], o[1] - q[1]) > 12)) c.push([R2(q[0]), R2(q[1])]); }
+        X.act = { k, t:0, id, c, r:3.4, w:40 }; X.cd.mind = ph >= 4 ? 220 : 260; X.vx = X.vz = 0;
+        A.fx('myx_mind', { x:R2(S.x), z:R2(S.z), c, r:3.4, w:40 });
+      } else if(k === 'bloom'){
+        const g0 = A.rnd()*6.283, rg = [0, 1, 2].map(i => [20 + i*12, +(g0 + i*1.1).toFixed(3), +(g0 + i*1.1 + Math.PI*0.9).toFixed(3)]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, rg, sp:0.9, bw:2.4, gh:0.38, R:MYK_IN + 2 }; X.cd.bloom = 300; X.vx = X.vz = 0;
+        A.fx('myx_bloom', { x:R2(S.x), z:R2(S.z), rg, sp:0.9, bw:2.4, gh:0.38, R:MYK_IN + 2 });
+      }
+    }
+  }
+  const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > MYK_R){ const st = Math.min(d - MYK_R, 0.15); S.x -= dx/d*st; S.z -= dz/d*st; }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -9259,110 +9429,30 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── MYCELIUM QUEEN (a558). The last zone boss to migrate. Five phases, a SIX-attack
-  //    rotation picked with Math.floor(gameTime/bACD)%6 off each client's own clock —
-  //    the same divergence CRYOTHAR had back in a548, closing the loop.
-  //    She chases, summons crawlers, and layers passive toxins that scale with phase.
-  //    NOTE: a fourth boss carrying TWO phase ladders in the client — this AI block's
-  //    (.80/.60/.40/.20, bACD = max(80,158-P*16)) and a second in 20_enemy_factory.part
-  //    at .75/.50. Ported the AI block's, as with CRYOTHAR (a548), THE XU SUPREME
-  //    OVERLORD (a551) and COMMANDANT XERATH (a553).
+  // ── THE MYCELIUM QUEEN (a737). Rebuilt as the rotting fungal horror: the whole fight lives in the
+  //    shared brain _myBrain (above ZBOSS_SERVER; the client runs the same text solo). She holds
+  //    her grove (tile 120,120). The brain moves her (move:'self'), aims at every player in the
+  //    grove, keeps her poison on each of them, and hands back damage, pushes, slows and cues.
   fungal: {
-    x: 180, z: 180,                                    // tile (120,120) — the Queen's grove
-    spd:    [0, 0.012, 0.018, 0.024, 0.032, 0.042],
-    dmg:    [0, 1.0,   1.5,   2.0,   2.7,   3.5],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 21, 18, 16, 13],                   // 120 then max(80,158-P*16), / 6
-    tele:   11,                                        // 65 frames
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, nd, zone, zoneName, game, aoe, fx, proj, geyser } = c;
-
-      if (atk === 0) {
-        // TENTACLE LASH — eight arms slam outward from the mass
-        fx('mq_lash'); aoe(6.5, Math.floor(400 * mult));
-        aoe(10.5, Math.floor(110 * mult));
-
-      } else if (atk === 1) {
-        // SPORE BURST — a toxic ring bursts in every direction
-        fx('mq_burst');
-        for (let s2 = 0; s2 < 8; s2++) proj(s2/8*Math.PI*2, 0x80ff40, Math.floor(100 * mult), 'plasma');
-        aoe(7.0, Math.floor(250 * mult));
-
-      } else if (atk === 2) {
-        // MYCELIUM SURGE — the ground erupts in fungal spikes around you
-        fx('mq_surge', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-        for (let m = 0; m < 6; m++) {
-          const a2 = m/6*Math.PI*2, r2 = (1.5 + Math.random()*2.5) * 1.5;
-          geyser(np.x + Math.sin(a2)*r2, np.z + Math.cos(a2)*r2, 4 + m, 3.0,
-                 Math.floor(110 * mult), 0x80ff40);
-        }
-        aoe(6.0, Math.floor(290 * mult));
-
-      } else if (atk === 3) {
-        // SPAWN CRAWLERS — three children clawed out of the mycelium, into the SHARED
-        //   zone (the a551 pattern). Client-side these were pushed straight into the
-        //   local enemies array, so every player fought their own private brood.
-        fx('mq_spawn');
-        for (let k = 0; k < 3; k++) {
-          const a2 = Math.random()*Math.PI*2, r2 = (2.0 + Math.random()*2.0) * 1.5;
-          const cx = b.x + Math.sin(a2)*r2, cz = b.z + Math.cos(a2)*r2;
-          if (cx < 2 || cx > 358 || cz < 2 || cz > 358) continue;
-          zone._nextEid = (zone._nextEid || 100000) + 1;
-          const add = {
-            id: zone._nextEid, type:'crawler',
-            x: cx, z: cz, spawnX: cx, spawnZ: cz,
-            hp: 1600, maxHp: 1600, atk: 88, spd: 0.065, aggroRange: 14,
-            reward: 160, expR: 48, dmgReduction: 0,
-            active: true, aggroed: true, respawnTimer: 0, attackTimer: 0,
-            _summoned: 1,
-          };
-          zone.enemies.push(add);
-          broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName,
-            ids:[add.id], xs:[+cx.toFixed(2)], zs:[+cz.toFixed(2)],
-            hps:[add.hp], acts:[1], types:[add.type] });
-          fx('mq_spawn_drop', { ex:+cx.toFixed(2), ez:+cz.toFixed(2) });
-        }
-
-      } else if (atk === 4) {
-        // TOXIC FLOOD — the rot washes over the whole grove
-        fx('mq_flood'); aoe(11.0, Math.floor(370 * mult));
-        aoe(16.0, Math.floor(100 * mult));
-
-      } else {
-        // BARBED IMPALE — three precise tentacle stabs
-        fx('mq_impale');
-        b._mqImpale = 3; b._mqImpaleT = 0; b._mqImpaleDmg = Math.floor(170 * mult);
-        aoe(7.0, Math.floor(310 * mult));
-      }
-    },
+    x: 180, z: 180,
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in MYK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, ph, mult, ang, np, nd, zoneName, game, aoe, fx, proj } = c;
-
-      // BARBED IMPALE follow-through — the second and third stabs
-      if (b._mqImpale > 0) {
-        b._mqImpaleT++;
-        if (b._mqImpaleT >= 2) {
-          b._mqImpaleT = 0; b._mqImpale--;
-          const sp = (Math.random()-0.5) * 0.20;
-          proj(Math.atan2(np.x - b.x, np.z - b.z) + sp, 0xcc44ff, b._mqImpaleDmg, 'plasma');
-        }
-      }
-
-      // PASSIVE: spore cloud — the air around her is toxic at all times
-      if (b._vt % 3 === 0 && nd < 5.5) aoe(5.5, Math.floor(18 * mult));
-      // PASSIVE: phase 3+ — spore pods burst near the target
-      if (ph >= 3 && b._vt % 8 === 0 && nd < 12) {
-        fx('mq_pod', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-        players.forEach((p, ws) => {
-          if (p.gameId !== game.id || p.zone !== zoneName || p.x === undefined) return;
-          const dx = p.x - np.x, dz = p.z - np.z;
-          if (dx*dx + dz*dz < 2.5*2.5) send(ws, { type:'sv_enemy_attack', eid:-1,
-            dmg:Math.floor(35 * mult), ex:+np.x.toFixed(2), ez:+np.z.toFixed(2), zone:zoneName });
-        });
-      }
-      // PASSIVE: phase 5 — the mycelium itself snares everything near her
-      if (ph >= 5 && b._vt % 4 === 0) { fx('mq_snare'); aoe(6.0, Math.floor(28 * mult)); }
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = p.pid !== undefined ? 'p' + p.pid : T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _myBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
     },
   },
 
