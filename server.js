@@ -551,7 +551,7 @@ const TILE = 1.5; // a486 — MUST equal the client TILE (10_core_setup: const T
 // ZONE BOSS HP — server-authoritative boss HP per zone
 // ══════════════════════════════════════════════════════════
 const ZONE_BOSS_HP = {
-  patrol:           { hp:18000,    name:'SERPENT TITAN MK-VII' },
+  patrol:           { hp:30000,    name:'SERPENT TITAN MK-VII' },   // a741 — re-armed (was 18k); Lv 5, below the Wildmother (Lv 10, 50k)
   cemetery:         { hp:90000,    name:'THE LICH KING' },   // a717 — rebuilt (was 64k)
   void:             { hp:70000,    name:'VOID WRAITH PRIME' },   // a725 — rebuilt (was 54k)
   citadel:          { hp:120000,   name:'GENERAL VORRAKH' },   // a722 — rebuilt (was 70k)
@@ -5027,7 +5027,7 @@ function dmgCurve(L){
 }
 // measured in a578: average meaningful hit for each zone's mobs and its boss (phase 1)
 const ZONE_DMG_BASE = {
-  patrol:          { lvl:  5, mob:  46, boss: 152 },
+  patrol:          { lvl:  5, mob:  46, boss: 69 },   // a741 — the re-armed Serpent Titan's damage is set in TZK_D directly (k = 1)
   blooming_wilds:  { lvl: 10, mob:  44, boss: 79.7483 },   // a715 — the rebuilt Wildmother's damage is set in WM_D directly (k = 1)
   void:            { lvl: 15, mob:  42, boss: 92.1709 },   // a725 — the rebuilt Wraith's damage is set in VP_D directly (k = 1)
   cemetery:        { lvl: 20, mob:  54, boss: 106.5286 },   // a717 — the rebuilt Lich King's damage is set in LK_D directly (k = 1)
@@ -9137,6 +9137,171 @@ function _gqBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a741 — SERPENT TITAN MK-VII, re-armed. The transforming Xu hover-tank (mesh a632/a633, kept)
+//   holds the Titan Foundry plaza at the heart of the Patrol (tile 120,120; hazard ring 29 out).
+//   It is the first boss most players meet, so every move is a lesson with a clear tell:
+//   step out of a lane, don't hug its back, jump a ring, get out of the red, get IN to the safe.
+//   One brain, shared word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//     RAILGUN          P1+  its signature, alternating with the ram: a targeting laser tracks you,
+//                           locks, and a hypervelocity slug tears down the lane (P2: two shots, P3+: three)
+//     RAM              P1+  the other signature: it revs, then charges down a marked lane and
+//                           slams the ground where it stops
+//     REPULSOR SLAM    P1+  the hull rises and drops; a shock ring races out to jump through
+//                           (P3+, on legs: three stomps, three rings)
+//     TAIL LASH        P1+  stand behind it and the serpent tail sweeps the whole rear arc
+//     MISSILE BARRAGE  P2+  the batteries deploy: missiles rain on every marked circle
+//     VENOM CANNON     P3+  the tail rears like a scorpion and spits five globs of plasma venom
+//                           that leave burning pools
+//     REACTOR OVERLOAD P4   the core opens and the hex shield spins up: everything outside the
+//                           shield is engulfed — the only safe place is right under the Titan
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg,n), push(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ════════════════════════════════════════════════════════════════════════════════════════
+const TZK_D  = { rail:95, ram:85, ramS:55, slam:70, lash:80, msl:60, glob:55, pool:16, over:150 };
+const TZK_PM = [1, 1, 1.1, 1.2, 1.35];
+const TZK_R = 16, TZK_ENG = 31, TZK_IN = 25, TZK_SAFE = 5.4;
+function _tzSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _tzSegC(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return [x0 + dx*u, z0 + dz*u]; }
+function _tzDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+function _tzBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = TZK_PM[ph], R2 = v => Math.round(v*100)/100, R3 = v => Math.round(v*1000)/1000;
+  let X = S._tz;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._tz = { t:0, sp:0, face:0, cd:{ main:12, slam:25, lash:0, msl:30, venom:30, over:30 }, last:{}, gap:16, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{}, pools:[] };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < TZK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg, n) => A.hit(p.k, Math.round(dmg*M), n);
+  if(X.t % 300 === 0) X.hitT = {};
+
+  // ── venom pools burn on their own
+  if(X.pools.length){ X.pools = X.pools.filter(o => X.t < o.t1);
+    if(X.t % 5 === 0) X.pools.forEach(o => inA.forEach(p => { if(D(p, o.x, o.z) < o.r && once(p.k, 'pool', 4)){ HIT(p, TZK_D.pool, 'venom'); A.slow(p.k, 0.7, 600); } })); }
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.1); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  // ── it transforms
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; X.sp = 0; A.fx('tzx_rise', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 6.5) A.push(p.k, S.x, S.z, 4); });
+    if(ph === 2) X.cd.msl = 18; if(ph === 3) X.cd.venom = 20; if(ph >= 4) X.cd.over = 25; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 18;
+    else if(a.k === 'rail'){
+      const st = a.t - a.s0, trk = a.s ? a.trk2 : a.trk;
+      if(st < trk){ const want = Math.atan2(P.x - S.x, P.z - S.z); a.a += Math.max(-0.09, Math.min(0.09, _tzDA(want, a.a))); X.face = a.a;
+        if(st % 2 === 0) A.fx('tzx_aim', { i:a.id, a:R3(a.a) }); }
+      else if(st === trk) A.fx('tzx_lock', { i:a.id, s:a.s, a:R3(a.a) });
+      else if(st === trk + a.fix){
+        const x1 = S.x + Math.sin(a.a)*a.L, z1 = S.z + Math.cos(a.a)*a.L;
+        inA.forEach(p => { if(_tzSegD(p.x, p.z, S.x, S.z, x1, z1) < a.hw + 0.4 && once(p.k, 'rl_' + a.id + '_' + a.s, 6)) HIT(p, TZK_D.rail, 'rail'); });
+        A.fx('tzx_fire', { i:a.id, s:a.s, x:R2(S.x), z:R2(S.z), a:R3(a.a), L:a.L, hw:a.hw });
+        a.s++; if(a.s < a.n) a.s0 = a.t + 3; else a.end = a.t + 6; }
+      done = a.end !== undefined && a.t >= a.end; }
+    else if(a.k === 'ram'){
+      if(a.t > a.w && a.t <= a.w + a.dn){ const u = (a.t - a.w)/a.dn, cx = a.x0 + (a.x1 - a.x0)*u, cz = a.z0 + (a.z1 - a.z0)*u;
+        inA.forEach(p => { if(_tzSegD(p.x, p.z, a.x0, a.z0, cx, cz) < a.hw + 0.4 && once(p.k, 'rm_' + a.id, 30)){ HIT(p, TZK_D.ram, 'ram'); const c = _tzSegC(p.x, p.z, a.x0, a.z0, a.x1, a.z1); A.push(p.k, c[0], c[1], 3.5); } });
+        S.x = cx; S.z = cz; }
+      if(a.t === a.w + a.dn) inA.forEach(p => { if(D(p, a.x1, a.z1) < a.r && once(p.k, 'rs_' + a.id, 30)){ HIT(p, TZK_D.ramS, 'ram'); A.push(p.k, a.x1, a.z1, 2); } });
+      done = a.t >= a.w + a.dn + 6; }
+    else if(a.k === 'slam'){
+      for(let k = 0; k < a.n; k++){ const tt = a.t - (a.t0 + k*a.dt); if(tt < 0) continue; const r = 2 + tt*a.sp; if(r > a.R + a.bw) continue;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) < a.bw/2 + 0.4 && once(p.k, 'sl_' + a.id + '_' + k, 40)){ HIT(p, TZK_D.slam, 'slam'); A.push(p.k, a.x, a.z, 2); } }); }
+      done = a.t >= a.t0 + (a.n - 1)*a.dt + Math.ceil((a.R - 2)/a.sp) + 4; }
+    else if(a.k === 'lash'){
+      if(a.t === a.w) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.r && Math.abs(_tzDA(Math.atan2(p.x - a.x, p.z - a.z), a.a)) < a.hw){ HIT(p, TZK_D.lash, 'lash'); A.push(p.k, a.x, a.z, 4); } });
+      done = a.t >= a.w + 8; }
+    else if(a.k === 'msl'){
+      a.m.forEach((m, mi) => { if(a.t !== m[2]) return; inA.forEach(p => { if(D(p, m[0], m[1]) < a.r) HIT(p, TZK_D.msl, 'msl'); }); });
+      done = a.t >= a.tEnd; }
+    else if(a.k === 'venom'){
+      for(let i = 0; i < a.n; i++){ const tf = a.w + i*a.dt;
+        if(a.t === tf){ const lead = Math.min(3, D(P, S.x, S.z)*0.15), dx = P.x - (a.px[0] === undefined ? P.x : a.px[0]), dz = P.z - (a.px[1] === undefined ? P.z : a.px[1]), dd = Math.hypot(dx, dz);
+          const g = inG(P.x + (dd > 0.05 ? dx/dd*lead : 0), P.z + (dd > 0.05 ? dz/dd*lead : 0), TZK_IN + 2); a.g[i] = g;
+          A.fx('tzx_glob', { i:a.id*10 + i, x0:R2(S.x), z0:R2(S.z), x:R2(g[0]), z:R2(g[1]), fl:a.fl, r:a.r, life:a.life }); }
+        if(a.t === tf + a.fl && a.g[i]){ const g = a.g[i];
+          inA.forEach(p => { if(D(p, g[0], g[1]) < a.r) HIT(p, TZK_D.glob, 'venom'); });
+          X.pools.push({ x:g[0], z:g[1], r:a.r + 0.1, t1:X.t + a.life }); } }
+      a.px = [P.x, P.z];
+      done = a.t >= a.w + (a.n - 1)*a.dt + a.fl + 3; }
+    else if(a.k === 'over'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) > a.R){ HIT(p, TZK_D.over, 'over'); A.push(p.k, a.x, a.z, 3); } });
+      done = a.t >= a.w + 12; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 7 : ph >= 3 ? 9 : 11; }
+  } else {
+    // ── IT DRIVES after you: a tank turns, then drives along its nose (backs off if you get under it)
+    const want = Math.atan2(P.x - S.x, P.z - S.z), dA = _tzDA(want, X.face); X.face += Math.max(-0.07, Math.min(0.07, dA));
+    const d = D(P, S.x, S.z), vmax = [0, 0.14, 0.16, 0.15, 0.17][ph];
+    let sp = d > 8 ? vmax : d < 3.5 ? -vmax*0.6 : 0; if(Math.abs(dA) > 1.1 && sp > 0) sp *= 0.25;
+    X.sp += (sp - X.sp)*0.2; S.x += Math.sin(X.face)*X.sp; S.z += Math.cos(X.face)*X.sp;
+
+    if(X.gap <= 0){
+      const MIN = { slam:1, msl:2, venom:3 };
+      const behind = inA.some(p => D(p, S.x, S.z) < 9 && Math.abs(_tzDA(Math.atan2(p.x - S.x, p.z - S.z), X.face + Math.PI)) < 1.15);
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.over <= 0) k = 'over';
+      else if(X.cd.lash <= 0 && behind) k = 'lash';
+      else if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'main'){ X.mainN = (X.mainN || 0) + 1; k = (X.mainN % 2 && d > 6) ? 'ram' : 'rail'; X.cd.main = ph >= 3 ? 28 : 34; }
+      const id = X.t;
+      if(k === 'rail'){
+        const n = ph >= 3 ? 3 : ph >= 2 ? 2 : 1;
+        X.act = { k, t:0, id, a:want, s:0, s0:0, n, trk:14, trk2:8, fix:5, L:34, hw:1.25 }; X.sp = 0;
+        A.fx('tzx_rail', { i:id, x:R2(S.x), z:R2(S.z), a:R3(want), n, trk:14, trk2:8, fix:5, L:34, hw:1.25 });
+      } else if(k === 'ram'){
+        const L = Math.min(d + 4, 22), e = inG(S.x + Math.sin(want)*L, S.z + Math.cos(want)*L, TZK_IN);
+        X.act = { k, t:0, id, x0:S.x, z0:S.z, x1:e[0], z1:e[1], w:12, dn:5, hw:2.0, r:3.6 }; X.face = want; X.sp = 0;
+        A.fx('tzx_ram', { x0:R2(S.x), z0:R2(S.z), x1:R2(e[0]), z1:R2(e[1]), w:12, dn:5, hw:2.0, r:3.6 });
+      } else if(k === 'slam'){
+        const n = ph >= 3 ? 3 : 1;
+        X.act = { k, t:0, id, x:S.x, z:S.z, n, t0:12, dt:9, sp:1.1, bw:1.8, R:17 }; X.cd.slam = 80; X.sp = 0;
+        A.fx('tzx_slam', { x:R2(S.x), z:R2(S.z), n, t0:12, dt:9, sp:1.1, bw:1.8, R:17 });
+      } else if(k === 'lash'){
+        const a = X.face + Math.PI;
+        X.act = { k, t:0, id, x:S.x, z:S.z, a, hw:1.2, r:9, w:9 }; X.cd.lash = 80; X.sp = 0;
+        A.fx('tzx_lash', { x:R2(S.x), z:R2(S.z), a:R3(a), f:R3(X.face), hw:1.2, r:9, w:9 });
+      } else if(k === 'msl'){
+        const m = [], put = (x, z) => { const c = inG(x, z, TZK_IN + 2); m.push([R2(c[0]), R2(c[1])]); };
+        inA.slice(0, 4).forEach(p => { put(p.x, p.z); for(let j = 0; j < 2; j++){ const q = A.rnd()*Math.PI*2, r = 2.6 + A.rnd()*2; put(p.x + Math.sin(q)*r, p.z + Math.cos(q)*r); } });
+        for(let j = 0; j < 5; j++){ const q = A.rnd()*Math.PI*2, r = 5 + A.rnd()*15; put(S.x + Math.sin(q)*r, S.z + Math.cos(q)*r); }
+        m.forEach((v, i) => v.push(14 + i*2));
+        X.act = { k, t:0, id, m, r:2.6, tEnd:14 + (m.length - 1)*2 + 6 }; X.cd.msl = 110; X.sp = 0;
+        A.fx('tzx_msl', { x:R2(S.x), z:R2(S.z), r:2.6, m });
+      } else if(k === 'venom'){
+        X.act = { k, t:0, id, n:5, w:8, dt:4, fl:6, r:2.2, life:60, g:[], px:[] }; X.cd.venom = 100; X.sp = 0;
+        A.fx('tzx_venom', { x:R2(S.x), z:R2(S.z), n:5, w:8, dt:4 });
+      } else if(k === 'over'){
+        X.act = { k, t:0, id, x:S.x, z:S.z, w:40, R:TZK_SAFE }; X.cd.over = 300; X.sp = 0;
+        A.fx('tzx_over', { x:R2(S.x), z:R2(S.z), w:40, R:TZK_SAFE, E:TZK_ENG });
+      }
+    }
+  }
+  const dx = S.x - hx, dz = S.z - hz, dd = Math.hypot(dx, dz);
+  if(dd > TZK_R && !(X.act && X.act.k === 'ram')){ const st = Math.min(dd - TZK_R, 0.15); S.x -= dx/dd*st; S.z -= dz/dd*st; }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -9191,32 +9356,29 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── TITAN MK-VII (a559). The Xu Patrol walker. Four attacks, not six — the only
-  //    boss in the game with a short rotation, and a three-step phase ladder.
+  // ── SERPENT TITAN MK-VII (a741). Re-armed: the whole fight lives in the shared brain _tzBrain (above
+  //    ZBOSS_SERVER; the client runs the same text solo). It holds the Titan Foundry plaza (tile 120,120).
+  //    The brain moves it (move:'self'), aims at every player there, and hands back damage, pushes,
+  //    slows (venom pools) and cues.
   patrol: {
     x: 180, z: 180,
-    spd:    [0, 0.022, 0.032, 0.044, 0.055],
-    dmg:    [0, 1.0,   1.5,   2.0,   2.7,   3.5],
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in TZK_D
     phases: [0.75, 0.50, 0.25],
-    acd:    [0, 20, 19, 17, 14],              // 120 then max(80,150-P*18), / 6
-    tele:   11,
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 4; },
-    attack: (c) => {
-      const { atk, b, mult, ang, np, aoe, fx, proj, geyser } = c;
-      if (atk === 0)      { fx('tt_cannon');
-                            for (let i = 0; i < 2; i++) proj(ang + (i-0.5)*0.22, 0xffcc44, Math.floor(110 * mult), 'plasma');
-                            aoe(4.0, Math.floor(280 * mult)); }
-      else if (atk === 1) { fx('tt_missile', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            for (let m = 0; m < 4; m++)
-                              geyser(np.x + (Math.random()-0.5)*6, np.z + (Math.random()-0.5)*6,
-                                     5 + m*2, 3.0, Math.floor(90 * mult), 0xffaa22);
-                            aoe(6.0, Math.floor(240 * mult)); }
-      else if (atk === 2) { fx('tt_stomp');   aoe(5.5, Math.floor(300 * mult)); }
-      else                { fx('tt_lock');    aoe(8.0, Math.floor(200 * mult)); }
-    },
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, ang, nd, proj } = c;
-      if (b._vt % 7 === 0 && nd < 16) proj(ang, 0xffcc44, Math.floor(45 * mult), 'plasma');
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = p.pid !== undefined ? 'p' + p.pid : T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _tzBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:    (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push:   (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow:   (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        fx:     (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:    Math.random });
     },
   },
 
