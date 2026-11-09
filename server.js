@@ -559,7 +559,7 @@ const ZONE_BOSS_HP = {
   ashlands:         { hp:160000,   name:'INFERNO COLOSSUS' },   // a716 — rebuilt (was 75k)
   sunken_sands:     { hp:500000,   name:'KHEPRI THE SAND COLOSSUS' },   // a718 — rebuilt (was 150k)
   fungal:           { hp:270000,   name:'MYCELIUM QUEEN' },   // a737 — rebuilt (was 84k); Lv 42, just above Foreman Drax (Lv 40, 240k)
-  frostveil:        { hp:96000,    name:'FROSTVEIL COLOSSUS' },
+  frostveil:        { hp:360000,   name:'FROSTVEIL COLOSSUS' },   // a740 — rebuilt (was 96k); Lv 50, between the Mycelium Queen (Lv 42, 270k) and the Elder Architect (Lv 58, 450k)
   ancient:          { hp:450000,   name:'THE ELDER ARCHITECT' },   // a734 — rebuilt (was 120k); Lv 58, just under Khepri (Lv 60, 500k)
   dragonlair:       { hp:650000,   name:'VAELTHARAX THE UNDYING' },   // a712 — rebuilt (was 375k)
   riftvale:         { hp:650000,   name:'THE RIFT SOVEREIGN' },   // a729 — rebuilt (was 400k)
@@ -5036,7 +5036,7 @@ const ZONE_DMG_BASE = {
   ashlands:        { lvl: 35, mob:  60, boss: 164.4687 },   // a716 — the rebuilt Colossus's damage is set in IC_D directly (k = 1)
   caves_of_despair:{ lvl: 40, mob:  90, boss: 190.0884 },   // a736 — the rebuilt Foreman Drax's damage is set in FMK_D directly (k = 1)
   fungal:          { lvl: 42, mob:  95, boss: 201.4209 },   // a737 — the rebuilt Mycelium Queen's damage is set in MYK_D directly (k = 1)
-  frostveil:       { lvl: 50, mob: 229, boss: 110 },
+  frostveil:       { lvl: 50, mob: 229, boss: 253.922 },   // a740 — the rebuilt Frostveil Colossus's damage is set in GQK_D directly (k = 1)
   ancient:         { lvl: 58, mob: 348, boss: 320.1076 },   // a734 — the rebuilt Elder Architect's damage is set in QLK_D directly (k = 1)
   sunken_sands:    { lvl: 60, mob: 292, boss: 339.1915 },   // a718 — the rebuilt Khepri's damage is set in KH_D directly (k = 1)
   dragonlair:      { lvl: 65, mob: 167, boss: 392.0282 },   // a712 — the rebuilt Vaeltharax's damage is set in VX_D directly (k = 1)
@@ -8954,6 +8954,189 @@ function _myBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a740 — THE FROSTVEIL COLOSSUS, rebuilt: a glacier that learned to walk. It holds the frozen
+//   plaza at the heart of Frostveil (tile 120,120; ringed by eight stone pillars 37.5 out) and
+//   its whole fight is about FREEZING you — when it freezes you, you are locked in a block of
+//   ice: no moving, no attacking, no casting, no dodging, until it thaws or you break out. One
+//   brain, shared word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//     GLACIER FIST     P1+  its signature, alternating with the avalanche: a fist slams down and
+//                           ice spikes race out from the impact along four lines (P3: eight)
+//     AVALANCHE        P1+  the other signature: it tears a boulder of ice off its back and hurls
+//                           it; it bursts into shards that skid out along six lines
+//     FLASH FREEZE     P1+  a ring of frost bursts out of it — caught in the ring, you FREEZE
+//     SPIKE WAVES      P1+  three waves of ice spikes erupt in front of it, one after another
+//     ICE PRISON       P2+  a coffin of ice forms around up to two of you — get out before it seals
+//     BLIZZARD         P2+  it raises three walls of ice and calls a blizzard; anyone not
+//                           sheltering downwind of a wall or a pillar builds FROSTBITE, and at
+//                           six stacks freezes solid
+//     FROST ORBS       P3+  orbs of living ice roll after you and burst into freezing blasts
+//     ABSOLUTE ZERO    P4   four walls of ice rise round it, then it lets go of every last scrap
+//                           of heat: anyone it can see freezes and shatters for heavy damage
+//   Freezing gives 4 s of immunity to the next freeze. Damage is RAW (before your defence); the
+//   server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), slow(k,f,ms), freeze(k,ms), fx(vt,obj), rnd() }
+//   S: its position {x,z} (read and written)
+// ════════════════════════════════════════════════════════════════════════════════════════
+const GQK_D  = { fist:360, spike:260, boulder:340, shard:220, nova:280, wave:280, prison:300, bliz:60, orb:300, zero:520 };
+const GQK_PM = [1, 1, 1.1, 1.22, 1.36];
+const GQK_R = 14, GQK_ENG = 42, GQK_IN = 36, GQK_PR = 37.5, GQK_PRR = 2.1;
+function _gqSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _gqDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// the eight stone pillars round the plaza (the same ones the zone builds: tile 120 ± 25 at (k + 0.5)/8 turns)
+function _gqPillars(hx, hz){ const P = []; for(let k = 0; k < 8; k++){ const a = (k + 0.5)/8*Math.PI*2; P.push([hx + Math.cos(a)*GQK_PR, hz + Math.sin(a)*GQK_PR]); } return P; }
+// do segments ab and cd cross?
+function _gqCross(ax, az, bx, bz, cx, cz, dx, dz){ const o = (px, pz, qx, qz, rx, rz) => (qx - px)*(rz - pz) - (qz - pz)*(rx - px);
+  const o1 = o(ax, az, bx, bz, cx, cz), o2 = o(ax, az, bx, bz, dx, dz), o3 = o(cx, cz, dx, dz, ax, az), o4 = o(cx, cz, dx, dz, bx, bz); return o1*o2 < 0 && o3*o4 < 0; }
+// sheltered from a wind blowing toward angle w: in the lee (0.6–7.5 downwind, within the half-width) of a pillar or a wall
+function _gqLee(px, pz, w, pil, walls){ const wx = Math.sin(w), wz = Math.cos(w), nx = wz, nz = -wx;
+  for(const p of pil){ const dx = px - p[0], dz = pz - p[1], al = dx*wx + dz*wz, la = Math.abs(dx*nx + dz*nz); if(al > 0.6 && al < 7.5 && la < GQK_PRR + 0.5) return true; }
+  for(const q of walls){ const dx = px - q[0], dz = pz - q[1], al = dx*wx + dz*wz, la = Math.abs(dx*nx + dz*nz); if(al > 0.6 && al < 7.5 && la < q[3] + 0.3) return true; }
+  return false; }
+// can the Colossus at (gx,gz) see (px,pz)? a pillar or a wall in the way blocks it
+function _gqSees(gx, gz, px, pz, pil, walls){
+  for(const p of pil) if(_gqSegD(p[0], p[1], gx, gz, px, pz) < GQK_PRR) return false;
+  for(const q of walls){ const tx = Math.sin(q[2]), tz = Math.cos(q[2]); if(_gqCross(gx, gz, px, pz, q[0] - tx*q[3], q[1] - tz*q[3], q[0] + tx*q[3], q[1] + tz*q[3])) return false; }
+  return true; }
+function _gqBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = GQK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._gq;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._gq = { t:0, vx:0, vz:0, face:0, cd:{ main:10, nova:30, wave:20, prison:30, bliz:30, orb:30, zero:20 }, last:{}, gap:14, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{}, fi:{}, fb:{}, orbs:[] };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz, PIL = _gqPillars(hx, hz);
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < GQK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg) => A.hit(p.k, Math.round(dmg*M));
+  // FREEZE: locked in ice for ms; 4 s of immunity after it ends
+  const FRZ = (p, ms) => { if((X.fi[p.k] || 0) > X.t) return false; X.fi[p.k] = X.t + Math.ceil(ms/100) + 40; A.freeze(p.k, ms); A.fx('gqx_frz', { p:[[R2(p.x), R2(p.z), ms]] }); return true; };
+
+  // ── frost orbs roll after you on their own
+  X.orbs = X.orbs.filter(o => {
+    o.t++; if(o.t < o.t0) return true;
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, o.x, o.z); if(d < bd){ bd = d; best = p; } });
+    if(best){ const d = Math.max(0.01, bd), sp = Math.min(d, o.sp); o.x += (best.x - o.x)/d*sp; o.z += (best.z - o.z)/d*sp; }
+    if((best && bd < 1.6) || o.t >= o.t1){
+      inA.forEach(p => { if(D(p, o.x, o.z) < o.r){ HIT(p, GQK_D.orb); FRZ(p, 2000); } });
+      A.fx('gqx_orbx', { i:o.i, x:R2(o.x), z:R2(o.z), r:o.r }); return false; }
+    if(o.t % 3 === 0) A.fx('gqx_orbp', { i:o.i, x:R2(o.x), z:R2(o.z) });
+    return true; });
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.08); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; A.fx('gqx_rise', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 5); });
+    if(ph === 2) X.cd.bliz = 25; if(ph >= 4) X.cd.zero = 30; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 20;
+    else if(a.k === 'fist'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) < a.r){ HIT(p, GQK_D.fist); A.push(p.k, a.x, a.z, 3); } });
+      if(a.t === a.w + 5) a.ln.forEach((l, li) => { const x1 = a.x + Math.sin(l)*a.L, z1 = a.z + Math.cos(l)*a.L;
+        inA.forEach(p => { if(_gqSegD(p.x, p.z, a.x, a.z, x1, z1) < 1.6 && once(p.k, 'sp_' + a.id, 4)){ HIT(p, GQK_D.spike); A.slow(p.k, 0.4, 1200); } }); });
+      done = a.t >= a.w + 12; }
+    else if(a.k === 'hurl'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) < a.r){ HIT(p, GQK_D.boulder); A.push(p.k, a.x, a.z, 3.5); } });
+      if(a.t === a.w + 3) a.ln.forEach((l, li) => { const x1 = a.x + Math.sin(l)*a.L, z1 = a.z + Math.cos(l)*a.L;
+        inA.forEach(p => { if(_gqSegD(p.x, p.z, a.x, a.z, x1, z1) < 1.3 && once(p.k, 'sh_' + a.id, 4)) HIT(p, GQK_D.shard); }); });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'nova'){
+      const tt = a.t - a.t0; if(tt >= 0){ const r = 3 + tt*a.sp; if(r <= a.R + a.bw)
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) < a.bw/2 + 0.4 && once(p.k, 'nv_' + a.id, 40)){ HIT(p, GQK_D.nova); FRZ(p, 2500); } }); }
+      done = tt >= Math.ceil((a.R - 3)/a.sp) + 6; }
+    else if(a.k === 'wave'){
+      a.bands.forEach((b, bi) => { if(a.t !== b[2]) return; inA.forEach(p => { const d = D(p, a.x, a.z); if(d >= b[0] && d < b[1] && Math.abs(_gqDA(Math.atan2(p.x - a.x, p.z - a.z), a.a)) < a.hw){ HIT(p, GQK_D.wave); A.slow(p.k, 0.5, 900); } }); });
+      done = a.t >= a.bands[a.bands.length - 1][2] + 6; }
+    else if(a.k === 'prison'){
+      if(a.t === a.w) a.c.forEach(c => inA.forEach(p => { if(D(p, c[0], c[1]) < a.r){ HIT(p, GQK_D.prison); FRZ(p, 3500); } }));
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'bliz'){
+      if(a.t >= a.t0 && a.t < a.t0 + a.dur && (a.t - a.t0) % 5 === 0){
+        const w = a.w0 + (a.t - a.t0)*a.wr;
+        inA.forEach(p => { const k = p.k;
+          if(_gqLee(p.x, p.z, w, PIL, a.walls)){ X.fb[k] = Math.max(0, (X.fb[k] || 0) - 1); return; }
+          HIT(p, GQK_D.bliz); X.fb[k] = (X.fb[k] || 0) + 1; A.slow(p.k, 0.7, 600);
+          if(X.fb[k] >= 6){ X.fb[k] = 0; FRZ(p, 3000); } }); }
+      done = a.t >= a.t0 + a.dur + 4; if(done) X.fb = {}; }
+    else if(a.k === 'orbs') done = a.t >= 14;
+    else if(a.k === 'zero'){
+      if(a.t === a.w) inA.forEach(p => { if(_gqSees(a.x, a.z, p.x, p.z, PIL, a.walls)){ HIT(p, GQK_D.zero); FRZ(p, 4000); } });
+      done = a.t >= a.w + 14; }
+    else done = a.t >= (a.end || 8);
+    if(done){ X.act = null; X.gap = ph >= 4 ? 8 : ph >= 3 ? 10 : 12; }
+  } else {
+    // ── IT GRINDS after you
+    const want = Math.atan2(P.x - S.x, P.z - S.z); X.face += Math.max(-0.07, Math.min(0.07, _gqDA(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.05, 0.058, 0.066, 0.075][ph], sp = d > 6 ? vmax : d < 3 ? -vmax*0.5 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.12; X.vz += (Math.cos(X.face)*sp - X.vz)*0.12; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { nova:1, wave:1, prison:2, bliz:2, orb:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.zero <= 0) k = 'zero';
+      else if(ph >= 2 && X.cd.bliz <= 0) k = 'bliz';
+      else if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'main'){ X.mainN = (X.mainN || 0) + 1; k = X.mainN % 2 ? 'fist' : 'hurl'; X.cd.main = ph >= 3 ? 26 : 30; }
+      const id = X.t;
+      if(k === 'fist'){
+        const c = inG(S.x + Math.sin(want)*4.5, S.z + Math.cos(want)*4.5, GQK_IN), n = ph >= 3 ? 8 : 4, ln = [];
+        for(let i = 0; i < n; i++) ln.push(+(want + Math.PI/4 + i*2*Math.PI/n).toFixed(3));
+        X.act = { k, t:0, id, x:c[0], z:c[1], w:12, r:5, L:12, ln }; X.face = want; X.vx = X.vz = 0;
+        A.fx('gqx_fist', { x:R2(c[0]), z:R2(c[1]), w:12, r:5, L:12, ln, a:+want.toFixed(3) });
+      } else if(k === 'hurl'){
+        const c = inG(P.x, P.z, GQK_IN), ln = [], a0 = A.rnd()*Math.PI*2; for(let i = 0; i < 6; i++) ln.push(+(a0 + i*Math.PI/3).toFixed(3));
+        X.act = { k, t:0, id, x:c[0], z:c[1], w:16, r:4.2, L:9, ln }; X.face = want; X.vx = X.vz = 0;
+        A.fx('gqx_hurl', { x:R2(c[0]), z:R2(c[1]), bx:R2(S.x), bz:R2(S.z), w:16, r:4.2, L:9, ln });
+      } else if(k === 'nova'){
+        X.act = { k, t:0, id, x:S.x, z:S.z, t0:16, sp:0.9, bw:2.6, R:20 }; X.cd.nova = 90; X.vx = X.vz = 0;
+        A.fx('gqx_nova', { x:R2(S.x), z:R2(S.z), t0:16, sp:0.9, bw:2.6, R:20 });
+      } else if(k === 'wave'){
+        const bands = [[4, 9, 12], [9, 14, 17], [14, 19, 22]];
+        X.act = { k, t:0, id, x:S.x, z:S.z, a:want, hw:0.62, bands }; X.cd.wave = 70; X.face = want; X.vx = X.vz = 0;
+        A.fx('gqx_wave', { x:R2(S.x), z:R2(S.z), a:+want.toFixed(3), hw:0.62, bands });
+      } else if(k === 'prison'){
+        const c = []; inA.slice(0, 2).forEach(p => c.push([R2(p.x), R2(p.z)]));
+        X.act = { k, t:0, id, c, r:2.4, w:18 }; X.cd.prison = 90;
+        A.fx('gqx_prison', { x:R2(S.x), z:R2(S.z), c, r:2.4, w:18 });
+      } else if(k === 'bliz'){
+        const w0 = A.rnd()*Math.PI*2, wr = (A.rnd() < 0.5 ? 1 : -1)*0.004, walls = [];
+        for(let t2 = 0; t2 < 60 && walls.length < 3; t2++){ const a = A.rnd()*Math.PI*2, r = 10 + A.rnd()*16, x = hx + Math.sin(a)*r, z = hz + Math.cos(a)*r;
+          if(walls.every(q => Math.hypot(q[0] - x, q[1] - z) > 10)) walls.push([R2(x), R2(z), +(w0 + Math.PI/2).toFixed(3), 3.5]); }
+        X.act = { k, t:0, id, t0:12, dur:120, w0, wr, walls }; X.cd.bliz = 420; X.vx = X.vz = 0; X.fb = {};
+        A.fx('gqx_bliz', { x:R2(S.x), z:R2(S.z), t0:12, dur:120, w0:+w0.toFixed(3), wr, walls });
+      } else if(k === 'orb'){
+        const n = 3; for(let i = 0; i < n; i++){ const a = want + (i - 1)*0.9, x = S.x + Math.sin(a)*4, z = S.z + Math.cos(a)*4;
+          X.orbs.push({ i:id*10 + i, x, z, t:0, t0:12, t1:100, sp:0.22, r:3.2 }); }
+        X.act = { k:'orbs', t:0, id }; X.cd.orb = 110;
+        A.fx('gqx_orbs', { x:R2(S.x), z:R2(S.z), o:X.orbs.slice(-n).map(o => [o.i, R2(o.x), R2(o.z)]), t0:12, r:3.2 });
+      } else if(k === 'zero'){
+        const a0 = A.rnd()*Math.PI*2, walls = [];
+        for(let i = 0; i < 4; i++){ const a = a0 + i*Math.PI/2, x = hx + Math.sin(a)*14, z = hz + Math.cos(a)*14; walls.push([R2(x), R2(z), +(a + Math.PI/2).toFixed(3), 3.5]); }
+        X.act = { k, t:0, id, x:hx, z:hz, walls, w:44 }; X.cd.zero = 360; X.vx = X.vz = 0; S.x = hx; S.z = hz;
+        A.fx('gqx_zero', { x:hx, z:hz, walls, w:44 });
+      }
+    }
+  }
+  const dx = S.x - hx, dz = S.z - hz, dd = Math.hypot(dx, dz); if(dd > GQK_R){ const st = Math.min(dd - GQK_R, 0.15); S.x -= dx/dd*st; S.z -= dz/dd*st; }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -9392,40 +9575,30 @@ const ZBOSS_SERVER = {
     },
   },
 
-  // ── THE FROSTVEIL COLOSSUS (a559). Glacier fists, blizzard breath, ice spikes,
-  //    frost wraiths and a permafrost shockwave.
+  // ── THE FROSTVEIL COLOSSUS (a740). Rebuilt as the walking glacier: the whole fight lives in the shared
+  //    brain _gqBrain (above ZBOSS_SERVER; the client runs the same text solo). It holds the frozen plaza
+  //    (tile 120,120). The brain moves it (move:'self'), aims at every player there, keeps their frostbite,
+  //    and hands back damage, pushes, slows, FREEZES (eff:'gqfreeze' — the client locks the player in ice) and cues.
   frostveil: {
     x: 180, z: 180,
-    spd:    [0, 0.014, 0.020, 0.028, 0.036, 0.046],
-    dmg:    [0, 1.0,   1.5,   2.1,   2.8,   3.6],
-    phases: [0.80, 0.60, 0.40, 0.20],
-    acd:    [0, 20, 21, 18, 16, 13],          // 120 then max(80,158-P*16), / 6
-    tele:   11,
-    pick:   (b) => { b.atkIdx = (b.atkIdx || 0) + 1; return b.atkIdx % 6; },
-    attack: (c) => {
-      const { atk, b, ph, mult, ang, np, aoe, fx, proj, geyser } = c;
-      if (atk === 0)      { fx('fv_fist');    aoe(7.0, Math.floor(460 * mult)); aoe(10.0, Math.floor(120 * mult)); }
-      else if (atk === 1) { fx('fv_breath');
-                            for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.15, 0x88ddff, Math.floor(120 * mult), 'plasma');
-                            aoe(6.0, Math.floor(280 * mult)); }
-      else if (atk === 2) { fx('fv_spikes', { ex:+np.x.toFixed(2), ez:+np.z.toFixed(2) });
-                            for (let k = 0; k < 5; k++) {
-                              const a2 = k/5*Math.PI*2, r2 = 2.0 + Math.random()*2.5;
-                              geyser(np.x + Math.sin(a2)*r2, np.z + Math.cos(a2)*r2, 4 + k, 2.5,
-                                     Math.floor(100 * mult), 0x88ddff);
-                            }
-                            aoe(6.0, Math.floor(310 * mult)); }
-      else if (atk === 3) { fx('fv_summon'); _zbSummon(c, 'frost_wraith', 2, 2200, 105, 0.058, 220, 65, 0, 3.0); }
-      else if (atk === 4) { fx('fv_permafrost'); aoe(12.0, Math.floor(400 * mult)); aoe(16.0, Math.floor(160 * mult)); }
-      else                { fx('fv_crystal');
-                            for (let i = 0; i < 6; i++) proj(ang + (i-2.5)*0.20, 0xaaeeff, Math.floor(140 * mult), 'plasma');
-                            aoe(9.0, Math.floor(330 * mult)); }
-    },
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in GQK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
     passive: (c) => {
-      const { b, mult, ang, nd, np, aoe, fx, proj, geyser } = c;
-      if (b._vt % 3 === 0 && nd < 5.5) aoe(5.5, Math.floor(20 * mult));          // frost aura
-      if (b._vt % 6 === 0 && nd < 18) proj(ang, 0x88ddff, Math.floor(70 * mult), 'plasma');
-      if (b._vt % 9 === 0 && nd < 14) geyser(np.x, np.z, 4, 3.5, Math.floor(30 * mult), 0xaaeeff);  // ice storm
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = p.pid !== undefined ? 'p' + p.pid : T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _gqBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
+        hit:    (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push:   (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        slow:   (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
+        freeze: (k, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'gqfreeze', ms, slow:0, root:ms }); },
+        fx:     (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:    Math.random });
     },
   },
 
