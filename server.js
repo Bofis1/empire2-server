@@ -555,7 +555,7 @@ const ZONE_BOSS_HP = {
   cemetery:         { hp:90000,    name:'THE LICH KING' },   // a717 — rebuilt (was 64k)
   void:             { hp:70000,    name:'VOID WRAITH PRIME' },   // a725 — rebuilt (was 54k)
   citadel:          { hp:120000,   name:'GENERAL VORRAKH' },   // a722 — rebuilt (was 70k)
-  caves_of_despair: { hp:80000,    name:'FOREMAN DRAX' },
+  caves_of_despair: { hp:240000,   name:'FOREMAN DRAX' },   // a736 — rebuilt (was 80k); Lv 40, between the Inferno Colossus (Lv 35, 160k) and the Architect (Lv 58, 450k)
   ashlands:         { hp:160000,   name:'INFERNO COLOSSUS' },   // a716 — rebuilt (was 75k)
   sunken_sands:     { hp:500000,   name:'KHEPRI THE SAND COLOSSUS' },   // a718 — rebuilt (was 150k)
   fungal:           { hp:84000,    name:'MYCELIUM QUEEN' },
@@ -5034,7 +5034,7 @@ const ZONE_DMG_BASE = {
   citadel:         { lvl: 25, mob: 161, boss: 123.1228 },   // a722 — the rebuilt Vorrakh's damage is set in VK_D directly (k = 1)
   aviacanyon:      { lvl: 30, mob: 103, boss: 142.3019 },   // a733 — the rebuilt Xuberry's damage is set in QBK_D directly (k = 1)
   ashlands:        { lvl: 35, mob:  60, boss: 164.4687 },   // a716 — the rebuilt Colossus's damage is set in IC_D directly (k = 1)
-  caves_of_despair:{ lvl: 40, mob:  90, boss:  94 },
+  caves_of_despair:{ lvl: 40, mob:  90, boss: 190.0884 },   // a736 — the rebuilt Foreman Drax's damage is set in FMK_D directly (k = 1)
   fungal:          { lvl: 42, mob:  95, boss: 106 },
   frostveil:       { lvl: 50, mob: 229, boss: 110 },
   ancient:         { lvl: 58, mob: 348, boss: 320.1076 },   // a734 — the rebuilt Elder Architect's damage is set in QLK_D directly (k = 1)
@@ -8598,6 +8598,192 @@ function _qlBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a736 — FOREMAN DRAX, rebuilt: the Xu slaver who runs the Caves of Despair, riding a hulking
+//   mining exo-rig with a drill on one arm, a pile-driver on the other and a shock-whip on his
+//   belt. He works human slaves to death in this mine and thinks it is hilarious. He fights in
+//   his dig pit at the far end of the maze (tile 62,62; about 30 across, ringed by rock). One
+//   brain, shared word for word by the server (the authority in a lobby) and the client (solo).
+//   10 Hz.
+//     PILE-DRIVER      P1+  his signature, alternating with the drill: the piston fist slams the
+//                           ground in front of him, then aftershocks roll out (P2: two, P3: three)
+//     DRILL CHARGE     P1+  the other signature: he revs the drill and charges straight across the
+//                           pit until he hits rock (P3: twice)
+//     SHOCK-WHIP       P1+  "BACK TO WORK!" — the slaver's whip cracks out in long lines (P3: five)
+//     BLASTING CHARGES P1+  he lobs bundles of mining charges around the pit, on short fuses
+//     CAVE-IN          P2+  he rams the pit wall and the roof comes down in boulders
+//     CHAIN HOOK       P2+  a shackle on a chain, fired at whoever is furthest, and reeled in
+//     ORE CARTS        P3+  runaway carts thunder across the pit, all but one lane
+//     FIREDAMP         P3+  gas leaks from the vents; he strikes a match
+//     BLOW THE MINE    P4   he plunges the detonator: the outer ring, then the middle around him,
+//                           then the ring between
+//     THE LAUGH        —    every few moves, and whenever one of his moves lands, he stops,
+//                           throws his head back and laughs at you. Hit him while he does.
+//   Damage is RAW (before your defence); the server's zone multiplier for this boss is 1.
+//   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), push(k,x,z,amt), pull(k,x,z,amt), slow(k,f,ms), fx(vt,obj), rnd() }
+//   S: his position {x,z} (read and written)
+// ════════════════════════════════════════════════════════════════════════════════════════
+const FMK_D  = { slam:300, shock:220, drill:320, lash:220, charge:260, rock:240, hook:200, cart:280, gas:300, mine:420 };
+const FMK_PM = [1, 1, 1.1, 1.22, 1.36];
+const FMK_R = 8.5, FMK_ENG = 16.5, FMK_IN = 14.2;
+function _fmSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2));
+  return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _fmDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// from (x,z) along angle a, how far until the pit wall (radius IN round hx,hz)
+function _fmToWall(x, z, a, hx, hz, IN){ const dx = Math.sin(a), dz = Math.cos(a), ox = x - hx, oz = z - hz, b = ox*dx + oz*dz, c = ox*ox + oz*oz - IN*IN, q = b*b - c; return q < 0 ? 0 : -b + Math.sqrt(q); }
+function _fmBrain(S, A){
+  const ph = Math.max(1, Math.min(4, A.ph | 0)), M = FMK_PM[ph], R2 = v => Math.round(v*100)/100;
+  let X = S._fm;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._fm = { t:0, vx:0, vz:0, face:0, cd:{ main:10, lash:30, charges:20, cavein:30, hook:40, carts:30, gas:40, mine:20 }, last:{}, gap:12, act:null,
+      tgt:null, tgtT:0, dmg:false, ph, hitT:{}, nAb:0, nxL:3 };
+    S.x = A.hx; S.z = A.hz;
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz;
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < FMK_ENG);
+  const D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inPit = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const angTo = (x, z) => Math.atan2(x - S.x, z - S.z);
+  const HIT = (a, p, k, dmg) => { A.hit(p.k, Math.round(dmg*M)); a.hitAny = 1; };
+
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz);
+    if(d > 0.3){ const st = Math.min(d, 0.08); S.x += dx/d*st; S.z += dz/d*st; } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){
+    let best = null, bd = 1e9; inA.forEach(p => { const d = D(p, S.x, S.z); if(d < bd){ bd = d; best = p; } }); X.tgt = best.k; X.tgtT = 50; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rage', t:0 }; A.fx('fmx_rage', { x:R2(S.x), z:R2(S.z), p:ph });
+    inA.forEach(p => { if(D(p, S.x, S.z) < 6) A.push(p.k, S.x, S.z, 4); });
+    if(ph >= 4) X.cd.mine = 30; }
+
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rage') done = a.t >= 18;
+    else if(a.k === 'laugh') done = a.t >= a.w;
+    else if(a.k === 'slam'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) < a.r) { HIT(a, p, 'slam', FMK_D.slam); A.push(p.k, a.x, a.z, 3); } });
+      a.rings.forEach((g, gi) => { if(a.t === g[0]) inA.forEach(p => { const d = D(p, a.x, a.z); if(d >= g[1] && d < g[2] && once(p.k, 'sl' + gi + '_' + a.id, 5)){ HIT(a, p, 'shock', FMK_D.shock); A.slow(p.k, 0.6, 700); } }); });
+      done = a.t >= (a.rings.length ? a.rings[a.rings.length - 1][0] : a.w) + 6; }
+    else if(a.k === 'drill'){
+      const L = a.legs[a.leg]; if(!L){ done = true; }
+      else { const tt = a.t - L.t0;
+        if(tt > 0 && tt <= L.dur){ const u = tt/L.dur, u0 = (tt - 1)/L.dur, x = L.x0 + (L.x1 - L.x0)*u, z = L.z0 + (L.z1 - L.z0)*u, xp = L.x0 + (L.x1 - L.x0)*u0, zp = L.z0 + (L.z1 - L.z0)*u0;
+          S.x = x; S.z = z; X.face = Math.atan2(L.x1 - L.x0, L.z1 - L.z0);
+          inA.forEach(p => { if(_fmSegD(p.x, p.z, xp, zp, x, z) < a.hw + 0.5 && once(p.k, 'dr' + a.leg + '_' + a.id, 20)){ HIT(a, p, 'drill', FMK_D.drill); const nx = Math.cos(X.face), nz = -Math.sin(X.face), sd = (p.x - x)*nx + (p.z - z)*nz >= 0 ? 1 : -1; A.push(p.k, x - nx*sd, z - nz*sd, 3.5); } }); }
+        if(tt >= L.dur + 8){ a.leg++; if(a.leg < a.legs.length){ const N = a.legs[a.leg]; N.t0 = a.t + N.wd; } }
+        done = a.leg >= a.legs.length; } }
+    else if(a.k === 'lash'){
+      a.c.forEach((c, ci) => { if(a.t !== c[0]) return; const x1 = a.x + Math.sin(c[1])*a.L, z1 = a.z + Math.cos(c[1])*a.L;
+        inA.forEach(p => { if(_fmSegD(p.x, p.z, a.x, a.z, x1, z1) < 1.1 && once(p.k, 'la' + ci + '_' + a.id, 3)){ HIT(a, p, 'lash', FMK_D.lash); A.slow(p.k, 0.45, 1500); } }); });
+      done = a.t >= a.c[a.c.length - 1][0] + 6; }
+    else if(a.k === 'charges'){
+      a.c.forEach((c, ci) => { if(a.t === c[2]) inA.forEach(p => { if(D(p, c[0], c[1]) < a.r && once(p.k, 'ch' + ci + '_' + a.id, 3)){ HIT(a, p, 'charge', FMK_D.charge); A.push(p.k, c[0], c[1], 2.5); } }); });
+      done = a.t >= Math.max.apply(null, a.c.map(c => c[2])) + 6; }
+    else if(a.k === 'cavein'){
+      a.c.forEach((c, ci) => { if(a.t === c[2]) inA.forEach(p => { if(D(p, c[0], c[1]) < a.r && once(p.k, 'ca' + ci + '_' + a.id, 3)){ HIT(a, p, 'rock', FMK_D.rock); A.slow(p.k, 0.5, 1000); } }); });
+      done = a.t >= Math.max.apply(null, a.c.map(c => c[2])) + 6; }
+    else if(a.k === 'hook'){
+      const tt = a.t - a.w;
+      if(tt > 0 && !a.caught){ const s = Math.min(a.L, tt*a.sp), x = a.x + Math.sin(a.a)*s, z = a.z + Math.cos(a.a)*s;
+        inA.forEach(p => { if(!a.caught && D(p, x, z) < 1.5){ a.caught = p.k; HIT(a, p, 'hook', FMK_D.hook); A.pull(p.k, a.x, a.z, Math.max(0, D(p, a.x, a.z) - 2.5)); A.slow(p.k, 0.5, 900); } });
+        if(s >= a.L) a.caught = -1; }
+      done = a.t >= a.w + Math.ceil(a.L/a.sp) + 10; }
+    else if(a.k === 'carts'){
+      const ca = Math.sin(a.a), cb = Math.cos(a.a), nx = cb, nz = -ca;
+      a.ln.forEach((l, li) => { const tt = a.t - l[1]; if(tt <= 0) return; const s = -a.L + tt*a.sp; if(s > a.L + 2) return; const cx = a.x + nx*l[0] + ca*s, cz = a.z + nz*l[0] + cb*s;
+        inA.forEach(p => { const dx = p.x - cx, dz = p.z - cz; if(Math.abs(dx*ca + dz*cb) < 1.8 && Math.abs(dx*nx + dz*nz) < 1.4 && once(p.k, 'cr' + li + '_' + a.id, 20)){ HIT(a, p, 'cart', FMK_D.cart); A.push(p.k, p.x - nx*(dx*nx + dz*nz >= 0 ? 1 : -1), p.z - nz*(dx*nx + dz*nz >= 0 ? 1 : -1), 3); } }); });
+      done = a.t >= Math.max.apply(null, a.ln.map(l => l[1])) + Math.ceil((2*a.L + 2)/a.sp) + 2; }
+    else if(a.k === 'gas'){
+      if(a.t === a.w) a.v.forEach((v, vi) => inA.forEach(p => { if(D(p, v[0], v[1]) < a.r && once(p.k, 'gs_' + a.id, 6)){ HIT(a, p, 'gas', FMK_D.gas); A.push(p.k, v[0], v[1], 2); } }));
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'mine'){
+      a.rg.forEach((r, ri) => { if(a.t === r[2]) inA.forEach(p => { const d = D(p, a.x, a.z); if(d >= r[0] && d < r[1] && once(p.k, 'mn' + ri + '_' + a.id, 5)){ HIT(a, p, 'mine', FMK_D.mine); A.push(p.k, a.x, a.z, ri === 1 ? 4 : 1.5); } }); });
+      done = a.t >= a.rg[a.rg.length - 1][2] + 12; }
+    else done = a.t >= (a.end || 8);
+    if(done){ const was = a.k; X.act = null; X.gap = ph >= 4 ? 7 : ph >= 3 ? 9 : 11;
+      // THE LAUGH: every few moves, and more often when one of his moves has just landed
+      if(was !== 'laugh' && was !== 'rage'){ X.nAb++;
+        if(X.nAb >= X.nxL || (a.hitAny && A.rnd() < 0.2)){ X.nAb = 0; X.nxL = 3 + (A.rnd() < 0.5 ? 1 : 0); const w = ph >= 4 ? 18 : 26;
+          X.act = { k:'laugh', t:0, w }; X.vx = X.vz = 0; A.fx('fmx_laugh', { x:R2(S.x), z:R2(S.z), w, n:Math.floor(A.rnd()*8), g:a.hitAny ? 1 : 0 }); } }
+      else if(was === 'laugh') X.gap = 5; }
+  } else {
+    // ── HE STOMPS AFTER YOU: a heavy rig, not fast
+    const want = angTo(P.x, P.z); X.face += Math.max(-0.1, Math.min(0.1, _fmDA(want, X.face)));
+    const d = D(P, S.x, S.z), vmax = [0, 0.07, 0.078, 0.088, 0.1][ph], sp = d > 5 ? vmax : d < 2.5 ? -vmax*0.5 : 0;
+    X.vx += (Math.sin(X.face)*sp - X.vx)*0.15; X.vz += (Math.cos(X.face)*sp - X.vz)*0.15; S.x += X.vx; S.z += X.vz;
+
+    if(X.gap <= 0){
+      const MIN = { lash:1, charges:1, cavein:2, hook:2, carts:3, gas:3 };
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.mine <= 0) k = 'mine';
+      else if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      if(k === 'main'){ X.mainN = (X.mainN || 0) + 1; k = X.mainN % 2 ? 'slam' : 'drill'; X.cd.main = ph >= 3 ? 26 : 30; }
+      const id = X.t;
+      if(k === 'slam'){
+        const c = inPit(S.x + Math.sin(want)*3.5, S.z + Math.cos(want)*3.5, FMK_IN), w = 12, rings = [];
+        [[4.5, 7.5], [7.5, 10.5], [10.5, 13.5]].slice(0, ph >= 3 ? 3 : ph >= 2 ? 2 : 1).forEach((r, i) => rings.push([w + 4 + i*4, r[0], r[1]]));
+        X.act = { k, t:0, id, x:c[0], z:c[1], w, r:4.5, rings }; X.face = want; X.vx = X.vz = 0;
+        A.fx('fmx_slam', { x:R2(c[0]), z:R2(c[1]), bx:R2(S.x), bz:R2(S.z), w, r:4.5, rings });
+      } else if(k === 'drill'){
+        const legs = []; let x = S.x, z = S.z, aim = want;
+        for(let i = 0; i < (ph >= 3 ? 2 : 1); i++){ if(i){ const q = inA[(i) % inA.length]; aim = Math.atan2(q.x - x, q.z - z); }
+          const L = Math.max(6, Math.min(24, _fmToWall(x, z, aim, hx, hz, FMK_IN - 1.2))), x1 = x + Math.sin(aim)*L, z1 = z + Math.cos(aim)*L;
+          legs.push({ x0:R2(x), z0:R2(z), x1:R2(x1), z1:R2(z1), dur:Math.max(5, Math.round(L/2.6)), wd:i ? 10 : 14, t0:i ? 0 : 14 }); x = x1; z = z1; }
+        X.act = { k, t:0, id, legs, leg:0, hw:1.6 }; X.face = want; X.vx = X.vz = 0;
+        A.fx('fmx_drill', { legs:legs.map(l => [l.x0, l.z0, l.x1, l.z1, l.dur, l.wd]), hw:1.6 });
+      } else if(k === 'lash'){
+        const n = ph >= 3 ? 5 : 3, c = [];
+        for(let i = 0; i < n; i++){ const o = (i - (n - 1)/2)*0.42*(i % 2 ? -1 : 1); c.push([10 + i*4, +(want + o).toFixed(3)]); }
+        X.act = { k, t:0, id, x:S.x, z:S.z, L:11, c }; X.face = want; X.vx = X.vz = 0; X.cd.lash = 70;
+        A.fx('fmx_lash', { x:R2(S.x), z:R2(S.z), L:11, c });
+      } else if(k === 'charges'){
+        const n = [0, 4, 5, 6, 7][ph], c = [];
+        inA.forEach(p => { if(c.length < n) c.push([R2(p.x), R2(p.z)]); });
+        for(let t2 = 0; t2 < 60 && c.length < n; t2++){ const a2 = A.rnd()*6.283, r = 3 + A.rnd()*(FMK_IN - 4), x = hx + Math.sin(a2)*r, z = hz + Math.cos(a2)*r; if(c.every(q => Math.hypot(q[0] - x, q[1] - z) > 4)) c.push([R2(x), R2(z)]); }
+        c.forEach((q, i) => q.push(22 + i*3));
+        X.act = { k, t:0, id, c, r:3 }; X.cd.charges = 90;
+        A.fx('fmx_charges', { x:R2(S.x), z:R2(S.z), c, r:3 });
+      } else if(k === 'cavein'){
+        const c = []; inA.forEach(p => c.push([R2(p.x), R2(p.z)]));
+        for(let t2 = 0; t2 < 80 && c.length < 11 + ph; t2++){ const a2 = A.rnd()*6.283, r = Math.sqrt(A.rnd())*FMK_IN, x = hx + Math.sin(a2)*r, z = hz + Math.cos(a2)*r; if(c.every(q => Math.hypot(q[0] - x, q[1] - z) > 3.2)) c.push([R2(x), R2(z)]); }
+        c.forEach((q, i) => q.push(16 + Math.floor(i*1.4)));
+        const wa = Math.atan2(S.x - hx, S.z - hz) || 0;
+        X.act = { k, t:0, id, c, r:2.4 }; X.cd.cavein = 100; X.vx = X.vz = 0;
+        A.fx('fmx_cavein', { x:R2(S.x), z:R2(S.z), c, r:2.4, wa:+wa.toFixed(3) });
+      } else if(k === 'hook'){
+        let far = P, fd = -1; inA.forEach(p => { const d2 = D(p, S.x, S.z); if(d2 > fd){ fd = d2; far = p; } });
+        const a2 = angTo(far.x, far.z), L = Math.max(6, Math.min(26, fd + 4));
+        X.act = { k, t:0, id, x:S.x, z:S.z, a:a2, L, w:12, sp:2.2 }; X.face = a2; X.vx = X.vz = 0; X.cd.hook = 80;
+        A.fx('fmx_hook', { x:R2(S.x), z:R2(S.z), a:+a2.toFixed(3), L:+L.toFixed(1), w:12, sp:2.2 });
+      } else if(k === 'carts'){
+        const a2 = Math.floor(A.rnd()*4)*Math.PI/2 + (A.rnd() - 0.5)*0.6, offs = [-7.5, -2.5, 2.5, 7.5], skip = Math.floor(A.rnd()*4), ln = [];
+        offs.forEach((o, i) => { if(i !== skip) ln.push([o, 16 + ln.length*5]); });
+        X.act = { k, t:0, id, x:hx, z:hz, a:+a2.toFixed(3), L:16, ln, sp:1.4 }; X.cd.carts = 110;
+        A.fx('fmx_carts', { x:hx, z:hz, a:+a2.toFixed(3), L:16, ln, sp:1.4 });
+      } else if(k === 'gas'){
+        const v = []; inA.forEach(p => { if(v.length < 2) v.push([R2(p.x), R2(p.z)]); });
+        for(let t2 = 0; t2 < 60 && v.length < 5; t2++){ const a2 = A.rnd()*6.283, r = 3 + A.rnd()*(FMK_IN - 4), x = hx + Math.sin(a2)*r, z = hz + Math.cos(a2)*r; if(v.every(q => Math.hypot(q[0] - x, q[1] - z) > 6)) v.push([R2(x), R2(z)]); }
+        X.act = { k, t:0, id, v, r:3.6, w:28 }; X.cd.gas = 120; X.vx = X.vz = 0;
+        A.fx('fmx_gas', { x:R2(S.x), z:R2(S.z), v, r:3.6, w:28 });
+      } else if(k === 'mine'){
+        const rg = [[9.5, 16, 30], [0, 5, 42], [5, 9.5, 54]];
+        X.act = { k, t:0, id, x:hx, z:hz, rg }; X.cd.mine = 330; X.vx = X.vz = 0; S.x = hx; S.z = hz;
+        A.fx('fmx_mine', { x:hx, z:hz, rg, IN:FMK_IN });
+      }
+    }
+  }
+  const ac = X.act;
+  if(!(ac && (ac.k === 'drill' || ac.k === 'mine'))){ const dx = S.x - hx, dz = S.z - hz, d = Math.hypot(dx, dz); if(d > FMK_R){ const st = Math.min(d - FMK_R, 0.15); S.x -= dx/d*st; S.z -= dz/d*st; } }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -8977,6 +9163,33 @@ const ZBOSS_SERVER = {
       _icBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:180, hz:180,
         hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
         push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
+        rnd:  Math.random });
+    },
+  },
+
+  // ── FOREMAN DRAX (a736). Rebuilt as the Xu slave-driver in his mining rig: the whole fight lives
+  //    in the shared brain _fmBrain (above ZBOSS_SERVER; the client runs the same text solo). He
+  //    fights in his dig pit (tile 62,62). The brain moves him (move:'self'), aims at every player
+  //    in the pit and hands back damage, pushes, pulls, slows and cues. (He had no server kit before.)
+  caves_of_despair: {
+    x: 93, z: 93,
+    spd:    [0,0,0,0,0],
+    dmg:    [0, 1, 2, 3, 4],                           // phase index only — damage is in FMK_D
+    phases: [0.75, 0.50, 0.25],
+    acd:    [0, 20, 20, 20, 20],
+    tele:   0,
+    move:   'self',
+    passive: (c) => {
+      const { b, ph, game, zoneName } = c;
+      const alive = new Set(getTargetablePlayersInZone(game.id, zoneName));
+      const T = [], W = new Map();
+      players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+      _fmBrain(b, { T, ph, hp:b.hp, maxHp:b.maxHp, hx:93, hz:93,
+        hit:  (k, dmg) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_enemy_attack', eid:-1, dmg, ex:+b.x.toFixed(2), ez:+b.z.toFixed(2), zone:zoneName }); },
+        push: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }); },
+        pull: (k, x, z, amt) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }); },
+        slow: (k, f, ms) => { const ws = W.get(k); if (ws) send(ws, { type:'sv_player_fx', zone:zoneName, slow:f, root:ms }); },
         fx:   (vt, o) => broadcastToZone(game.id, zoneName, Object.assign({ type:'sv_fx', vt, zone:zoneName }, o)),
         rnd:  Math.random });
     },
