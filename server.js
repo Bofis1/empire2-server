@@ -596,7 +596,7 @@ const ZONE_BOSS_HP = {
 //   boss idled unhit in an empty zone while players chased a local ghost.
 //   Zones/coords now mirror the client exactly; server hp/atk tuning kept.
 const WORLD_BOSS_DEFS = [
-  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'citadel',      tx:120,tz:56, hp:175000, atk:160, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
+  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'citadel',      tx:120,tz:56, hp:160000, atk:160, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
   { id:'ancient_wyrm',     name:'Eyexor',                 zone:'dragonlair',   tx:62, tz:64, leash:12, hp:950000, atk:513, atkCooldown:85,  aggroRange:22, color:0xaa44ff, lootTier:5 },
   { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'necropolis',   tx:56, tz:120,hp:3500000, atk:1296, atkCooldown:90,  aggroRange:22, color:0x44ddff, lootTier:4 },
   { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:56, tz:120,hp:3600000, atk:1296, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
@@ -9794,6 +9794,124 @@ function _elBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a753 — THE FORGE TYRANT, world boss of the Citadel, rebuilt: a hunched titan of cooling slag and black iron
+//   that walked out of the volcano — a furnace burning in its belly, chimney horns, a great forge-hammer fused to
+//   one arm and a chained crucible of molten metal in the other hand. One brain, shared word for word by the
+//   server (lobby authority) and the client (solo). 10 Hz.
+//     HAMMERFALL     P1+  its signature: the hammer comes down on its target (P3+: three blows marching at you)
+//     SLAG LOB       P1+  globs of molten slag arc onto you and leave burning pools
+//     BELLOWS        P1+  its furnace roars: a cone of fire that sweeps across in front of it
+//     CRUCIBLE       P2+  it whirls the chained crucible round itself — stay inside the chain or well outside it
+//     FAULT LINES    P3+  the ground splits in lines from its feet and the lava runs out along them
+//     STOMP          P1+  stand at its feet and it stamps
+//   Damage is RAW. A: { T:[{k,x,z}], hp, maxHp, hx, hz, hit(k,dmg,n), push, pull, slow(k,f,ms), confuse(k), fx, rnd }
+// ════════════════════════════════════════════════════════════════════════════════════════
+const FTK_D  = { hammer:240, slag:130, pool:50, breath:60, chain:200, fault:190, stomp:180 };
+const FTK_PM = [1, 1, 1.1, 1.22, 1.36];
+const FTK_R = 7, FTK_ENG = 28, FTK_IN = 15;
+function _ftSegD(px, pz, x0, z0, a, L){ const dx = Math.sin(a), dz = Math.cos(a), u = Math.max(0, Math.min(L, (px - x0)*dx + (pz - z0)*dz)); return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _ftDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// the crucible on its chain at tick t: it winds out to its full reach, whirls, and winds back in
+function _ftCrucible(a, t){ if(t < 0 || t > a.dur) return null; const u = t/a.dur, r = a.r*Math.min(1, Math.min(u, 1 - u)*6), ang = a.a0 + a.om*t; return [a.x + Math.sin(ang)*r, a.z + Math.cos(ang)*r, r]; }
+function _ftBrain(S, A){
+  const f = A.hp/Math.max(1, A.maxHp), ph = f > 0.75 ? 1 : f > 0.5 ? 2 : f > 0.25 ? 3 : 4, M = FTK_PM[ph], R2 = v => Math.round(v*100)/100, R3 = v => Math.round(v*1000)/1000;
+  let X = S._ft;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._ft = { t:0, face:0, cd:{ main:10, slag:30, breath:25, chain:15, fault:20, stomp:0 }, last:{}, gap:20, act:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{}, pools:[] };
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz, D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < FTK_ENG);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg, n) => A.hit(p.k, Math.round(dmg*M), n);
+  if(X.t % 300 === 0) X.hitT = {};
+  // burning slag pools tick on their own, whatever it is doing
+  X.pools = X.pools.filter(q => X.t < q[3]);
+  if(X.pools.length) inA.forEach(p => { if(X.pools.some(q => X.t >= q[4] && Math.hypot(p.x - q[0], p.z - q[1]) < q[2]) && once(p.k, 'pool', 6)) HIT(p, FTK_D.pool, 'pool'); });
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz); if(d > 0.3){ S.x += dx/d*Math.min(d, 0.05); S.z += dz/d*Math.min(d, 0.05); } S.face = X.face; S.mv = 0; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){ const p = inA[Math.floor(A.rnd()*inA.length)]; X.tgt = p.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  S.mv = 0;
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; A.fx('ftx_rise', { x:R2(S.x), z:R2(S.z), p:ph }); inA.forEach(p => { if(D(p, S.x, S.z) < 6) A.push(p.k, S.x, S.z, 4); });
+    if(ph === 2) X.cd.chain = 15; if(ph === 3) X.cd.fault = 20; }
+  const want = Math.atan2(P.x - S.x, P.z - S.z);
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 16;
+    else if(a.k === 'hammer'){
+      a.m.forEach(m => { if(a.t === m[2]) inA.forEach(p => { if(Math.hypot(p.x - m[0], p.z - m[1]) < a.r + 0.3){ HIT(p, FTK_D.hammer, 'hammer'); A.push(p.k, m[0], m[1], 2.5); } }); });
+      X.face = a.a; done = a.t >= a.m[a.m.length - 1][2] + 6; }
+    else if(a.k === 'slag'){
+      a.m.forEach(m => { if(a.t === m[2]){ inA.forEach(p => { if(Math.hypot(p.x - m[0], p.z - m[1]) < a.r + 0.3) HIT(p, FTK_D.slag, 'slag'); }); X.pools.push([m[0], m[1], a.pr, X.t + a.life, X.t + 1]); } });
+      done = a.t >= Math.max.apply(null, a.m.map(m => m[2])) + 4; }
+    else if(a.k === 'breath'){
+      // a cone sweeping from a0 to a1 over `dur` ticks; it burns whoever is inside every 3 ticks
+      if(a.t >= a.w && a.t < a.w + a.dur){ const c = a.a0 + (a.a1 - a.a0)*(a.t - a.w)/a.dur; X.face = c;
+        inA.forEach(p => { const d = D(p, S.x, S.z); if(d < a.L && (d < 1.5 || Math.abs(_ftDA(Math.atan2(p.x - S.x, p.z - S.z), c)) < a.half) && once(p.k, 'br' + a.id, 3)) HIT(p, FTK_D.breath, 'breath'); }); }
+      else X.face = a.a0;
+      done = a.t >= a.w + a.dur + 4; }
+    else if(a.k === 'chain'){
+      if(a.t >= a.w){ const c = _ftCrucible(a, a.t - a.w); if(c) inA.forEach(p => { if(Math.hypot(p.x - c[0], p.z - c[1]) < 1.7 && once(p.k, 'ch' + a.id, 10)){ HIT(p, FTK_D.chain, 'chain'); A.push(p.k, c[0], c[1], 3); } }); }
+      done = a.t >= a.w + a.dur + 4; }
+    else if(a.k === 'fault'){
+      // each fissure erupts from the feet outward: the lava front is at (t - w)*v along it
+      if(a.t >= a.w){ const fr = (a.t - a.w)*a.v; a.q.forEach((q, j) => inA.forEach(p => { const along = (p.x - a.x)*Math.sin(q) + (p.z - a.z)*Math.cos(q);
+          if(along > fr - 1.5 && along < fr + 0.5 && along < a.L && _ftSegD(p.x, p.z, a.x, a.z, q, a.L) < a.hw + 0.3 && once(p.k, 'fl' + a.id + '_' + j, 20)) HIT(p, FTK_D.fault, 'fault'); })); }
+      done = a.t >= a.w + Math.ceil(a.L/a.v) + 6; }
+    else if(a.k === 'stomp'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.r){ HIT(p, FTK_D.stomp, 'stomp'); A.push(p.k, S.x, S.z, 3); } });
+      done = a.t >= a.w + 6; }
+    if(done){ X.act = null; X.gap = [0, 12, 10, 9, 7][ph]; }
+  } else {
+    // ── it lumbers after its target, wanting to be in hammer reach (~3.5), never far from its forge-ground
+    X.face += Math.max(-0.08, Math.min(0.08, _ftDA(want, X.face)));
+    const d = D(P, S.x, S.z); let sp = d > 4 ? 0.075 : 0;
+    const c = inG(S.x + Math.sin(want)*sp, S.z + Math.cos(want)*sp, FTK_R); if(Math.hypot(c[0] - S.x, c[1] - S.z) > 0.005) S.mv = 1; S.x = c[0]; S.z = c[1];
+    if(X.gap <= 0){
+      const MIN = { slag:1, breath:1, chain:2, fault:3, stomp:1 };
+      const close = inA.some(p => D(p, S.x, S.z) < 3);
+      let k = null, lk = 1e9;
+      if(X.cd.main <= 0 && X.lastK !== 'main' && d < 9) k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0 || (m === 'stomp' && !close)) continue; const l = (X.last[m] || 0) - (m === 'stomp' ? 200 : 0); if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0 && d < 9) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'main'){
+        // the blow lands where the target is now (inside its reach); from P3 three blows march out toward them
+        const r = 3.2, reach = Math.min(Math.max(d, 2.5), 5), m = [[R2(S.x + Math.sin(want)*reach), R2(S.z + Math.cos(want)*reach), 11]];
+        if(ph >= 3){ m.push([R2(S.x + Math.sin(want)*(reach + 4.5)), R2(S.z + Math.cos(want)*(reach + 4.5)), 17]); m.push([R2(S.x + Math.sin(want)*(reach + 9)), R2(S.z + Math.cos(want)*(reach + 9)), 23]); }
+        X.act = { k:'hammer', t:0, id, m, r, a:want }; X.cd.main = ph >= 4 ? 24 : 32;
+        A.fx('ftx_hammer', { i:id, x:R2(S.x), z:R2(S.z), a:R3(want), m, r });
+      } else if(k === 'slag'){
+        const m = inA.map((p, j) => [R2(p.x), R2(p.z), 14 + j*2]), n = ph >= 3 ? 4 : 2;
+        for(let j = 0; j < n; j++){ const q = A.rnd()*Math.PI*2, rr = 3 + A.rnd()*(FTK_IN - 3); m.push([R2(hx + Math.sin(q)*rr), R2(hz + Math.cos(q)*rr), 16 + j*2]); }
+        X.act = { k, t:0, id, m, r:2.0, pr:2.2, life:55 }; X.cd.slag = 75;
+        A.fx('ftx_slag', { i:id, x:R2(S.x), z:R2(S.z), m, r:2.0, pr:2.2, life:55 });
+      } else if(k === 'breath'){
+        const sg = A.rnd() < 0.5 ? 1 : -1, half = 0.55, L = 11, w = 10, dur = 26, a0 = want - sg*0.9, a1 = want + sg*0.9;
+        X.act = { k, t:0, id, a0, a1, half, L, w, dur }; X.cd.breath = 85;
+        A.fx('ftx_breath', { i:id, x:R2(S.x), z:R2(S.z), a0:R3(a0), a1:R3(a1), half, L, w, dur });
+      } else if(k === 'chain'){
+        const om = (A.rnd() < 0.5 ? 1 : -1)*0.24, a0 = A.rnd()*Math.PI*2, r = 6.5, w = 10, dur = 46;
+        X.act = { k, t:0, id, x:S.x, z:S.z, a0, om, r, w, dur }; X.cd.chain = 120;
+        A.fx('ftx_chain', { i:id, x:R2(S.x), z:R2(S.z), a0:R3(a0), om, r, w, dur });
+      } else if(k === 'fault'){
+        const n = ph >= 4 ? 7 : 5, q0 = A.rnd()*Math.PI*2, q = []; for(let j = 0; j < n; j++) q.push(R3(q0 + j*Math.PI*2/n));
+        X.act = { k, t:0, id, x:S.x, z:S.z, q, L:18, hw:1.1, v:0.9, w:14 }; X.cd.fault = 150;
+        A.fx('ftx_fault', { i:id, x:R2(S.x), z:R2(S.z), q, L:18, hw:1.1, v:0.9, w:14 });
+      } else if(k === 'stomp'){
+        X.act = { k, t:0, id, r:4, w:7 }; X.cd.stomp = 40;
+        A.fx('ftx_stomp', { i:id, x:R2(S.x), z:R2(S.z), r:4, w:7 });
+      }
+    }
+  }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -11398,6 +11516,7 @@ function tickWorldBoss(game) {
   if (wb.id === 'hollow_reaper') { _wbBrainTick(game, wb, _hrBrain); return; }   // a749 — so does the Hollow Reaper
   if (wb.id === 'abacus_of_flesh') { _wbBrainTick(game, wb, _abBrain); return; }   // a750 — and the Abacus of Flesh
   if (wb.id === 'electronoid') { _wbBrainTick(game, wb, _elBrain); return; }   // a751 — and Electronoid
+  if (wb.id === 'forge_tyrant') { _wbBrainTick(game, wb, _ftBrain); return; }   // a753 — and the Forge Tyrant
   // Find nearest player in the boss's zone
   let nearest = null, nearestDist = Infinity;
   zonePlayers.forEach(p => {
