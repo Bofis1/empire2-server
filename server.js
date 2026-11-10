@@ -5115,6 +5115,8 @@ function getPlayersInZone(gameId, zone) {
 const REVIVE_RANGE     = 3.5;    // world units, a touch wider than the client's 3.0 prompt
 const REVIVE_HOLD_MS   = 2700;   // the 3s hold, less a little network slack
 function isTargetable(p){
+  // a752 — arriving in a zone: untargetable until the first position from the new zone lands, then 1.5s of grace
+  if (p && (p._arriving || (p._graceUntil && Date.now() < p._graceUntil))) return false;
   // a604 — a player off the edge of the map is inside an Apex Trial arena: nothing in the
   //   zone may chase, aggro on or attack them
   if (p && typeof p.x === 'number' && (p.x > 365 || p.z > 365 || p.x < -5 || p.z < -5)) return false;
@@ -17623,6 +17625,9 @@ wss.on('connection', ws => {
 
       // ── IN-GAME: player position & zone ───────────────
       case 'sv_player_state':
+        // a752 — a late packet from the zone you just left must not drag you back into it
+        if (player._arriving && data.zone !== player.zone) break;
+        if (player._arriving) { player._arriving = false; player._graceUntil = Date.now() + 1500; }
         // Client sends position + current zone each tick
         player.x    = data.x;
         player.z    = data.z;
@@ -17730,6 +17735,7 @@ wss.on('connection', ws => {
 
       case 'sv_enter_zone': {
         player.zone = data.zone;
+        player._arriving = true; player._graceUntil = 0;   // a752 — the x/z we hold are from the zone you just left
         player.downed = false; player.dead = false;   // a578 — arriving somewhere means you're up
         if(!player.name && data.name) player.name = data.name.slice(0,20).replace(/[<>]/g,'');
 
