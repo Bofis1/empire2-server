@@ -596,13 +596,13 @@ const ZONE_BOSS_HP = {
 //   boss idled unhit in an empty zone while players chased a local ghost.
 //   Zones/coords now mirror the client exactly; server hp/atk tuning kept.
 const WORLD_BOSS_DEFS = [
-  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'citadel',      tx:120,tz:56, hp:280000, atk:115, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
-  { id:'ancient_wyrm',     name:'Eyexor',                 zone:'dragonlair',   tx:62, tz:64, leash:12, hp:320000, atk:120, atkCooldown:85,  aggroRange:22, color:0xaa44ff, lootTier:5 },
-  { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'necropolis',   tx:56, tz:120,hp:360000, atk:130, atkCooldown:90,  aggroRange:22, color:0x44ddff, lootTier:4 },
-  { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:56, tz:120,hp:440000, atk:145, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
-  { id:'abacus_of_flesh',  name:'The Abacus of Flesh',    zone:'void_citadel', tx:56, tz:120,hp:520000, atk:160, atkCooldown:100, aggroRange:24, color:0xcc1810, lootTier:7 },
-  { id:'overseer_of_discord', name:'The Overseer of Discord', zone:'arena',    tx:120,tz:120,hp:680000, atk:175, atkCooldown:80,  aggroRange:26, color:0xffd84a, lootTier:8 },
-  { id:'electronoid',      name:'Electronoid',            zone:'forge',        tx:120,tz:150,hp:960000, atk:190, atkCooldown:85,  aggroRange:24, color:0x46b4ff, lootTier:9 },   // a486 — existed client-side (a411) but the server never learned it
+  { id:'forge_tyrant',     name:'The Forge Tyrant',       zone:'citadel',      tx:120,tz:56, hp:175000, atk:160, atkCooldown:90,  aggroRange:22, color:0xff6020, lootTier:3 },
+  { id:'ancient_wyrm',     name:'Eyexor',                 zone:'dragonlair',   tx:62, tz:64, leash:12, hp:950000, atk:513, atkCooldown:85,  aggroRange:22, color:0xaa44ff, lootTier:5 },
+  { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'necropolis',   tx:56, tz:120,hp:3500000, atk:1296, atkCooldown:90,  aggroRange:22, color:0x44ddff, lootTier:4 },
+  { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:56, tz:120,hp:3600000, atk:1296, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
+  { id:'abacus_of_flesh',  name:'The Abacus of Flesh',    zone:'void_citadel', tx:56, tz:120,hp:1100000, atk:593, atkCooldown:100, aggroRange:24, color:0xcc1810, lootTier:7 },
+  { id:'overseer_of_discord', name:'The Overseer of Discord', zone:'arena',    tx:120,tz:120,hp:2400000, atk:915, atkCooldown:80,  aggroRange:26, color:0xffd84a, lootTier:8 },
+  { id:'electronoid',      name:'Electronoid',            zone:'forge',        tx:120,tz:150,hp:3400000, atk:1220, atkCooldown:85,  aggroRange:24, color:0x46b4ff, lootTier:9 },   // a486 — existed client-side (a411) but the server never learned it
 ];
 // id -> def lookup
 const WORLD_BOSS_BY_ID = {};
@@ -5187,6 +5187,8 @@ function spawnWorldBoss(game, def) {
     spawnX: wx, spawnZ: wz,
     hp: def.hp,
     maxHp: def.hp,
+    baseHp: def.hp,   // a748 — fixed per level; grows with the number of players fighting (_wbGroupScale)
+    grp: 1,
     atk: def.atk,
     atkCooldown: def.atkCooldown || 90,
     aggroRange: def.aggroRange || 22,
@@ -9302,6 +9304,127 @@ function _tzBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a748 — EYEXOR, the world boss of Vaeltharax's caldera, rebuilt: a colossal floating eyeball with a
+//   fanged lid, a crown of stalk-eyes and a skirt of tentacles, holding its crystal grotto. One brain,
+//   shared word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//     DEATH GAZE       P1+  its signature: a red sight-line tracks one player, then the eye opens and a
+//                           beam sweeps after them, turning slowly — keep moving round it, or break away
+//     STALK VOLLEY     P1+  the stalk-eyes spit bolts at marked spots, one after another (P3+: more)
+//     GRASPING DEPTHS  P1+  tentacles erupt under marked circles and hold you fast (P2+: a second wave)
+//     HYPNOTIC PULSE   P1+  rings of its iris race outward; jump through or be mesmerised (your controls veer)
+//     DEVOUR           P2+  the pupil opens into a void that drags everyone in, then the fanged lids snap shut
+//     ALL-SEEING       P3+  four (P4: five) beams turn round it like a lighthouse — walk with them
+//     LASH             P1+  stand under it and a tentacle slaps you away
+//   Damage is RAW. A: { T:[{k,x,z}], hp, maxHp, hx, hz, hit(k,dmg,n), push, pull, slow(k,f,ms), confuse(k), fx, rnd }
+// ════════════════════════════════════════════════════════════════════════════════════════
+const EYK_D  = { lash:520, gaze:150, bolt:460, tent:560, ring:500, bite:950, spoke:600 };
+const EYK_PM = [1, 1, 1.1, 1.2, 1.35];
+const EYK_R = 6, EYK_ENG = 26, EYK_IN = 13;
+function _eySegD(px, pz, x0, z0, a, L){ const dx = Math.sin(a), dz = Math.cos(a), u = Math.max(0, Math.min(L, (px - x0)*dx + (pz - z0)*dz)); return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _eyDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+function _eyBrain(S, A){
+  const f = A.hp/Math.max(1, A.maxHp), ph = f > 0.75 ? 1 : f > 0.5 ? 2 : f > 0.25 ? 3 : 4, M = EYK_PM[ph], R2 = v => Math.round(v*100)/100, R3 = v => Math.round(v*1000)/1000;
+  let X = S._ey;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._ey = { t:0, face:0, cd:{ main:14, bolt:24, tent:40, ring:55, devour:20, spokes:20, lash:0 }, last:{}, gap:20, act:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz, D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < EYK_ENG);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg, n) => A.hit(p.k, Math.round(dmg*M), n);
+  if(X.t % 300 === 0) X.hitT = {};
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz); if(d > 0.3){ S.x += dx/d*Math.min(d, 0.06); S.z += dz/d*Math.min(d, 0.06); } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){ const p = inA[Math.floor(A.rnd()*inA.length)]; X.tgt = p.k; X.tgtT = 70; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; A.fx('eyx_rise', { x:R2(S.x), z:R2(S.z), p:ph }); inA.forEach(p => { if(D(p, S.x, S.z) < 6) A.push(p.k, S.x, S.z, 4); });
+    if(ph === 2) X.cd.devour = 20; if(ph === 3) X.cd.spokes = 20; }
+  const want = Math.atan2(P.x - S.x, P.z - S.z);
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 16;
+    else if(a.k === 'gaze'){
+      if(a.t <= a.trk){ a.a += Math.max(-0.1, Math.min(0.1, _eyDA(want, a.a))); if(a.t % 2 === 0) A.fx('eyx_aim', { i:a.id, a:R3(a.a) }); }
+      else {
+        if(a.t === a.trk + 1) A.fx('eyx_beam', { i:a.id, a:R3(a.a), dur:a.dur });
+        a.a += Math.max(-a.tr, Math.min(a.tr, _eyDA(want, a.a))); if(a.t % 2 === 0) A.fx('eyx_aim', { i:a.id, a:R3(a.a) });
+        if(a.t % 3 === 0) inA.forEach(p => { if(_eySegD(p.x, p.z, S.x, S.z, a.a, a.L) < a.hw + 0.4){ HIT(p, EYK_D.gaze, 'gaze'); A.slow(p.k, 0.6, 400); } });
+      }
+      X.face = a.a; done = a.t >= a.trk + a.dur + 4; }
+    else if(a.k === 'bolt'){ a.m.forEach(m => { if(a.t === m[2]) inA.forEach(p => { if(D(p, m[0], m[1]) < a.r) HIT(p, EYK_D.bolt, 'bolt'); }); }); done = a.t >= a.tEnd; }
+    else if(a.k === 'tent'){
+      if(a.t === a.w) a.m.forEach(m => inA.forEach(p => { if(D(p, m[0], m[1]) < a.r && once(p.k, 'tn' + a.id, 8)){ HIT(p, EYK_D.tent, 'tent'); A.slow(p.k, 0.05, 1200); } }));
+      if(a.two && a.t === a.w){ a.m2 = inA.map(p => { const c = inG(p.x, p.z, EYK_IN); return [R2(c[0]), R2(c[1])]; }); A.fx('eyx_tent', { m:a.m2, w:a.w, r:a.r }); }
+      if(a.m2 && a.t === a.w*2) a.m2.forEach(m => inA.forEach(p => { if(D(p, m[0], m[1]) < a.r && once(p.k, 'tn2' + a.id, 8)){ HIT(p, EYK_D.tent, 'tent'); A.slow(p.k, 0.05, 1200); } }));
+      done = a.t >= (a.two ? a.w*2 : a.w) + 8; }
+    else if(a.k === 'ring'){
+      for(let k = 0; k < a.n; k++){ const tt = a.t - (a.t0 + k*a.dt); if(tt < 0) continue; const r = 2 + tt*a.sp; if(r > a.R + a.bw) continue;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) < a.bw/2 + 0.4 && once(p.k, 'rg' + a.id + '_' + k, 40)){ HIT(p, EYK_D.ring, 'ring'); A.confuse(p.k); } }); }
+      done = a.t >= a.t0 + (a.n - 1)*a.dt + Math.ceil((a.R - 2)/a.sp) + 4; }
+    else if(a.k === 'devour'){
+      if(a.t < a.w && a.t % 4 === 0) inA.forEach(p => { const d = D(p, S.x, S.z); if(d < a.R && d > 2) A.pull(p.k, S.x, S.z, 1.1); });
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.r){ HIT(p, EYK_D.bite, 'bite'); A.push(p.k, S.x, S.z, 4.5); } });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'spokes'){
+      if(a.t > a.w){ const ang = a.a0 + (a.t - a.w)*a.om;
+        for(let s = 0; s < a.n; s++){ const sa = ang + s*Math.PI*2/a.n; inA.forEach(p => { if(_eySegD(p.x, p.z, S.x, S.z, sa, a.L) < a.hw + 0.4 && once(p.k, 'sp' + a.id, 6)) HIT(p, EYK_D.spoke, 'spoke'); }); } }
+      done = a.t >= a.w + a.dur + 2; }
+    else if(a.k === 'lash'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.r){ HIT(p, EYK_D.lash, 'lash'); A.push(p.k, S.x, S.z, 3.5); } });
+      done = a.t >= a.w + 6; }
+    if(done){ X.act = null; X.gap = [0, 12, 10, 9, 7][ph]; }
+  } else {
+    // ── it drifts: keeps a gazing distance (~7) from its target, never far from the heart of its grotto
+    X.face += Math.max(-0.08, Math.min(0.08, _eyDA(want, X.face)));
+    const d = D(P, S.x, S.z); let sp = d > 9 ? 0.06 : d < 5 ? -0.05 : 0;
+    let nx = S.x + Math.sin(want)*sp, nz = S.z + Math.cos(want)*sp; const c = inG(nx, nz, EYK_R); S.x = c[0]; S.z = c[1];
+    if(X.gap <= 0){
+      const MIN = { bolt:1, tent:1, ring:1, devour:2, spokes:3 };
+      let k = null, lk = 1e9;
+      if(X.cd.lash <= 0 && inA.some(p => D(p, S.x, S.z) < 3.4)) k = 'lash';
+      else if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'main'){
+        const dur = ph >= 4 ? 40 : 30, tr = ph >= 4 ? 0.03 : 0.022;
+        X.act = { k:'gaze', t:0, id, a:want, trk:16, dur, tr, L:24, hw:1.3 }; X.cd.main = ph >= 4 ? 28 : 36;
+        A.fx('eyx_gaze', { i:id, x:R2(S.x), z:R2(S.z), a:R3(want), trk:16, dur, L:24, hw:1.3 });
+      } else if(k === 'bolt'){
+        const n = ph >= 3 ? 9 : 6, m = [];
+        for(let i = 0; i < n; i++){ const p = inA[i % inA.length], q = A.rnd()*Math.PI*2, r = i < inA.length ? 0 : 1 + A.rnd()*2.5, c = inG(p.x + Math.sin(q)*r, p.z + Math.cos(q)*r, EYK_IN);
+          m.push([R2(c[0]), R2(c[1]), 10 + i*3, i % 6]); }
+        X.act = { k, t:0, id, m, r:1.8, tEnd:10 + (n - 1)*3 + 5 }; X.cd.bolt = 60;
+        A.fx('eyx_bolt', { x:R2(S.x), z:R2(S.z), m, r:1.8 });
+      } else if(k === 'tent'){
+        const m = inA.map(p => { const c = inG(p.x, p.z, EYK_IN); return [R2(c[0]), R2(c[1])]; });
+        for(let j = 0; j < 3; j++){ const q = A.rnd()*Math.PI*2, r = 3 + A.rnd()*9, c = inG(S.x + Math.sin(q)*r, S.z + Math.cos(q)*r, EYK_IN); m.push([R2(c[0]), R2(c[1])]); }
+        X.act = { k, t:0, id, m, w:14, r:2.2, two:ph >= 2 }; X.cd.tent = 80;
+        A.fx('eyx_tent', { m, w:14, r:2.2 });
+      } else if(k === 'ring'){
+        const n = ph >= 3 ? 3 : 2; X.act = { k, t:0, id, x:S.x, z:S.z, n, t0:12, dt:10, sp:1.0, bw:1.6, R:16 }; X.cd.ring = 90;
+        A.fx('eyx_ring', { x:R2(S.x), z:R2(S.z), n, t0:12, dt:10, sp:1.0, bw:1.6, R:16 });
+      } else if(k === 'devour'){
+        X.act = { k, t:0, id, w:28, r:5.5, R:16 }; X.cd.devour = 140;
+        A.fx('eyx_devour', { x:R2(S.x), z:R2(S.z), w:28, r:5.5, R:16 });
+      } else if(k === 'spokes'){
+        const n = ph >= 4 ? 5 : 4, a0 = A.rnd()*Math.PI*2, om = (A.rnd() < 0.5 ? 1 : -1)*0.035;
+        X.act = { k, t:0, id, n, a0, om, w:14, dur:50, L:20, hw:0.9 }; X.cd.spokes = 160;
+        A.fx('eyx_spokes', { x:R2(S.x), z:R2(S.z), n, a0:R3(a0), om, w:14, dur:50, L:20, hw:0.9 });
+      } else if(k === 'lash'){
+        X.act = { k, t:0, id, w:6, r:3.8 }; X.cd.lash = 40;
+        A.fx('eyx_lash', { x:R2(S.x), z:R2(S.z), w:6, r:3.8 });
+      }
+    }
+  }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -10816,6 +10939,41 @@ function tickZoneBoss(game, zoneName, zone) {
   });
 }
 
+// a748 — GROUP SCALING. A world boss no longer scales to anyone's level (each client used to scale it to
+//   its own player, so two players saw two different health bars). It has fixed HP for its level, and
+//   gains 65% of that for every extra player near it. It never shrinks: someone leaving doesn't heal it
+//   or hand the rest a free chunk, and the damage already dealt stays dealt.
+const WB_GROUP_R = 45, WB_GROUP_K = 0.65;
+function _wbGroupScale(game, wb, zonePlayers) {
+  let n = 0; zonePlayers.forEach(p => { if (p.x !== undefined && Math.hypot(p.x - wb.x, p.z - wb.z) < WB_GROUP_R) n++; });
+  if (n <= (wb.grp || 1)) return;
+  wb.grp = n;
+  const want = Math.round((wb.baseHp || wb.maxHp) * (1 + WB_GROUP_K * (n - 1)));
+  if (want <= wb.maxHp) return;
+  wb.hp += want - wb.maxHp; wb.maxHp = want;
+  broadcastToZone(game.id, wb.zone, { type:'sv_worldboss_hp', id:wb.id, hp:wb.hp, maxHp:wb.maxHp, phase:wb.phase, dmg:0, grow:n });
+}
+// a748 — EYEXOR runs the shared brain (_eyBrain, above ZBOSS_SERVER; the client runs the same text solo)
+function _wbEyexorTick(game, wb) {
+  const alive = new Set(getTargetablePlayersInZone(game.id, wb.zone));
+  const T = [], W = new Map(), Z = wb.zone;
+  players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = p.pid !== undefined ? 'p' + p.pid : 'i' + T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+  const S = wb._eyS || (wb._eyS = { x:wb.x, z:wb.z }), ox = wb.x, oz = wb.z;
+  const to = (k, m) => { const ws = W.get(k); if (ws) send(ws, Object.assign({ zone:Z }, m)); };
+  _eyBrain(S, { T, hp:wb.hp, maxHp:wb.maxHp, hx:wb.spawnX, hz:wb.spawnZ,
+    hit:     (k, dmg) => to(k, { type:'sv_enemy_attack', eid:-1, dmg, ex:+S.x.toFixed(2), ez:+S.z.toFixed(2) }),
+    push:    (k, x, z, amt) => to(k, { type:'sv_player_fx', eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }),
+    pull:    (k, x, z, amt) => to(k, { type:'sv_player_fx', eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }),
+    slow:    (k, f, ms) => to(k, { type:'sv_player_fx', slow:f, root:ms }),
+    confuse: (k) => to(k, { type:'sv_player_fx', eff:'confuse', dur:100 }),
+    fx:      (vt, o) => broadcastToZone(game.id, Z, Object.assign({ type:'sv_fx', vt, zone:Z }, o)),
+    rnd:     Math.random });
+  wb.x = S.x; wb.z = S.z;
+  wb._eyBc = (wb._eyBc || 0) + 1;
+  if (Math.abs(wb.x - ox) + Math.abs(wb.z - oz) > 0.002 || wb._eyBc % 10 === 0)
+    broadcastToZone(game.id, Z, { type:'sv_worldboss_state', id:wb.id, x:+wb.x.toFixed(2), z:+wb.z.toFixed(2), hp:wb.hp, maxHp:wb.maxHp, phase:wb.phase, zone:Z });
+}
+
 function tickWorldBoss(game) {
   const wb = game.worldBoss;
   if (!wb || !wb.spawned) return;
@@ -10844,6 +11002,8 @@ function tickWorldBoss(game) {
     if (wb.aggroed) { wb.aggroed = false; }
     return;
   }
+  _wbGroupScale(game, wb, zonePlayers);   // a748
+  if (wb.id === 'ancient_wyrm') { _wbEyexorTick(game, wb); return; }   // a748 — Eyexor fights with its own brain
   // Find nearest player in the boss's zone
   let nearest = null, nearestDist = Infinity;
   zonePlayers.forEach(p => {
