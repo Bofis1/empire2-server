@@ -601,7 +601,7 @@ const WORLD_BOSS_DEFS = [
   { id:'hollow_reaper',    name:'The Hollow Reaper',      zone:'necropolis',   tx:56, tz:120,hp:3500000, atk:1296, atkCooldown:90,  aggroRange:22, color:0x44ddff, lootTier:4 },
   { id:'void_behemoth',    name:'The Void Behemoth',      zone:'neon_hollow',  tx:56, tz:120,hp:3600000, atk:1296, atkCooldown:95,  aggroRange:22, color:0xff00ff, lootTier:6 },
   { id:'abacus_of_flesh',  name:'The Abacus of Flesh',    zone:'void_citadel', tx:56, tz:120,hp:1100000, atk:593, atkCooldown:100, aggroRange:24, color:0xcc1810, lootTier:7 },
-  { id:'overseer_of_discord', name:'The Overseer of Discord', zone:'arena',    tx:120,tz:120,hp:2400000, atk:915, atkCooldown:80,  aggroRange:26, color:0xffd84a, lootTier:8 },
+  { id:'overseer_of_discord', name:'The Overseer of Discord', zone:'arena',    tx:120,tz:120,hp:4500000, atk:1400, atkCooldown:80,  aggroRange:26, color:0xffd84a, lootTier:8 },
   { id:'electronoid',      name:'Electronoid',            zone:'forge',        tx:120,tz:150,hp:3400000, atk:1220, atkCooldown:85,  aggroRange:24, color:0x46b4ff, lootTier:9 },   // a486 — existed client-side (a411) but the server never learned it
 ];
 // id -> def lookup
@@ -10034,6 +10034,174 @@ function _vbBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a755 — THE OVERSEER OF DISCORD, world boss of the Colosseum, rebuilt as the hardest fight in the game: the storm god
+//   presiding over the arena floor, and every ability is the trident. One brain, shared word for word by the
+//   server (lobby authority) and the client (solo). 10 Hz.
+//     TRIDENT LUNGE     P1+  his signature: he lunges down a lane at you and lightning runs the length of it (3 prongs, 3 lanes from P3)
+//     STORM REAP        P1+  the trident sweeps the whole circle round him but for one gap; from P2 it comes back the other way
+//     THUNDERBOLT VOLLEY P1+ bolts fall on each of you in turn, each one aimed where you are now
+//     DISCORD RINGS     P2+  he slams the trident down and rings of lightning roll out across the floor, each with one gap
+//     HURL THE TRIDENT  P2+  thrown at the furthest of you; it stands in the sand as a lightning rod, pulsing, until he rips it back
+//     COLOSSEUM VERDICT P2+  the floor is judged in squares: half of it burns, then the other half
+//     THE CONDUCTOR     P2+  one of you is marked; the storm arcs from you to everyone near you, and strikes where you stood
+//     WRATH OF OLYMPUS  P4   he ascends and the whole arena burns but for three eyes of the storm — reach one
+//     TRIDENT SPIN      P1+  get under him and the trident whirls round
+//   Damage is RAW. A: { T:[{k,x,z}], hp, maxHp, hx, hz, hit(k,dmg,n), push, pull, slow(k,f,ms), confuse(k), fx, fxTo?, rnd }
+// ════════════════════════════════════════════════════════════════════════════════════════
+const ODK_D  = { lunge:1500, reap:1800, bolt:1400, ring:1400, slam:1800, impact:2200, rod:650, recall:1300, judge:1800, arc:2000, mark:1100, wrath:3600, storm:900, spin:1500 };
+const ODK_PM = [1, 1, 1.12, 1.26, 1.42];
+const ODK_R = 10, ODK_ENG = 42, ODK_IN = 24;
+function _odSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2)); return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _odDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+function _odBrain(S, A){
+  const f = A.hp/Math.max(1, A.maxHp), ph = f > 0.75 ? 1 : f > 0.5 ? 2 : f > 0.25 ? 3 : 4, M = ODK_PM[ph], R2 = v => Math.round(v*100)/100, R3 = v => Math.round(v*1000)/1000;
+  let X = S._od;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._od = { t:0, face:0, cd:{ main:12, reap:30, volley:20, quake:20, hurl:20, judge:20, verdict:20, wrath:20, spin:0 }, last:{}, gap:20, act:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{}, rod:null };
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz, D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < ODK_ENG);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg, n) => A.hit(p.k, Math.round(dmg*M), n);
+  const fxTo = (k, vt, o) => { if(A.fxTo) A.fxTo(k, vt, o); else A.fx(vt, o); };
+  if(X.t % 300 === 0) X.hitT = {};
+  if(!inA.length){ X.act = null; X.rod = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz); if(d > 0.3){ S.x += dx/d*Math.min(d, 0.05); S.z += dz/d*Math.min(d, 0.05); } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){ const p = inA[Math.floor(A.rnd()*inA.length)]; X.tgt = p.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; A.fx('odx_rise', { x:R2(S.x), z:R2(S.z), p:ph }); inA.forEach(p => { if(D(p, S.x, S.z) < 8) A.push(p.k, S.x, S.z, 5); });
+    if(ph === 2){ X.cd.quake = 10; X.cd.hurl = 40; } if(ph === 4) X.cd.wrath = 25; }
+  // ── the trident as a lightning rod: it pulses until he rips it back to his hand along the ground
+  const R = X.rod;
+  if(R){ R.t++;
+    if(R.t < R.end && R.t % 10 === 0) inA.forEach(p => { if(D(p, R.x, R.z) < R.R) HIT(p, ODK_D.rod, 'rod'); });
+    if(R.t === R.end){ R.x1 = S.x; R.z1 = S.z; A.fx('odx_recall', { i:R.id, x0:R2(R.x), z0:R2(R.z), x1:R2(S.x), z1:R2(S.z), w:9, hw:1.5 }); }
+    if(R.t === R.end + 9) inA.forEach(p => { if(_odSegD(p.x, p.z, R.x, R.z, R.x1, R.z1) < 1.9){ HIT(p, ODK_D.recall, 'recall'); A.slow(p.k, 0.5, 900); } });
+    if(R.t >= R.end + 12) X.rod = null; }
+  const want = Math.atan2(P.x - S.x, P.z - S.z);
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 16;
+    else if(a.k === 'lunge'){
+      // he drives forward along the first lane as it lands
+      a.L.forEach((l, j) => { if(a.t === l[4]){ inA.forEach(p => { if(_odSegD(p.x, p.z, l[0], l[1], l[2], l[3]) < a.hw + 0.4 && once(p.k, 'ln' + a.id + '_' + Math.floor(l[5]/3), 4)){ HIT(p, ODK_D.lunge, 'lunge'); A.push(p.k, l[0], l[1], 2.5); A.slow(p.k, 0.55, 700); } });
+        if(l[6]){ const c = inG(S.x + Math.sin(l[6])*3.5, S.z + Math.cos(l[6])*3.5, ODK_R); S.x = c[0]; S.z = c[1]; X.face = l[6]; } } });
+      done = a.t >= Math.max.apply(null, a.L.map(l => l[4])) + 5; }
+    else if(a.k === 'reap'){
+      a.sw.forEach(s => { if(a.t === s[0]) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.R && Math.abs(_odDA(Math.atan2(p.x - a.x, p.z - a.z), s[1])) > s[2]){ HIT(p, ODK_D.reap, 'reap'); A.push(p.k, a.x, a.z, 4); } }); });
+      done = a.t >= a.sw[a.sw.length - 1][0] + 6; }
+    else if(a.k === 'volley'){
+      // a bolt for each of you, re-aimed at where you are every 6 ticks
+      if(a.t <= a.n*6 && (a.t - 1) % 6 === 0) inA.forEach(p => { const c = inG(p.x, p.z, ODK_IN + 6); a.m.push([c[0], c[1], a.t + 9]); A.fx('odx_bolt', { i:a.id*10 + a.m.length, x:R2(c[0]), z:R2(c[1]), r:2.6, w:9 }); });
+      a.m.forEach(m => { if(a.t === m[2]) inA.forEach(p => { if(Math.hypot(p.x - m[0], p.z - m[1]) < 2.9) HIT(p, ODK_D.bolt, 'bolt'); }); });
+      done = a.t >= a.n*6 + 12; }
+    else if(a.k === 'quake'){
+      if(a.t === a.t0) inA.forEach(p => { if(D(p, a.x, a.z) < 4.2){ HIT(p, ODK_D.slam, 'slam'); A.push(p.k, a.x, a.z, 4); } });
+      a.W.forEach((w, j) => { if(a.t < w[0]) return; const r = (a.t - w[0])*a.sp; if(r > a.Rm) return;
+        inA.forEach(p => { const d = D(p, a.x, a.z); if(Math.abs(d - r) < 1.0 && Math.abs(_odDA(Math.atan2(p.x - a.x, p.z - a.z), w[1])) > w[2] && once(p.k, 'qk' + a.id + '_' + j, 40)){ HIT(p, ODK_D.ring, 'ring'); A.slow(p.k, 0.5, 700); } }); });
+      done = a.t >= a.W[a.W.length - 1][0] + Math.ceil(a.Rm/a.sp) + 2; }
+    else if(a.k === 'hurl'){
+      if(a.t === a.ti){ inA.forEach(p => { if(D(p, a.x, a.z) < a.r){ HIT(p, ODK_D.impact, 'impact'); A.push(p.k, a.x, a.z, 4); } });
+        X.rod = { id:a.id, x:a.x, z:a.z, t:0, R:a.R, end:a.dur }; }
+      done = a.t >= a.ti + 4; }
+    else if(a.k === 'judge'){
+      a.W.forEach(w => { if(a.t === w[0]) inA.forEach(p => { const ix = Math.floor((p.x - a.x0)/a.s), iz = Math.floor((p.z - a.z0)/a.s);
+        if(ix >= 0 && iz >= 0 && ix < a.n && iz < a.n && (ix + iz) % 2 === w[1]){ HIT(p, ODK_D.judge, 'judge'); A.slow(p.k, 0.6, 600); } }); });
+      done = a.t >= a.W[a.W.length - 1][0] + 6; }
+    else if(a.k === 'verdict'){
+      const C = inA.find(p => p.k === a.c);
+      if(a.t === a.lk && C){ a.lx = C.x; a.lz = C.z; A.fx('odx_vlock', { i:a.id, x:R2(C.x), z:R2(C.z), r:a.r, w:a.w - a.lk }); }
+      if(a.t === a.w){
+        if(a.lx !== undefined) inA.forEach(p => { if(Math.hypot(p.x - a.lx, p.z - a.lz) < a.r) HIT(p, ODK_D.storm*1.8, 'verdict'); });
+        if(C){ const arcs = []; inA.forEach(p => { if(p.k !== C.k && D(p, C.x, C.z) < a.R){ HIT(p, ODK_D.arc, 'arc'); arcs.push([R2(C.x), R2(C.z), R2(p.x), R2(p.z)]); } });
+          HIT(C, ODK_D.mark + arcs.length*250, 'mark'); if(ph >= 3) A.confuse(C.k);
+          A.fx('odx_varc', { i:a.id, x:R2(C.x), z:R2(C.z), a:arcs }); } }
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'wrath'){
+      a.m.forEach(m => { if(a.t === m[2]) inA.forEach(p => { if(Math.hypot(p.x - m[0], p.z - m[1]) < a.rr + 0.3) HIT(p, ODK_D.storm, 'storm'); }); });
+      if(a.t === a.w) inA.forEach(p => { if(!a.S.some(s => Math.hypot(p.x - s[0], p.z - s[1]) < a.r + 0.3)) HIT(p, ODK_D.wrath, 'wrath'); });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'spin'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.r){ HIT(p, ODK_D.spin, 'spin'); A.push(p.k, S.x, S.z, 5); } });
+      done = a.t >= a.w + 6; }
+    if(done){ X.act = null; X.gap = [0, 10, 8, 6, 5][ph]; }
+  } else {
+    // ── he glides toward his quarry, keeping trident reach (~9), never far from the centre of the floor
+    X.face += Math.max(-0.08, Math.min(0.08, _odDA(want, X.face)));
+    const d = D(P, S.x, S.z); let sp = d > 11 ? 0.08 : d < 6 ? -0.05 : 0;
+    const c = inG(S.x + Math.sin(want)*sp, S.z + Math.cos(want)*sp, ODK_R); S.x = c[0]; S.z = c[1];
+    if(X.gap <= 0){
+      // the trident abilities wait while it is standing in the sand as a rod
+      const TRI = { reap:1, quake:1, hurl:1, spin:1 }, rod = !!X.rod;
+      const MIN = { reap:1, volley:1, quake:2, hurl:2, judge:2, verdict:2, wrath:4, spin:1 };
+      const close = inA.some(p => D(p, S.x, S.z) < 5);
+      let k = null, lk = 1e9;
+      if(ph >= 4 && X.cd.wrath <= 0) k = 'wrath';
+      else if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0 || (m === 'spin' && !close) || (rod && TRI[m]) || m === 'wrath') continue; const l = (X.last[m] || 0) - (m === 'spin' ? 200 : 0); if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k === 'main' && rod) k = 'volley_q';
+      if(k){ X.last[k] = X.t; X.lastK = k === 'volley_q' ? 'main' : k; }
+      const id = X.t;
+      if(k === 'main'){
+        // one lunge at the target (P2+: then at a second), the trident's three prongs fanning into three lanes from P3
+        const tg = [P].concat(ph >= 2 ? inA.filter(p => p !== P).slice(0, 1) : []), L = [], w = ph >= 4 ? 9 : 11;
+        tg.forEach((p, j) => { const a0 = Math.atan2(p.x - S.x, p.z - S.z), t = w + j*13, fan = ph >= 3 ? [-0.3, 0, 0.3] : [0];
+          fan.forEach((q, fi) => { const a = a0 + q, len = 22; L.push([R2(S.x + Math.sin(a)*1.5), R2(S.z + Math.cos(a)*1.5), R2(S.x + Math.sin(a)*len), R2(S.z + Math.cos(a)*len), t, j*3 + fi, fi === (fan.length - 1)/2 ? R3(a0) : 0]); }); });
+        // a single target in P2+ gets lunged at twice
+        if(ph >= 2 && tg.length === 1){ const l0 = L.slice(); l0.forEach(l => L.push([l[0], l[1], l[2], l[3], l[4] + 13, l[5] + 3, l[6]])); }
+        X.act = { k:'lunge', t:0, id, L, hw:1.3 }; X.cd.main = ph >= 4 ? 22 : 30;
+        A.fx('odx_lunge', { i:id, x:R2(S.x), z:R2(S.z), L:L.map(l => l.slice(0, 5)), hw:1.3 });
+      } else if(k === 'reap'){
+        const g1 = Math.atan2(S.x - P.x, S.z - P.z) + (A.rnd() - 0.5)*2, sw = [[16, R3(g1), 0.6, 1]];
+        if(ph >= 2) sw.push([30, R3(g1 + Math.PI*(0.6 + A.rnd()*0.8)), 0.6, -1]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, R:10, sw }; X.cd.reap = 70;
+        A.fx('odx_reap', { i:id, x:R2(S.x), z:R2(S.z), R:10, sw });
+      } else if(k === 'volley' || k === 'volley_q'){
+        X.act = { k:'volley', t:0, id, n:k === 'volley_q' ? 1 : ph >= 3 ? 5 : 3, m:[] }; if(k === 'volley') X.cd.volley = 60; else X.cd.main = 26;
+        A.fx('odx_hand', { i:id });
+      } else if(k === 'quake'){
+        const n = ph >= 3 ? 4 : 3, W = [];
+        for(let j = 0; j < n; j++) W.push([12 + j*9, R3(A.rnd()*Math.PI*2), 0.5]);
+        X.act = { k, t:0, id, x:S.x, z:S.z, t0:12, sp:0.9, W, Rm:30 }; X.cd.quake = 95;
+        A.fx('odx_quake', { i:id, x:R2(S.x), z:R2(S.z), t0:12, sp:0.9, W, Rm:30 });
+      } else if(k === 'hurl'){
+        let far = P, fd = -1; inA.forEach(p => { const d = D(p, S.x, S.z); if(d > fd){ fd = d; far = p; } });
+        const c = inG(far.x, far.z, ODK_IN), R = ph >= 4 ? 9 : 7, dur = 80;
+        X.act = { k, t:0, id, x:c[0], z:c[1], ti:16, r:4, R, dur }; X.cd.hurl = 160; X.face = Math.atan2(c[0] - S.x, c[1] - S.z);
+        A.fx('odx_hurl', { i:id, bx:R2(S.x), bz:R2(S.z), x:R2(c[0]), z:R2(c[1]), ti:16, r:4, R, dur });
+      } else if(k === 'judge'){
+        const s = 6, n = 8, x0 = hx - s*n/2, z0 = hz - s*n/2, p0 = A.rnd() < 0.5 ? 0 : 1, W = [[20, p0], [34, 1 - p0]];
+        if(ph >= 4) W.push([46, p0]);
+        X.act = { k, t:0, id, x0, z0, s, n, W }; X.cd.judge = 130;
+        A.fx('odx_judge', { i:id, x0:R2(x0), z0:R2(z0), s, n, W });
+      } else if(k === 'verdict'){
+        const C = inA[Math.floor(A.rnd()*inA.length)], w = 42;
+        X.act = { k, t:0, id, c:C.k, w, lk:w - 10, r:3.5, R:12 }; X.cd.verdict = 115;
+        A.fx('odx_verdict', { i:id, w, R:12 }); fxTo(C.k, 'odx_mark', { i:id, w, R:12 });
+      } else if(k === 'wrath'){
+        // three eyes of the storm, each away from where you all stand; everything else burns
+        const Sx = [], m = [];
+        for(let j = 0; j < 3; j++){ let best = null, bs = -1; for(let tr = 0; tr < 8; tr++){ const q = A.rnd()*Math.PI*2, rr = 6 + A.rnd()*(ODK_IN - 8), x = hx + Math.sin(q)*rr*1.25, z = hz + Math.cos(q)*rr;
+            const sc = Math.min.apply(null, inA.map(p => Math.hypot(p.x - x, p.z - z)).concat(Sx.map(s => Math.hypot(s[0] - x, s[1] - z)*0.7))); if(sc > bs && sc < 22){ bs = sc; best = [R2(x), R2(z)]; } }
+          Sx.push(best || [R2(hx + 8), R2(hz)]); }
+        for(let j = 0; j < 18; j++){ const q = A.rnd()*Math.PI*2, rr = 3 + A.rnd()*(ODK_IN - 3); m.push([R2(hx + Math.sin(q)*rr*1.3), R2(hz + Math.cos(q)*rr), 10 + j*2]); }
+        inA.forEach((p, j) => m.push([R2(p.x), R2(p.z), 18 + j*3]));
+        X.act = { k, t:0, id, S:Sx, r:3.2, w:62, m, rr:2.2 }; X.cd.wrath = 230;
+        A.fx('odx_wrath', { i:id, x:R2(S.x), z:R2(S.z), S:Sx, r:3.2, w:62, m, rr:2.2 });
+      } else if(k === 'spin'){
+        X.act = { k, t:0, id, r:6, w:7 }; X.cd.spin = 40;
+        A.fx('odx_spin', { i:id, x:R2(S.x), z:R2(S.z), r:6, w:7 });
+      }
+    }
+  }
+  S.face = X.face; S.rod = !!X.rod;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -11640,6 +11808,7 @@ function tickWorldBoss(game) {
   if (wb.id === 'electronoid') { _wbBrainTick(game, wb, _elBrain); return; }   // a751 — and Electronoid
   if (wb.id === 'forge_tyrant') { _wbBrainTick(game, wb, _ftBrain); return; }   // a753 — and the Forge Tyrant
   if (wb.id === 'void_behemoth') { _wbBrainTick(game, wb, _vbBrain); return; }   // a754 — and the Void Behemoth
+  if (wb.id === 'overseer_of_discord') { _wbBrainTick(game, wb, _odBrain); return; }   // a755 — and the Overseer of Discord
   // Find nearest player in the boss's zone
   let nearest = null, nearestDist = Infinity;
   zonePlayers.forEach(p => {
