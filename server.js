@@ -9546,6 +9546,127 @@ function _hrBrain(S, A){
   S.face = X.face; S.hide = X.hide;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a750 — THE ABACUS OF FLESH, world boss of the Void Citadel, rebuilt: a colossal geometric engine of dark
+//   chrome cubes and spheres with one red cyclops eye, a sunburst of abacus rods and a spine of red beads.
+//   It counts. One brain, shared word for word by the server (lobby authority) and the client (solo). 10 Hz.
+//     TALLY BEAM     P1+  its signature: the eye fires a count of quick red lances at its target (3; 5 from P3)
+//     THE RODS       P1+  the court is strung with abacus rods; a bead slides down each — stand between them
+//                         (P2+: a second set crosses the first, leaving a grid of safe squares)
+//     REMAINDER      P1+  chrome cubes drop out of the dark onto marked squares (P2+: a second drop follows you)
+//     COUNTDOWN      P2+  numbered cubes land and count 3-2-1, then burst and fire a cross of lances
+//     ZERO           P3+  everything is subtracted — only the space beneath it survives: get in close
+//     SLAM           P1+  stand under it and the legs come down
+//   Damage is RAW. A: { T:[{k,x,z}], hp, maxHp, hx, hz, hit(k,dmg,n), push, pull, slow(k,f,ms), confuse(k), fx, rnd }
+// ════════════════════════════════════════════════════════════════════════════════════════
+const ABK_D  = { tally:480, rod:520, cube:640, count:700, cross:480, zero:1300, slam:650 };
+const ABK_PM = [1, 1, 1.1, 1.2, 1.35];
+const ABK_R = 6, ABK_ENG = 30, ABK_IN = 16;
+function _abSegD(px, pz, x0, z0, a, L){ const dx = Math.sin(a), dz = Math.cos(a), u = Math.max(0, Math.min(L, (px - x0)*dx + (pz - z0)*dz)); return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _abDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// where every bead of The Rods is at tick t (shared by the hit test and the effect). Rod k of set j runs along
+//   direction q + j*PI/2, offset (k - (n-1)/2)*sp across it; its bead starts at w + j*dj + ord[k]*st and slides at v.
+function _abBeads(a, t){ const out = [];
+  for(let j = 0; j < (a.two ? 2 : 1); j++){ const q = a.q + j*Math.PI/2, ux = Math.sin(q), uz = Math.cos(q), vx = uz, vz = -ux;
+    for(let k = 0; k < a.n; k++){ const t0 = a.w + j*a.dj + a.ord[k]*a.st, s = (t - t0)*a.v - a.L/2; if(t < t0 || s > a.L/2) continue;
+      const o = (k - (a.n - 1)/2)*a.sp; out.push([a.x + vx*o + ux*s, a.z + vz*o + uz*s, j, k]); } }
+  return out; }
+function _abBrain(S, A){
+  const f = A.hp/Math.max(1, A.maxHp), ph = f > 0.75 ? 1 : f > 0.5 ? 2 : f > 0.25 ? 3 : 4, M = ABK_PM[ph], R2 = v => Math.round(v*100)/100, R3 = v => Math.round(v*1000)/1000;
+  let X = S._ab;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._ab = { t:0, face:0, cd:{ main:12, rods:35, cubes:25, count:20, zero:20, slam:0 }, last:{}, gap:20, act:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz, D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < ABK_ENG);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg, n) => A.hit(p.k, Math.round(dmg*M), n);
+  if(X.t % 300 === 0) X.hitT = {};
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz); if(d > 0.3){ S.x += dx/d*Math.min(d, 0.05); S.z += dz/d*Math.min(d, 0.05); } S.face = X.face; S.mv = 0; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){ const p = inA[Math.floor(A.rnd()*inA.length)]; X.tgt = p.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  S.mv = 0;
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; A.fx('abx_rise', { x:R2(S.x), z:R2(S.z), p:ph }); inA.forEach(p => { if(D(p, S.x, S.z) < 6) A.push(p.k, S.x, S.z, 4); });
+    if(ph === 2) X.cd.count = 15; if(ph === 3) X.cd.zero = 25; }
+  const want = Math.atan2(P.x - S.x, P.z - S.z);
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 16;
+    else if(a.k === 'tally'){
+      // each lance: aimed at the target `aim` ticks before it fires, then a straight line from the eye
+      for(let s = 0; s < a.n; s++){ const tf = a.t0 + s*a.dt;
+        if(a.t === tf - a.aim){ const T = inA.find(p => p.k === a.tk) || P; a.as[s] = Math.atan2(T.x - S.x, T.z - S.z); X.face = a.as[s];
+          A.fx('abx_tal', { i:a.id, s, n:a.n, x:R2(S.x), z:R2(S.z), a:R3(a.as[s]), w:a.aim, L:a.L, hw:a.hw }); }
+        if(a.t === tf) inA.forEach(p => { if(_abSegD(p.x, p.z, S.x, S.z, a.as[s], a.L) < a.hw + 0.4) HIT(p, ABK_D.tally, 'tally'); }); }
+      done = a.t >= a.t0 + (a.n - 1)*a.dt + 6; }
+    else if(a.k === 'rods'){
+      if(a.t >= a.w){ _abBeads(a, a.t).forEach(b => inA.forEach(p => { if(Math.hypot(p.x - b[0], p.z - b[1]) < 1.5 && once(p.k, 'rd' + a.id + b[2] + '_' + b[3], 20)){ HIT(p, ABK_D.rod, 'rod'); A.push(p.k, b[0], b[1], 1.5); } })); }
+      done = a.t >= a.end; }
+    else if(a.k === 'cubes'){
+      a.m.forEach(m => { if(a.t === m[2]) inA.forEach(p => { if(Math.abs(p.x - m[0]) < a.h + 0.3 && Math.abs(p.z - m[1]) < a.h + 0.3) HIT(p, ABK_D.cube, 'cube'); }); });
+      if(a.two && a.t === a.w + 4){ const m2 = inA.map(p => [R2(p.x), R2(p.z), a.w + 4 + a.w2]); a.m = a.m.concat(m2); A.fx('abx_cubes', { i:a.id + 1, m:m2.map(m => [m[0], m[1], a.w2]), h:a.h }); }
+      done = a.t >= Math.max.apply(null, a.m.map(m => m[2])) + 6; }
+    else if(a.k === 'count'){
+      if(a.t === a.w) a.m.forEach(m => { inA.forEach(p => { if(Math.hypot(p.x - m[0], p.z - m[1]) < a.r) HIT(p, ABK_D.count, 'count');
+          else if([0, 1, 2, 3].some(c => _abSegD(p.x, p.z, m[0], m[1], c*Math.PI/2 + a.q, a.L) < a.hw + 0.4) && once(p.k, 'cx' + a.id, 5)) HIT(p, ABK_D.cross, 'cross'); }); });
+      done = a.t >= a.w + 8; }
+    else if(a.k === 'zero'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) > a.r){ HIT(p, ABK_D.zero, 'zero'); A.slow(p.k, 0.45, 1200); } });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'slam'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.r){ HIT(p, ABK_D.slam, 'slam'); A.push(p.k, S.x, S.z, 3.5); } });
+      done = a.t >= a.w + 6; }
+    if(done){ X.act = null; X.gap = [0, 12, 10, 9, 7][ph]; }
+  } else {
+    // ── it stalks its target on four chrome legs, keeping the eye's range (~8), never far from its anchor
+    X.face += Math.max(-0.07, Math.min(0.07, _abDA(want, X.face)));
+    const d = D(P, S.x, S.z); let sp = d > 10 ? 0.07 : d < 6 ? -0.04 : 0;
+    const c = inG(S.x + Math.sin(want)*sp, S.z + Math.cos(want)*sp, ABK_R); if(Math.hypot(c[0] - S.x, c[1] - S.z) > 0.005) S.mv = 1; S.x = c[0]; S.z = c[1];
+    if(X.gap <= 0){
+      const MIN = { rods:1, cubes:1, count:2, zero:3, slam:1 };
+      let k = null, lk = 1e9;
+      const close = inA.some(p => D(p, S.x, S.z) < 4);
+      if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0 || (m === 'slam' && !close)) continue; const l = (X.last[m] || 0) - (m === 'slam' ? 200 : 0); if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'main'){
+        const n = ph >= 3 ? 5 : 3, dt = ph >= 4 ? 5 : 6;
+        X.act = { k:'tally', t:0, id, tk:P.k, n, t0:8, dt, aim:7, L:24, hw:0.9, as:[] }; X.cd.main = ph >= 4 ? 26 : 34;
+        A.fx('abx_tally', { i:id, x:R2(S.x), z:R2(S.z), n, t0:8, dt });
+      } else if(k === 'rods'){
+        const two = ph >= 2, n = 7, sp = 5, L = 36, v = 1.3, st = 3, w = 14, dj = 18, q = Math.round(A.rnd()*4)*Math.PI/4, ord = [];
+        for(let i = 0; i < n; i++) ord.push(i); for(let i = n - 1; i > 0; i--){ const j = Math.floor(A.rnd()*(i + 1)); const tmp = ord[i]; ord[i] = ord[j]; ord[j] = tmp; }
+        const a = { k, t:0, id, x:hx, z:hz, q, n, sp, L, v, st, w, dj, ord, two }; a.end = w + (two ? dj : 0) + (n - 1)*st + Math.ceil(L/v) + 4;
+        X.act = a; X.cd.rods = 95;
+        A.fx('abx_rods', { i:id, x:R2(hx), z:R2(hz), q:R3(q), n, sp, L, v, st, w, dj, ord, two:two ? 1 : 0 });
+      } else if(k === 'cubes'){
+        const h = 2.3, w = 14, m = inA.map(p => [R2(p.x), R2(p.z), w]);
+        for(let j = 0; j < 4; j++){ const q = A.rnd()*Math.PI*2, r = 4 + A.rnd()*(ABK_IN - 4); m.push([R2(hx + Math.sin(q)*r), R2(hz + Math.cos(q)*r), w + 2 + j*2]); }
+        X.act = { k, t:0, id, m, h, w, two:ph >= 2, w2:11 }; X.cd.cubes = 70;
+        A.fx('abx_cubes', { i:id, m, h });
+      } else if(k === 'count'){
+        const r = 4.2, w = 30, L = 13, hw = 0.8, q = A.rnd() < 0.5 ? 0 : Math.PI/4, m = inA.map(p => [R2(p.x), R2(p.z)]);
+        if(m.length < 3){ const q2 = A.rnd()*Math.PI*2, r2 = 5 + A.rnd()*7; const c = inG(P.x + Math.sin(q2)*r2, P.z + Math.cos(q2)*r2, ABK_IN); m.push([R2(c[0]), R2(c[1])]); }
+        X.act = { k, t:0, id, m, r, w, L, hw, q }; X.cd.count = 100;
+        A.fx('abx_count', { i:id, m, r, w, L, hw, q:R3(q) });
+      } else if(k === 'zero'){
+        X.act = { k, t:0, id, x:S.x, z:S.z, r:5, w:34 }; X.cd.zero = 170;
+        A.fx('abx_zero', { i:id, x:R2(S.x), z:R2(S.z), r:5, w:34, R:30 });
+      } else if(k === 'slam'){
+        X.act = { k, t:0, id, r:4.6, w:7 }; X.cd.slam = 40;
+        A.fx('abx_slam', { i:id, x:R2(S.x), z:R2(S.z), r:4.6, w:7 });
+      }
+    }
+  }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -11147,6 +11268,7 @@ function tickWorldBoss(game) {
   _wbGroupScale(game, wb, zonePlayers);   // a748
   if (wb.id === 'ancient_wyrm') { _wbEyexorTick(game, wb); return; }   // a748 — Eyexor fights with its own brain
   if (wb.id === 'hollow_reaper') { _wbBrainTick(game, wb, _hrBrain); return; }   // a749 — so does the Hollow Reaper
+  if (wb.id === 'abacus_of_flesh') { _wbBrainTick(game, wb, _abBrain); return; }   // a750 — and the Abacus of Flesh
   // Find nearest player in the boss's zone
   let nearest = null, nearestDist = Infinity;
   zonePlayers.forEach(p => {
