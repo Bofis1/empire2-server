@@ -9667,6 +9667,131 @@ function _abBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a751 — ELECTRONOID, world boss of the Forge, rebuilt: a towering being of polished metal and living
+//   lightning — a chrome skeleton around a plasma heart, a face of pure light, forearms held to its body only by
+//   arcs, and below the waist nothing but a spinning column of storm. One brain, shared word for word by the
+//   server (lobby authority) and the client (solo). 10 Hz.
+//     ARC LANCE      P1+  its signature: a forked bolt lands on its target, then leaps to anyone standing near them
+//     THUNDERHEAD    P1+  the sky opens: bolts strike marked spots all over the court, then on you
+//     TESLA FENCE    P1+  pylons drop around the court and lightning strings between them (P2+: and to it)
+//     POLARITY       P2+  you are charged + or -; the court splits red and blue — be on your own colour when it fires
+//     ION STORM      P3+  lightning tornadoes spiral out from it and back
+//     DISCHARGE      P1+  stand next to it and it arcs into the ground all round
+//   Damage is RAW. A: { T:[{k,x,z}], hp, maxHp, hx, hz, hit(k,dmg,n), push, pull, slow(k,f,ms), confuse(k), fx, fxTo(k,vt,o)?, rnd }
+// ════════════════════════════════════════════════════════════════════════════════════════
+const ELK_D  = { lance:1100, chain:700, thunder:1100, fence:700, polarity:2400, storm:1000, discharge:1400 };
+const ELK_PM = [1, 1, 1.1, 1.2, 1.35];
+const ELK_R = 7, ELK_ENG = 32, ELK_IN = 17;
+function _elSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2)); return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _elDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// the Ion Storm's tornadoes at tick t: each spirals out from the centre to R and back over `dur`
+function _elStorms(a, t){ const out = []; if(t < 0 || t > a.dur) return out;
+  const u = t/a.dur, r = 2 + (a.R - 2)*Math.sin(u*Math.PI);
+  for(let k = 0; k < a.n; k++){ const ang = a.a0 + k*Math.PI*2/a.n + a.om*t; out.push([a.x + Math.sin(ang)*r, a.z + Math.cos(ang)*r]); }
+  return out; }
+function _elBrain(S, A){
+  const f = A.hp/Math.max(1, A.maxHp), ph = f > 0.75 ? 1 : f > 0.5 ? 2 : f > 0.25 ? 3 : 4, M = ELK_PM[ph], R2 = v => Math.round(v*100)/100, R3 = v => Math.round(v*1000)/1000;
+  let X = S._el;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._el = { t:0, face:0, cd:{ main:10, thunder:30, fence:20, polarity:20, storm:20, discharge:0 }, last:{}, gap:20, act:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz, D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < ELK_ENG);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg, n) => A.hit(p.k, Math.round(dmg*M), n);
+  if(X.t % 300 === 0) X.hitT = {};
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz); if(d > 0.3){ S.x += dx/d*Math.min(d, 0.06); S.z += dz/d*Math.min(d, 0.06); } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){ const p = inA[Math.floor(A.rnd()*inA.length)]; X.tgt = p.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; A.fx('elx_rise', { x:R2(S.x), z:R2(S.z), p:ph }); inA.forEach(p => { if(D(p, S.x, S.z) < 7){ A.push(p.k, S.x, S.z, 4.5); HIT(p, ELK_D.discharge*0.5, 'discharge'); } });
+    if(ph === 2) X.cd.polarity = 15; if(ph === 3) X.cd.storm = 20; }
+  const want = Math.atan2(P.x - S.x, P.z - S.z);
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 16;
+    else if(a.k === 'lance'){
+      // each bolt lands where its target stood `w` ticks before; then it leaps to the nearest others within reach, one after another
+      a.m.forEach((m, j) => { if(a.t === m[2]){ const hitK = {}, chain = [[m[0], m[1]]];
+          inA.forEach(p => { if(Math.hypot(p.x - m[0], p.z - m[1]) < a.r + 0.3){ HIT(p, ELK_D.lance, 'lance'); hitK[p.k] = 1; } });
+          let cx = m[0], cz = m[1];
+          for(let hop = 0; hop < a.hops; hop++){ let best = null, bd = a.jr; inA.forEach(p => { if(hitK[p.k]) return; const d = Math.hypot(p.x - cx, p.z - cz); if(d < bd){ bd = d; best = p; } });
+            if(!best) break; hitK[best.k] = 1; HIT(best, ELK_D.chain, 'chain'); A.slow(best.k, 0.6, 700); cx = best.x; cz = best.z; chain.push([R2(cx), R2(cz)]); }
+          if(chain.length > 1) A.fx('elx_chain', { i:a.id, j, pts:chain }); } });
+      done = a.t >= Math.max.apply(null, a.m.map(m => m[2])) + 4; }
+    else if(a.k === 'thunder'){
+      a.m.forEach(m => { if(a.t === m[2]) inA.forEach(p => { if(Math.hypot(p.x - m[0], p.z - m[1]) < a.r + 0.3) HIT(p, ELK_D.thunder, 'thunder'); }); });
+      if(a.t === a.w2 - 12){ const m2 = inA.map(p => [R2(p.x), R2(p.z), a.w2]); a.m = a.m.concat(m2); A.fx('elx_thunder', { i:a.id + 1, m:m2.map(m => [m[0], m[1], 12]), r:a.r, follow:1 }); }
+      done = a.t >= Math.max(a.w2, Math.max.apply(null, a.m.map(m => m[2]))) + 4; }
+    else if(a.k === 'fence'){
+      if(a.t >= a.w && a.t < a.w + a.dur){ const ln = a.lines.concat(a.toMe ? a.p.map(q => [q[0], q[1], S.x, S.z]) : []);
+        inA.forEach(p => { if(ln.some(l => _elSegD(p.x, p.z, l[0], l[1], l[2], l[3]) < 0.9) && once(p.k, 'fn' + a.id, 6)){ HIT(p, ELK_D.fence, 'fence'); A.slow(p.k, 0.55, 600); } }); }
+      done = a.t >= a.w + a.dur + 4; }
+    else if(a.k === 'polarity'){
+      if(a.t === a.w) inA.forEach(p => { const side = (p.x - a.x)*Math.cos(a.q) - (p.z - a.z)*Math.sin(a.q) >= 0 ? 1 : -1;   // +1 = the red (positive) half
+        if(side !== (a.pol[p.k] || 1)){ HIT(p, ELK_D.polarity, 'polarity'); A.slow(p.k, 0.4, 1200); } });
+      done = a.t >= a.w + 10; }
+    else if(a.k === 'storm'){
+      if(a.t >= a.w){ _elStorms(a, a.t - a.w).forEach((s, j) => inA.forEach(p => { if(Math.hypot(p.x - s[0], p.z - s[1]) < 1.8 && once(p.k, 'st' + a.id + '_' + j, 8)){ HIT(p, ELK_D.storm, 'storm'); A.push(p.k, s[0], s[1], 2); } })); }
+      done = a.t >= a.w + a.dur + 4; }
+    else if(a.k === 'discharge'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.r){ HIT(p, ELK_D.discharge, 'discharge'); A.push(p.k, S.x, S.z, 4); } });
+      done = a.t >= a.w + 6; }
+    if(done){ X.act = null; X.gap = [0, 11, 9, 8, 6][ph]; }
+  } else {
+    // ── it drifts on its storm, holding at mid range (~9), never far from the heart of the court
+    X.face += Math.max(-0.08, Math.min(0.08, _elDA(want, X.face)));
+    const d = D(P, S.x, S.z); let sp = d > 11 ? 0.08 : d < 6 ? -0.05 : 0;
+    const c = inG(S.x + Math.sin(want)*sp, S.z + Math.cos(want)*sp, ELK_R); S.x = c[0]; S.z = c[1];
+    if(X.gap <= 0){
+      const MIN = { thunder:1, fence:1, polarity:2, storm:3, discharge:1 };
+      const close = inA.some(p => D(p, S.x, S.z) < 4.5);
+      let k = null, lk = 1e9;
+      if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0 || (m === 'discharge' && !close)) continue; const l = (X.last[m] || 0) - (m === 'discharge' ? 200 : 0); if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'main'){
+        // one bolt per target (up to 3), staggered; P3+ adds a second volley
+        const tg = inA.slice().sort(() => A.rnd() - 0.5).slice(0, 3), m = [];
+        tg.forEach((p, j) => m.push([R2(p.x), R2(p.z), 9 + j*3]));
+        if(ph >= 3) tg.forEach((p, j) => m.push([R2(p.x + (A.rnd() - 0.5)*3), R2(p.z + (A.rnd() - 0.5)*3), 18 + j*3]));
+        X.act = { k:'lance', t:0, id, m, r:2.2, hops:3, jr:7 }; X.cd.main = ph >= 4 ? 24 : 32;
+        A.fx('elx_lance', { i:id, x:R2(S.x), z:R2(S.z), m, r:2.2, jr:7 });
+      } else if(k === 'thunder'){
+        const n = ph >= 3 ? 14 : 10, r = 2.0, w = 12, m = [];
+        for(let j = 0; j < n; j++){ const q = A.rnd()*Math.PI*2, rr = 3 + A.rnd()*(ELK_IN - 3); m.push([R2(hx + Math.sin(q)*rr), R2(hz + Math.cos(q)*rr), w + Math.floor(j*1.5)]); }
+        X.act = { k, t:0, id, m, r, w, w2:w + Math.floor(n*1.5) + 10 }; X.cd.thunder = 80;
+        A.fx('elx_thunder', { i:id, m:m.map(q => [q[0], q[1], q[2]]), r });
+      } else if(k === 'fence'){
+        const n = ph >= 3 ? 5 : 4, q0 = A.rnd()*Math.PI*2, p = [];
+        for(let j = 0; j < n; j++){ const q = q0 + j*Math.PI*2/n + (A.rnd() - 0.5)*0.4, rr = 9 + A.rnd()*5; p.push([R2(hx + Math.sin(q)*rr), R2(hz + Math.cos(q)*rr)]); }
+        const lines = p.map((q, j) => [q[0], q[1], p[(j + 1) % n][0], p[(j + 1) % n][1]]);
+        X.act = { k, t:0, id, p, lines, w:16, dur:60, toMe:ph >= 2 }; X.cd.fence = 110;
+        A.fx('elx_fence', { i:id, p, w:16, dur:60, toMe:ph >= 2 ? 1 : 0 });
+      } else if(k === 'polarity'){
+        const q = A.rnd()*Math.PI, pol = {};
+        inA.forEach((p, j) => { pol[p.k] = (j + Math.floor(A.rnd()*2)) % 2 ? -1 : 1; if(A.fxTo) A.fxTo(p.k, 'elx_polme', { i:id, pol:pol[p.k] }); });
+        X.act = { k, t:0, id, x:hx, z:hz, q, pol, w:42 }; X.cd.polarity = 150;
+        A.fx('elx_polarity', { i:id, x:R2(hx), z:R2(hz), q:R3(q), w:42, solo:A.fxTo ? 0 : pol[inA[0].k] });
+      } else if(k === 'storm'){
+        const n = ph >= 4 ? 5 : 4, a0 = A.rnd()*Math.PI*2, om = (A.rnd() < 0.5 ? 1 : -1)*0.045;
+        X.act = { k, t:0, id, x:S.x, z:S.z, n, a0, om, R:16, dur:70, w:12 }; X.cd.storm = 160;
+        A.fx('elx_storm', { i:id, x:R2(S.x), z:R2(S.z), n, a0:R3(a0), om, R:16, dur:70, w:12 });
+      } else if(k === 'discharge'){
+        X.act = { k, t:0, id, r:5.2, w:8 }; X.cd.discharge = 45;
+        A.fx('elx_discharge', { i:id, x:R2(S.x), z:R2(S.z), r:5.2, w:8 });
+      }
+    }
+  }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -11230,6 +11355,7 @@ function _wbBrainTick(game, wb, brain) {
     slow:    (k, f, ms) => to(k, { type:'sv_player_fx', slow:f, root:ms }),
     confuse: (k) => to(k, { type:'sv_player_fx', eff:'confuse', dur:100 }),
     fx:      (vt, o) => broadcastToZone(game.id, Z, Object.assign({ type:'sv_fx', vt, zone:Z }, o)),
+    fxTo:    (k, vt, o) => to(k, Object.assign({ type:'sv_fx', vt }, o)),   // a751 — a cue for one player only (Electronoid's Polarity)
     rnd:     Math.random });
   wb.x = S.x; wb.z = S.z;
   wb._bBc = (wb._bBc || 0) + 1;
@@ -11269,6 +11395,7 @@ function tickWorldBoss(game) {
   if (wb.id === 'ancient_wyrm') { _wbEyexorTick(game, wb); return; }   // a748 — Eyexor fights with its own brain
   if (wb.id === 'hollow_reaper') { _wbBrainTick(game, wb, _hrBrain); return; }   // a749 — so does the Hollow Reaper
   if (wb.id === 'abacus_of_flesh') { _wbBrainTick(game, wb, _abBrain); return; }   // a750 — and the Abacus of Flesh
+  if (wb.id === 'electronoid') { _wbBrainTick(game, wb, _elBrain); return; }   // a751 — and Electronoid
   // Find nearest player in the boss's zone
   let nearest = null, nearestDist = Infinity;
   zonePlayers.forEach(p => {
