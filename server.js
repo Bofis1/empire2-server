@@ -9425,6 +9425,127 @@ function _eyBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a749 — THE HOLLOW REAPER, world boss of the Necropolis, rebuilt: a towering hooded reaper with a
+//   bone mask, a caged soul-lantern for a heart and a great scythe, holding the Reaper's Court.
+//   One brain, shared word for word by the server (the authority in a lobby) and the client (solo). 10 Hz.
+//     REAP            P1+  its signature: a wide scythe sweep in front of it (P3+: it swings back the other way)
+//     HOLLOW GYRE     P1+  hurls the scythe down a line; it cuts on the way out and on the way back
+//     WAILING SOULS   P1+  spirals of souls pour out of its heart — walk between the arms
+//     FUNERAL BELLS   P1+  the court tolls in rings: every other band erupts, then the rest
+//     DEATH'S DOOR    P2+  it vanishes and steps out of the dark behind you, cutting all around it
+//     THE HOLLOWING   P3+  the court goes dark but for a few soul wells — be standing in one when it lands
+//   Damage is RAW. A: { T:[{k,x,z}], hp, maxHp, hx, hz, hit(k,dmg,n), push, pull, slow(k,f,ms), confuse(k), fx, rnd }
+// ════════════════════════════════════════════════════════════════════════════════════════
+const HRK_D  = { reap:1600, gyre:1150, soul:650, bell:1250, door:1800, hollow:2600 };
+const HRK_PM = [1, 1, 1.1, 1.22, 1.36];
+const HRK_R = 9, HRK_ENG = 30, HRK_IN = 17;
+function _hrSegD(px, pz, x0, z0, a, L){ const dx = Math.sin(a), dz = Math.cos(a), u = Math.max(0, Math.min(L, (px - x0)*dx + (pz - z0)*dz)); return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _hrDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// where every soul of a Wailing Souls is at tick t (shared by the hit test and the effect)
+function _hrSouls(a, t){ const out = [];
+  for(let e = 0; e <= a.emit && e <= t; e += a.every) for(let k = 0; k < a.n; k++){ const r = 1.5 + (t - e)*a.sp; if(r > a.R) continue;
+    const ang = a.a0 + k*Math.PI*2/a.n + a.om*e; out.push([a.x + Math.sin(ang)*r, a.z + Math.cos(ang)*r]); }
+  return out; }
+function _hrBrain(S, A){
+  const f = A.hp/Math.max(1, A.maxHp), ph = f > 0.75 ? 1 : f > 0.5 ? 2 : f > 0.25 ? 3 : 4, M = HRK_PM[ph], R2 = v => Math.round(v*100)/100, R3 = v => Math.round(v*1000)/1000;
+  let X = S._hr;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._hr = { t:0, face:0, cd:{ main:10, gyre:30, souls:45, bells:60, door:20, hollow:20 }, last:{}, gap:20, act:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{}, hide:0 };
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz, D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < HRK_ENG);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg, n) => A.hit(p.k, Math.round(dmg*M), n);
+  const inArc = (p, x, z, a, half, r) => { const d = D(p, x, z); if(d > r + 0.4) return false; if(d < 1.2) return true; return Math.abs(_hrDA(Math.atan2(p.x - x, p.z - z), a)) < half + 0.6/d; };
+  if(X.t % 300 === 0) X.hitT = {};
+  if(!inA.length){ X.act = null; X.hide = 0; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz); if(d > 0.3){ S.x += dx/d*Math.min(d, 0.06); S.z += dz/d*Math.min(d, 0.06); } S.face = X.face; S.hide = 0; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){ const p = inA[Math.floor(A.rnd()*inA.length)]; X.tgt = p.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  if(ph > X.ph){ X.ph = ph; X.hide = 0; X.act = { k:'rise', t:0 }; A.fx('hrx_rise', { x:R2(S.x), z:R2(S.z), p:ph }); inA.forEach(p => { if(D(p, S.x, S.z) < 6) A.push(p.k, S.x, S.z, 4); });
+    if(ph === 2) X.cd.door = 15; if(ph === 3) X.cd.hollow = 20; }
+  const want = Math.atan2(P.x - S.x, P.z - S.z);
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 16;
+    else if(a.k === 'reap'){
+      if(a.t === a.w) inA.forEach(p => { if(inArc(p, S.x, S.z, a.a, a.half, a.r)){ HIT(p, HRK_D.reap, 'reap'); A.push(p.k, S.x, S.z, 2.5); } });
+      if(a.two){
+        if(a.t === a.w + 3){ a.a2 = Math.atan2(P.x - S.x, P.z - S.z); A.fx('hrx_reap', { i:a.id + 1, x:R2(S.x), z:R2(S.z), a:R3(a.a2), half:a.half, r:a.r, w:7, back:1 }); }
+        if(a.t === a.w + 10) inA.forEach(p => { if(inArc(p, S.x, S.z, a.a2, a.half, a.r)){ HIT(p, HRK_D.reap, 'reap'); A.push(p.k, S.x, S.z, 2.5); } });
+      }
+      X.face = a.t <= a.w + 3 ? a.a : a.a2; done = a.t >= (a.two ? a.w + 16 : a.w + 6); }
+    else if(a.k === 'gyre'){
+      // out over `go` ticks to L, then back over `go` ticks; it cuts what it passes through, once per pass
+      const tt = a.t - a.w;
+      if(tt >= 0 && tt <= a.go*2){ const u = tt <= a.go ? tt/a.go : 2 - tt/a.go, sx = a.x + Math.sin(a.a)*a.L*u, sz = a.z + Math.cos(a.a)*a.L*u, pass = tt <= a.go ? 'o' : 'b';
+        inA.forEach(p => { if(D(p, sx, sz) < a.hw + 0.4 && once(p.k, 'gy' + a.id + pass, 30)) HIT(p, HRK_D.gyre, 'gyre'); }); }
+      X.face = a.a; done = a.t >= a.w + a.go*2 + 6; }
+    else if(a.k === 'souls'){
+      if(a.t >= a.w){ const tt = a.t - a.w; _hrSouls(a, tt).forEach(s => inA.forEach(p => { if(Math.hypot(p.x - s[0], p.z - s[1]) < 1.0 && once(p.k, 'sl' + a.id, 6)) HIT(p, HRK_D.soul, 'soul'); })); }
+      done = a.t >= a.w + a.emit + Math.ceil((a.R - 1.5)/a.sp) + 2; }
+    else if(a.k === 'bells'){
+      [0, 1].forEach(wv => { if(a.t === a.w + wv*a.dt) inA.forEach(p => { const d = D(p, a.x, a.z), b = Math.floor((d - a.r0)/a.bw); if(d >= a.r0 && b >= 0 && b < a.nb && b % 2 === wv){ HIT(p, HRK_D.bell, 'bell'); A.slow(p.k, 0.5, 900); } });
+        if(a.t === a.w + wv*a.dt) inA.forEach(p => { if(wv === 0 && D(p, a.x, a.z) < a.r0) { HIT(p, HRK_D.bell, 'bell'); } }); });
+      done = a.t >= a.w + a.dt + 6; }
+    else if(a.k === 'door'){
+      if(a.t === a.v){ const T = inA.find(p => p.k === a.tk) || P, dx = T.x - S.x, dz = T.z - S.z, d = Math.hypot(dx, dz) || 1;
+        const c = inG(T.x + dx/d*2.6, T.z + dz/d*2.6, HRK_IN); S.x = c[0]; S.z = c[1]; X.hide = 0; X.face = Math.atan2(T.x - S.x, T.z - S.z);
+        a.x = S.x; a.z = S.z; A.fx('hrx_door', { i:a.id, x:R2(S.x), z:R2(S.z), st:1, w:a.w, r:a.r, a:R3(X.face) }); }
+      if(a.t === a.v + a.w) inA.forEach(p => { if(D(p, a.x, a.z) < a.r){ HIT(p, HRK_D.door, 'door'); A.push(p.k, a.x, a.z, 3); } });
+      done = a.t >= a.v + a.w + 6; }
+    else if(a.k === 'hollow'){
+      if(a.t === a.w) inA.forEach(p => { if(!a.m.some(m => Math.hypot(p.x - m[0], p.z - m[1]) < a.r + 0.3)){ HIT(p, HRK_D.hollow, 'hollow'); A.slow(p.k, 0.4, 1500); } });
+      done = a.t >= a.w + 10; }
+    if(done){ X.act = null; X.gap = [0, 10, 9, 8, 6][ph]; }
+  } else {
+    // ── it glides after its target, keeping scythe's reach (~4), never far from the heart of its court
+    X.face += Math.max(-0.1, Math.min(0.1, _hrDA(want, X.face)));
+    const d = D(P, S.x, S.z); let sp = d > 5 ? 0.09 : d < 2.5 ? -0.05 : 0;
+    const c = inG(S.x + Math.sin(want)*sp, S.z + Math.cos(want)*sp, HRK_R); S.x = c[0]; S.z = c[1];
+    if(X.gap <= 0){
+      const MIN = { gyre:1, souls:1, bells:1, door:2, hollow:3 };
+      let k = null, lk = 1e9;
+      if(X.cd.main <= 0 && X.lastK !== 'main' && d < 8) k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0) continue; const l = X.last[m] || 0; if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0 && d < 8) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'main'){
+        const two = ph >= 3, half = 1.35, r = 7.5, w = 9;
+        X.act = { k:'reap', t:0, id, a:want, half, r, w, two }; X.cd.main = ph >= 4 ? 22 : 30;
+        A.fx('hrx_reap', { i:id, x:R2(S.x), z:R2(S.z), a:R3(want), half, r, w });
+      } else if(k === 'gyre'){
+        const L = Math.min(20, Math.max(10, d + 5)), go = 9, w = 10;
+        X.act = { k, t:0, id, x:S.x, z:S.z, a:want, L, go, w, hw:1.4 }; X.cd.gyre = 70;
+        A.fx('hrx_gyre', { i:id, x:R2(S.x), z:R2(S.z), a:R3(want), L:R2(L), go, w, hw:1.4 });
+      } else if(k === 'souls'){
+        const n = ph >= 3 ? 4 : 3, a0 = A.rnd()*Math.PI*2, om = (A.rnd() < 0.5 ? 1 : -1)*0.07;
+        X.act = { k, t:0, id, x:S.x, z:S.z, n, a0, om, w:8, emit:28, every:2, sp:0.55, R:19 }; X.cd.souls = 90;
+        A.fx('hrx_souls', { i:id, x:R2(S.x), z:R2(S.z), n, a0:R3(a0), om, w:8, emit:28, every:2, sp:0.55, R:19 });
+      } else if(k === 'bells'){
+        const r0 = 2.5, bw = 3, nb = 6, w = 16, dt = 12;
+        X.act = { k, t:0, id, x:S.x, z:S.z, r0, bw, nb, w, dt }; X.cd.bells = 100;
+        A.fx('hrx_bells', { i:id, x:R2(S.x), z:R2(S.z), r0, bw, nb, w, dt });
+      } else if(k === 'door'){
+        X.act = { k, t:0, id, tk:P.k, v:8, w:9, r:4.2 }; X.cd.door = 110; X.hide = 1;
+        A.fx('hrx_door', { i:id, x:R2(S.x), z:R2(S.z), st:0, v:8 });
+      } else if(k === 'hollow'){
+        const n = Math.min(5, Math.max(2, inA.length) + 1), m = [];
+        for(let j = 0; j < n; j++){ let c = null; for(let tr = 0; tr < 12; tr++){ const q = A.rnd()*Math.PI*2, r = 4 + A.rnd()*(HRK_IN - 5), cc = [hx + Math.sin(q)*r, hz + Math.cos(q)*r];
+            if(!m.some(o => Math.hypot(o[0] - cc[0], o[1] - cc[1]) < 6)){ c = cc; break; } c = cc; } m.push([R2(c[0]), R2(c[1])]); }
+        X.act = { k, t:0, id, m, r:2.6, w:42 }; X.cd.hollow = 180;
+        A.fx('hrx_hollow', { i:id, x:R2(S.x), z:R2(S.z), m, r:2.6, w:42 });
+      }
+    }
+  }
+  S.face = X.face; S.hide = X.hide;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -10974,6 +11095,27 @@ function _wbEyexorTick(game, wb) {
     broadcastToZone(game.id, Z, { type:'sv_worldboss_state', id:wb.id, x:+wb.x.toFixed(2), z:+wb.z.toFixed(2), hp:wb.hp, maxHp:wb.maxHp, phase:wb.phase, zone:Z });
 }
 
+// a749 — a world boss that fights with a shared brain (same adapter as Eyexor's): the Hollow Reaper
+function _wbBrainTick(game, wb, brain) {
+  const alive = new Set(getTargetablePlayersInZone(game.id, wb.zone));
+  const T = [], W = new Map(), Z = wb.zone;
+  players.forEach((p, ws) => { if (alive.has(p) && p.x !== undefined) { const k = p.pid !== undefined ? 'p' + p.pid : 'i' + T.length; T.push({ k, x:p.x, z:p.z }); W.set(k, ws); } });
+  const S = wb._bS || (wb._bS = { x:wb.x, z:wb.z }), ox = wb.x, oz = wb.z;
+  const to = (k, m) => { const ws = W.get(k); if (ws) send(ws, Object.assign({ zone:Z }, m)); };
+  brain(S, { T, hp:wb.hp, maxHp:wb.maxHp, hx:wb.spawnX, hz:wb.spawnZ,
+    hit:     (k, dmg) => to(k, { type:'sv_enemy_attack', eid:-1, dmg, ex:+S.x.toFixed(2), ez:+S.z.toFixed(2) }),
+    push:    (k, x, z, amt) => to(k, { type:'sv_player_fx', eff:'push', px:+x.toFixed(2), pz:+z.toFixed(2), push:amt }),
+    pull:    (k, x, z, amt) => to(k, { type:'sv_player_fx', eff:'pull', px:+x.toFixed(2), pz:+z.toFixed(2), pull:amt }),
+    slow:    (k, f, ms) => to(k, { type:'sv_player_fx', slow:f, root:ms }),
+    confuse: (k) => to(k, { type:'sv_player_fx', eff:'confuse', dur:100 }),
+    fx:      (vt, o) => broadcastToZone(game.id, Z, Object.assign({ type:'sv_fx', vt, zone:Z }, o)),
+    rnd:     Math.random });
+  wb.x = S.x; wb.z = S.z;
+  wb._bBc = (wb._bBc || 0) + 1;
+  if (Math.abs(wb.x - ox) + Math.abs(wb.z - oz) > 0.002 || wb._bBc % 10 === 0)
+    broadcastToZone(game.id, Z, { type:'sv_worldboss_state', id:wb.id, x:+wb.x.toFixed(2), z:+wb.z.toFixed(2), hp:wb.hp, maxHp:wb.maxHp, phase:wb.phase, zone:Z });
+}
+
 function tickWorldBoss(game) {
   const wb = game.worldBoss;
   if (!wb || !wb.spawned) return;
@@ -11004,6 +11146,7 @@ function tickWorldBoss(game) {
   }
   _wbGroupScale(game, wb, zonePlayers);   // a748
   if (wb.id === 'ancient_wyrm') { _wbEyexorTick(game, wb); return; }   // a748 — Eyexor fights with its own brain
+  if (wb.id === 'hollow_reaper') { _wbBrainTick(game, wb, _hrBrain); return; }   // a749 — so does the Hollow Reaper
   // Find nearest player in the boss's zone
   let nearest = null, nearestDist = Infinity;
   zonePlayers.forEach(p => {
