@@ -9912,6 +9912,128 @@ function _ftBrain(S, A){
   S.face = X.face;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════════
+// a754 — THE VOID BEHEMOTH, world boss of Neon Hollow, rebuilt: a colossal leviathan that came through from
+//   outside — skin that is a window onto the starless dark, obsidian plates, a crown of horns, a cluster of
+//   magenta eyes and a vertical maw that splits open onto a black hole. One brain, shared word for word by the
+//   server (lobby authority) and the client (solo). 10 Hz.
+//     RIFT LANCE       P1+  its signature: rifts tear open along lines to you and its claws lance out of them
+//     EVENT HORIZON    P1+  a black hole opens on you and drags everything in before it collapses
+//     ANTIMATTER RAIN  P1+  dark stars fall out of torn sky onto marked spots
+//     UNMAKING         P2+  slices of the court are erased into the void — stand where the world still is
+//     HANDS OF THE VOID P3+ void-hands rise from the floor and stalk the nearest of you
+//     SWEEP            P1+  get under it and its tentacles sweep round
+//   Damage is RAW. A: { T:[{k,x,z}], hp, maxHp, hx, hz, hit(k,dmg,n), push, pull, slow(k,f,ms), confuse(k), fx, rnd }
+// ════════════════════════════════════════════════════════════════════════════════════════
+const VBK_D  = { lance:1300, horizon:2400, rain:1100, unmake:2200, hand:900, sweep:1300 };
+const VBK_PM = [1, 1, 1.1, 1.22, 1.36];
+const VBK_R = 7, VBK_ENG = 32, VBK_IN = 17;
+function _vbSegD(px, pz, x0, z0, x1, z1){ const dx = x1 - x0, dz = z1 - z0, L2 = dx*dx + dz*dz || 1, u = Math.max(0, Math.min(1, ((px - x0)*dx + (pz - z0)*dz)/L2)); return Math.hypot(px - x0 - dx*u, pz - z0 - dz*u); }
+function _vbDA(a, b){ let q = a - b; while(q > Math.PI) q -= 2*Math.PI; while(q < -Math.PI) q += 2*Math.PI; return q; }
+// which of the n sectors round (x,z) a point is in
+function _vbSector(x, z, px, pz, n, q0){ let a = Math.atan2(px - x, pz - z) - q0; a = ((a % (Math.PI*2)) + Math.PI*2) % (Math.PI*2); return Math.floor(a/(Math.PI*2/n)); }
+function _vbBrain(S, A){
+  const f = A.hp/Math.max(1, A.maxHp), ph = f > 0.75 ? 1 : f > 0.5 ? 2 : f > 0.25 ? 3 : 4, M = VBK_PM[ph], R2 = v => Math.round(v*100)/100, R3 = v => Math.round(v*1000)/1000;
+  let X = S._vb;
+  if(!X || (X.dmg && A.hp >= A.maxHp)){
+    X = S._vb = { t:0, face:0, cd:{ main:10, horizon:25, rain:35, unmake:20, hands:20, sweep:0 }, last:{}, gap:20, act:null, tgt:null, tgtT:0, dmg:false, ph, hitT:{} };
+  }
+  X.t++; if(A.hp < A.maxHp) X.dmg = true;
+  const hx = A.hx, hz = A.hz, D = (p, x, z) => Math.hypot(p.x - x, p.z - z);
+  const inA = A.T.filter(p => Math.hypot(p.x - hx, p.z - hz) < VBK_ENG);
+  const once = (k, key, gap) => { const h = X.hitT[k + '|' + key]; if(h !== undefined && X.t - h < gap) return false; X.hitT[k + '|' + key] = X.t; return true; };
+  const inG = (x, z, r) => { const dx = x - hx, dz = z - hz, d = Math.hypot(dx, dz); return d > r ? [hx + dx/d*r, hz + dz/d*r] : [x, z]; };
+  const HIT = (p, dmg, n) => A.hit(p.k, Math.round(dmg*M), n);
+  if(X.t % 300 === 0) X.hitT = {};
+  if(!inA.length){ X.act = null; const dx = hx - S.x, dz = hz - S.z, d = Math.hypot(dx, dz); if(d > 0.3){ S.x += dx/d*Math.min(d, 0.05); S.z += dz/d*Math.min(d, 0.05); } S.face = X.face; return; }
+  if(--X.tgtT <= 0 || !inA.some(p => p.k === X.tgt)){ const p = inA[Math.floor(A.rnd()*inA.length)]; X.tgt = p.k; X.tgtT = 60; }
+  const P = inA.find(p => p.k === X.tgt);
+  for(const k in X.cd) if(X.cd[k] > 0) X.cd[k]--;
+  if(X.gap > 0) X.gap--;
+  if(ph > X.ph){ X.ph = ph; X.act = { k:'rise', t:0 }; A.fx('vbx_rise', { x:R2(S.x), z:R2(S.z), p:ph }); inA.forEach(p => { if(D(p, S.x, S.z) < 7) A.push(p.k, S.x, S.z, 4.5); });
+    if(ph === 2) X.cd.unmake = 15; if(ph === 3) X.cd.hands = 15; }
+  const want = Math.atan2(P.x - S.x, P.z - S.z);
+  if(X.act){
+    const a = X.act; a.t++; let done = false;
+    if(a.k === 'rise') done = a.t >= 16;
+    else if(a.k === 'lance'){
+      a.L.forEach(l => { if(a.t === l[4]) inA.forEach(p => { if(_vbSegD(p.x, p.z, l[0], l[1], l[2], l[3]) < a.hw + 0.4){ HIT(p, VBK_D.lance, 'lance'); A.slow(p.k, 0.5, 800); } }); });
+      done = a.t >= Math.max.apply(null, a.L.map(l => l[4])) + 5; }
+    else if(a.k === 'horizon'){
+      // the well drags everyone in reach toward its centre; then it collapses
+      if(a.t >= a.w0 && a.t < a.w) inA.forEach(p => { const d = D(p, a.x, a.z); if(d < a.R && d > 0.8 && a.t % 2 === 0) A.pull(p.k, a.x, a.z, a.pull*(1 - d/a.R*0.5)); });
+      if(a.t === a.w) inA.forEach(p => { if(D(p, a.x, a.z) < a.r){ HIT(p, VBK_D.horizon, 'horizon'); A.push(p.k, a.x, a.z, 5); } });
+      done = a.t >= a.w + 6; }
+    else if(a.k === 'rain'){
+      a.m.forEach(m => { if(a.t === m[2]) inA.forEach(p => { if(Math.hypot(p.x - m[0], p.z - m[1]) < a.r + 0.3) HIT(p, VBK_D.rain, 'rain'); }); });
+      done = a.t >= Math.max.apply(null, a.m.map(m => m[2])) + 4; }
+    else if(a.k === 'unmake'){
+      a.waves.forEach(wv => { if(a.t === wv[0]) inA.forEach(p => { const d = D(p, a.x, a.z); if(d > 2.2 && d < a.R && wv[1].indexOf(_vbSector(a.x, a.z, p.x, p.z, a.n, a.q0)) >= 0){ HIT(p, VBK_D.unmake, 'unmake'); A.slow(p.k, 0.4, 1200); } }); });
+      done = a.t >= a.waves[a.waves.length - 1][0] + 8; }
+    else if(a.k === 'hands'){
+      // each hand stalks the nearest player at its own pace; touching one hurts and slows. The clients are told where they are.
+      if(a.t >= a.w && a.t < a.w + a.dur){ a.h.forEach((h, j) => { let best = null, bd = 1e9; inA.forEach(p => { const d = Math.hypot(p.x - h[0], p.z - h[1]); if(d < bd){ bd = d; best = p; } });
+          if(best && bd > 0.3){ const sp = a.sp*(0.85 + 0.1*(j % 3)), c = inG(h[0] + (best.x - h[0])/bd*Math.min(bd, sp), h[1] + (best.z - h[1])/bd*Math.min(bd, sp), VBK_IN + 4); h[0] = c[0]; h[1] = c[1]; }
+          inA.forEach(p => { if(Math.hypot(p.x - h[0], p.z - h[1]) < 1.3 && once(p.k, 'hd' + a.id + '_' + j, 8)){ HIT(p, VBK_D.hand, 'hand'); A.slow(p.k, 0.45, 900); } }); });
+        if(a.t % 2 === 0) A.fx('vbx_handpos', { i:a.id, h:a.h.map(h => [R2(h[0]), R2(h[1])]) }); }
+      done = a.t >= a.w + a.dur + 4; }
+    else if(a.k === 'sweep'){
+      if(a.t === a.w) inA.forEach(p => { if(D(p, S.x, S.z) < a.r){ HIT(p, VBK_D.sweep, 'sweep'); A.push(p.k, S.x, S.z, 4); } });
+      done = a.t >= a.w + 6; }
+    if(done){ X.act = null; X.gap = [0, 11, 9, 8, 6][ph]; }
+  } else {
+    // ── it drifts toward its prey, keeping lance range (~8), never far from its rift
+    X.face += Math.max(-0.07, Math.min(0.07, _vbDA(want, X.face)));
+    const d = D(P, S.x, S.z); let sp = d > 10 ? 0.07 : d < 5 ? -0.04 : 0;
+    const c = inG(S.x + Math.sin(want)*sp, S.z + Math.cos(want)*sp, VBK_R); S.x = c[0]; S.z = c[1];
+    if(X.gap <= 0){
+      const MIN = { horizon:1, rain:1, unmake:2, hands:3, sweep:1 };
+      const close = inA.some(p => D(p, S.x, S.z) < 4.5);
+      let k = null, lk = 1e9;
+      if(X.cd.main <= 0 && X.lastK !== 'main') k = 'main';
+      else for(const m in MIN){ if(ph < MIN[m] || X.cd[m] > 0 || (m === 'sweep' && !close)) continue; const l = (X.last[m] || 0) - (m === 'sweep' ? 200 : 0); if(l < lk){ lk = l; k = m; } }
+      if(!k && X.cd.main <= 0) k = 'main';
+      if(k){ X.last[k] = X.t; X.lastK = k; }
+      const id = X.t;
+      if(k === 'main'){
+        // a lane from beside the beast to each target (and past them), staggered; P3+ a second round re-aimed
+        const tg = inA.slice(0, 4), L = [], mk = (p, t) => { const a = Math.atan2(p.x - S.x, p.z - S.z), d0 = 1.5, len = Math.min(24, D(p, S.x, S.z) + 6);
+          L.push([R2(S.x + Math.sin(a)*d0), R2(S.z + Math.cos(a)*d0), R2(S.x + Math.sin(a)*len), R2(S.z + Math.cos(a)*len), t]); };
+        tg.forEach((p, j) => mk(p, 10 + j*2));
+        X.act = { k:'lance', t:0, id, L, hw:1.1 }; X.cd.main = ph >= 4 ? 24 : 32;
+        if(ph >= 3){ X.act.t2 = 1; }
+        A.fx('vbx_lance', { i:id, x:R2(S.x), z:R2(S.z), L, hw:1.1 });
+        if(ph >= 3){ const L2 = []; tg.forEach((p, j) => { const q = Math.atan2(p.x - S.x, p.z - S.z) + (j % 2 ? 0.35 : -0.35), len = Math.min(24, D(p, S.x, S.z) + 6); L2.push([R2(S.x + Math.sin(q)*1.5), R2(S.z + Math.cos(q)*1.5), R2(S.x + Math.sin(q)*len), R2(S.z + Math.cos(q)*len), 18 + j*2]); });
+          X.act.L = X.act.L.concat(L2); A.fx('vbx_lance', { i:id + 1, x:R2(S.x), z:R2(S.z), L:L2, hw:1.1 }); }
+      } else if(k === 'horizon'){
+        const c = inG(P.x, P.z, VBK_IN), w = 34;
+        X.act = { k, t:0, id, x:c[0], z:c[1], R:12, r:3.6, w0:8, w, pull:0.55 }; X.cd.horizon = 95;
+        A.fx('vbx_horizon', { i:id, x:R2(c[0]), z:R2(c[1]), R:12, r:3.6, w0:8, w });
+      } else if(k === 'rain'){
+        const n = ph >= 3 ? 14 : 10, m = inA.map(p => [R2(p.x), R2(p.z), 14]);
+        for(let j = 0; j < n; j++){ const q = A.rnd()*Math.PI*2, rr = 3 + A.rnd()*(VBK_IN - 3); m.push([R2(hx + Math.sin(q)*rr), R2(hz + Math.cos(q)*rr), 12 + Math.floor(j*1.2)]); }
+        X.act = { k, t:0, id, m, r:2.1 }; X.cd.rain = 80;
+        A.fx('vbx_rain', { i:id, m, r:2.1 });
+      } else if(k === 'unmake'){
+        const n = 8, q0 = A.rnd()*Math.PI*2, off = A.rnd() < 0.5 ? 0 : 1, s1 = [], s2 = [];
+        for(let j = 0; j < n; j++) ((j + off) % 2 ? s2 : s1).push(j);
+        const waves = [[30, s1]]; if(ph >= 3) waves.push([46, s2]);
+        X.act = { k, t:0, id, x:hx, z:hz, n, q0, R:26, waves }; X.cd.unmake = 140;
+        A.fx('vbx_unmake', { i:id, x:R2(hx), z:R2(hz), n, q0:R3(q0), R:26, waves });
+      } else if(k === 'hands'){
+        const n = Math.min(6, 2 + inA.length), h = [];
+        for(let j = 0; j < n; j++){ const q = A.rnd()*Math.PI*2, rr = 8 + A.rnd()*7; h.push([R2(hx + Math.sin(q)*rr), R2(hz + Math.cos(q)*rr)]); }
+        X.act = { k, t:0, id, h, w:12, dur:70, sp:0.16 + 0.02*(ph - 3) }; X.cd.hands = 170;
+        A.fx('vbx_hands', { i:id, h, w:12, dur:70 });
+      } else if(k === 'sweep'){
+        X.act = { k, t:0, id, r:5.2, w:8 }; X.cd.sweep = 45;
+        A.fx('vbx_sweep', { i:id, x:R2(S.x), z:R2(S.z), r:5.2, w:8 });
+      }
+    }
+  }
+  S.face = X.face;
+}
+
 const ZBOSS_SERVER = {
 
   // ── CRYOTHAR (a709). Rebuilt as a frost dragon: its whole fight lives in the shared brain
@@ -11517,6 +11639,7 @@ function tickWorldBoss(game) {
   if (wb.id === 'abacus_of_flesh') { _wbBrainTick(game, wb, _abBrain); return; }   // a750 — and the Abacus of Flesh
   if (wb.id === 'electronoid') { _wbBrainTick(game, wb, _elBrain); return; }   // a751 — and Electronoid
   if (wb.id === 'forge_tyrant') { _wbBrainTick(game, wb, _ftBrain); return; }   // a753 — and the Forge Tyrant
+  if (wb.id === 'void_behemoth') { _wbBrainTick(game, wb, _vbBrain); return; }   // a754 — and the Void Behemoth
   // Find nearest player in the boss's zone
   let nearest = null, nearestDist = Infinity;
   zonePlayers.forEach(p => {
