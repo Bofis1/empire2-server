@@ -11971,6 +11971,69 @@ function _e2CrowdSpread(game, zoneName, zone, changed){
   });
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// a764 — MOB TEMPO. Mobs attacked too often to read, let alone dodge, worst of all in the
+//   Patrol Zone where new players start. Rather than retune hundreds of kits one by one,
+//   every regular mob's ability clocks now run on a tempo:
+//   • MOB_TEMPO of the ticks advance its attack clocks (attackTimer and every per-mob
+//     ability counter in this file); on the other ticks those clocks are held. Each
+//     melee swing, volley, telegraph and special comes round less often. Movement, the
+//     wind-ups of telegraphs already on the ground, and bosses are untouched.
+//   • A held tick sets each counter half a step back so the kit's own "+1" lands it on
+//     a half value: ">= N" doesn't trip a tick early, and "% N" / "=== N" can't fire at
+//     all. After the tick the counter is put back exactly as it was.
+//   • Crowding: up to MOB_CROWD_FREE mobs on one player attack at their tempo; past
+//     that they share it, so a pile-up hits about as often as three mobs would.
+// ══════════════════════════════════════════════════════════════════════════════
+const MOB_TEMPO      = 0.72;                       // every zone: 72% of the old attack rate
+const MOB_TEMPO_ZONE = { patrol:0.58, cemetery:0.64, blooming_wilds:0.66 };   // the starting zones, gentler still
+const MOB_CROWD_FREE = 3;                          // mobs on one player at full tempo
+const MOB_CROWD_R2   = 14*14;                      // "on you" = within 14u
+const MOB_TEMPO_MIN  = 0.28;
+const _MOB_CLOCKS = (function(){
+  const set = new Set(['attackTimer']);
+  try {
+    const src = require('fs').readFileSync(__filename, 'utf8');
+    const re = /e\.(_[A-Za-z0-9]+)\s*=\s*\(e\.\1\s*\|\|\s*0\)\s*\+\s*1/g; let m;
+    while ((m = re.exec(src))) set.add(m[1]);
+    // keep timelines exact: the delayed-action queue clock, step counters matched with ===,
+    //   and per-tick channel counters (% 1) run at full speed so hits land when their
+    //   telegraphs say they will
+    set.delete('_qt');
+    for (const f of [...set]){ const esc = f.replace(/[$]/g, '\\$&');
+      if (new RegExp('e\\.' + esc + '\\s*===?\\s*\\d').test(src) || new RegExp('e\\.' + esc + '\\s*%\\s*1\\b').test(src)) set.delete(f); }
+  } catch (err) { console.warn('[tempo] could not read the ability clocks:', err.message); }
+  return [...set];
+})();
+console.log('[tempo] mob ability clocks on tempo: ' + _MOB_CLOCKS.length);
+function _mobCrowdMap(zone, tps){
+  const m = new Map(); if (!tps.length) return m;
+  for (const e of zone.enemies){ if (!e || !e.active || !e.aggroed) continue;
+    let best = null, bd = MOB_CROWD_R2;
+    for (const p of tps){ const dx = p.x - e.x, dz = p.z - e.z, d = dx*dx + dz*dz; if (d < bd){ bd = d; best = p; } }
+    if (best) m.set(best, (m.get(best) || 0) + 1); }
+  return m;
+}
+function _mobTempoPre(e, zoneName, tps, crowd){
+  if (!e || !e.active || !e.aggroed || !tps || !tps.length) return null;
+  let t = (MOB_TEMPO_ZONE[zoneName] != null) ? MOB_TEMPO_ZONE[zoneName] : MOB_TEMPO;
+  let best = null, bd = MOB_CROWD_R2;
+  for (const p of tps){ const dx = p.x - e.x, dz = p.z - e.z, d = dx*dx + dz*dz; if (d < bd){ bd = d; best = p; } }
+  const n = best ? (crowd.get(best) || 1) : 1;
+  if (n > MOB_CROWD_FREE) t *= MOB_CROWD_FREE / n;
+  t = Math.max(MOB_TEMPO_MIN, Math.min(1, t));
+  e._tpAcc = (e._tpAcc || 0) + t;
+  if (e._tpAcc >= 1){ e._tpAcc -= 1; return null; }   // a normal tick
+  const snap = {};
+  for (let i = 0; i < _MOB_CLOCKS.length; i++){ const f = _MOB_CLOCKS[i], v = e[f];
+    if (typeof v === 'number' && v === Math.floor(v)){ snap[f] = v; e[f] = v - 0.5; } }
+  return snap;
+}
+function _mobTempoPost(e, snap){
+  if (!snap) return;
+  for (const f in snap){ const v = snap[f], c = e[f]; if (c === v - 0.5 || c === v + 0.5) e[f] = v; }
+}
+
 function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
@@ -12007,7 +12070,8 @@ function tickGame(game) {
       if (se && se._summoned && !se.active) zone.enemies.splice(i, 1);
     }
 
-    zone.enemies.forEach(e => {
+    const _crowd = _mobCrowdMap(zone, targetPlayers);   // a764 — how many mobs are on each player
+    zone.enemies.forEach(e => { const __tp = _mobTempoPre(e, zoneName, targetPlayers, _crowd); try {
       // Always tick respawns
       if (!e.active) {
         e.respawnTimer++;
@@ -15933,7 +15997,7 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
-    });
+    } finally { _mobTempoPost(e, __tp); } });
 
     _e2CrowdSpread(game, zoneName, zone, changed);   // a692 — mobs keep their distance and surround the player
 
