@@ -16000,7 +16000,7 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
-    } finally { _mobTempoPost(e, __tp); } });
+    } catch(err) { _svErr("mob " + zoneName + " " + e.type, err); } finally { _mobTempoPost(e, __tp); } });   // a767 — one broken mob no longer stops the zone
 
     _e2CrowdSpread(game, zoneName, zone, changed);   // a692 — mobs keep their distance and surround the player
 
@@ -16563,7 +16563,9 @@ function _cvMobTick(game, zoneName, zone, e, np, changed){
   const kite = (lo, hi) => { if (!los || dd > hi) chase(0); else if (dd < lo) away(0.85); };
   // cooldowns count down every tick, whatever the mob is doing
   for (const k in S.cd) if (S.cd[k] > 0) S.cd[k]--;
-  const ready = (k, every, first) => { if (S.cd[k] === undefined) S.cd[k] = first !== undefined ? first : Math.floor(every * (0.3 + Math.random()*0.5));
+  // a767 — OPENERS: a signature used to wait 30-80% of its full cooldown after aggro (up to 7s),
+  //   so a fast kill only ever saw the chase and the swing. Every kit now opens within 0.5-1.5s.
+  const ready = (k, every, first) => { if (S.cd[k] === undefined) S.cd[k] = first !== undefined ? first : Math.min(Math.floor(every * (0.3 + Math.random()*0.5)), 5 + Math.floor(Math.random()*10));
     return S.cd[k] <= 0; };
   const use = (k, every) => { S.cd[k] = every; };
   const melee = (mult, every, range, eff) => {
@@ -16665,7 +16667,7 @@ function _cvMobTick(game, zoneName, zone, e, np, changed){
       break;
     case 'magma_crab':        // SCUTTLE CHARGE, ERUPTION
       chase(2.0); melee(1.0, 11, 2.6);
-      if (los && dd > 4 && dd < 14 && ready('chg', 55)) { use('chg', 55);
+      if (los && dd > 2.8 && dd < 14 && ready('chg', 55)) { use('chg', 55);
         startDash(np.x + dx/dd*3, np.z + dz/dd*3, 6, 4.0, 1.5, null); break; }
       if (los && dd < 13 && ready('erupt', 70)) { use('erupt', 70); wind(6);
         for (let k = 1; k <= 3; k++) { const ex = e.x + Math.sin(ang)*k*3.2, ez = e.z + Math.cos(ang)*k*3.2;
@@ -16695,7 +16697,7 @@ function _cvMobTick(game, zoneName, zone, e, np, changed){
       break;
     case 'volt_hound':        // fast bites, POUNCE
       chase(1.8); melee(0.9, 8, 2.4);
-      if (los && dd > 4 && dd < 13 && ready('pounce', 40)) { use('pounce', 40);
+      if (los && dd > 2.8 && dd < 13 && ready('pounce', 40)) { use('pounce', 40);
         startDash(np.x, np.z, 4, 4.5, 1.4, { slow:0.6, ms:700 }, 2.6); }
       break;
 
@@ -16703,7 +16705,7 @@ function _cvMobTick(game, zoneName, zone, e, np, changed){
     case 'saurian_brute':     // TAIL SWEEP, WAR ROAR (hastes the pack)
       chase(2.6); melee(1.2, 15, 3.2);
       if (dd < 5 && ready('tail', 45)) { use('tail', 45); wind(8); circle(e.x, e.z, 4.8, 8, 1.6); }
-      if (ready('roar', 120, 30)) { use('roar', 120);
+      if (ready('roar', 120, 10)) { use('roar', 120);
         const al = allies(12); al.forEach(o => { (o._cv || (o._cv = { cd:{} })).hasteT = 50; }); S.hasteT = 50;
         fx('cvm_roar', { ex:_cvR(e.x), ez:_cvR(e.z), r:12, col, n:al.length }); }
       break;
@@ -16718,12 +16720,12 @@ function _cvMobTick(game, zoneName, zone, e, np, changed){
       if (los && dd < 12 && ready('breath', 40)) { use('breath', 40); wind(4);
         const P = [0xff5ad8, 0xc070ff, 0x6a8aff, 0x40e0ff, 0x7affb0];
         for (let i = 0; i < 5; i++) proj(ang + (i-2)*0.16, 0.75, 12, 1, null, null, P[i]); }
-      if (los && dd > 4 && dd < 12 && ready('dive', 70)) { use('dive', 70);
+      if (los && dd > 2.8 && dd < 12 && ready('dive', 70)) { use('dive', 70);
         startDash(np.x + dx/dd*4, np.z + dz/dd*4, 5, 5.0, 1.6, null); }
       break;
     case 'raptor_shard':      // SHARD LEAP — lands on a marked spot and bursts into shards
       chase(2.0); melee(0.9, 9, 2.4);
-      if (los && dd > 4 && dd < 14 && ready('leap', 50)) { use('leap', 50);
+      if (los && dd > 2.8 && dd < 14 && ready('leap', 50)) { use('leap', 50);
         circle(np.x, np.z, 3.0, 10, 1.5);
         S.shardAt = { x:np.x, z:np.z, t:10 };
         startDash(np.x, np.z, 6, 3.6, 0, null); }
@@ -16753,7 +16755,7 @@ function _cvMobTick(game, zoneName, zone, e, np, changed){
       if (los && dd < 16 && ready('grid', 55)) { use('grid', 55); wind(6);
         // an X of four beams centred on you, each stopping at the maze walls
         for (let q = 0; q < 4; q++) line(np.x, np.z, ang + Math.PI/4 + q*Math.PI/2, 8, 1.6, 12, 0.6); }   // standing dead centre catches all four
-      if (ready('aegis', 90, 20)) { use('aegis', 90);
+      if (ready('aegis', 90, 8)) { use('aegis', 90);
         const al = allies(10).concat([e]);
         al.forEach(o => { const s2 = o._cv || (o._cv = { cd:{} });
           if (!(s2.shieldT > 0)) { s2.baseDR = o.dmgReduction || 0; o.dmgReduction = Math.min(0.85, s2.baseDR + 0.3); }
@@ -16778,14 +16780,14 @@ function _cvMobTick(game, zoneName, zone, e, np, changed){
       break;
     case 'vine_lasher':       // long LASH, VINE GRAB (roots you)
       chase(4.2); melee(1.0, 13, 4.6);
-      if (los && dd > 4 && dd < 13 && ready('grab', 50)) { use('grab', 50); wind(9);
+      if (los && dd > 3 && dd < 13 && ready('grab', 50)) { use('grab', 50); wind(9);
         line(e.x, e.z, ang, dd + 2, 1.8, 9, 1.3, { slow:0, ms:1300 }); }
       break;
     case 'bloom_wisp':        // PETAL STORM, HEALING BLOOM
       kite(6, 13);
       if (los && dd < 14 && ready('petal', 30)) { use('petal', 30);
         for (let i = 0; i < 8; i++) proj(ang + i/8*Math.PI*2, 0.55, 10, 0); }
-      if (ready('bloom', 60, 25)) {
+      if (ready('bloom', 60, 12)) {
         const hurt = allies(12).concat([e]).filter(o => o.hp < o.maxHp);
         if (hurt.length) { use('bloom', 60);
           hurt.forEach(o => { o.hp = Math.min(o.maxHp, o.hp + Math.floor(o.maxHp * 0.05)); changed.push(o); });
@@ -17261,10 +17263,25 @@ function sendZoneSnapshot(ws, game, zoneName) {
 // GLOBAL GAME LOOP — 10Hz
 // ══════════════════════════════════════════════════════════
 let _rosterTick = 0;   // a578
+// a767 — CRASH GUARD. One thrown error anywhere in the game loop or a message handler used to
+//   take the whole process down: every game on the server vanished at once, and every client
+//   reconnected to find its session gone (the "thrown to the lobby mid-fight" report). Errors
+//   are now caught where they happen, logged once per distinct stack (with a running count),
+//   and the server keeps going. Only the tick or the message that failed is lost.
+const _svErrSeen = new Map();
+function _svErr(where, err){
+  try {
+    const st = String((err && err.stack) || err).split('\n').slice(0, 6).join('\n');
+    const n = (_svErrSeen.get(st) || 0) + 1; _svErrSeen.set(st, n);
+    if (n === 1 || n === 10 || n % 1000 === 0) console.error(`[crash-guard] ${where} (x${n}): ${st}`);
+  } catch(_){}
+}
+process.on('uncaughtException', err => { if (err && (err.code === 'EADDRINUSE' || err.code === 'EACCES')) { console.error(err); process.exit(1); } _svErr('uncaught', err); });   // a startup failure still exits
+process.on('unhandledRejection', err => _svErr('unhandled-rejection', err));
 setInterval(() => {
   games.forEach(game => {
     // Tick as soon as a game exists — zones are pre-populated, enemies need ticking from start
-    if (game.players.length > 0) tickGame(game);
+    if (game.players.length > 0) { try { tickGame(game); } catch(err) { _svErr('tick ' + game.id, err); } }
   });
   if (++_rosterTick % 10 === 0) { try { _broadcastPartyRosters(); } catch(e){} }   // a578 — 1Hz
 }, 100);
@@ -17787,7 +17804,7 @@ wss.on('connection', ws => {
   players.set(ws, { name:'', gameId:null, zone:null, x:undefined, z:undefined, pid: ++_pidSeq });   // a578 — pid
   wsByPid.set(players.get(ws).pid, ws);   // a580
 
-  ws.on('message', raw => {
+  const _onMsg = raw => {
     ws.isAlive = true;
     // a481 — SERVER-2: per-connection rate limit. Token bucket, ~30 msg/sec with a
     //   burst allowance of 60. Prevents a single client from flooding the handler
@@ -18948,7 +18965,8 @@ wss.on('connection', ws => {
         break;
       }
     }
-  });
+  };
+  ws.on('message', raw => { try { _onMsg(raw); } catch(err) { _svErr('msg', err); } });   // a767 — crash guard
 
   ws.on('close',  () => removePlayer(ws));
   ws.on('error',  () => removePlayer(ws));
