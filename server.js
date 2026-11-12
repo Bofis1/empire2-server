@@ -572,13 +572,16 @@ const ZONE_BOSS_HP = {
   veiled_sanctuary: { hp:6000000,  name:'THE FINAL ABBOT' },   // a720 — rebuilt (was 4M)  // v92.41 · a614 — 110+ raid boss (was 850k)
   blooming_wilds:   { hp:50000,    name:'THE WILDMOTHER' },   // a715 — rebuilt (was 35k)
   xeron:            { hp:4500000,  name:'OVERSEER ZERO' },    // v92.55 — the final boss, the king of HP
-  convergence:      { hp:2000000,  name:'THE DEPTH SENTINEL' },// v93.0 phase 3 — placeholder depth boss; phase 3.5 will add depth-tier progression
+  convergence:      { hp:2800000,  name:'THE DEPTH SENTINEL' },// a766 — HP audit: the Lv100 boss standard (Curator/Colossus/Apex 2.8M); depth adds +20% per level (CV_BOSS_DEPTH_MUL)
   the_reach:        { hp:5000000,  name:'KEEPER OF THE END' }, // a219 — final boss of the final zone
   lucidwilde:       { hp:4000000,  name:'THE PIXIELORD' },     // a727 — rebuilt (was 5M, level with the Keeper of the End)  // a297 — Lucidwilde uberzone apex
   xulcan:           { hp:2200000,  name:'XU ZET-HORAK' },   // a730 — rebuilt (was 2M); Lv 90, between Lv 80 (~1.25M) and the Forge at Lv 95 (2.6M)      // a342 — Lv 90 apex, below Overseer Zero's 3M
   aviacanyon:       { hp:150000,   name:'XUBERRY' },          // a733 — rebuilt (was 600k); Lv 30, between Vorrakh (Lv 25, 120k) and the Inferno Colossus (Lv 35, 160k)
   forge:            { hp:2600000,  name:'THE FURNACE CORE' },   // a719 — rebuilt (was 1.5M)  // a361 — Lv 95 foundry titan (client-auth mobs, server-auth boss)
 };
+// a766 — Convergence boss depth scaling: +20% HP per depth (D1 2.8M … D6 5.6M, under the Lv110 raid's 6M). Mobs keep their own +50%/depth.
+function CV_BOSS_DEPTH_MUL(d){ return 1.0 + 0.2 * (Math.max(1, Math.min(6, d || 1)) - 1); }
+
 
 // ══════════════════════════════════════════════════════════
 // WORLD BOSS DEFS — server-authoritative (a146).
@@ -18337,7 +18340,7 @@ wss.on('connection', ws => {
         if (!zone.boss && ZONE_BOSS_HP[player.zone]) {
           console.warn(`[boss] zone.boss missing for ${player.zone} on first hit. Auto-initializing.`);
           const _curDepth = zone.convergenceDepth || 1;
-          const _depthMul = player.zone === 'convergence' ? (1.0 + 0.5 * (_curDepth - 1)) : 1.0;
+          const _depthMul = player.zone === 'convergence' ? CV_BOSS_DEPTH_MUL(_curDepth) : 1.0;
           const _baseHp = ZONE_BOSS_HP[player.zone].hp;
           zone.boss = {
             hp: Math.round(_baseHp * _depthMul),
@@ -18660,8 +18663,8 @@ wss.on('connection', ws => {
         //   enemies but must NEVER touch the live boss HP.
         if (zone.boss && newDepth !== oldDepth) {
           // Scale max HP for depth + Vital modifier
-          const _baseBossHp = (ZONE_BOSS_HP['convergence'] || {hp: 2000000}).hp;
-          const _scaledMaxHp = Math.round(_baseBossHp * depthMul * hpMul);
+          const _baseBossHp = (ZONE_BOSS_HP['convergence'] || {hp: 2800000}).hp;
+          const _scaledMaxHp = Math.round(_baseBossHp * CV_BOSS_DEPTH_MUL(newDepth) * hpMul);
           zone.boss.maxHp = _scaledMaxHp;
           zone.boss.hp = _scaledMaxHp;
           zone.boss.spawned = true; // mark as actively in world for the new depth
@@ -18674,7 +18677,7 @@ wss.on('connection', ws => {
             hp: zone.boss.hp,
             maxHp: zone.boss.maxHp,
           });
-          console.log(`[convergence] Boss reset for Depth ${newDepth}: ${_scaledMaxHp.toLocaleString()} HP (x${depthMul.toFixed(2)} depth, x${hpMul.toFixed(2)} vital)`);
+          console.log(`[convergence] Boss reset for Depth ${newDepth}: ${_scaledMaxHp.toLocaleString()} HP (x${CV_BOSS_DEPTH_MUL(newDepth).toFixed(2)} depth, x${hpMul.toFixed(2)} vital)`);
         } else if (zone.boss) {
           console.log(`[convergence] Same-depth mod update at Depth ${newDepth} — boss HP left at ${(zone.boss.hp||0).toLocaleString()} (NOT refilled).`);
         }
