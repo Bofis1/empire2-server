@@ -12037,6 +12037,83 @@ function _mobTempoPost(e, snap){
   for (const f in snap){ const v = snap[f], c = e[f]; if (c === v - 0.5 || c === v + 0.5) e[f] = v; }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// a775 — SHARED RARES AND BOUNTIES. Rare spawns (the Ironshade, the God-Machine...) and bounty
+//   targets used to be spawned by each player's own game: everyone in a co-op session met a
+//   different rare at a different moment (or, for bounties, only the host met one), and the
+//   others watched a teammate fight thin air. The server now spawns them into the zone's own
+//   enemy list, so everyone sees the same one, its HP, and its death.
+//   • Rare: one at a time per zone, every 4-10 minutes while someone is in it; gone after 3
+//     minutes. Sent as type 'rare:<id>'. Its signature abilities still run in each player's
+//     game against that player, so the server does no melee for it.
+//   • Bounty: every 3-7 minutes (60% chance); an elite or berserker with a bounty name, sent as
+//     'bounty:<type>:<name index>'. It fights with the normal server melee.
+//   • Stats come from the zone's own creatures (like the old client baseline). Rewards are
+//     handed out by the players' games on the kill (killer: loot and gold; everyone: XP).
+// ═══════════════════════════════════════════════════════════════════════════════════════
+const SV_RARE_DEFS = [
+  { id:'rs_ironshade',   hpMult:11, atkMult:3.0, spd:0.038*0.6, zones:['patrol','citadel','ashlands','caves_of_despair','xumen_fortress'] },
+  { id:'rs_voidwhisper', hpMult:14, atkMult:3.2, spd:0.038*1.2, zones:['void','riftvale','cemetery','ancient','void_citadel','the_reach'] },
+  { id:'rs_ashking',     hpMult:12, atkMult:3.0, spd:0.018*0.8, zones:['ashlands','fungal','frostveil','dragonlair','sunken_sands','forge'] },
+  { id:'rs_phantom',     hpMult:11, atkMult:2.8, spd:0.045*1.4, zones:['cemetery','frostveil','ancient','wyvernwastes','necropolis','veiled_sanctuary'] },
+  { id:'rs_godmachine',  hpMult:13, atkMult:3.2, spd:0.025*0.7, zones:['citadel','xumen','patrol','riftvale','xulcan','xeron','neon_hollow'] },
+  { id:'rs_thornmother', hpMult:10, atkMult:2.8, spd:0.035*0.9, zones:['blooming_wilds','aviacanyon','lucidwilde'] },
+];
+const SV_SPECIAL_NO_ZONES = { outpost:1, carport:1, arena:1, convergence:1, sanctuary:1 };
+const SV_SPECIAL_LIFE_MS = 180000;
+const _SP_FAST = !!process.env.E2_SPECIAL_FAST;   // test hook: specials every few seconds
+function _spRand(a, b){ return _SP_FAST ? 4000 + Math.random()*2000 : a + Math.random()*(b - a); }
+function _spBaseline(zone){
+  let n = 0, hp = 0, atk = 0;
+  zone.enemies.forEach(e => { if (!e || e._summoned || e._special || !e.maxHp) return; n++; hp += e.maxHp; atk += (e.atk || 0); });
+  return n ? { hp:hp/n, atk:atk/n } : null;
+}
+function _spPlace(zone, zonePlayers){
+  const pool = zone.enemies.filter(e => e && !e._summoned && !e._special && e.spawnX !== undefined);
+  if (!pool.length) return null;
+  for (let k = 0; k < 40; k++) {
+    const c = pool[Math.floor(Math.random()*pool.length)];
+    if (zonePlayers.every(p => Math.hypot((p.x||0) - c.spawnX, (p.z||0) - c.spawnZ) > 16) || k > 30) return { x:c.spawnX, z:c.spawnZ };
+  }
+  return null;
+}
+function _spAdd(game, zoneName, zone, o){
+  zone._nextEid = (zone._nextEid || 100000) + 1;
+  const e = Object.assign({ id:zone._nextEid, spawnX:o.x, spawnZ:o.z, active:true, aggroed:false, respawnTimer:0, attackTimer:0,
+    reward:0, expR:0, dmgReduction:0, _summoned:1, _special:1, _dieAt:Date.now() + SV_SPECIAL_LIFE_MS }, o);
+  zone.enemies.push(e);
+  broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName, ids:[e.id], xs:[+e.x.toFixed(2)], zs:[+e.z.toFixed(2)], hps:[e.hp], acts:[1], types:[e.type], maxhps:[e.maxHp] });
+  return e;
+}
+function _spTick(game, zoneName, zone, hasPlayers, zonePlayers, changed){
+  const now = Date.now();
+  // expiry: a rare or bounty nobody finished leaves after three minutes
+  zone.enemies.forEach(e => { if (e && e._special && e.active && now > e._dieAt) { e.active = false; e.hp = 0; e.aggroed = false; changed.push(e); } });
+  if (!hasPlayers || SV_SPECIAL_NO_ZONES[zoneName] || !zone.enemies.length) return;
+  if (!zone._rsAt) zone._rsAt = now + _spRand(240000, 600000);
+  if (!zone._bnAt) zone._bnAt = now + _spRand(180000, 420000);
+  if (now >= zone._rsAt) {
+    zone._rsAt = now + _spRand(240000, 600000);
+    const defs = SV_RARE_DEFS.filter(d => d.zones.includes(zoneName));
+    if (defs.length && !zone.enemies.some(e => e && e.active && e._rare)) {
+      const d = defs[Math.floor(Math.random()*defs.length)], B = _spBaseline(zone), P = _spPlace(zone, zonePlayers);
+      if (B && P) { const hp = Math.round(B.hp*d.hpMult);
+        _spAdd(game, zoneName, zone, { type:'rare:' + d.id, _rare:d.id, _noSvAtk:1, x:P.x, z:P.z, hp, maxHp:hp, atk:Math.round(B.atk*d.atkMult), spd:d.spd, aggroRange:16 });
+        console.log(`[special] rare ${d.id} in ${zoneName} (game ${game.id}) hp=${hp}`); }
+    }
+  }
+  if (now >= zone._bnAt) {
+    zone._bnAt = now + _spRand(180000, 420000);
+    if ((_SP_FAST || Math.random() < 0.6) && !zone.enemies.some(e => e && e.active && e._bounty)) {
+      const B = _spBaseline(zone), P = _spPlace(zone, zonePlayers);
+      if (B && P) { const base = Math.random() < 0.5 ? 'elite' : 'berserker', hp = Math.round(B.hp*6), ni = Math.floor(Math.random()*9);
+        _spAdd(game, zoneName, zone, { type:'bounty:' + base + ':' + ni, _bounty:1, x:P.x, z:P.z, hp, maxHp:hp, atk:Math.round(B.atk*1.8), spd:base === 'elite' ? 0.063 : 0.0945, aggroRange:16 });
+        console.log(`[special] bounty ${base} in ${zoneName} (game ${game.id}) hp=${hp}`); }
+    }
+  }
+}
+// ── END a775 SHARED RARES AND BOUNTIES ──
+
 function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
@@ -12072,6 +12149,7 @@ function tickGame(game) {
       const se = zone.enemies[i];
       if (se && se._summoned && !se.active) zone.enemies.splice(i, 1);
     }
+    try { _spTick(game, zoneName, zone, hasPlayers, zonePlayers, changed); } catch(err){ _svErr('special', err); }   // a775 — shared rares and bounties
 
     const _crowd = _mobCrowdMap(zone, targetPlayers);   // a764 — how many mobs are on each player
     zone.enemies.forEach(e => { const __tp = _mobTempoPre(e, zoneName, targetPlayers, _crowd); try {
@@ -12202,7 +12280,7 @@ function tickGame(game) {
 
       // Attack
       e.attackTimer++;
-      if (!_bespoke && e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {
+      if (!_bespoke && !e._noSvAtk && e.attackTimer >= ATTACK_COOLDOWN && nearestDist <= ATTACK_RANGE + 0.8) {   // a775 — a rare's abilities run in the players' games
         e.attackTimer = 0;
         const dmg = Math.floor(e.atk * (0.85 + Math.random() * 0.3));
         // Send damage directly to the nearest player only
