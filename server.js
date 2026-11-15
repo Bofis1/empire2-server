@@ -17582,6 +17582,18 @@ function _acctKeyOk(a, key){
   return parts.join('_') === a.name.toLowerCase() && ACCT_RACES.includes(race) && ACCT_CLASSES.includes(cls)
          && Object.keys(a.chars).length < ACCT_MAX_CHARS;
 }
+// a784 — IMPORT. An offline character (from before online accounts) can be moved into an
+//   online account once. The offline copy stays on the player's device. Each old
+//   character can be imported only once across all accounts (imports.json), and one that
+//   was backed up under another player's transfer code can't be taken. Set
+//   ACCT_IMPORT_OFF=1 on the server to switch importing off.
+const ACCT_IMPORTS_FILE = path.join(DATA_DIR, 'imports.json');
+let acctImports = {};   // old key -> { to: account, key: online key, at }
+try { if (fs.existsSync(ACCT_IMPORTS_FILE)) acctImports = JSON.parse(fs.readFileSync(ACCT_IMPORTS_FILE, 'utf8')) || {}; } catch(e){ acctImports = {}; }
+function _acctSaveImports(){
+  const tmp = ACCT_IMPORTS_FILE + '.tmp';
+  fs.writeFile(tmp, JSON.stringify(acctImports), 'utf8', err => { if (!err) fs.rename(tmp, ACCT_IMPORTS_FILE, () => {}); });
+}
 function _acctSignedIn(ws, player, a, session){
   player.acct = a.name.toLowerCase();
   player.name = a.name;                 // online, your name is your account name
@@ -17729,6 +17741,32 @@ function _acctOnMessage(ws, player, data){
       a.chars[key] = sv; _acctFlush(player.acct);
       player.ochar = key;
       send(ws, { type:'acct_save_ok', key, ts:sv.ts });
+      return;
+    }
+    case 'acct_char_import': {
+      const a = player.acct && accounts.get(player.acct);
+      const no = msg => send(ws, { type:'acct_err', op:'import', msg });
+      if (!a) { no('Not signed in.'); return; }
+      if (process.env.ACCT_IMPORT_OFF === '1') { no('Importing old characters is closed.'); return; }
+      const sv = data.saveData;
+      if (!sv || typeof sv !== 'object' || Array.isArray(sv)) { no('That character could not be read.'); return; }
+      const oldKey = String(data.oldKey || '').toLowerCase().slice(0, 80);
+      if (!/^[a-z0-9_\- ]+_[a-z]+_[a-z]+$/.test(oldKey)) { no('That character could not be read.'); return; }
+      if (acctImports[oldKey]) { no('That character was already imported' + (acctImports[oldKey].to === player.acct ? '.' : ' to another account.')); return; }
+      const owner = saveOwners[oldKey];
+      if (owner && cloudSaves[oldKey] && data.token !== owner) { no('That character belongs to another player.'); return; }
+      const key = _acctCharKey(a, sv.raceId, sv.playerClass);
+      if (!key) { no('That character could not be read.'); return; }
+      if (a.chars[key]) { no('You already have an online ' + sv.raceId + ' ' + sv.playerClass + '. Delete it first to import this one.'); return; }
+      if (Object.keys(a.chars).length >= ACCT_MAX_CHARS) { no('All three online slots are full. Delete one to import.'); return; }
+      if (JSON.stringify(sv).length > SAVE_MAX_BYTES) { no('That character is too large to import. Sell or salvage some of the bag offline first.'); return; }
+      sv.user = a.name; sv.ts = Date.now();
+      a.chars[key] = sv; _acctFlush(player.acct);
+      acctImports[oldKey] = { to:player.acct, key, at:Date.now() }; _acctSaveImports();
+      try { const L = econLedger.get(key); if (L) L.gold = +sv.gold || 0; } catch(e){}
+      console.log('[acct] ' + a.name + ' imported ' + oldKey + ' as ' + key + ' (level ' + (sv.pLvl || '?') + ')');
+      send(ws, { type:'acct_import_ok', key, oldKey });
+      send(ws, { type:'acct_chars', chars:_acctCharList(a) });
       return;
     }
     case 'acct_char_delete': {
@@ -18213,7 +18251,7 @@ wss.on('connection', ws => {
       // ── LOBBY ──────────────────────────────────────────
       // a783 — online accounts (see ONLINE ACCOUNTS above)
       case 'acct_register': case 'acct_login': case 'acct_resume': case 'acct_logout':
-      case 'acct_char_list': case 'acct_char_load': case 'acct_char_new': case 'acct_char_save': case 'acct_char_delete': {
+      case 'acct_char_list': case 'acct_char_load': case 'acct_char_new': case 'acct_char_save': case 'acct_char_delete': case 'acct_char_import': {
         const _was = player.acct;
         _acctOnMessage(ws, player, data);
         // a sign-in that finishes later (password check) announces itself in _acctSignedIn
