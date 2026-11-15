@@ -17468,6 +17468,286 @@ function _tunOnFrame(ws, raw){
   });
 }
 // ═══════════════════════════════════════════════════════════════════════════════
+// a783 — ONLINE ACCOUNTS AND ONLINE CHARACTERS. Online characters now live only on the
+//   server, under an account protected by a password. The browser never stores them:
+//   the client keeps the save it loaded in memory, and every load comes from here.
+//   Only a connection signed in to the account (password, or the session it was given
+//   at sign-in) can load, save or delete its characters, and only a connection playing
+//   one of its online characters can create, join or rejoin a game. Offline characters
+//   stay in the browser and never reach the server.
+//   Storage: one file per account in DATA_DIR/accounts/ (written atomically, previous
+//   version kept as .bak), sessions in DATA_DIR/sessions.json (only their hashes).
+//   Passwords are stored as scrypt hashes with a per-account salt, never in plain text.
+// ═══════════════════════════════════════════════════════════════════════════════
+const ACCT_DIR = path.join(DATA_DIR, 'accounts');
+const ACCT_SESS_FILE = path.join(DATA_DIR, 'sessions.json');
+const ACCT_MAX_CHARS = 3;                               // MAX_CHAR_SLOTS in the client
+const ACCT_SESSION_MS = 30 * 24 * 60 * 60 * 1000;       // a sign-in lasts 30 days
+const ACCT_RACES = ['xu','human','gnome','ogre','centaur','minotaur','elf','vampire'];
+const ACCT_CLASSES = ['warrior','mage','healer','rogue'];
+try { if (!fs.existsSync(ACCT_DIR)) fs.mkdirSync(ACCT_DIR, { recursive:true }); } catch(e){}
+const accounts = new Map();     // lowercase name -> { name, salt, hash, created, chars:{ key: save } }
+let acctSessions = {};          // sha256(session) -> { u: lowercase name, exp }
+const _acctFails = new Map();   // lowercase name -> { n, t0, lockUntil }
+function _acctFileFor(lc){ return path.join(ACCT_DIR, lc + '.json'); }
+function _acctLoadAll(){
+  try {
+    fs.readdirSync(ACCT_DIR).filter(f => /^[a-z0-9_\-]+\.json$/.test(f)).forEach(f => {
+      try {
+        const a = JSON.parse(fs.readFileSync(path.join(ACCT_DIR, f), 'utf8'));
+        if (a && a.name && a.hash && a.salt) { if (!a.chars || typeof a.chars !== 'object') a.chars = {}; accounts.set(a.name.toLowerCase(), a); }
+      } catch(e){
+        // a damaged file is set aside untouched; the .bak beside it is the previous good copy
+        console.error('[acct] Could not read ' + f + ': ' + e.message + '. Trying its backup.');
+        try {
+          const b = JSON.parse(fs.readFileSync(path.join(ACCT_DIR, f + '.bak'), 'utf8'));
+          if (b && b.name) { if (!b.chars) b.chars = {}; accounts.set(b.name.toLowerCase(), b); }
+          fs.renameSync(path.join(ACCT_DIR, f), path.join(ACCT_DIR, f + '.corrupt-' + Date.now()));
+        } catch(e2){ console.error('[acct] No usable backup for ' + f); }
+      }
+    });
+  } catch(e){ console.warn('[acct] load error:', e.message); }
+  try { if (fs.existsSync(ACCT_SESS_FILE)) acctSessions = JSON.parse(fs.readFileSync(ACCT_SESS_FILE, 'utf8')) || {}; } catch(e){ acctSessions = {}; }
+  const now = Date.now();
+  Object.keys(acctSessions).forEach(h => { if (!acctSessions[h] || acctSessions[h].exp < now) delete acctSessions[h]; });
+  console.log('[acct] ' + accounts.size + ' online accounts loaded.');
+}
+_acctLoadAll();
+const _acctDirty = new Set();
+let _acctTimer = null;
+function _acctFlush(lc){
+  _acctDirty.add(lc);
+  if (_acctTimer) return;
+  _acctTimer = setTimeout(() => {
+    _acctTimer = null;
+    const list = Array.from(_acctDirty); _acctDirty.clear();
+    list.forEach(n => {
+      const a = accounts.get(n);
+      if (!a) return;
+      const file = _acctFileFor(n), tmp = file + '.tmp';
+      fs.writeFile(tmp, JSON.stringify(a), 'utf8', err => {
+        if (err) { console.warn('[acct] write failed for ' + n + ':', err.message); return; }
+        const swap = () => fs.rename(tmp, file, e3 => { if (e3) console.warn('[acct] rename failed for ' + n + ':', e3.message); });
+        if (fs.existsSync(file)) fs.copyFile(file, file + '.bak', () => swap()); else swap();
+      });
+    });
+  }, 2000);
+}
+// flush right away on shutdown (Railway sends SIGTERM before a redeploy)
+function _acctFlushNowSync(){
+  if (_acctTimer) { clearTimeout(_acctTimer); _acctTimer = null; }
+  _acctDirty.forEach(n => {
+    const a = accounts.get(n);
+    if (a) try { fs.writeFileSync(_acctFileFor(n) + '.tmp', JSON.stringify(a)); fs.renameSync(_acctFileFor(n) + '.tmp', _acctFileFor(n)); } catch(e){}
+  });
+  _acctDirty.clear();
+}
+process.on('SIGTERM', () => { try { _acctFlushNowSync(); } catch(e){} });
+let _acctSessTimer = null;
+function _acctSaveSessions(){
+  if (_acctSessTimer) return;
+  _acctSessTimer = setTimeout(() => {
+    _acctSessTimer = null;
+    const tmp = ACCT_SESS_FILE + '.tmp';
+    fs.writeFile(tmp, JSON.stringify(acctSessions), 'utf8', err => { if (!err) fs.rename(tmp, ACCT_SESS_FILE, () => {}); });
+  }, 1000);
+}
+function _acctHashSession(s){ return crypto.createHash('sha256').update(String(s)).digest('hex'); }
+function _acctNewSession(lc){
+  const s = crypto.randomBytes(32).toString('hex');
+  acctSessions[_acctHashSession(s)] = { u:lc, exp: Date.now() + ACCT_SESSION_MS };
+  _acctSaveSessions();
+  return s;
+}
+function _acctCleanName(n){ return (typeof n === 'string' ? n : '').trim(); }
+function _acctNameOk(n){ return /^[A-Za-z0-9_\-]{3,16}$/.test(n); }
+function _acctPassOk(p){ return typeof p === 'string' && p.length >= 6 && p.length <= 128; }
+function _acctScrypt(pass, salt, cb){
+  crypto.scrypt(pass, Buffer.from(salt, 'hex'), 64, { N:16384, r:8, p:1 }, (err, key) => cb(err, key));
+}
+// a character summary for the character-select screen (the client renders the full save it loads)
+function _acctCharList(a){
+  return Object.keys(a.chars).map(k => ({ key:k, data:a.chars[k] }));
+}
+function _acctCharKey(a, raceId, cls){
+  const r = String(raceId || '').toLowerCase(), c = String(cls || '').toLowerCase();
+  if (!ACCT_RACES.includes(r) || !ACCT_CLASSES.includes(c)) return null;
+  return getSaveKey(a.name, r, c);
+}
+// a key this account may play: one of its characters, or a new one while a slot is free
+function _acctKeyOk(a, key){
+  if (typeof key !== 'string') return false;
+  if (a.chars[key]) return true;
+  const parts = key.split('_'), cls = parts.pop(), race = parts.pop();
+  return parts.join('_') === a.name.toLowerCase() && ACCT_RACES.includes(race) && ACCT_CLASSES.includes(cls)
+         && Object.keys(a.chars).length < ACCT_MAX_CHARS;
+}
+function _acctSignedIn(ws, player, a, session){
+  player.acct = a.name.toLowerCase();
+  player.name = a.name;                 // online, your name is your account name
+  player.ochar = null;
+  send(ws, { type:'acct_ok', user:a.name, session, chars:_acctCharList(a) });
+  _acctAnnounce(ws, player);
+}
+function _acctAnnounce(ws, player){
+  broadcast({ type:'lobby_chat', name:'SERVER', msg:player.name+' entered the lobby.', system:true }, ws);
+  broadcast({ type:'player_count', count:players.size });
+  broadcastPlayerList();
+  const _g = findPlayerGuild(player.name);
+  send(ws, { type:'guild_info', guildId:_g?_g.id:null, guild:_g?_g.guild:null });
+}
+function _acctFailed(lc){
+  const now = Date.now();
+  let F = _acctFails.get(lc);
+  if (!F || now - F.t0 > 10 * 60 * 1000) F = { n:0, t0:now, lockUntil:0 };
+  F.n++;
+  if (F.n >= 8) { F.lockUntil = now + 10 * 60 * 1000; F.n = 0; F.t0 = now; console.warn('[acct] ' + lc + ' locked for 10 minutes after repeated wrong passwords'); }
+  _acctFails.set(lc, F);
+}
+function _acctLocked(lc){ const F = _acctFails.get(lc); return !!(F && F.lockUntil > Date.now()); }
+// gate for everything that puts a connection into a game
+function _acctNeedOnline(ws, player, failType){
+  if (player.acct && player.ochar) return true;
+  const msg = player.acct ? 'Choose one of your online characters first.'
+                          : 'Online play needs an online account. Update the game and sign in with ONLINE on the title screen.';
+  send(ws, { type: failType || 'acct_required', msg });
+  if (!player._acctToldAt || Date.now() - player._acctToldAt > 10000) {
+    player._acctToldAt = Date.now();
+    send(ws, { type:'lobby_chat', name:'SERVER', msg, system:true });
+  }
+  return false;
+}
+// a583's econ ledger seeds itself from the stored save; online characters seed from here
+function _acctSaveFor(key){
+  const owner = String(key).split('_').slice(0, -2).join('_');   // the last two parts are race and class
+  const a = accounts.get(owner);
+  return a && a.chars[key] ? a.chars[key] : null;
+}
+function _acctOnMessage(ws, player, data){
+  switch (data.type) {
+    case 'acct_register': {
+      const name = _acctCleanName(data.user), pass = data.pass;
+      if (!_acctNameOk(name)) { send(ws, { type:'acct_err', op:'register', msg:'Names are 3 to 16 letters, numbers, - or _.' }); return; }
+      if (!_acctPassOk(pass)) { send(ws, { type:'acct_err', op:'register', msg:'Passwords need at least 6 characters.' }); return; }
+      const lc = name.toLowerCase();
+      if (accounts.has(lc)) { send(ws, { type:'acct_err', op:'register', msg:'That name is taken.' }); return; }
+      if (ws._acctRegAt && Date.now() - ws._acctRegAt < 5000) { send(ws, { type:'acct_err', op:'register', msg:'Please wait a moment and try again.' }); return; }
+      ws._acctRegAt = Date.now();
+      const salt = crypto.randomBytes(16).toString('hex');
+      _acctScrypt(pass, salt, (err, key) => {
+        if (err) { send(ws, { type:'acct_err', op:'register', msg:'Could not create the account. Try again.' }); return; }
+        if (accounts.has(lc)) { send(ws, { type:'acct_err', op:'register', msg:'That name is taken.' }); return; }
+        const a = { name, salt, hash:key.toString('hex'), created:Date.now(), chars:{} };
+        accounts.set(lc, a); _acctFlush(lc);
+        console.log('[acct] New account: ' + name);
+        _acctSignedIn(ws, player, a, _acctNewSession(lc));
+      });
+      return;
+    }
+    case 'acct_login': {
+      const name = _acctCleanName(data.user), lc = name.toLowerCase(), pass = data.pass;
+      const a = accounts.get(lc);
+      if (_acctLocked(lc)) { send(ws, { type:'acct_err', op:'login', msg:'Too many wrong passwords. Try again in 10 minutes.' }); return; }
+      if (!a || !_acctPassOk(pass)) {
+        if (a) _acctFailed(lc);
+        send(ws, { type:'acct_err', op:'login', msg:'Wrong name or password.' }); return;
+      }
+      if (ws._acctBusy) return;
+      ws._acctBusy = true;
+      _acctScrypt(pass, a.salt, (err, key) => {
+        ws._acctBusy = false;
+        const want = Buffer.from(a.hash, 'hex');
+        if (err || !key || key.length !== want.length || !crypto.timingSafeEqual(key, want)) {
+          _acctFailed(lc);
+          send(ws, { type:'acct_err', op:'login', msg:'Wrong name or password.' }); return;
+        }
+        _acctFails.delete(lc);
+        _acctSignedIn(ws, player, a, _acctNewSession(lc));
+      });
+      return;
+    }
+    case 'acct_resume': {   // a dropped connection signing back in with its session
+      const s = acctSessions[_acctHashSession(data.session || '')];
+      if (!s || s.exp < Date.now()) { send(ws, { type:'acct_err', op:'resume', msg:'Your sign-in expired. Please sign in again.' }); return; }
+      const a = accounts.get(s.u);
+      if (!a) { send(ws, { type:'acct_err', op:'resume', msg:'That account no longer exists.' }); return; }
+      player.acct = s.u; player.name = a.name;
+      player.ochar = _acctKeyOk(a, data.key) ? data.key : null;
+      send(ws, { type:'acct_resumed', user:a.name, key:player.ochar });
+      return;
+    }
+    case 'acct_logout': {
+      if (data.session) { delete acctSessions[_acctHashSession(data.session)]; _acctSaveSessions(); }
+      player.acct = null; player.ochar = null;
+      return;
+    }
+    case 'acct_char_list': {
+      const a = player.acct && accounts.get(player.acct);
+      if (!a) { send(ws, { type:'acct_err', op:'list', msg:'Not signed in.' }); return; }
+      send(ws, { type:'acct_chars', chars:_acctCharList(a) });
+      return;
+    }
+    case 'acct_char_load': {
+      const a = player.acct && accounts.get(player.acct);
+      if (!a) { send(ws, { type:'acct_err', op:'load', msg:'Not signed in.' }); return; }
+      const sv = a.chars[data.key];
+      if (!sv) { send(ws, { type:'acct_err', op:'load', msg:'That character was not found.' }); return; }
+      player.ochar = data.key;
+      send(ws, { type:'acct_char', key:data.key, data:sv });
+      return;
+    }
+    case 'acct_char_new': {   // a new character, before its first save: it may host and join
+      const a = player.acct && accounts.get(player.acct);
+      if (!a) { send(ws, { type:'acct_err', op:'new', msg:'Not signed in.' }); return; }
+      const key = _acctCharKey(a, data.raceId, data.cls);
+      if (!key || !_acctKeyOk(a, key)) { send(ws, { type:'acct_save_denied', key, reason: key ? 'slots_full' : 'bad_character' }); return; }
+      player.ochar = key;
+      send(ws, { type:'acct_char_new_ok', key });
+      return;
+    }
+    case 'acct_char_save': {
+      const a = player.acct && accounts.get(player.acct);
+      if (!a) { send(ws, { type:'acct_save_denied', reason:'not_signed_in' }); return; }
+      const sv = data.saveData;
+      if (!sv || typeof sv !== 'object' || Array.isArray(sv)) return;
+      const key = _acctCharKey(a, data.raceId, data.cls);
+      if (!key) { send(ws, { type:'acct_save_denied', reason:'bad_character' }); return; }
+      if (!a.chars[key] && Object.keys(a.chars).length >= ACCT_MAX_CHARS) {
+        send(ws, { type:'acct_save_denied', key, reason:'slots_full' }); return;
+      }
+      if (JSON.stringify(sv).length > SAVE_MAX_BYTES) { send(ws, { type:'acct_save_ok', key, skipped:true, error:'save_too_large' }); return; }
+      sv.user = a.name;   // an online character always carries its account's name
+      const old = a.chars[key];
+      if (old && sv.ts && old.ts && sv.ts < old.ts) { send(ws, { type:'acct_save_ok', key, ts:old.ts, skipped:true }); return; }
+      const _wipe = _saveLooksLikeWipe(old, sv);
+      if (_wipe) {
+        a.prev = a.prev || {};
+        a.prev[key] = { data:old, ts:Date.now(), reason:_wipe };
+        console.warn('[acct] Kept the previous version of ' + key + ' (' + _wipe + ')');
+      }
+      try { _econOnSave(key, sv); } catch(e){}
+      a.chars[key] = sv; _acctFlush(player.acct);
+      player.ochar = key;
+      send(ws, { type:'acct_save_ok', key, ts:sv.ts });
+      return;
+    }
+    case 'acct_char_delete': {
+      const a = player.acct && accounts.get(player.acct);
+      if (!a || !a.chars[data.key]) { send(ws, { type:'acct_err', op:'delete', msg:'That character was not found.' }); return; }
+      // a deleted character is kept in the account file's `deleted` list for recovery
+      a.deleted = a.deleted || {};
+      a.deleted[data.key] = { data:a.chars[data.key], ts:Date.now() };
+      delete a.chars[data.key];
+      if (player.ochar === data.key) player.ochar = null;
+      _acctFlush(player.acct);
+      console.log('[acct] ' + a.name + ' deleted ' + data.key);
+      send(ws, { type:'acct_chars', chars:_acctCharList(a) });
+      return;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // a582 — GOLD AUDIT (stage 1 of server-owned gold). SHADOW MODE: this observes and
 //   records; it never changes or refuses anyone's gold. The client reports every gold
 //   change, attributed to the function that made it, and the server keeps a running
@@ -17508,7 +17788,7 @@ function _econLog(o){
 function _econL(key){
   let L = econLedger.get(key);
   if (!L) {
-    const sv = cloudSaves[key];
+    const sv = cloudSaves[key] || _acctSaveFor(key);   // a783 — online characters live in their account
     L = { gold: (sv && typeof sv.gold === 'number') ? sv.gold : null, src:{}, touched:false };
     econLedger.set(key, L);
   }
@@ -17931,8 +18211,19 @@ wss.on('connection', ws => {
     switch(data.type){
 
       // ── LOBBY ──────────────────────────────────────────
+      // a783 — online accounts (see ONLINE ACCOUNTS above)
+      case 'acct_register': case 'acct_login': case 'acct_resume': case 'acct_logout':
+      case 'acct_char_list': case 'acct_char_load': case 'acct_char_new': case 'acct_char_save': case 'acct_char_delete': {
+        const _was = player.acct;
+        _acctOnMessage(ws, player, data);
+        // a sign-in that finishes later (password check) announces itself in _acctSignedIn
+        if (!_was && player.acct && data.type === 'acct_resume') _acctAnnounce(ws, player);
+        break;
+      }
+
       case 'login':
-        player.name = (data.name||'').slice(0,20).replace(/[<>]/g,'') || 'Adventurer';
+        // a783 — a connection has a name only once it signs in to an online account
+        player.name = player.acct ? player.name : '';
         // v93.0-a66 — capture level/class/race for the player list display.
         // Sanitize: clamp level, strip dangerous chars from strings, length-limit.
         {
@@ -17958,9 +18249,11 @@ wss.on('connection', ws => {
         sendGameList(ws);
         send(ws, { type:'player_count', count:players.size });
         send(ws, { type:'player_list', players:getPlayerSummary() });
-        broadcast({ type:'lobby_chat', name:'SERVER', msg:player.name+' entered the lobby.', system:true }, ws);
-        broadcast({ type:'player_count', count:players.size });
-        broadcastPlayerList();
+        if (player.name) {
+          broadcast({ type:'lobby_chat', name:'SERVER', msg:player.name+' entered the lobby.', system:true }, ws);
+          broadcast({ type:'player_count', count:players.size });
+          broadcastPlayerList();
+        }
         // Send guild info (if any)
         {
           const _g = findPlayerGuild(player.name);
@@ -17990,7 +18283,7 @@ wss.on('connection', ws => {
         break;
       }
       case 'lobby_chat':
-        if(!player.name) break;
+        if(!player.name || !player.acct) break;   // a783 — online accounts only
         const msg = (data.msg||'').slice(0,200).replace(/[<>]/g,'');
         if(!msg) break;
         broadcast({ type:'lobby_chat', name:player.name, msg });
@@ -18100,6 +18393,7 @@ wss.on('connection', ws => {
       }
 
       case 'create_game': {
+        if (!_acctNeedOnline(ws, player, 'create_error')) break;   // a783
         if(player.gameId){
           const old = games.get(player.gameId);
           if(old && old.host===player.name) games.delete(player.gameId);
@@ -18150,6 +18444,7 @@ wss.on('connection', ws => {
         break;
 
       case 'join_game': {
+        if (!_acctNeedOnline(ws, player, 'join_error')) break;   // a783
         const jGame = games.get(data.id);
         if(!jGame){ send(ws,{type:'join_error',msg:'Game not found.'}); break; }
         if(jGame.players.length>=jGame.maxPlayers){ send(ws,{type:'join_error',msg:'Game is full.'}); break; }
@@ -18229,6 +18524,7 @@ wss.on('connection', ws => {
       // ── a580 — rejoin a tunnel game after the connection dropped ──
       case 'sv_tun_rejoin': {
         const g = games.get(data.gameId | 0);
+        if (!player.acct || !player.ochar) { send(ws, { type:'sv_tun_rejoin_fail' }); break; }   // a783
         if (!g || !g.tun || !player.name) { send(ws, { type:'sv_tun_rejoin_fail' }); break; }
         if (!g.players.includes(player.name)) {
           if (g.players.length >= g.maxPlayers) { send(ws, { type:'sv_tun_rejoin_fail' }); break; }
@@ -18310,10 +18606,10 @@ wss.on('connection', ws => {
         player.zone = data.zone;
         player._arriving = true; player._graceUntil = 0;   // a752 — the x/z we hold are from the zone you just left
         player.downed = false; player.dead = false;   // a578 — arriving somewhere means you're up
-        if(!player.name && data.name) player.name = data.name.slice(0,20).replace(/[<>]/g,'');
+        // a783 — names come from the online account only (was: taken from data.name)
 
         // Recover gameId if lost after WS reconnect
-        if (!player.gameId && player.name) {
+        if (!player.gameId && player.name && player.acct && player.ochar) {
           games.forEach((g, gid) => {
             if (g.players.includes(player.name)) {
               player.gameId = gid;
