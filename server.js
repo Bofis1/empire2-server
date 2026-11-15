@@ -17385,6 +17385,20 @@ function _cleanPortrait(s){
   const m = /^data:image\/(png|webp|jpeg);base64,([A-Za-z0-9+\/=]+)$/.exec(s);
   return m ? s : null;
 }
+// v93.0-a66 / a786 — level, class, race, ascendancy and portrait for the player list (sanitized)
+function _setLobbyStats(player, data){
+  const _lv = parseInt(data.level, 10);
+  player.level = (isFinite(_lv) && _lv >= 1 && _lv <= 200) ? _lv : 1;
+  player.cls = (typeof data.cls === 'string' ? data.cls : 'Warrior')
+                .slice(0,16).replace(/[<>&"']/g,'') || 'Warrior';
+  player.raceId = (typeof data.raceId === 'string' ? data.raceId : 'xu')
+                  .slice(0,16).replace(/[^a-z_]/g,'') || 'xu';
+  player.raceName = (typeof data.raceName === 'string' ? data.raceName : 'Xu')
+                    .slice(0,16).replace(/[<>&"']/g,'') || 'Xu';
+  const _asc = parseInt(data.asc, 10);
+  player.asc = (isFinite(_asc) && _asc >= 0 && _asc <= 99999) ? _asc : 0;
+  const _pt = _cleanPortrait(data.portrait); if (_pt) { player.portrait = _pt; player.pv = ++_portraitSeq; }
+}
 function getPlayerSummary(){
   return [...players.values()].filter(p=>p.name).map(p=>({
     name: p.name,
@@ -18259,30 +18273,20 @@ wss.on('connection', ws => {
         break;
       }
 
+      // a786 — the character's level/class/race for the ADVENTURERS ONLINE list. Online, the
+      //   connection opens at sign-in before a character is picked, so the game sends these
+      //   again whenever it shows the lobby (login alone used to leave everyone at level 1).
+      case 'lobby_stats':
+        _setLobbyStats(player, data);
+        if (player.name) broadcastPlayerList();
+        break;
+
       case 'login':
         // a783 — a connection has a name only once it signs in to an online account
         player.name = player.acct ? player.name : '';
         // v93.0-a66 — capture level/class/race for the player list display.
         // Sanitize: clamp level, strip dangerous chars from strings, length-limit.
-        {
-          const _lv = parseInt(data.level, 10);
-          player.level = (isFinite(_lv) && _lv >= 1 && _lv <= 200) ? _lv : 1;
-          player.cls = (typeof data.cls === 'string' ? data.cls : 'Warrior')
-                        .slice(0,16).replace(/[<>&"']/g,'') || 'Warrior';
-          player.raceId = (typeof data.raceId === 'string' ? data.raceId : 'xu')
-                          .slice(0,16).replace(/[^a-z_]/g,'') || 'xu';
-          player.raceName = (typeof data.raceName === 'string' ? data.raceName : 'Xu')
-                            .slice(0,16).replace(/[<>&"']/g,'') || 'Xu';
-          // v93.0-a256 — ascendancy level for the player list. Clamp to a sane range.
-          const _asc = parseInt(data.asc, 10);
-          player.asc = (isFinite(_asc) && _asc >= 0 && _asc <= 99999) ? _asc : 0;
-          // a596 — character portrait for the lobby list
-          { const _pt = _cleanPortrait(data.portrait); if (_pt) { player.portrait = _pt; player.pv = ++_portraitSeq; } }
-          // v93.0-a258 — guild tag is resolved server-side from our persisted guild
-          // registry (see getPlayerSummary → _serverGuildTag). We intentionally do NOT
-          // trust data.guildTag: the client's myGuild isn't populated until the server
-          // sends guild_info (later in this handler), so at login it was always null.
-        }
+        _setLobbyStats(player, data);
         send(ws, { type:'logged_in', name:player.name, tun:1, pid:player.pid });   // a580 — tunnel available
         sendGameList(ws);
         send(ws, { type:'player_count', count:players.size });
