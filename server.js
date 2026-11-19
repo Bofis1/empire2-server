@@ -12140,12 +12140,76 @@ function _spTick(game, zoneName, zone, hasPlayers, zonePlayers, changed){
 }
 // ── END a775 SHARED RARES AND BOUNTIES ──
 
+// ═══════════════════════════════════════════════════════════════════════════
+// a806 — THE END, SHARED. The End is endless and made fresh for every game, so it has no spawn
+//   table here. What the server keeps is what has to be the same for everybody in the game:
+//     · the world seed (every player builds the same lands, creatures and bosses from it;
+//       a new one once the last player has left)
+//     · the list of creatures and bosses: ids, health, kills (sv_hit_enemy, as everywhere)
+//     · who each creature is hunting (its owner) and when the next boss comes
+//   The owner's game walks the creature through the scenery and fires its abilities, and
+//   reports where it is and what it casts; this passes that on to everyone else in the zone.
+//   Positions here are places in the endless world, not in a 240-tile map: nothing in this
+//   zone may be clamped to map bounds, and the ordinary zone AI never runs on it.
+// ═══════════════════════════════════════════════════════════════════════════
+const END_ZONE = 'the_end';
+const END_POP = 32;                       // creatures one player may have hunting them
+const END_BOSS_FIRST = 75000, END_BOSS_MIN = 110000, END_BOSS_MAX = 170000;
+function _endNum(v, lo, hi, d){ v = +v; return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; }
+function _endReset(z){
+  z.enemies = []; z.endSeed = (Math.floor(Math.random() * 4294967295) >>> 0) || 1;
+  z.endBossN = 0; z.endBossAt = 0; z.endAsk = null; z._nextEid = 100000;
+}
+function _endZone(game){ const z = getOrCreateZone(game, END_ZONE); if (!z.endSeed) _endReset(z); return z; }
+function _endWs(p){ let out = null; players.forEach((q, w) => { if (q === p && w.readyState === 1) out = w; }); return out; }
+function _endHello(ws, game){ const z = _endZone(game); send(ws, { type:'sv_end_seed', seed:z.endSeed, bossN:z.endBossN }); }
+function _endOwners(ws, game){
+  const z = _endZone(game), ids = [], o = [];
+  z.enemies.forEach(e => { if (e.active) { ids.push(e.id); o.push(e._own || ''); } });
+  if (ids.length) send(ws, { type:'sv_end_own', zone:END_ZONE, ids, o });
+}
+function _endTick(game, zone, zp){
+  const now = Date.now();
+  if (!zp.length) { if (zone._endLive) { zone._endLive = false; _endReset(zone); } return; }   // empty: the next visit is a new End
+  zone.lastActivity = now;
+  if (!zone.endSeed) _endReset(zone);
+  if (!zone._endLive) { zone._endLive = true; zone.endBossAt = now + END_BOSS_FIRST; }
+  let bossAlive = false;
+  for (let i = zone.enemies.length - 1; i >= 0; i--) {
+    const e = zone.enemies[i];
+    if (!e.active) { if (e._endBoss) { zone.endBossN++; zone.endBossAt = now + END_BOSS_MIN + Math.random() * (END_BOSS_MAX - END_BOSS_MIN); } zone.enemies.splice(i, 1); }
+    else if (e._endBoss) bossAlive = true;
+  }
+  zone._endT = (zone._endT || 0) + 1;
+  if (zone._endT % 10) return;                                    // the rest once a second
+  const alive = zp.filter(p => !p.downed && !p.dead && typeof p.x === 'number');
+  const byName = {}; zp.forEach(p => { byName[p.name] = p; });
+  const ids = [], o = [], gone = [];
+  zone.enemies.forEach(e => {
+    const own = byName[e._own], ownOk = own && alive.indexOf(own) >= 0;
+    let best = null, bd = Infinity;
+    alive.forEach(p => { const dx = p.x - e.x, dz = p.z - e.z, d = dx*dx + dz*dz; if (d < bd) { bd = d; best = p; } });
+    if (!best) { if (!own) gone.push(e.id); return; }
+    let od = Infinity; if (ownOk) { const dx = own.x - e.x, dz = own.z - e.z; od = dx*dx + dz*dz; }
+    // hand it to whoever is plainly nearer (inside 18 units and less than half as far), or when its owner is gone or down
+    if (best !== own && (!ownOk || (bd < 324 && bd < od * 0.25))) { e._own = best.name; ids.push(e.id); o.push(best.name); }
+  });
+  if (gone.length) { zone.enemies = zone.enemies.filter(e => gone.indexOf(e.id) < 0); broadcastToZone(game.id, END_ZONE, { type:'sv_end_rm', zone:END_ZONE, ids:gone }); }
+  if (ids.length) broadcastToZone(game.id, END_ZONE, { type:'sv_end_own', zone:END_ZONE, ids, o });
+  if (!bossAlive && zone.endBossAt && now >= zone.endBossAt && alive.length) {
+    const p = alive[Math.floor(Math.random() * alive.length)], w = _endWs(p);
+    zone.endAsk = p.name; zone.endBossAt = now + 8000;             // asked: if no boss comes of it, ask again
+    if (w) send(w, { type:'sv_end_bosswant', zone:END_ZONE, n:zone.endBossN });
+  }
+}
+
 function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
     const hasPlayers = zonePlayers.length > 0;
     // a578 — presence uses everyone; choosing a target or a victim uses the living only
     const targetPlayers = zonePlayers.filter(isTargetable);
+    if (zoneName === END_ZONE) { _endTick(game, zone, zonePlayers); return; }   // a806 — The End keeps its own time
     if (hasPlayers) zone.lastActivity = Date.now();
 
     // a233 — CO-OP: when the Convergence empties, end the shared run so the next
@@ -18702,7 +18766,9 @@ wss.on('connection', ws => {
         const activeCount = g.zones[data.zone] ? g.zones[data.zone].enemies.filter(e=>e.active).length : 0;
         console.log(`[sv_enter_zone] Sending snapshot: zone=${data.zone} total=${zoneEnemyCount} active=${activeCount}`);
         g.started = true;
+        if (data.zone === END_ZONE) _endHello(ws, g);            // a806 — the game's seed first, then what walks there
         sendZoneSnapshot(ws, g, data.zone);
+        if (data.zone === END_ZONE) _endOwners(ws, g);
         // a233 — CO-OP: hand the entering player the authoritative run seed + depth
         //   + mods for procedural zones so they build the SAME map as everyone else
         //   and join the in-progress depth instead of resetting it.
@@ -19010,6 +19076,61 @@ wss.on('connection', ws => {
         break;
       }
 
+      // ── a806 — THE END, SHARED: a player's game proposes, reports and withdraws; the server keeps the list ──
+      case 'sv_end_spawn': {
+        if (!player.gameId || player.zone !== END_ZONE) break;
+        const g = games.get(player.gameId); if (!g) break;
+        const zone = _endZone(g), m = Array.isArray(data.m) ? data.m.slice(0, 8) : [];
+        let mine = 0; zone.enemies.forEach(e => { if (e.active && e._own === player.name && !e._endBoss) mine++; });
+        const out = { type:'sv_enemy_state', zone:END_ZONE, ids:[], xs:[], zs:[], hps:[], maxhps:[], acts:[], types:[], owns:[] };
+        m.forEach(r => {
+          if (!Array.isArray(r)) return;
+          const fl = r[3] | 0, boss = fl === 4, x = +r[1], z = +r[2];
+          if (!isFinite(x) || !isFinite(z)) return;
+          if (boss) { if (zone.endAsk !== player.name || zone.enemies.some(e => e.active && e._endBoss)) return; zone.endAsk = null; }
+          else { if (mine >= END_POP) return; mine++; }
+          const hp = Math.round(_endNum(r[4], 1, boss ? 4e9 : 2e8, 1000));
+          const id = (zone._nextEid = (zone._nextEid || 100000) + 1);
+          const e = { id, type: boss ? 'endboss|' + zone.endBossN : 'end|' + _endNum(r[0] | 0, 0, 255, 0) + '|' + (fl & 3),
+            x, z, spawnX:x, spawnZ:z, hp, maxHp:hp, atk:0, spd:0, aggroRange:0,
+            reward:Math.round(_endNum(r[5], 0, 5e6, 0)), expR:Math.round(_endNum(r[6], 0, 5e6, 0)), dmgReduction:_endNum(r[7], 0, 0.9, 0),
+            active:true, aggroed:false, attackTimer:0, respawnTimer:0, _summoned:1, _noSvAtk:1, _own:player.name, _endBoss: boss ? 1 : 0 };
+          zone.enemies.push(e);
+          out.ids.push(id); out.xs.push(x); out.zs.push(z); out.hps.push(hp); out.maxhps.push(hp); out.acts.push(1); out.types.push(e.type); out.owns.push(e._own);
+        });
+        if (out.ids.length) broadcastToZone(g.id, END_ZONE, out);
+        break;
+      }
+      case 'sv_end_pos': {
+        if (!player.gameId || player.zone !== END_ZONE || !Array.isArray(data.ids)) break;
+        const g = games.get(player.gameId); if (!g || !g.zones[END_ZONE]) break;
+        const zone = g.zones[END_ZONE], ids = [], xs = [], zs = [], n = Math.min(data.ids.length, 64);
+        for (let i = 0; i < n; i++) {
+          const e = zone.enemies.find(en => en.id === data.ids[i] && en.active);
+          const x = +(data.xs || [])[i], z = +(data.zs || [])[i];
+          if (!e || e._own !== player.name || !isFinite(x) || !isFinite(z)) continue;
+          e.x = x; e.z = z; ids.push(e.id); xs.push(x); zs.push(z);
+        }
+        broadcastToZone(g.id, END_ZONE, { type:'sv_end_pos', zone:END_ZONE, o:player.name, ids, xs, zs, px:+data.px || 0, pz:+data.pz || 0 }, ws);
+        break;
+      }
+      case 'sv_end_cast': {
+        if (!player.gameId || player.zone !== END_ZONE) break;
+        const g = games.get(player.gameId); if (!g || !g.zones[END_ZONE]) break;
+        const e = g.zones[END_ZONE].enemies.find(en => en.id === data.id && en.active);
+        if (!e || e._own !== player.name) break;
+        const x = +data.x, z = +data.z; if (isFinite(x) && isFinite(z)) { e.x = x; e.z = z; }
+        broadcastToZone(g.id, END_ZONE, { type:'sv_end_cast', zone:END_ZONE, id:e.id, k:data.k | 0, s:(+data.s || 0) >>> 0, a:+data.a || 0, x:e.x, z:e.z }, ws);
+        break;
+      }
+      case 'sv_end_rm': {
+        if (!player.gameId || player.zone !== END_ZONE || !Array.isArray(data.ids)) break;
+        const g = games.get(player.gameId); if (!g || !g.zones[END_ZONE]) break;
+        const zone = g.zones[END_ZONE], want = data.ids.slice(0, 64), gone = [];
+        zone.enemies = zone.enemies.filter(e => { if (want.indexOf(e.id) >= 0 && e._own === player.name) { gone.push(e.id); if (e._endBoss) zone.endBossAt = Date.now() + 40000; return false; } return true; });
+        if (gone.length) broadcastToZone(g.id, END_ZONE, { type:'sv_end_rm', zone:END_ZONE, ids:gone }, ws);
+        break;
+      }
       case 'sv_set_depth': {
         // v93.0 phase 3.3/4.2 — Client signals descent + modifier roll.
         // Server bumps depth, applies server-coord mods, regenerates enemies.
