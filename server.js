@@ -12141,6 +12141,74 @@ function _spTick(game, zoneName, zone, hasPlayers, zonePlayers, changed){
 // ── END a775 SHARED RARES AND BOUNTIES ──
 
 // ═══════════════════════════════════════════════════════════════════════════
+// a815 — CABS FOR EVERYONE. Every player in a zone sees the same robot cabs (Boxi and Roamer) and gets
+//   the same cab. The server keeps, per game and per zone: which services stop there (each player's game
+//   says so when it walks in), each stop's timetable (when the next cab comes, how long it waits), and the
+//   list of cabs with who drives each one and who is riding. One player's game drives each cab along the
+//   ground (the server has no map) and reports where it is; this passes that on to everyone else in the
+//   zone. Getting in is decided here, so two players can never take the same cab. When the player whose
+//   game drives a cab leaves, another player in the zone takes it over. An empty zone forgets its cabs.
+//   Fares, tolls and the ride itself stay in the rider's game, as before.
+// ═══════════════════════════════════════════════════════════════════════════
+const CAB_FIRST = [5000, 30000], CAB_EVERY = [45000, 90000], CAB_WAIT = 25000, CAB_IN_MAX = 90000, CAB_STRAY_MAX = 60000;
+function _cabR(a){ return a[0] + Math.random() * (a[1] - a[0]); }
+function _cabZ(game, zone){
+  game._cabs = game._cabs || {};
+  return game._cabs[zone] || (game._cabs[zone] = { svcs:[], st:{}, cabs:{}, nid:1, live:false });
+}
+function _cabRec(c){ return { id:c.id, svc:c.svc, kind:c.kind, st:c.st || null, stop:c.stop || null, own:c.own, rider:c.rider || null,
+  x:c.x, z:c.z, ry:c.ry || 0, g:c.g || 0, n:c.n || 0, dents:c.dents || 0 }; }
+function _cabSay(game, zone, c, exclude){ broadcastToZone(game.id, zone, { type:'sv_cab_state', zone, r:_cabRec(c) }, exclude); }
+function _cabNew(game, zone, Z, o){
+  const c = Object.assign({ id:Z.nid++, dents:0, x:null, z:null, ry:0 }, o);
+  Z.cabs[c.id] = c; broadcastToZone(game.id, zone, { type:'sv_cab_new', zone, r:_cabRec(c) }); return c;
+}
+function _cabFree(Z, c){   // the stop this cab was serving is empty again; the next one comes later
+  if (c.stop && Z.st[c.stop] && Z.st[c.stop].id === c.id) Z.st[c.stop] = { state:'empty', next:Date.now() + _cabR(CAB_EVERY) };
+}
+function _cabRm(game, zone, Z, ids, exclude){
+  ids = ids.filter(id => Z.cabs[id]); if (!ids.length) return;
+  ids.forEach(id => { _cabFree(Z, Z.cabs[id]); delete Z.cabs[id]; });
+  broadcastToZone(game.id, zone, { type:'sv_cab_rm', zone, ids }, exclude);
+}
+function _cabStray(Z, c){ _cabFree(Z, c); c.kind = 'stray'; c.st = null; c.stop = null; c.rider = null; c.strayAt = Date.now(); }
+function _cabWho(game, zone){ const out = []; players.forEach(p => { if (p && p.gameId === game.id && p.zone === zone && p.name) out.push(p.name); }); return out; }
+function _cabAny(a){ return a[Math.floor(Math.random() * a.length)]; }
+function _cabTick(){
+  const now = Date.now();
+  games.forEach(game => { if (!game || !game._cabs) return;
+    Object.keys(game._cabs).forEach(zone => {
+      const Z = game._cabs[zone], here = _cabWho(game, zone);
+      if (!here.length){ if (Z.live){ Z.live = false; Z.cabs = {}; Z.st = {}; } return; }   // nobody left: the next visit starts fresh
+      if (!Z.live){ Z.live = true; Z.st = {}; }
+      // a cab whose driving player has gone: someone else here drives it; a ride or a booking without its player ends
+      Object.values(Z.cabs).forEach(c => {
+        if (here.indexOf(c.own) >= 0) return;
+        if (c.kind === 'ride'){ _cabRm(game, zone, Z, [c.id]); return; }
+        if (c.kind === 'hail') _cabStray(Z, c);
+        c.own = _cabAny(here); _cabSay(game, zone, c);
+      });
+      // each stop's timetable
+      Z.svcs.forEach(svc => {
+        let s = Z.st[svc] || (Z.st[svc] = { state:'empty', next:now + _cabR(CAB_FIRST) });
+        const c = s.id != null ? Z.cabs[s.id] : null;
+        if (s.state !== 'empty' && (!c || c.kind !== 'stop' || c.stop !== svc)){ Z.st[svc] = { state:'empty', next:now + _cabR(CAB_EVERY) }; return; }
+        if (s.state === 'empty' && now >= s.next){
+          const nc = _cabNew(game, zone, Z, { svc, kind:'stop', st:'in', stop:svc, own:_cabAny(here), g:Math.floor(Math.random() * 1000) });
+          Z.st[svc] = { state:'in', id:nc.id, since:now };
+        } else if (s.state === 'in' && now - s.since > CAB_IN_MAX){           // never got there: it is there now
+          c.st = 'here'; Object.assign(s, { state:'here', until:now + CAB_WAIT, max:now + CAB_WAIT * 2 }); _cabSay(game, zone, c);
+        } else if (s.state === 'here' && now > s.until){                     // waited long enough: off it goes
+          _cabStray(Z, c); _cabSay(game, zone, c);
+        }
+      });
+      Object.values(Z.cabs).forEach(c => { if (c.kind === 'stray' && now - (c.strayAt || now) > CAB_STRAY_MAX) _cabRm(game, zone, Z, [c.id]); });
+    });
+  });
+}
+setInterval(() => { try { _cabTick(); } catch (e){ console.error('[cabs]', e); } }, 250);
+
+// ═══════════════════════════════════════════════════════════════════════════
 // a806 — THE END, SHARED. The End is endless and made fresh for every game, so it has no spawn
 //   table here. What the server keeps is what has to be the same for everybody in the game:
 //     · the world seed (every player builds the same lands, creatures and bosses from it;
@@ -19076,6 +19144,67 @@ wss.on('connection', ws => {
         break;
       }
 
+      // ── a815 — CABS FOR EVERYONE: a player's game says hello, asks, drives and reports; the server decides ──
+      case 'sv_cab_hello': {
+        const g = player.gameId && games.get(player.gameId); if (!g || typeof data.zone !== 'string') break;
+        const Z = _cabZ(g, data.zone.slice(0, 40));
+        (Array.isArray(data.svcs) ? data.svcs : []).slice(0, 4).forEach(s => { s = String(s).slice(0, 16); if (Z.svcs.indexOf(s) < 0) Z.svcs.push(s); });
+        send(ws, { type:'sv_cab_all', zone:data.zone, cabs:Object.values(Z.cabs).map(_cabRec) });
+        break;
+      }
+      case 'sv_cab_add': case 'sv_cab_pos': case 'sv_cab_arrive': case 'sv_cab_hold': case 'sv_cab_board':
+      case 'sv_cab_kind': case 'sv_cab_park': case 'sv_cab_rm': case 'sv_cab_dent': {
+        const g = player.gameId && games.get(player.gameId), zone = player.zone, Z = g && g._cabs && g._cabs[zone];
+        if (!Z || !Z.live) break;
+        const me = player.name, now = Date.now(), c = Z.cabs[data.id];
+        const num = v => { v = +v; return isFinite(v) ? Math.round(v * 100) / 100 : null; };
+        if (data.type === 'sv_cab_add'){
+          if (data.kind !== 'hail' && data.kind !== 'ride') break;
+          if (Object.values(Z.cabs).some(o => o.own === me && (o.kind === 'hail' || o.kind === 'ride'))) break;   // one of your own at a time
+          const x = num(data.x), z = num(data.z); if (x == null || z == null) break;
+          _cabNew(g, zone, Z, { svc:String(data.svc || 'boxi').slice(0, 16), kind:data.kind, own:me, rider:data.kind === 'ride' ? me : null, x, z, n:data.n | 0 });
+        } else if (data.type === 'sv_cab_pos'){
+          if (!Array.isArray(data.ids)) break;
+          const ids = [], xs = [], zs = [], rs = [];
+          data.ids.slice(0, 16).forEach((id, i) => { const o = Z.cabs[id], x = num((data.xs || [])[i]), z = num((data.zs || [])[i]);
+            if (!o || o.own !== me || x == null || z == null) return; o.x = x; o.z = z; o.ry = num((data.rs || [])[i]) || 0;
+            ids.push(o.id); xs.push(x); zs.push(z); rs.push(o.ry); });
+          if (ids.length) broadcastToZone(g.id, zone, { type:'sv_cab_pos', zone, ids, xs, zs, rs }, ws);
+        } else if (data.type === 'sv_cab_arrive'){
+          const s = c && Z.st[c.stop];
+          if (!c || c.own !== me || c.kind !== 'stop' || c.st !== 'in' || !s || s.id !== c.id) break;
+          c.st = 'here'; Object.assign(s, { state:'here', until:now + CAB_WAIT, max:now + CAB_WAIT * 2 }); _cabSay(g, zone, c);
+        } else if (data.type === 'sv_cab_hold'){
+          const s = c && Z.st[c.stop];
+          if (!c || c.kind !== 'stop' || c.st !== 'here' || !s || s.id !== c.id) break;
+          s.until = data.f ? Math.max(s.until, now + 3000) : Math.min(s.max, Math.max(s.until, now + 3000));
+        } else if (data.type === 'sv_cab_board'){
+          if (!c) break;
+          if ((c.kind === 'stop' && c.st === 'here' && !c.rider) || (c.kind === 'hail' && c.own === me)){
+            if (Object.values(Z.cabs).some(o => o !== c && o.rider === me)) break;
+            _cabFree(Z, c); c.kind = 'ride'; c.st = null; c.stop = null; c.own = me; c.rider = me; _cabSay(g, zone, c);
+          } else send(ws, { type:'sv_cab_state', zone, r:_cabRec(c) });           // someone else got there first
+        } else if (data.type === 'sv_cab_kind'){
+          if (!c || c.own !== me || data.kind !== 'stray') break;
+          _cabStray(Z, c); _cabSay(g, zone, c);
+        } else if (data.type === 'sv_cab_park'){
+          if (!c || c.own !== me) break;
+          const svc = String(data.svc || ''), s = Z.st[svc];
+          if (Z.svcs.indexOf(svc) >= 0 && (!s || s.state === 'empty')){
+            c.kind = 'stop'; c.st = 'here'; c.stop = svc; c.rider = null; Z.st[svc] = { state:'here', id:c.id, until:now + 8000, max:now + 33000 };
+          } else _cabStray(Z, c);
+          _cabSay(g, zone, c);
+        } else if (data.type === 'sv_cab_rm'){
+          if (!Array.isArray(data.ids)) break;
+          _cabRm(g, zone, Z, data.ids.slice(0, 16).filter(id => Z.cabs[id] && Z.cabs[id].own === me), ws);
+        } else if (data.type === 'sv_cab_dent'){
+          if (!c) break; c._dt = c._dt || {};
+          if (now - (c._dt[me] || 0) < 2000) break; c._dt[me] = now;
+          c.dents = Math.min(3, (c.dents || 0) + 1);
+          broadcastToZone(g.id, zone, { type:'sv_cab_dent', zone, id:c.id, dents:c.dents, broke:c.dents >= 3 });
+        }
+        break;
+      }
       // ── a806 — THE END, SHARED: a player's game proposes, reports and withdraws; the server keeps the list ──
       case 'sv_end_spawn': {
         if (!player.gameId || player.zone !== END_ZONE) break;
