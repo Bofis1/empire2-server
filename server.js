@@ -11819,6 +11819,10 @@ function tickWorldBoss(game) {
   //   that's existed for less than its full idle window measured from SPAWN,
   //   and clamp lastHitAt so it can't be read as stale on tick one.
   const _wbAge = Date.now() - (wb.spawnedAt || 0);
+  if (Date.now() - (wb.lastDmgAt || wb.spawnedAt || Date.now()) > 20 * 60 * 1000) {   // a851 — 20 minutes unhit: free the slot
+    despawnWorldBoss(game, false, null, wb.x, wb.z);
+    return;
+  }
   // Idle despawn — no damage taken in the cutoff window (and boss is past grace)
   if (_wbAge > WORLD_BOSS_IDLE_MS && Date.now() - wb.lastHitAt > WORLD_BOSS_IDLE_MS) {
     despawnWorldBoss(game, false, null, wb.x, wb.z);
@@ -12291,6 +12295,7 @@ function tickGame(game) {
         zone.activeModIds = [];
         zone.runSeed = ((Date.now() ^ (Math.random()*0x7fffffff)) & 0x7fffffff);
         zone.enemies = createZoneEnemies('convergence', zone.runSeed);   // a599 — fresh maze, fresh depth-1 mobs
+        zone.boss = { hp:ZONE_BOSS_HP.convergence.hp, maxHp:ZONE_BOSS_HP.convergence.hp, phase:1, spawned:false, name:ZONE_BOSS_HP.convergence.name };   // a851 — not the last group's damaged or dead boss
         zone._emptySince = 0;
         console.log(`[convergence] Run reset (zone empty) — fresh seed ${zone.runSeed} for next group.`);
       }
@@ -16341,7 +16346,7 @@ function tickGame(game) {
       broadcastToZone(game.id, zoneName, { type:'sv_enemy_state', zone:zoneName, ids, xs, zs, hps, acts, types });
     }
 
-    tickZoneBoss(game, zoneName, zone);   // a548 — server-authoritative zone boss (CRYOTHAR)
+    try { tickZoneBoss(game, zoneName, zone); } catch (e) { _svErr('tickZoneBoss ' + zoneName, e); }   // a548 — server-authoritative zone boss; a851 — guarded
     if (zoneName === 'xumen_fortress') _xfTickPylons(game, zoneName, zone);   // a552 — sentry pylons outlive their owner
     if (zoneName === 'forge') _fgTickEntities(game, zoneName, zone);          // a555 — puddles / turrets / meteors / drones
     if (zoneName === 'fungal') _fdTickClouds(game, zoneName, zone);           // a558 — lingering spore clouds
@@ -19047,8 +19052,9 @@ wss.on('connection', ws => {
           //   BOSS_RESPAWN_MS lock, so server + client agree on the cooldown.
           // Capture bossZone NOW — player.zone may change before the timer fires
           const bossZone = player.zone;
+          const _killStamp = b.killedAt;   // a851 — this timer belongs to this kill only
           setTimeout(() => {
-            if (g && g.zones[bossZone] && g.zones[bossZone].boss) {
+            if (g && g.zones[bossZone] && g.zones[bossZone].boss && g.zones[bossZone].boss.killedAt === _killStamp) {
               const rb = g.zones[bossZone].boss;
               rb.hp = rb.maxHp;
               rb.phase = 1;
@@ -19058,7 +19064,7 @@ wss.on('connection', ws => {
                 type: 'sv_boss_respawn', zone: bossZone, bossName: rb.name,
               });
             }
-          }, 5 * 60 * 1000);
+          }, 5 * 60 * 1000 + 5000);   // a851 — 5s past the client's lock, so the respawn is never refused
         }
         break;
       }
@@ -19111,6 +19117,7 @@ wss.on('connection', ws => {
         if (dmg <= 0) break;
         wb.hp = Math.max(0, wb.hp - dmg);
         wb.lastHitAt = Date.now();
+        wb.lastDmgAt = Date.now();   // a851
         // Track contributor by name (sum total dmg)
         wb.contributors[player.name] = (wb.contributors[player.name] || 0) + dmg;
         // Broadcast HP update to the zone
@@ -19377,6 +19384,7 @@ wss.on('connection', ws => {
           zone.boss.maxHp = _scaledMaxHp;
           zone.boss.hp = _scaledMaxHp;
           zone.boss.spawned = true; // mark as actively in world for the new depth
+          zone.boss.killedAt = 0;   // a851 — the last depth's respawn timer must not touch this boss
           zone.boss.phase = 1;
           // Broadcast a fresh boss-spawned event so all clients re-sync
           broadcastToZone(g.id, 'convergence', {
@@ -19410,6 +19418,12 @@ wss.on('connection', ws => {
       }
 
       case 'sv_boss_spawned': {
+        // a851 — any player can wake a boss now, so the server enforces the 5-minute cooldown
+        { const _cg = player.gameId && games.get(player.gameId), _cz = _cg && _cg.zones[player.zone], _cb = _cz && _cz.boss;
+          if (_cb && !_cb.spawned && _cb.hp <= 0 && _cb.killedAt && player.zone !== 'convergence' && player.zone !== 'the_reach') {
+            const _left = _cb.killedAt + 5 * 60 * 1000 - Date.now();
+            if (_left > 0) { send(ws, { type:'sv_boss_cooldown', zone:player.zone, ms:_left }); break; }
+          } }
         // Client tells server boss spawned in their zone
         if (!player.gameId || !player.zone) break;
         const g = games.get(player.gameId);
@@ -19428,6 +19442,7 @@ wss.on('connection', ws => {
             zone.boss.hp = zone.boss.maxHp;
             zone.boss.phase = 1;
           }
+          zone.boss.killedAt = 0;   // a851 — a revived boss ends the old kill's timer
           // Announce to zone
           broadcastToZone(g.id, player.zone, {
             type: 'sv_boss_spawned',
@@ -19672,7 +19687,7 @@ setInterval(()=>{
     const empty = g.players.length === 0;
     const old   = now - g.createdAt > 6*60*60*1000;
     const stale = empty && (now - g.createdAt > 30*60*1000);
-    if(old || stale) games.delete(id);
+    if((old && _gamePlayers(g).length === 0) || stale) games.delete(id);   // a851 — never delete a game people are still playing
   });
   broadcastGameList();
 }, 2*60*1000);
