@@ -5080,7 +5080,7 @@ const ZONE_DMG_BASE = {
   necropolis:      { lvl:100, mob: 183, boss: 1080 },   // a732 — the rebuilt Bone Colossus's damage is set in BNK_D directly (k = 1)
   neon_hollow:     { lvl:100, mob: 275, boss:1080 },   // a708 — the rebuilt Curator's damage is set in CUR_D directly (k = 1)
   the_reach:       { lvl:100, mob: 422, boss: 316 },
-  xeron:           { lvl:100, mob: 290, boss:1080 },   // a710 — the rebuilt Overseer's damage is set in XO_D directly (k = 1)
+  xeron:           { lvl:100, mob: 252, boss:1080 },   // a856 — mobs hit 15% harder (was 290); lvl stays 100 so the boss is unchanged   // a710 — the rebuilt Overseer's damage is set in XO_D directly (k = 1)
   xumen_fortress:  { lvl:100, mob: 334, boss:1080 }   // a707 — the rebuilt Apex Pyramid's damage is set in APX_D directly (k = 1)
 };
 const ZONE_DMG_K = {};
