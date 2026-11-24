@@ -5852,7 +5852,7 @@ function _cryBrain(S, A){
 //   A: { T:[{k,x,z}], ph, hp, maxHp, hx, hz, hit(k,dmg), pull(k,x,z,amt), push(k,x,z,amt),
 //        fx(vt,obj), rnd() }   S: her position {x,z} (read and written)
 // ═══════════════════════════════════════════════════════════════════════════════
-const XO_D  = { rail:2100, msl:420, well:380, burst:1500, cage:1100, grid:1700, lance:700, hor:650, nova:1900 };
+const XO_D  = { rail:2415, msl:483, well:437, burst:1725, cage:1265, grid:1955, lance:805, hor:748, nova:2185 };   // a857 — Overseer Zero hits 15% harder (was rail 2100, msl 420, well 380, burst 1500, cage 1100, grid 1700, lance 700, hor 650, nova 1900)
 const XO_PM = [1, 1, 1.06, 1.12, 1.18, 1.25, 1.32, 1.4, 1.5];
 const XO_R = 20, XO_ENG = 40;
 function _xoBrain(S, A){
