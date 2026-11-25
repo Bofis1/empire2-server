@@ -1074,19 +1074,23 @@ var _XU = (function(){
   var clear = function(px, pz){ var ix = Math.floor(px), iz = Math.floor(pz); for(var dz = -1; dz <= 1; dz++) for(var dx = -1; dx <= 1; dx++){ var xx = ix + dx, zz = iz + dz; if(xx < 0 || zz < 0 || xx >= N || zz >= N || M[zz*N + xx]) return false; }
     return Math.hypot(px - ARENA[0], pz - ARENA[1]) > ARENA[2] - 2 && Math.hypot(px - SPAWN[0], pz - SPAWN[1]) > 16; };
   var SPAWNS = [], CAP = { xu_quantum_seeker:24, xu_graviton_manipulator:16, xu_solar_lancer:18, xu_harmonic_warden:13, xu_data_construct:13, xu_prism_seraph:12 }, cnt = {};
-  var put = function(px, pz, type, jit){ if((cnt[type] || 0) >= CAP[type]) return false; for(var tr = 0; tr < 20; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
-      if(clear(qx + 0.5, qz + 0.5)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type] = (cnt[type] || 0) + 1; return true; } } return false; };
+  // a864 — these are big machines (4 to 8 units across): no two stand closer than their sizes allow, so each reads on its own
+  var BODY = { xu_quantum_seeker:2.6, xu_graviton_manipulator:2.6, xu_solar_lancer:1.9, xu_harmonic_warden:3.0, xu_data_construct:2.4, xu_prism_seraph:2.2 };
+  var roomy = function(qx, qz, type){ for(var i = 0; i < SPAWNS.length; i++){ var o = SPAWNS[i]; if(Math.hypot(o.tx - qx, o.tz - qz) < BODY[type] + BODY[o.type] + 1.4) return false; } return true; };
+  var put = function(px, pz, type, jit){ if((cnt[type] || 0) >= CAP[type]) return false; for(var tr = 0; tr < 40; tr++){ var qx = Math.round(px + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5), qz = Math.round(pz + (tr ? (R() - 0.5)*tr*(jit || 0.6) : 0) - 0.5);
+      if(clear(qx + 0.5, qz + 0.5) && roomy(qx, qz, type)){ SPAWNS.push({ tx:qx, tz:qz, type:type }); cnt[type] = (cnt[type] || 0) + 1; return true; } } return false; };
   var ROSTER = [['xu_harmonic_warden', 'xu_quantum_seeker', 'xu_quantum_seeker', 'xu_solar_lancer', 'xu_graviton_manipulator'],
                 ['xu_data_construct', 'xu_solar_lancer', 'xu_quantum_seeker', 'xu_graviton_manipulator', 'xu_solar_lancer'],
                 ['xu_harmonic_warden', 'xu_data_construct', 'xu_quantum_seeker', 'xu_solar_lancer', 'xu_quantum_seeker']];
-  CAMPS.forEach(function(c, ci){ var ro = ROSTER[ci % 3]; ro.forEach(function(ty, i){ var a = c[2] + i/5*6.2832 + 0.3, d = i === 0 ? 2.6 : 3.8; put(c[0] + Math.cos(a)*d, c[1] + Math.sin(a)*d, ty, 0.35); }); });
+  // a864 — two hold the yard inside the walls, on either side of the spire; the other three stand guard round the outside
+  CAMPS.forEach(function(c, ci){ var ro = ROSTER[ci % 3]; ro.forEach(function(ty, i){ var a = i < 2 ? c[2] + 0.3 + i*3.1416 : c[2] + 1.35 + (i - 2)*2.0944, d = i < 2 ? 4.2 : 11.5; put(c[0] + Math.cos(a)*d, c[1] + Math.sin(a)*d, ty, i < 2 ? 0.25 : 0.7); }); });
   // patrols on the avenues and the ring roads, in pairs
   var ty2 = Object.keys(CAP);
   for(var t3 = 0; t3 < 6000 && SPAWNS.length < 84; t3++){ var ty = ty2[t3 % 5]; if((cnt[ty] || 0) >= CAP[ty]) continue; var a3 = R()*6.2832, rr3 = R() < 0.5 ? 40 : 70, px3 = CX + Math.cos(a3)*rr3, pz3 = CZ + Math.sin(a3)*rr3;
     if(R() < 0.35){ px3 = CX + (R() - 0.5)*4; pz3 = 26 + R()*188; } if(Math.hypot(px3 - ARENA[0], pz3 - ARENA[1]) < 30) continue;
-    if(put(px3, pz3, ty)) put(px3 + 1.5, pz3 + 1.5, ty2[(t3 + 2) % 5]); }
+    if(put(px3, pz3, ty, 0.9)) put(px3 + 5.5, pz3 + 5.5, ty2[(t3 + 2) % 5], 0.9); }   // a864 — a patrol pair walks a few strides apart, not shoulder to shoulder
   // a702 — a prism seraph hovers over each outpost, a little outside the ring
-  CAMPS.forEach(function(c){ var a5 = c[2] + 3.4; put(c[0] + Math.cos(a5)*6.0, c[1] + Math.sin(a5)*6.0, 'xu_prism_seraph', 0.5); });
+  CAMPS.forEach(function(c){ var a5 = c[2] + 3.4; put(c[0] + Math.cos(a5)*14.0, c[1] + Math.sin(a5)*14.0, 'xu_prism_seraph', 0.8); });   // a864 — clear of the walls and the guards
   return { N:N, M:M, CLS:CLS, B:B, CAMPS:CAMPS, TRAPS:TRAPS, SPAWNS:SPAWNS, CX:CX, CZ:CZ, CORE:CORE, ARENA:ARENA, SPAWN:SPAWN, NGATE:NGATE, RINGS:RINGS, AVE:AVE, DIAG:DIAG, WALL:WALL, road:road };
 })();
 function _xuWallAt(x, z){ x = Math.floor(x); z = Math.floor(z); if(x < 0 || z < 0 || x >= 240 || z >= 240) return true; return _XU.M[z*240 + x] === 1; }
