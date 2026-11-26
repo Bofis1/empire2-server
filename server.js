@@ -18789,6 +18789,20 @@ wss.on('connection', ws => {
       //   start records who you're reviving and when; finish is only honoured if it
       //   comes at least REVIVE_HOLD_MS later, and both are checked against the server's
       //   own positions — the reviver standing, the target downed, same zone, in range.
+      // a870 — BOFOCAT. There is one Bofocat per game: the first player to hire her keeps her
+      //   until they send her home or leave the game. 'ask' just reports who has her.
+      case 'sv_bofocat': {
+        if (!player.gameId) break;
+        const _bg = games.get(player.gameId); if (!_bg) break;
+        let _own = _bg.bofocat || null;
+        if (_own) { let _here = false; players.forEach(p => { if (p.gameId === player.gameId && p.name === _own) _here = true; }); if (!_here) _own = _bg.bofocat = null; }
+        const _act = String(data.act || 'ask'), _was = _own;
+        if (_act === 'hire' && !_own) _own = _bg.bofocat = player.name;
+        else if (_act === 'release' && _own === player.name) _own = _bg.bofocat = null;
+        const _msg = { type:'sv_bofocat', owner:_own, by:player.name, act:_act.slice(0, 8) };
+        if (_own !== _was) broadcastToGame(player.gameId, _msg); else send(ws, _msg);   // everyone hears a change, the asker the answer
+        break;
+      }
       case 'sv_revive_start':
       case 'sv_revive': {
         if (!player.gameId || !player.zone || !isTargetable(player)) { player._revT = null; break; }
