@@ -5147,6 +5147,12 @@ function getPlayersInZone(gameId, zone) {
 // ═══════════════════════════════════════════════════════════════════════════════
 const REVIVE_RANGE     = 3.5;    // world units, a touch wider than the client's 3.0 prompt
 const REVIVE_HOLD_MS   = 2700;   // the 3s hold, less a little network slack
+// mpfix S6 — a stealthed player (Shadow Veil) is not chosen as a target: zone creatures do not pick, chase or keep
+//   them, and the zone boss's generic AI does not pick them. They are still hit by area attacks (isTargetable is
+//   unchanged: stealth is not invulnerability). Capped at MP_STEALTH_MAX_MS of continuous stealth, so a stuck or forged
+//   flag cannot hide anyone for long.
+const MP_STEALTH_MAX_MS = 8000;
+function _mpStealthed(p){ return !!(p && p.stealth && Date.now() - (p._stealthAt || 0) < MP_STEALTH_MAX_MS); }
 function isTargetable(p){
   // a752 — arriving in a zone: untargetable until the first position from the new zone lands, then 1.5s of grace
   if (p && (p._arriving || (p._graceUntil && Date.now() < p._graceUntil))) return false;
@@ -11635,7 +11641,7 @@ function tickZoneBoss(game, zoneName, zone) {
 
   let np = null, nd = Infinity;
   zonePlayers.forEach(p => {
-    if (p.x === undefined) return;
+    if (p.x === undefined || _mpStealthed(p)) return;   // mpfix S6 — the boss does not pick a stealthed player
     const dx = p.x - b.x, dz = p.z - b.z, d = Math.sqrt(dx*dx + dz*dz);
     if (d < nd) { nd = d; np = p; }
   });
@@ -12148,6 +12154,162 @@ function _spTick(game, zoneName, zone, hasPlayers, zonePlayers, changed){
 }
 // ── END a775 SHARED RARES AND BOUNTIES ──
 
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// mpfix batch 5 — SHARED WORLD SYSTEMS. Per game and per zone (zone._mp5) the server now keeps:
+//   • world events (E9/W3): when the next Supply Drop / Meteor Strike comes, where (a creature spawn point
+//     or a spot a player recently stood on, anywhere in the zone), and who opened the crate first;
+//   • gem nodes (W11/E8): which node was harvested, by whom, until when (40 s, the game's own respawn);
+//   • The Reach hazards (W7): one schedule per zone, placed around the players there, with a seed so
+//     every game lays out the same fractures / shards / rings;
+//   • rare spawns (W6): which player's game runs each rare's abilities (the nearest one, re-picked when
+//     they leave); that game reports each cast (with a seed) and its blinks; the server passes them on;
+//   • Convergence / The Reach (W9): where the boss's way-onward portal opened, sent to late arrivals.
+//   Old games never send the new messages and ignore the new ones; the snapshot's mp5:1 tells a new game
+//   this server runs these systems, so it stops running its own copy.
+// ═══════════════════════════════════════════════════════════════════════════════════════
+const MP5_WEV_FIRST = _SP_FAST ? 5000 : 90000, MP5_WEV_CD = _SP_FAST ? 8000 : 180000;   // the game's own timings
+const MP5_CRATE_MS = 60000, MP5_METEOR_MS = 3840, MP5_GEM_MS = 40000;
+const MP5_NO_WEV = { outpost:1 };
+const MP5_REACH_K = ['fracture','barrage','singularity','lance','voidquake'];
+const MP5_REACH_MS = { fracture:4700, barrage:2450, singularity:3750, lance:4050, voidquake:4300 };   // telegraph+active+fade frames / 60
+function _mp5(zone){ return zone._mp5 || (zone._mp5 = { gems:{}, wev:null, wevAt:0, trail:[], trailAt:0, tk:'', reachAt:0, reachLive:[], portal:null, eid:0 }); }
+// a place for a world event: a creature's spawn point or a spot a player stood on (both walkable), preferring
+//   10-70 units from a random player in the zone
+function _mp5Spot(zone, zonePlayers){
+  const m = _mp5(zone), pts = [];
+  zone.enemies.forEach(e => { if (e && !e._special && !e._summoned && isFinite(e.spawnX) && isFinite(e.spawnZ)) pts.push({ x:e.spawnX, z:e.spawnZ }); });
+  m.trail.forEach(p => pts.push(p));
+  if (!pts.length) return null;
+  const ref = zonePlayers[Math.floor(Math.random()*zonePlayers.length)];
+  const near = (ref && isFinite(ref.x)) ? pts.filter(p => { const d = Math.hypot(p.x - ref.x, p.z - ref.z); return d > 10 && d < 70; }) : [];
+  const pool = near.length ? near : pts;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function _mp5WevMsg(zoneName, w, now){ return { type:'sv_wev', zone:zoneName, ev:w.ev, eid:w.eid, x:w.x, z:w.z, ms:Math.max(0, w.u - now), own:w.own || null }; }
+function _mp5PortalLive(zone, zoneName, p){
+  const b = zone.boss;
+  if (!p || !b || (b.spawned && b.hp > 0)) return false;          // the boss is up again
+  if ((zone.runSeed || 0) !== p.seed) return false;               // another run
+  if (zoneName === 'convergence' && (zone.convergenceDepth || 1) !== p.depth) return false;
+  return true;
+}
+function _mp5Tick(game, zoneName, zone, zonePlayers, hasPlayers){
+  const m = _mp5(zone), now = Date.now();
+  for (const k in m.gems) if (!(m.gems[k].u > now)) delete m.gems[k];
+  if (!hasPlayers) { m.wev = null; m.wevAt = 0; m.reachAt = 0; m.reachLive = []; return; }
+  // where players have stood (walkable ground), forgotten when the Convergence maze changes
+  const tk = (zone.runSeed || 0) + ':' + (zone.convergenceDepth || 0);
+  if (m.tk !== tk) { m.tk = tk; m.trail = []; }
+  if (now - m.trailAt > 3000) { m.trailAt = now;
+    zonePlayers.forEach(p => { if (p._arriving || p.downed || p.dead || !isFinite(p.x) || !isFinite(p.z)) return;
+      if (m.trail.some(q => Math.hypot(q.x - p.x, q.z - p.z) < 4)) return;
+      m.trail.push({ x:+p.x, z:+p.z }); if (m.trail.length > 80) m.trail.shift(); }); }
+  // E9/W3 — world events
+  if (!MP5_NO_WEV[zoneName]) {
+    if (!m.wevAt) m.wevAt = now + MP5_WEV_FIRST;
+    const w = m.wev;
+    if (w) {
+      if (w.ev === 'crate' && now > w.u) { broadcastToZone(game.id, zoneName, { type:'sv_wev_end', zone:zoneName, eid:w.eid, ev:'crate', by:null }); m.wev = null; m.wevAt = now + MP5_WEV_CD; }
+      else if (w.ev === 'meteor' && now > w.u + 1500) { m.wev = null; m.wevAt = now + MP5_WEV_CD; }
+    } else if (now >= m.wevAt) {
+      const P = _mp5Spot(zone, zonePlayers);
+      if (!P) m.wevAt = now + 30000;
+      else {
+        const ev = Math.random() < 0.7 ? 'crate' : 'meteor', own = zonePlayers[Math.floor(Math.random()*zonePlayers.length)];
+        m.wev = { ev, eid:++m.eid, x:+(+P.x).toFixed(2), z:+(+P.z).toFixed(2), u:now + (ev === 'crate' ? MP5_CRATE_MS : MP5_METEOR_MS), own:own && own.name };
+        broadcastToZone(game.id, zoneName, _mp5WevMsg(zoneName, m.wev, now));
+      }
+    }
+  }
+  // W7 — The Reach hazards: one schedule for the zone, around the players in it
+  if (zoneName === 'the_reach') {
+    m.reachLive = m.reachLive.filter(t => t > now);
+    if (!m.reachAt) m.reachAt = now + 6000;
+    else if (now >= m.reachAt && m.reachLive.length < 4) {
+      const pl = zonePlayers.filter(p => !p._arriving && isFinite(p.x) && isFinite(p.z));
+      if (pl.length) {
+        const fire = (dmin) => { const p = pl[Math.floor(Math.random()*pl.length)], k = MP5_REACH_K[Math.floor(Math.random()*MP5_REACH_K.length)];
+          const a = Math.random()*Math.PI*2, d = (dmin + Math.random()*16)*TILE;
+          m.reachLive.push(now + (MP5_REACH_MS[k] || 4000));
+          broadcastToZone(game.id, zoneName, { type:'sv_reach_ev', zone:zoneName, k, x:+(p.x + Math.cos(a)*d).toFixed(2), z:+(p.z + Math.sin(a)*d).toFixed(2), s:(Math.random()*0x7fffffff) | 0 }); };
+        fire(6);
+        let base = 7000 + Math.random()*6000; if (zone.boss && zone.boss.spawned && zone.boss.hp > 0) base *= 0.6;   // faster during the Keeper fight
+        m.reachAt = now + base;
+        if (Math.random() < 0.18 && m.reachLive.length < 4) fire(8);
+      }
+    }
+  }
+  // W6 — who runs each rare's abilities: the owner stays while in the zone, else the nearest player there
+  zone.enemies.forEach(e => {
+    if (!e || !e._rare || !e.active) return;
+    if (e._mpOwn && zonePlayers.some(p => p.name === e._mpOwn && !p._arriving)) return;
+    let best = null, bd = 1e9;
+    zonePlayers.forEach(p => { if (p._arriving || !isFinite(p.x)) return; const d = Math.hypot(p.x - e.x, p.z - e.z); if (d < bd) { bd = d; best = p; } });
+    const o = best ? best.name : null;
+    if (o !== (e._mpOwn || null)) { e._mpOwn = o; if (o) broadcastToZone(game.id, zoneName, { type:'sv_rare_own', zone:zoneName, id:e.id, o }); }
+  });
+}
+// what a player walking into a zone needs to know
+function _mp5Hello(ws, g, zoneName){
+  const zone = g.zones[zoneName]; if (!zone) return;
+  const m = _mp5(zone), now = Date.now(), h = {};
+  for (const k in m.gems) { const left = m.gems[k].u - now; if (left > 0) h[k] = left; }
+  send(ws, { type:'sv_gem', zone:zoneName, h });
+  if (m.wev && m.wev.u > now) send(ws, _mp5WevMsg(zoneName, m.wev, now));
+  zone.enemies.forEach(e => { if (e && e._rare && e.active && e._mpOwn) send(ws, { type:'sv_rare_own', zone:zoneName, id:e.id, o:e._mpOwn }); });
+  if (m.portal && _mp5PortalLive(zone, zoneName, m.portal)) send(ws, Object.assign({ type:'sv_mp_portal', zone:zoneName }, m.portal.msg));
+}
+function _mp5OnMsg(ws, player, data){
+  if (!player.gameId || !player.zone) return;
+  const g = games.get(player.gameId), zone = g && g.zones[player.zone]; if (!zone) return;
+  const m = _mp5(zone), now = Date.now(), zn = player.zone;
+  switch (data.type) {
+    case 'sv_gem_claim': {   // W11/E8 — first come, first served
+      if (data.zone !== zn) return;
+      const idx = data.idx | 0; if (idx < 0 || idx > 63) return;
+      const cur = m.gems[idx];
+      if (cur && cur.u > now) { send(ws, { type:'sv_gem', zone:zn, idx, by:cur.by, ms:cur.u - now, late:1 }); return; }
+      m.gems[idx] = { u:now + MP5_GEM_MS, by:player.name };
+      broadcastToZone(g.id, zn, { type:'sv_gem', zone:zn, idx, by:player.name, ms:MP5_GEM_MS });
+      return;
+    }
+    case 'sv_we_claim': {    // E9 — the supply crate goes to whoever reaches it first
+      const w = m.wev;
+      if (data.zone !== zn || !w || w.ev !== 'crate' || w.eid !== (data.eid | 0) || now > w.u) return;
+      if (isFinite(player.x) && isFinite(player.z) && Math.hypot(player.x - w.x, player.z - w.z) > 8) return;
+      m.wev = null; m.wevAt = now + MP5_WEV_CD;
+      broadcastToZone(g.id, zn, { type:'sv_wev_end', zone:zn, eid:w.eid, ev:'crate', by:player.name });
+      return;
+    }
+    case 'sv_rare_cast': case 'sv_rare_mv': {   // W6 — only the rare's owner may report
+      if (!_mpRate(player)) return;
+      const e = zone.enemies.find(en => en && en.id === data.id && en.active && en._rare);
+      if (!e || e._mpOwn !== player.name) return;
+      const num = v => { v = +v; return isFinite(v) ? +v.toFixed(2) : 0; };
+      if (data.type === 'sv_rare_mv') {
+        const x = +data.x, z = +data.z; if (!isFinite(x) || !isFinite(z) || Math.hypot(x - e.x, z - e.z) > 40) return;
+        e.x = x; e.z = z;
+        broadcastToZone(g.id, zn, { type:'sv_rare_mv', zone:zn, id:e.id, x:num(x), z:num(z) }, ws);
+        return;
+      }
+      broadcastToZone(g.id, zn, { type:'sv_rare_cast', zone:zn, id:e.id, k:String(data.k || '').slice(0, 16), s:(+data.s || 0) >>> 0,
+        tx:num(data.tx), tz:num(data.tz), ex:num(data.ex), ez:num(data.ez), ph:Math.max(1, Math.min(3, data.ph | 0)), tg:String(data.tg || '').slice(0, 40) }, ws);
+      return;
+    }
+    case 'sv_mp_portal': {   // W9 — where the Convergence / Reach boss's portal opened (first report of this kill wins)
+      if (data.zone !== zn || (zn !== 'convergence' && zn !== 'the_reach') || !zone.boss || zone.boss.hp > 0) return;
+      if (m.portal && _mp5PortalLive(zone, zn, m.portal)) return;
+      const tx = +data.tx, tz = +data.tz; if (!isFinite(tx) || !isFinite(tz) || tx < 0 || tz < 0 || tx > 400 || tz > 400) return;
+      const depth = zone.convergenceDepth || 1;
+      const to = zn === 'the_reach' ? 'the_end' : (data.to === 'the_reach' ? 'the_reach' : 'convergence');
+      m.portal = { depth, seed:zone.runSeed || 0, msg:{ to, tx, tz, label:String(data.label || '').slice(0, 40), col:(+data.col) | 0, depth } };
+      broadcastToZone(g.id, zn, Object.assign({ type:'sv_mp_portal', zone:zn }, m.portal.msg), ws);
+      return;
+    }
+  }
+}
+// ── END mpfix batch 5 ──
+
 // ═══════════════════════════════════════════════════════════════════════════
 // a815 — CABS FOR EVERYONE. Every player in a zone sees the same robot cabs (Boxi and Roamer) and gets
 //   the same cab. The server keeps, per game and per zone: which services stop there (each player's game
@@ -12279,6 +12441,390 @@ function _endTick(game, zone, zp){
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// mpfix batch 6 — SHARED DELVES AND APEX TRIALS (W1, E12, P7). Per game (game._mp6) the server keeps:
+//   • each zone's Delve portal and Apex Rift portal (seed, place, and for a rift its tier, name and
+//     modifiers). The first game that opens one proposes it (only a game can tell open floor); the
+//     server keeps the first proposal and hands it to everyone in the zone, so all see the same portal;
+//   • the instances: everyone who walks through the same portal joins the same instance (its key),
+//     while anyone is inside. The last one out closes it. Each game builds the maze from the shared seed;
+//   • the instance's creatures and boss by index: health (every player's hits land here), who damaged
+//     each one (contributors are paid on the kill), and which player's game runs each one (its owner:
+//     the nearest player inside, re-picked once a second, like The End);
+//   • the owner's game reports where its creatures are and what they cast (with a seed); the server
+//     passes that on to the others inside. Instance events (an Apex room entered) are kept for late joiners.
+//   Old games never send these messages and keep their private instance; a game with no answer does too.
+// ═══════════════════════════════════════════════════════════════════════════════════════
+const MP6_DV_REGEN = 60000;            // a cleared Delve's portal comes back after a minute (the game's own 600 ticks)
+const MP6_AP_REGEN = 60000;            // and a Rift after one closes
+const MP6_AP_MS = 10 * 60 * 1000;      // longest a Rift may stand
+const MP6_MAX_CRE = 600;               // creatures one instance may hold
+function _mp6G(g){ return g._mp6 || (g._mp6 = { pid:0, n:0, zones:{}, inst:{} }); }
+function _mp6Z(g, zn){ const m = _mp6G(g); return m.zones[zn] || (m.zones[zn] = { dv:null, ap:null, dvNext:0, apNext:0 }); }
+function _mp6Num(v, lo, hi, d){ v = +v; return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; }
+function _mp6Str(v, n){ return typeof v === 'string' ? v.replace(/[<>]/g, '').slice(0, n) : ''; }
+function _mp6PortMsg(g, zn){
+  const z = _mp6Z(g, zn), now = Date.now();
+  if (z.ap && now > z.ap.u) { z.ap = null; z.apNext = now + MP6_AP_REGEN; }
+  return { type:'sv_mp6_portals', zone:zn,
+    dv: z.dv ? Object.assign({ pid:z.dv.pid }, z.dv.d) : null,
+    ap: z.ap ? Object.assign({ pid:z.ap.pid, ms:z.ap.u - now }, z.ap.d) : null };
+}
+function _mp6Hello(ws, g, zn){ send(ws, _mp6PortMsg(g, zn)); }
+// the players inside one instance, as [ws, player]
+function _mp6Mem(g, key){ const out = []; players.forEach((p, w) => { if (p && p.gameId === g.id && p._mp6K === key && w.readyState === 1) out.push([w, p]); }); return out; }
+function _mp6Cast(g, key, data, exclude){ const msg = JSON.stringify(data); _mp6Mem(g, key).forEach(([w]) => { if (w !== exclude) w.send(msg); }); }
+function _mp6Find(player){
+  if (!player || !player._mp6K || !player.gameId) return null;
+  const g = games.get(player.gameId); if (!g || !g._mp6) return null;
+  const I = g._mp6.inst[player._mp6K]; return I ? { g, I } : null;
+}
+function _mp6Leave(player){
+  if (!player || !player._mp6K) return;
+  const key = player._mp6K; player._mp6K = null;
+  const g = player.gameId && games.get(player.gameId), m = g && g._mp6, I = m && m.inst[key];
+  if (!I) return;
+  delete I.pos[player.name];
+  const mem = _mp6Mem(g, key);
+  if (!mem.length) { delete m.inst[key]; return; }                   // the last one out closes it
+  _mp6Owners(g, I, mem, true);
+  _mp6Cast(g, key, { type:'sv_mp6_mem', key, mem:mem.map(x => x[1].name), left:player.name });
+}
+// each live creature is run by the nearest player inside; handed on when its owner left, is down,
+//   or someone is plainly nearer (inside 18 units and less than half as far)
+function _mp6Owners(g, I, mem, force){
+  const alive = mem.map(x => x[1]).filter(p => !p.downed && !p.dead && I.pos[p.name] && isFinite(I.pos[p.name].x));
+  const names = {}; mem.forEach(x => { names[x[1].name] = 1; });
+  const ids = [], o = [];
+  for (const i in I.cre) {
+    const c = I.cre[i]; if (c.dead) continue;
+    let best = null, bd = Infinity;
+    if (isFinite(c.x)) alive.forEach(p => { const q = I.pos[p.name], dx = q.x - c.x, dz = q.z - c.z, d = dx*dx + dz*dz; if (d < bd) { bd = d; best = p.name; } });
+    const ownIn = !!names[c.own], ownUp = ownIn && alive.some(p => p.name === c.own);
+    if (!best) { if (!ownIn && mem.length) { c.own = mem[0][1].name; ids.push(+i); o.push(c.own); } continue; }
+    let od = Infinity; if (ownUp) { const q = I.pos[c.own]; if (q && isFinite(c.x)) { const dx = q.x - c.x, dz = q.z - c.z; od = dx*dx + dz*dz; } }
+    if (best !== c.own && (!ownUp || (bd < 324 && bd < od * 0.25))) { c.own = best; ids.push(+i); o.push(best); }
+  }
+  if (ids.length) _mp6Cast(g, I.key, { type:'sv_mp6_own', key:I.key, ids, o });
+}
+function _mp6St(I, list){
+  const ids = [], hps = [], mx = [], own = [], dead = [];
+  (list || Object.keys(I.cre)).forEach(k => { const c = I.cre[k]; if (!c) return;
+    if (c.dead) { dead.push(+k); return; }
+    ids.push(+k); hps.push(Math.round(c.hp)); mx.push(Math.round(c.mx)); own.push(c.own || ''); });
+  return { type:'sv_mp6_st', key:I.key, ids, hps, mx, own, dead };
+}
+function _mp6Kill(g, I, i, c, by){
+  c.dead = true; c.hp = 0;
+  const h = c.help || {}, ctb = [];
+  _mp6Mem(g, I.key).forEach(([w, p]) => { if (h[p.name] && ctb.indexOf(p.name) < 0) ctb.push(p.name); });
+  if (by && by.charAt(0) !== '(' && ctb.indexOf(by) < 0) ctb.push(by);
+  c.help = null;
+  _mp6Cast(g, I.key, { type:'sv_mp6_kill', key:I.key, i:+i, by, ctb });
+  if (c.b && !I.done) {   // the boss: the instance is cleared, and its portal closes for everyone in the zone
+    I.done = true;
+    const z = _mp6Z(g, I.zone), now = Date.now();
+    if (I.kind === 'dv' && z.dv && z.dv.pid === I.pid) { z.dv = null; z.dvNext = now + MP6_DV_REGEN; broadcastToZone(g.id, I.zone, _mp6PortMsg(g, I.zone)); }
+    if (I.kind === 'ap' && z.ap && z.ap.pid === I.pid) { z.ap = null; z.apNext = now + MP6_AP_REGEN; broadcastToZone(g.id, I.zone, _mp6PortMsg(g, I.zone)); }
+  }
+}
+function _mp6Rate(player){   // at most 60 of these a second from one player (positions 5, hits 10, the rest casts)
+  const now = Date.now();
+  if (!player._mp6W || now - player._mp6W > 1000) { player._mp6W = now; player._mp6C = 0; }
+  return ++player._mp6C <= 60;
+}
+function _mp6OnMsg(ws, player, data){
+  if (!player || !player.gameId || !player.name || !_mp6Rate(player)) return;
+  const g = games.get(player.gameId); if (!g) return;
+  const m = _mp6G(g), now = Date.now();
+  switch (data.type) {
+    case 'sv_mp6_hello': {
+      if (typeof data.zone === 'string' && data.zone === player.zone) _mp6Hello(ws, g, data.zone);
+      return;
+    }
+    case 'sv_mp6_portal': {   // a proposal: the first one for a zone wins
+      const zn = player.zone, kind = data.kind, d = data.d || {};
+      if (data.zone !== zn || (kind !== 'dv' && kind !== 'ap')) return;
+      const z = _mp6Z(g, zn);
+      if (kind === 'ap' && z.ap && now > z.ap.u) { z.ap = null; z.apNext = now + MP6_AP_REGEN; }
+      const tx = d.tx | 0, tz = d.tz | 0;
+      const ok = !z[kind] && now >= (kind === 'dv' ? z.dvNext : z.apNext) && tx > 0 && tz > 0 && tx < 240 && tz < 240;
+      if (ok) {
+        const base = { seed:(+d.seed >>> 0) || 1, tx, tz };
+        if (kind === 'dv') { base.th = _mp6Str(d.th, 16); z.dv = { pid:++m.pid, d:base }; }
+        else {
+          base.tier = _mp6Num(d.tier, 1, 8, 1) | 0; base.name = _mp6Str(d.name, 60);
+          base.mods = Array.isArray(d.mods) ? d.mods.filter(x => typeof x === 'string').slice(0, 4).map(x => x.slice(0, 20)) : [];
+          z.ap = { pid:++m.pid, d:base, u: now + _mp6Num(d.ms, 10000, MP6_AP_MS, 180000) };
+        }
+        broadcastToZone(g.id, zn, _mp6PortMsg(g, zn));
+      } else send(ws, _mp6PortMsg(g, zn));
+      return;
+    }
+    case 'sv_mp6_join': {   // walk through a portal: the live instance behind it, or a new one
+      const zn = player.zone, kind = data.kind, z = _mp6Z(g, zn), P = (kind === 'dv' || kind === 'ap') ? z[kind] : null;
+      if (data.zone !== zn || !P || P.pid !== (data.pid | 0) || (kind === 'ap' && now > P.u)) { send(ws, { type:'sv_mp6_in', zone:zn, kind, pid:data.pid | 0, no:1 }); return; }
+      if (player._mp6K) _mp6Leave(player);
+      let I = null;
+      for (const k in m.inst) { const J = m.inst[k]; if (J.zone === zn && J.kind === kind && J.pid === P.pid && !J.done) { I = J; break; } }
+      if (I && !_mp6Mem(g, I.key).length) { delete m.inst[I.key]; I = null; }
+      if (!I) {
+        const key = kind + (++m.n).toString(36) + Math.random().toString(36).slice(2, 6);
+        I = m.inst[key] = { key, kind, zone:zn, pid:P.pid, seed:P.d.seed, cre:{}, ncre:0, ev:[], pos:{}, done:false, t0:now };
+      }
+      player._mp6K = I.key; I.pos[player.name] = { x:NaN, z:NaN, t:now };
+      const mem = _mp6Mem(g, I.key).map(x => x[1].name);
+      send(ws, { type:'sv_mp6_in', zone:zn, kind, pid:P.pid, key:I.key, seed:I.seed, ev:I.ev.slice(), mem, n:I.ncre });
+      _mp6Cast(g, I.key, { type:'sv_mp6_mem', key:I.key, mem, joined:player.name }, ws);
+      return;
+    }
+    case 'sv_mp6_leave': {
+      if (player._mp6K && (!data.key || data.key === player._mp6K)) _mp6Leave(player);
+      return;
+    }
+  }
+  // everything else happens inside the instance the player is in
+  const F = _mp6Find(player); if (!F || data.key !== F.I.key) return;
+  const I = F.I;
+  switch (data.type) {
+    case 'sv_mp6_roster': {   // creatures a game has built from the seed: the first report of each index is kept
+      const M = Array.isArray(data.m) ? data.m.slice(0, 200) : [], list = [];
+      M.forEach(r => {
+        if (!Array.isArray(r)) return;
+        const i = r[0] | 0; if (i < 0 || i > 999999) return;
+        list.push(i);
+        if (I.cre[i] || I.ncre >= MP6_MAX_CRE) return;
+        const hp = Math.round(_mp6Num(r[1], 1, 4e9, 100));
+        I.cre[i] = { hp, mx:hp, x:_mp6Num(r[2], -1e5, 1e5, NaN), z:_mp6Num(r[3], -1e5, 1e5, NaN), b:r[4] ? 1 : 0, own:player.name, dead:false, help:null };
+        I.ncre++;
+      });
+      if (list.length) send(ws, _mp6St(I, list));
+      return;
+    }
+    case 'sv_mp6_pos': {   // where I am, and where the creatures my game runs are
+      const px = +data.px, pz = +data.pz;
+      if (isFinite(px) && isFinite(pz)) I.pos[player.name] = { x:px, z:pz, t:now };
+      const ids = [], xs = [], zs = [], rs = [], aw = [];
+      const n = Array.isArray(data.ids) ? Math.min(data.ids.length, 96) : 0;
+      for (let k = 0; k < n; k++) {
+        const i = data.ids[k] | 0, c = I.cre[i], x = +(data.xs || [])[k], z = +(data.zs || [])[k];
+        if (!c || c.dead || c.own !== player.name || !isFinite(x) || !isFinite(z)) continue;
+        c.x = x; c.z = z; ids.push(i); xs.push(+x.toFixed(2)); zs.push(+z.toFixed(2)); rs.push(+(+(data.rs || [])[k] || 0).toFixed(2)); aw.push((data.aw || [])[k] ? 1 : 0);
+      }
+      _mp6Cast(g, I.key, { type:'sv_mp6_pos', key:I.key, o:player.name, px:isFinite(px) ? +px.toFixed(2) : 0, pz:isFinite(pz) ? +pz.toFixed(2) : 0, ids, xs, zs, rs, aw }, ws);
+      return;
+    }
+    case 'sv_mp6_hit': {   // damage (and the owner's heals) a game dealt since its last report: [[i, dmg, killedHere, selfDestruct, heal]]
+      const H = Array.isArray(data.h) ? data.h.slice(0, 96) : [];
+      H.forEach(r => {
+        if (!Array.isArray(r)) return;
+        const i = r[0] | 0, c = I.cre[i]; if (!c || c.dead) return;
+        const d = _mp6Num(r[1], 0, c.mx, 0), heal = _mp6Num(r[4], 0, c.mx, 0), mine = c.own === player.name;
+        if (r[3] && mine) { _mp6Kill(g, I, i, c, '(self)'); return; }          // a bomber that blew itself up
+        if (heal > 0) c.hp = Math.min(c.mx, c.hp + heal);                       // a creature's own heal, cast by whichever game ran it
+        if (d > 0) { (c.help || (c.help = {}))[player.name] = 1; c.hp -= d; }
+        // the game saw it fall to its own hit: believe it within a quarter of its health (a heal it had not seen yet)
+        if (c.hp <= 0 || (r[2] && d > 0 && c.hp <= c.mx * 0.25)) { _mp6Kill(g, I, i, c, player.name); return; }
+        if (d > 0 || heal > 0) _mp6Cast(g, I.key, { type:'sv_mp6_hp', key:I.key, i, hp:Math.round(c.hp), d:Math.round(d), by:player.name });
+      });
+      return;
+    }
+    case 'sv_mp6_cast': {   // the owner's game: a move with its seed, for the others to play the same way
+      const i = data.i | 0, c = I.cre[i]; if (!c || c.dead || c.own !== player.name) return;
+      const out = { type:'sv_mp6_cast', key:I.key, i, c:_mp6Str(data.c, 8) };
+      ['s','a','d','x','z','tx','tz','pr','n','ph'].forEach(k => { const v = +data[k]; if (isFinite(v)) out[k] = k === 's' ? (v >>> 0) : +v.toFixed(3); });
+      out.l = data.l ? 1 : 0;
+      if (isFinite(out.x) && isFinite(out.z)) { c.x = out.x; c.z = out.z; }
+      _mp6Cast(g, I.key, out, ws);
+      return;
+    }
+    case 'sv_mp6_cc': {     // a stun or slow from any player: every game inside shows it, the owner's game applies it
+      const i = data.i | 0, c = I.cre[i]; if (!c || c.dead) return;
+      const k = data.k === 'stun' ? 'stun' : data.k === 'freeze' ? 'freeze' : null; if (!k) return;
+      _mp6Cast(g, I.key, { type:'sv_mp6_cc', key:I.key, i, k, f:_mp6Num(data.f, 1, 300, 60) | 0, by:player.name }, ws);
+      return;
+    }
+    case 'sv_mp6_ev': {     // something every game inside should do once (an Apex room was entered); kept for late joiners
+      const ev = _mp6Str(data.ev, 16); if (!ev) return;
+      if (I.ev.indexOf(ev) < 0 && I.ev.length < 64) I.ev.push(ev);
+      _mp6Cast(g, I.key, { type:'sv_mp6_ev', key:I.key, ev, by:player.name }, ws);
+      return;
+    }
+  }
+}
+// once a second: owners, and closing instances nobody is in any more
+setInterval(() => {
+  try {
+    games.forEach(g => {
+      const m = g._mp6; if (!m) return;
+      for (const key in m.inst) {
+        const I = m.inst[key], mem = _mp6Mem(g, key);
+        if (!mem.length) { delete m.inst[key]; continue; }
+        for (const n in I.pos) if (!mem.some(x => x[1].name === n)) delete I.pos[n];
+        _mp6Owners(g, I, mem, false);
+      }
+    });
+  } catch (err) { _svErr('mp6 tick', err); }
+}, 1000);
+// ── END mpfix batch 6 ──
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// mpfix (batch 3) — CROWD CONTROL, MARKS AND SHIELDS ON SERVER-RUN CREATURES
+//   sv_cc_enemy {id, kind, ms, slow, x, z, dx, dz}   kind: stun | freeze | root | slow | fear | knock
+//   sv_cc_enemy {area:1, kind:'pull', x, z, r, ms, f}  a pull field (Black Hole; f:1 = centred on the caster: Maelstrom)
+//   Every zone creature, bespoke or not, is ticked in tickGame's one enemy loop, which calls _mpccPre first and
+//   _mpccPost in its finally. Zone bosses are not in that list and are never crowd-controlled (offline the game never
+//   stuns, slows or moves the zone boss either), and {boss:...} messages are ignored.
+//   Diminishing returns (the game has no rule of its own): stun, freeze, root and fear share one counter per creature.
+//   Each application that lengthens the effect counts; durations go 100% -> 50% -> 25% -> immune, and the counter clears
+//   12 s after the last of them ended. Slows do not stack (the strongest wins, capped at 80%); knockbacks are at most 8
+//   units each, one per 150 ms per creature. Everything is moved in walkable steps.
+// ═══════════════════════════════════════════════════════════════════════════════════════
+const MP_HIT_REACH_CAP = 40;    // S5 — the longest reach a hit may claim (Shockwave rings ~21u, Phantom Assault 22.5u)
+const MP_HIT_SPEED     = 25;    // S5 — units/second a player may have moved since the last position (mounts and mechs included)
+const MP_HIT_BLINK     = 24;    // S5 — plus one blink / teleport (Backstab, Void Step, Shadow Step)
+const MP_MARK_KINDS    = { mfd:1.4, scan:1.25, dmark:1.35 };   // S7 — the game's own multipliers
+const MP_CC_MAX_MS     = { stun:5000, freeze:5000, root:6000, fear:4000, slow:8000, pull:4000 };
+const MP_CC_DR         = [1, 0.5, 0.25];
+function _mpRate(p){   // at most 60 crowd-control / mark / shield messages a second from one player
+  const now = Date.now();
+  if (!p._mpccW || now - p._mpccW > 1000) { p._mpccW = now; p._mpccC = 0; }
+  return ++p._mpccC <= 60;
+}
+// mpfix E2/W4 — who helped kill a creature or zone boss. Names are kept on the creature / boss
+//   (_mpHelp, a plain object so nothing that copies an enemy chokes on it) from its first hit until it dies
+//   or respawns. At the kill, only helpers still in that zone of that game are listed; the killer always is.
+function _mpHelpAdd(o, name){ if (!o || !name) return; (o._mpHelp || (o._mpHelp = {}))[name] = 1; }
+function _mpHelpList(o, gameId, zoneName, killer){
+  const out = [], h = (o && o._mpHelp) || {};
+  players.forEach(p => {
+    if (p && p.name && h[p.name] && p.gameId === gameId && p.zone === zoneName && out.indexOf(p.name) < 0) out.push(p.name);
+  });
+  if (killer && killer.charAt(0) !== '(' && out.indexOf(killer) < 0) out.push(killer);
+  if (o) o._mpHelp = null;
+  return out;
+}
+function _mpMarkMult(e){
+  const mk = e && e._mpMk; if (!mk) return 1;
+  const now = Date.now(); let m = 1, any = false;
+  for (const k in mk) { if (mk[k].u > now) { m *= mk[k].m; any = true; } }
+  if (!any) e._mpMk = null;
+  return Math.min(m, 2.5);
+}
+function _mpccWalkOk(zoneName, zone){
+  const w = _spreadWalkFn(zoneName, zone);
+  return (x, z) => { if (!(x > 0.5 && z > 0.5 && x < 359.5 && z < 359.5)) return false; try { return !w || w(x, z); } catch (_) { return true; } };
+}
+// move e by (dx, dz) in steps of at most 0.5u, sliding along a wall, stopping where it cannot go
+function _mpccStep(ok, e, dx, dz){
+  const len = Math.sqrt(dx*dx + dz*dz); if (!(len > 0.001)) return false;
+  const n = Math.ceil(len / 0.5), sx = dx / n, sz = dz / n; let moved = false;
+  for (let i = 0; i < n; i++) {
+    const nx = e.x + sx, nz = e.z + sz;
+    if (ok(nx, nz)) { e.x = nx; e.z = nz; moved = true; }
+    else if (ok(nx, e.z)) { e.x = nx; moved = true; }
+    else if (ok(e.x, nz)) { e.z = nz; moved = true; }
+    else break;
+  }
+  return moved;
+}
+function _mpccOnMsg(g, zoneName, zone, player, data){
+  if (!_mpRate(player) || !data || data.boss) return;   // zone bosses: immune, as offline
+  const now = Date.now(), kind = data.kind;
+  if (data.area) {   // a pull field
+    if (kind !== 'pull' || zoneName === END_ZONE) return;
+    let x = +data.x, z = +data.z; const r = Math.min(12, Math.max(0, +data.r || 0)), ms = Math.min(MP_CC_MAX_MS.pull, Math.max(0, +data.ms || 0));
+    if (!r || !ms || !isFinite(x) || !isFinite(z)) return;
+    if (player.x !== undefined) { const ddx = x - player.x, ddz = z - player.z; if (ddx*ddx + ddz*ddz > 30*30) return; }
+    zone._mpccA = (zone._mpccA || []).filter(a => a.u > now);
+    if (zone._mpccA.length >= 8) return;
+    zone._mpccA.push({ x, z, r, u: now + ms, p: data.f ? player : null });
+    return;
+  }
+  const e = zone.enemies.find(en => en.id === data.id && en.active); if (!e) return;
+  if (!MP_CC_MAX_MS[kind] && kind !== 'knock') return;
+  // The End: the server runs no AI there; pass stuns and slows on, so the game that owns the creature applies them
+  if (zoneName === END_ZONE) {
+    if (kind !== 'stun' && kind !== 'slow') return;
+    const ms = Math.min(MP_CC_MAX_MS[kind], Math.max(0, +data.ms || 0)); if (!ms) return;
+    broadcastToZone(g.id, zoneName, { type:'sv_cc', zone:zoneName, id:e.id, kind, ms, slow: kind === 'slow' ? Math.min(0.8, Math.max(0.05, +data.slow || 0.5)) : undefined, by:player.name });
+    return;
+  }
+  if (player.x !== undefined) { const ddx = e.x - player.x, ddz = e.z - player.z; if (ddx*ddx + ddz*ddz > 45*45) return; }
+  const c = e._mpcc || (e._mpcc = {});
+  if (kind === 'knock') {
+    let dx = +data.dx, dz = +data.dz; if (!isFinite(dx) || !isFinite(dz)) return;
+    if (now - (c.kAt || 0) < 150) return; c.kAt = now;
+    const l = Math.sqrt(dx*dx + dz*dz); if (l > 8) { dx *= 8 / l; dz *= 8 / l; }
+    c.kx = (c.kx || 0) + dx; c.kz = (c.kz || 0) + dz;
+    return;
+  }
+  let ms = Math.min(MP_CC_MAX_MS[kind], Math.max(0, +data.ms || 0)); if (!ms) return;
+  const out = { type:'sv_cc', zone:zoneName, id:e.id, kind, by:player.name };
+  if (kind === 'slow') {
+    const f = Math.min(0.8, Math.max(0.05, +data.slow || 0.5));
+    if (c.sl > now && c.sf >= f) { if (now + ms <= c.sl) return; } else c.sf = Math.max(f, c.sl > now ? (c.sf || 0) : 0);
+    c.sl = Math.max(c.sl || 0, now + ms); out.ms = c.sl - now; out.slow = c.sf;
+  } else {   // stun, freeze, root, fear: shared diminishing returns
+    const key = (kind === 'stun' || kind === 'freeze') ? 'st' : kind === 'root' ? 'rt' : 'fe';
+    const dr = e._mpccDr || (e._mpccDr = { n:0, t:0 });
+    if (now > dr.t + 12000) dr.n = 0;
+    const f = MP_CC_DR[dr.n]; if (f === undefined) return;   // immune for now
+    ms = Math.round(ms * f);
+    if (now + ms <= (c[key] || 0)) return;                   // does not lengthen what it already has: not counted
+    c[key] = now + ms; dr.n++; dr.t = Math.max(dr.t, c[key]);
+    if (key === 'fe') {
+      let fx = +data.x, fz = +data.z;
+      if (!isFinite(fx) || !isFinite(fz) || (player.x !== undefined && (fx - player.x)*(fx - player.x) + (fz - player.z)*(fz - player.z) > 30*30)) { fx = player.x; fz = player.z; }
+      c.fx = fx; c.fz = fz;
+    }
+    out.ms = ms;
+  }
+  broadcastToZone(g.id, zoneName, out);
+}
+// before the creature thinks: returns true when it must not act this tick
+function _mpccPre(zoneName, zone, e, changed){
+  const now = Date.now(); let ok = null, moved = false, hold = false;
+  const W = () => ok || (ok = _mpccWalkOk(zoneName, zone));
+  if (zone._mpccA) {
+    let live = false;
+    for (const a of zone._mpccA) {
+      if (a.u <= now) continue; live = true;
+      let cx = a.x, cz = a.z;
+      if (a.p) { if (a.p.zone !== zoneName || a.p.x === undefined) { a.u = 0; continue; } cx = a.p.x; cz = a.p.z; }
+      const dx = cx - e.x, dz = cz - e.z, d = Math.sqrt(dx*dx + dz*dz);
+      if (d >= a.r) continue;
+      hold = true;   // held in the field: it cannot walk out (it may still strike)
+      if (d > 0.4) { const f = 1 - Math.pow(1 - Math.min(0.15, 0.52 / (d / TILE + 0.5)), 6); if (_mpccStep(W(), e, dx * f, dz * f)) moved = true; }
+    }
+    if (!live) zone._mpccA = null;
+  }
+  const c = e._mpcc;
+  if (c) {
+    if (c.kx || c.kz) { if (_mpccStep(W(), e, c.kx || 0, c.kz || 0)) moved = true; c.kx = 0; c.kz = 0; }
+    const slowF = (c.sl > now) ? (1 - (c.sf || 0)) : 1;
+    if (c.fe > now) {   // fear: runs from where it was scared, 30% faster than it walks, and does nothing else
+      const dx = e.x - c.fx, dz = e.z - c.fz, d = Math.sqrt(dx*dx + dz*dz) || 0.001, sp = (e.spd || 0.04) * 1.6 * 1.3 * slowF;
+      if (_mpccStep(W(), e, dx / d * sp, dz / d * sp)) moved = true;
+      if (moved) changed.push(e);
+      return true;
+    }
+    if (c.st > now) { if (moved) changed.push(e); return true; }
+    if (c.rt > now) hold = true;
+    if (!hold && slowF < 1) { e._mpccH = slowF; e._mpccX0 = e.x; e._mpccZ0 = e.z; }
+    if (!(c.st > now || c.rt > now || c.fe > now || c.sl > now || c.kx || c.kz)) e._mpcc = null;
+  }
+  if (hold) { e._mpccH = -1; e._mpccX0 = e.x; e._mpccZ0 = e.z; }
+  if (moved) changed.push(e);
+  return false;
+}
+// after it thought: a rooted / held creature stays put, a slowed one covers only part of its move
+function _mpccPost(e){
+  const h = e._mpccH; e._mpccH = 0;
+  if (h < 0) { e.x = e._mpccX0; e.z = e._mpccZ0; e._spN = -1; }   // -1 also keeps the crowd-spread pass off it
+  else if (h > 0 && h < 1) { e.x = e._mpccX0 + (e.x - e._mpccX0) * h; e.z = e._mpccZ0 + (e.z - e._mpccZ0) * h; }
+}
+
 function tickGame(game) {
   Object.entries(game.zones).forEach(([zoneName, zone]) => {
     const zonePlayers = getPlayersInZone(game.id, zoneName);
@@ -12317,6 +12863,7 @@ function tickGame(game) {
       if (se && se._summoned && !se.active) zone.enemies.splice(i, 1);
     }
     try { _spTick(game, zoneName, zone, hasPlayers, zonePlayers, changed); } catch(err){ _svErr('special', err); }   // a775 — shared rares and bounties
+    try { _mp5Tick(game, zoneName, zone, zonePlayers, hasPlayers); } catch(err){ _svErr('mp5', err); }   // mpfix batch 5 — world events, gem nodes, Reach hazards, rare owners
 
     const _crowd = _mobCrowdMap(zone, targetPlayers);   // a764 — how many mobs are on each player
     zone.enemies.forEach(e => { const __tp = _mobTempoPre(e, zoneName, targetPlayers, _crowd); try {
@@ -12327,6 +12874,8 @@ function tickGame(game) {
           e.active = true; e.hp = e.maxHp;
           e.x = e.spawnX; e.z = e.spawnZ;
           e.respawnTimer = 0; e.aggroed = false; e._tgt = null;   // a597
+          e._mpHelp = null;   // mpfix W4 — a new life, new helpers
+          e._bxCalled = 0;    // mpfix W8 — a new bixie can call her sisters again
           changed.push(e);
         }
         return;
@@ -12339,9 +12888,17 @@ function tickGame(game) {
         return;
       }
 
+      // mpfix S1/S2 — crowd control: knockback / pull / fear move it here; stunned or feared it does nothing else this
+      //   tick (no move, no attack, no ability; this covers every bespoke kit, which all run further down in this loop);
+      //   rooted or slowed, its move is undone or scaled in the finally below.
+      if ((e._mpcc || zone._mpccA) && _mpccPre(zoneName, zone, e, changed)) return;
+      // mpfix S6 — the player it was chasing went into stealth: it loses them (it may pick up someone else in range)
+      if (e.aggroed && e._spT && _mpStealthed(e._spT)) { e.aggroed = false; e._tgt = null; e._spT = null; }
+
       // Find nearest player in zone
       let nearestPlayer = null, nearestDist = Infinity;
       targetPlayers.forEach(p => {   // a578 — never chase a downed or dead player
+        if (_mpStealthed(p)) return;   // mpfix S6 — nor a stealthed one
         const dx = p.x - e.x, dz = p.z - e.z;
         const d = Math.sqrt(dx*dx + dz*dz);
         if (d < nearestDist) { nearestDist = d; nearestPlayer = p; }
@@ -12371,7 +12928,7 @@ function tickGame(game) {
         ? (e.aggroRange || 18) : e.aggroRange;   // a548-a553 — those kits force a 24u floor client-side
       // a597 — hit-lock: chase the player who hit us, however far away they are
       if (e._tgt) {
-        const _hp = (Date.now() - (e._tgtAt || 0) < HIT_LOCK_MS) ? targetPlayers.find(p => p.name === e._tgt) : null;
+        const _hp = (Date.now() - (e._tgtAt || 0) < HIT_LOCK_MS) ? targetPlayers.find(p => p.name === e._tgt && !_mpStealthed(p)) : null;   // mpfix S6
         if (_hp) {
           const _dx = _hp.x - e.x, _dz = _hp.z - e.z;
           nearestPlayer = _hp; nearestDist = Math.sqrt(_dx*_dx + _dz*_dz);
@@ -12385,6 +12942,7 @@ function tickGame(game) {
         if (!e.aggroed) {
           const _mzA = _convMazeFor(zone);
           for (const p of targetPlayers) {
+            if (_mpStealthed(p)) continue;   // mpfix S6
             const ddx = p.x - e.x, ddz = p.z - e.z;
             if (ddx*ddx + ddz*ddz <= CONV_SIGHT*CONV_SIGHT && e2ConvMazeLOS(_mzA, e.x, e.z, p.x, p.z, TILE)) {
               e.aggroed = true; if (!e._tgt) { nearestPlayer = p; nearestDist = Math.sqrt(ddx*ddx + ddz*ddz); } break;
@@ -12980,6 +13538,27 @@ function tickGame(game) {
             e._vw=(e._vw||0)+1; if(dd>3 && dd<9 && e._vw>=20){ e._vw=0; bwPull(); }
             e._nova=(e._nova||0)+1; if(dd<8 && e._nova>=33){ e._nova=0; tele(e.x,e.z,6,3.6,1.3,0x6cff7a,0,0); }
             e._tc=(e._tc||0)+1; if(dd>5 && dd<16 && e._tc>=30){ e._tc=0; e._charge='wind'; e._cst=0; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0x6cff7a,n:6}); }
+          }
+        }
+        else if(e.type==='bixie'){
+          // mpfix W8 — dyrm's bixie kit (_bxTick in the game), re-timed 60->10Hz: she weaves in like a bee, stings
+          //   (25% poison), backs off, darts in from 3.5-10 units, and a hurt bixie calls every bixie within 12.
+          if(!e._bxCalled && e.hp < e.maxHp){ e._bxCalled=1;
+            for(let i=0;i<zone.enemies.length;i++){ const o=zone.enemies[i]; if(!o||o===e||!o.active||o.type!=='bixie'||Math.hypot(o.x-e.x,o.z-e.z)>=12) continue; o._bxCalled=1; if(!o.aggroed){ o.aggroed=true; o._tgt=nearestPlayer.name; o._tgtAt=Date.now(); } } }
+          const sting=(mult)=>{ hit(_bwDmg(e,mult));
+            broadcastToZone(game.id,zoneName,{type:'sv_enemy_anim',zone:zoneName,eid:e.id,a:'attack',tx:+nearestPlayer.x.toFixed(2),tz:+nearestPlayer.z.toFixed(2)});
+            broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xffd84a,n:4});
+            if(Math.random()<0.25) players.forEach((p,ws)=>{ if(p===nearestPlayer) send(ws,{type:'sv_player_fx',zone:zoneName,status:'poison',statusDur:90}); }); };
+          if(e._bxBack>0){ e._bxBack--; mv(-sin*0.8+pr*strafe*0.5,-cos*0.8+pq*strafe*0.5,0.42); }
+          else if(e._bxDash>0){ e._bxDash--; mv(sin,cos,1.2);
+            if(Math.hypot(nearestPlayer.x-e.x,nearestPlayer.z-e.z)<1.8){ e._bxDash=0; sting(1.1); e._bxBack=4; } }
+          else {
+            e._bxT=(e._bxT||0)+1; if(e._bxPh===undefined) e._bxPh=Math.random()*6;
+            const zig=Math.sin(e._bxT*0.72+e._bxPh);
+            if(dd>2.0) mv(sin+pr*zig*0.9,cos+pq*zig*0.9,0.372); else mv(pr*strafe*0.6,pq*strafe*0.6,0.223);
+            e._m1=(e._m1||0)+1; if(dd<2.4 && e._m1>=8){ e._m1=0; sting(0.85); if(Math.random()<0.4) e._bxBack=3; }
+            if(e._bxDart===undefined) e._bxDart=Math.floor(Math.random()*20);
+            e._bxDart++; if(dd>3.5 && dd<10 && e._bxDart>=25){ e._bxDart=0; e._bxDash=3; broadcastToZone(game.id,zoneName,{type:'sv_fx',vt:'sd_motes',zone:zoneName,ex:+e.x.toFixed(2),ez:+e.z.toFixed(2),col:0xffd84a,n:6}); }
           }
         }
         else if(e.type==='vine_stalker'){ const MSs=0.34;
@@ -15716,7 +16295,8 @@ function tickGame(game) {
                   id:e.id, etype:e.type, zone:zoneName,
                   reward:e.reward, expR:e.expR,
                   ex:+e.x.toFixed(2), ez:+e.z.toFixed(2),
-                  killer: nearestPlayer && nearestPlayer.name });
+                  killer: nearestPlayer && nearestPlayer.name,
+                  contributors: _mpHelpList(e, game.id, zoneName, nearestPlayer && nearestPlayer.name) });   // mpfix W4
                 if(nearestPlayer && nearestPlayer.name)
                   awardGuildXp(nearestPlayer.name, Math.max(1, Math.floor((e.expR||1)/2)));
               }
@@ -16245,7 +16825,7 @@ function tickGame(game) {
 
           if(_moved) changed.push(e);
         }
-    } catch(err) { _svErr("mob " + zoneName + " " + e.type, err); } finally { _mobTempoPost(e, __tp); } });   // a767 — one broken mob no longer stops the zone
+    } catch(err) { _svErr("mob " + zoneName + " " + e.type, err); } finally { _mobTempoPost(e, __tp); if (e._mpccH) _mpccPost(e); } });   // a767 — one broken mob no longer stops the zone; mpfix S1 — root / slow
 
     _e2CrowdSpread(game, zoneName, zone, changed);   // a692 — mobs keep their distance and surround the player
 
@@ -16430,8 +17010,8 @@ const PATROL_BESPOKE = { xu_rebel:1, bandit:1, bandit_archer:1, sniper:1, wraith
 // a531 — VOID WASTES bespoke AI (zone-gated to 'void'; 'wraith' is shared with other zones).
 const VW_BESPOKE = { void_stalker:1, void_eye:1, void_phantom:1, void_sentinel:1, void_construct:1, void_spike_horror:1, wraith:1 };
 // a535 — BLOOMING WILDS bespoke AI (zone-gated to 'blooming_wilds'). Tier 2, lvl 10-25.
-const BW_BESPOKE = { bloom_sprite:1, glimmer_fairy:1, mushroom_brute:1, pollen_wraith:1, thorn_knight:1, vine_stalker:1 };
-const BW_PWR = { bloom_sprite:36, glimmer_fairy:38, mushroom_brute:50, pollen_wraith:40, thorn_knight:58, vine_stalker:44 };
+const BW_BESPOKE = { bloom_sprite:1, glimmer_fairy:1, mushroom_brute:1, pollen_wraith:1, thorn_knight:1, vine_stalker:1, bixie:1 };   // mpfix W8 — bixie
+const BW_PWR = { bloom_sprite:36, glimmer_fairy:38, mushroom_brute:50, pollen_wraith:40, thorn_knight:58, vine_stalker:44, bixie:38 };   // bixie: the game's CFG.POWER
 // a537 — AVIA CANYON cyber-birds (zone-gated to 'aviacanyon'). They scale straight off
 //   e.atk like the client kit (no player-HP term), so the server can mirror the damage 1:1.
 const AV_BESPOKE = { skyscout:1, beakdrone:1, wingguard:1, spiraldive:1 };
@@ -17484,7 +18064,7 @@ function sendZoneSnapshot(ws, game, zoneName) {
   });
   const activeCount = acts.filter(a=>a===1).length;
   console.log(`[sendZoneSnapshot] zone=${zoneName} total=${ids.length} active=${activeCount}`);
-  send(ws, { type:'sv_zone_snapshot', zone:zoneName, ids, xs, zs, hps, maxhps, types, acts });
+  send(ws, { type:'sv_zone_snapshot', zone:zoneName, ids, xs, zs, hps, maxhps, types, acts, ctb:1, mp5:1 });   // mpfix batch 5 — mp5: this server runs world events, gem nodes, Reach hazards and rare owners   // mpfix E2/W4 — ctb: kills carry contributors
   // a146 — also send the active world boss state if one is alive in this zone
   if (game.worldBoss && game.worldBoss.spawned && game.worldBoss.zone === zoneName) {
     const wb = game.worldBoss;
@@ -17664,7 +18244,7 @@ const ACCT_DIR = path.join(DATA_DIR, 'accounts');
 const ACCT_SESS_FILE = path.join(DATA_DIR, 'sessions.json');
 const ACCT_MAX_CHARS = 3;                               // MAX_CHAR_SLOTS in the client
 const ACCT_SESSION_MS = 30 * 24 * 60 * 60 * 1000;       // a sign-in lasts 30 days
-const ACCT_RACES = ['xu','human','gnome','ogre','centaur','minotaur','elf','vampire'];
+const ACCT_RACES = ['xu','human','gnome','ogre','centaur','minotaur','elf','vampire','cyborg'];
 const ACCT_CLASSES = ['warrior','mage','healer','rogue'];
 try { if (!fs.existsSync(ACCT_DIR)) fs.mkdirSync(ACCT_DIR, { recursive:true }); } catch(e){}
 const accounts = new Map();     // lowercase name -> { name, salt, hash, created, chars:{ key: save } }
@@ -18262,6 +18842,7 @@ function _tunPlayerLeft(g, leaver){
 function removePlayer(ws){
   const player = players.get(ws);
   if(!player) return;
+  try { _mp6Leave(player); } catch(err){ _svErr('mp6 leave', err); }   // mpfix batch 6 — out of any Delve / Trial instance
   if(player.gameId){
     const g = games.get(player.gameId);
     if(g){
@@ -18314,11 +18895,13 @@ const _RL_LIMITS = {
   hit:   { rate:80, burst:160 },   // hits on mobs and bosses: an AoE sends one per target
   core:  { rate:15, burst:30 },    // position, health and gold reports
   other: { rate:30, burst:60 },    // everything else, as before
+  mp6:   { rate:40, burst:80 },    // mpfix batch 6 — shared Delve / Trial traffic (positions, batched hits, casts)
 };
 const _RL_KIND = {
   sv_vfx:'fx',
   sv_hit_enemy:'hit', sv_hit_boss:'hit', sv_worldboss_hit:'hit',
   sv_player_state:'core', sv_hpa:'core', sv_econ:'core',
+  sv_mp6_pos:'mp6', sv_mp6_hit:'mp6', sv_mp6_cast:'mp6', sv_mp6_cc:'mp6', sv_mp6_roster:'mp6', sv_mp6_ev:'mp6',
 };
 setInterval(()=>{
   wss.clients.forEach(ws=>{
@@ -18714,6 +19297,8 @@ wss.on('connection', ws => {
         if (typeof data.hp === 'number')  player.hp    = data.hp;
         if (typeof data.mhp === 'number') player.maxHp = data.mhp;
         if (data.dn !== undefined)        player.downed = !!data.dn;
+        player._stAt = Date.now();   // mpfix S5 — when the last position arrived (speed check for long-reach hits)
+        if (data.stealth !== undefined) { const _st = !!data.stealth; if (_st && !player.stealth) player._stealthAt = Date.now(); player.stealth = _st; }   // mpfix S6
         if (player.gameId) {
           const g = games.get(player.gameId);
           if (g) g.started = true;
@@ -18867,6 +19452,8 @@ wss.on('connection', ws => {
           const _pz = getOrCreateZone(g, data.zone);
           send(ws, buildRunState(_pz, data.zone));
         }
+        try { _mp5Hello(ws, g, data.zone); } catch(err){ _svErr('mp5 hello', err); }
+        try { const _m6 = _mp6Find(player); if (player._mp6K && (!_m6 || _m6.I.zone !== data.zone)) _mp6Leave(player); _mp6Hello(ws, g, data.zone); } catch(err){ _svErr('mp6 hello', err); }   // mpfix batch 6 — this zone's Delve / Rift portals   // mpfix batch 5 — gem nodes, world event, rare owners, boss portal
         broadcastToZone(g.id, data.zone, {
           type:'sv_player_entered', name:player.name, zone:data.zone
         }, ws);
@@ -18902,15 +19489,35 @@ wss.on('connection', ws => {
 
         // Anti-cheat distance check — 24 units for ranged/magic, 10 for melee
         if (player.x !== undefined) {
-          const dx = player.x - e.x, dz = player.z - e.z;
-          const maxRange = (data.ranged || data.magic) ? 24*24 : 10*10;
+          let _ox = player.x, _oz = player.z;
+          let maxRange = (data.ranged || data.magic) ? 24*24 : 10*10;
+          // mpfix S5 — a new game sends where the caster stood (cx, cz) and how far this hit reached. The place may be no
+          //   farther from the last reported position than a player could have run since (plus a blink); the reach is capped.
+          //   Without those fields (old games) the check above is unchanged.
+          if (player.zone !== END_ZONE && typeof data.reach === 'number' && typeof data.cx === 'number' && typeof data.cz === 'number'
+              && isFinite(data.reach) && isFinite(data.cx) && isFinite(data.cz)) {
+            const _since = Math.min(1000, Math.max(0, Date.now() - (player._stAt || 0)));
+            const _allow = MP_HIT_BLINK + _since * MP_HIT_SPEED / 1000;
+            const _mx = data.cx - player.x, _mz = data.cz - player.z;
+            if (_mx*_mx + _mz*_mz <= _allow*_allow) {
+              _ox = data.cx; _oz = data.cz;
+              const _r = Math.min(Math.max(data.reach, 0), MP_HIT_REACH_CAP) + 3;
+              if (_r*_r > maxRange) maxRange = _r*_r;
+            }
+          }
+          const dx = _ox - e.x, dz = _oz - e.z;
           if (dx*dx + dz*dz > maxRange) break;
         }
+        if (player.stealth) player.stealth = false;   // mpfix S6 — striking reveals you
 
         // Cap incoming damage to reasonable max (anti-hack)
-        const cappedDmg = Math.min(data.dmg||1, 999999);
-        const rawDmg = Math.max(1, Math.floor(cappedDmg * (1 - (e.dmgReduction||0))));
+        // mpfix S7 — "takes more damage" marks (Marked for Death, Tactical Scan, Death Mark) count for every player's hit
+        const cappedDmg = Math.min(Math.floor((data.dmg||1) * _mpMarkMult(e)), 999999);
+        // mpfix S11 — a damage-reduction shield a game reported (a rare's Bulwark / Fade) counts for everyone
+        const _mpDR = Math.max(e.dmgReduction||0, (e._mpShU && e._mpShU > Date.now()) ? (e._mpShDR || 0) : 0);
+        const rawDmg = Math.max(1, Math.floor(cappedDmg * (1 - _mpDR)));
         e.hp -= rawDmg;
+        _mpHelpAdd(e, player.name);   // mpfix W4 — this player helped
         // a597 — getting hit always pulls the mob onto its attacker
         e.aggroed = true; e._tgt = player.name; e._tgtAt = Date.now();
 
@@ -18922,7 +19529,8 @@ wss.on('connection', ws => {
             id:e.id, etype:e.type, zone:player.zone,
             reward:e.reward, expR:e.expR,
             ex:+e.x.toFixed(2), ez:+e.z.toFixed(2),
-            killer: player.name
+            killer: player.name,
+            contributors: _mpHelpList(e, g.id, player.zone, player.name)   // mpfix W4 — everyone in the zone who damaged it (new field)
           });
           // Award guild XP based on enemy expR value
           awardGuildXp(player.name, Math.max(1, Math.floor((e.expR||1) / 2)));
@@ -18931,9 +19539,46 @@ wss.on('connection', ws => {
           broadcastToZone(g.id, player.zone, {
             type:'sv_enemy_hit',
             id:e.id, hp:e.hp, maxHp:e.maxHp,
-            dmg:rawDmg, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2)
+            dmg:rawDmg, ex:+e.x.toFixed(2), ez:+e.z.toFixed(2),
+            by:player.name, z:player.zone   // mpfix S12 — who hit it, and where (new fields: an old game reads neither)
           });
         }
+        break;
+      }
+
+      // mpfix S1/S2 — crowd control on a server-run creature (stun, root, slow, fear, knockback, area pull)
+      case 'sv_cc_enemy': {
+        if (!player.gameId || !player.zone) break;
+        const g = games.get(player.gameId); if (!g) break;
+        const zone = g.zones[player.zone]; if (!zone) break;
+        try { _mpccOnMsg(g, player.zone, zone, player, data); } catch (err) { _svErr('sv_cc_enemy', err); }
+        break;
+      }
+      // mpfix S7 — a "takes more damage" mark, held by the server and applied to every player's hits
+      case 'sv_mark_enemy': {
+        if (!player.gameId || !player.zone || !_mpRate(player)) break;
+        const g = games.get(player.gameId); if (!g) break;
+        const zone = g.zones[player.zone]; if (!zone) break;
+        const e = zone.enemies.find(en => en.id === data.id && en.active); if (!e) break;
+        const k = MP_MARK_KINDS[data.k] ? data.k : null; if (!k) break;
+        const m = Math.min(MP_MARK_KINDS[k], Math.max(1, +data.m || 1)), ms = Math.min(15000, Math.max(0, +data.ms || 0));
+        if (!ms || m <= 1) break;
+        const now = Date.now(), mk = e._mpMk || (e._mpMk = {}), old = mk[k];
+        mk[k] = { m: Math.max(m, (old && old.u > now) ? old.m : 1), u: Math.max(now + ms, (old && old.u) || 0) };
+        broadcastToZone(g.id, player.zone, { type:'sv_mark', zone:player.zone, id:e.id, k, m:mk[k].m, ms:mk[k].u - now, by:player.name });
+        break;
+      }
+      // mpfix S11 — a creature's shield that only the players' games run (a rare's Bulwark / Fade): the server applies it to
+      //   every hit. One shield per creature at a time and none within 5 s of the last start, so several games running the
+      //   same rare's kit do not stack shields.
+      case 'sv_shield_enemy': {
+        if (!player.gameId || !player.zone || !_mpRate(player)) break;
+        const g = games.get(player.gameId); if (!g) break;
+        const zone = g.zones[player.zone]; if (!zone || player.zone === END_ZONE) break;
+        const e = zone.enemies.find(en => en.id === data.id && en.active); if (!e) break;
+        const now = Date.now(), dr = Math.min(0.95, Math.max(0, +data.dr || 0)), ms = Math.min(6000, Math.max(0, +data.ms || 0));
+        if (!dr || !ms || (e._mpShU && e._mpShU > now) || now - (e._mpShAt || 0) < 5000) break;
+        e._mpShDR = dr; e._mpShU = now + ms; e._mpShAt = now;
         break;
       }
 
@@ -19006,6 +19651,8 @@ wss.on('connection', ws => {
         if (player.zone === 'the_reach' && b._keLinkDR) _inDmg = Math.max(1, Math.floor(_inDmg * (1 - b._keLinkDR)));   // a619 — Sentient Link
         const bdmg = Math.min(_inDmg, 999999);
         b.hp = Math.max(0, b.hp - bdmg);
+        _mpHelpAdd(b, player.name);   // mpfix E2 — this player helped
+        const _mpBossHelp = b.hp <= 0 ? _mpHelpList(b, g.id, player.zone, player.name) : null;   // mpfix E2 — everyone in the zone who damaged it
 
         // Broadcast HP update to all players in zone
         broadcastToZone(g.id, player.zone, {
@@ -19016,6 +19663,7 @@ wss.on('connection', ws => {
           phase: b.phase,
           dmg: bdmg,
           hitter: player.name,
+          ...(_mpBossHelp ? { contributors: _mpBossHelp } : {}),   // mpfix E2 — on the killing hit only (new field)
         });
 
         // Phase transitions — broadcast to zone.
@@ -19054,6 +19702,7 @@ wss.on('connection', ws => {
             killer: player.name,
             bx: data.bx || 0,
             bz: data.bz || 0,
+            contributors: _mpBossHelp || [player.name],   // mpfix E2 — everyone who helped gets the full reward (new field)
           });
           // Global announce to ENTIRE game — everyone sees the kill
           broadcastToGame(g.id, {
@@ -19078,6 +19727,7 @@ wss.on('connection', ws => {
               rb.phase = 1;
               rb.spawned = false; // will re-spawn when triggered client-side
               rb.killedAt = 0;    // a298 — clear the death stamp; cooldown is over
+              rb._mpHelp = null;  // mpfix E2
               broadcastToZone(g.id, bossZone, {
                 type: 'sv_boss_respawn', zone: bossZone, bossName: rb.name,
               });
@@ -19285,6 +19935,31 @@ wss.on('connection', ws => {
         if (gone.length) broadcastToZone(g.id, END_ZONE, { type:'sv_end_rm', zone:END_ZONE, ids:gone }, ws);
         break;
       }
+      // mpfix batch 6 — shared Delves and Apex Trials
+      case 'sv_mp6_hello': case 'sv_mp6_portal': case 'sv_mp6_join': case 'sv_mp6_leave': case 'sv_mp6_roster':
+      case 'sv_mp6_pos': case 'sv_mp6_hit': case 'sv_mp6_cast': case 'sv_mp6_cc': case 'sv_mp6_ev':
+        try { _mp6OnMsg(ws, player, data); } catch(err){ _svErr('mp6 msg', err); }
+        break;
+      case 'sv_gem_claim': case 'sv_we_claim': case 'sv_rare_cast': case 'sv_rare_mv': case 'sv_mp_portal':   // mpfix batch 5
+        try { _mp5OnMsg(ws, player, data); } catch(err){ _svErr('mp5 msg', err); }
+        break;
+      case 'sv_conv_reroll': {
+        // mpfix W10 — a Reroll Token: new modifiers for the live depth, for everyone in the run. One per player per
+        //   depth (the token itself is checked by the spender's game). Falls through into sv_set_depth, which applies
+        //   the modifiers like a same-depth update (creatures rescaled, the boss's HP untouched).
+        if (!player.gameId || player.zone !== 'convergence' || data.zone !== 'convergence' || !Array.isArray(data.modIds)) break;
+        const _rg = games.get(player.gameId), _rz = _rg && _rg.zones.convergence;
+        if (!_rz || !_rz._runEstablished) break;
+        const _rd = _rz.convergenceDepth || 1;
+        if ((data.depth | 0) !== _rd) break;
+        const _rr = (_rz._mpRr && _rz._mpRr.d === _rd && _rz._mpRr.s === _rz.runSeed) ? _rz._mpRr : (_rz._mpRr = { d:_rd, s:_rz.runSeed, by:{} });
+        if (_rr.by[player.name]) break;
+        _rr.by[player.name] = 1;
+        data.modIds = data.modIds.filter(x => typeof x === 'string').slice(0, 5);
+        data.depth = _rd;
+        broadcastToZone(_rg.id, 'convergence', { type:'sv_conv_rerolled', zone:'convergence', depth:_rd, modIds:data.modIds, by:player.name });
+      }
+      // falls through
       case 'sv_set_depth': {
         // v93.0 phase 3.3/4.2 — Client signals descent + modifier roll.
         // Server bumps depth, applies server-coord mods, regenerates enemies.
@@ -19312,7 +19987,7 @@ wss.on('connection', ws => {
         const playersHere = getPlayersInZone(g.id, 'convergence').length;
         const runInProgress = !!zone._runEstablished;
         const isAdvance = newDepth > oldDepth;
-        if (runInProgress && !isAdvance) {
+        if (runInProgress && !isAdvance && data.type !== 'sv_conv_reroll') {   // mpfix W10 — a reroll changes the live depth's modifiers
           // Joining / re-rolling at or below the live depth → adopt live run.
           send(ws, buildRunState(zone, 'convergence'));
           console.log(`[convergence] ${player.name} requested depth ${newDepth} but live run is at ${oldDepth} (players=${playersHere}) — synced to live run, no regen.`);
