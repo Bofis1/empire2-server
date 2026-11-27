@@ -1587,6 +1587,7 @@ const ZONE_SPAWNS = {
   outpost: [],
   sanctuary: [], // Safe hub — no enemies
   carport: [],   // a583 — skycar dealership, safe
+  casino: [],    // a880 — the Gilded Xu Casino, safe
   // a529 — MULTIPLAYER MIGRATION: Xu Patrol is now server-authoritative (bespoke patrol AI server-side).
   // a629 — regenerated with the rebuilt city (tools/build_patrol_city.py): same 150-mob roster,
   //   in courtyards / rubble lots / street corners, graded easy→hard from the west spawn.
@@ -12099,7 +12100,7 @@ const SV_RARE_DEFS = [
   { id:'rs_godmachine',  hpMult:13, atkMult:3.2, spd:0.025*0.7, zones:['citadel','xumen','patrol','riftvale','xulcan','xeron','neon_hollow'] },
   { id:'rs_thornmother', hpMult:10, atkMult:2.8, spd:0.035*0.9, zones:['blooming_wilds','aviacanyon','lucidwilde'] },
 ];
-const SV_SPECIAL_NO_ZONES = { outpost:1, carport:1, arena:1, convergence:1, sanctuary:1 };
+const SV_SPECIAL_NO_ZONES = { outpost:1, carport:1, arena:1, convergence:1, sanctuary:1, casino:1 };   // a880 casino
 const SV_SPECIAL_LIFE_MS = 180000;
 const _SP_FAST = !!process.env.E2_SPECIAL_FAST;   // test hook: specials every few seconds
 function _spRand(a, b){ return _SP_FAST ? 4000 + Math.random()*2000 : a + Math.random()*(b - a); }
@@ -12169,7 +12170,7 @@ function _spTick(game, zoneName, zone, hasPlayers, zonePlayers, changed){
 // ═══════════════════════════════════════════════════════════════════════════════════════
 const MP5_WEV_FIRST = _SP_FAST ? 5000 : 90000, MP5_WEV_CD = _SP_FAST ? 8000 : 180000;   // the game's own timings
 const MP5_CRATE_MS = 60000, MP5_METEOR_MS = 3840, MP5_GEM_MS = 40000;
-const MP5_NO_WEV = { outpost:1 };
+const MP5_NO_WEV = { outpost:1, casino:1 };   // a880 — no supply drops or meteors in the casino
 const MP5_REACH_K = ['fracture','barrage','singularity','lance','voidquake'];
 const MP5_REACH_MS = { fracture:4700, barrage:2450, singularity:3750, lance:4050, voidquake:4300 };   // telegraph+active+fade frames / 60
 function _mp5(zone){ return zone._mp5 || (zone._mp5 = { gems:{}, wev:null, wevAt:0, trail:[], trailAt:0, tk:'', reachAt:0, reachLive:[], portal:null, eid:0 }); }
